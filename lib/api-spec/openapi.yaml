@@ -1,22 +1,45 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Mission Distinction API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User management
+  - name: notes
+    description: Notes library
+  - name: pdfs
+    description: PDF library
+  - name: books
+    description: Books library
+  - name: quizzes
+    description: Quiz system
+  - name: community
+    description: Community hub
+  - name: announcements
+    description: Announcements and news
+  - name: progress
+    description: Progress tracking
+  - name: bookmarks
+    description: Bookmarks
+  - name: calendar
+    description: Calendar events
+  - name: dashboard
+    description: Dashboard aggregates
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +47,1547 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── AUTH ───────────────────────────────────────────────────────────────────
+  /auth/student/register:
+    post:
+      operationId: studentRegister
+      tags: [auth]
+      summary: Register a new student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentRegisterInput"
+      responses:
+        "201":
+          description: Student registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+
+  /auth/student/login:
+    post:
+      operationId: studentLogin
+      tags: [auth]
+      summary: Student login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+
+  /auth/admin/register:
+    post:
+      operationId: adminRegister
+      tags: [auth]
+      summary: Register a new admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminRegisterInput"
+      responses:
+        "201":
+          description: Admin registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+
+  /auth/admin/login:
+    post:
+      operationId: adminLogin
+      tags: [auth]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # ─── USERS ──────────────────────────────────────────────────────────────────
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users (admin only)
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserListResponse"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get a user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── NOTES ──────────────────────────────────────────────────────────────────
+  /notes:
+    get:
+      operationId: listNotes
+      tags: [notes]
+      summary: List notes
+      parameters:
+        - name: subject
+          in: query
+          schema:
+            type: string
+        - name: year
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Note"
+    post:
+      operationId: createNote
+      tags: [notes]
+      summary: Create a note (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteInput"
+      responses:
+        "201":
+          description: Created note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+
+  /notes/{id}:
+    get:
+      operationId: getNote
+      tags: [notes]
+      summary: Get a note by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+    patch:
+      operationId: updateNote
+      tags: [notes]
+      summary: Update a note
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteUpdate"
+      responses:
+        "200":
+          description: Updated note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+    delete:
+      operationId: deleteNote
+      tags: [notes]
+      summary: Delete a note
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── PDFs ───────────────────────────────────────────────────────────────────
+  /pdfs:
+    get:
+      operationId: listPdfs
+      tags: [pdfs]
+      summary: List PDFs
+      parameters:
+        - name: subject
+          in: query
+          schema:
+            type: string
+        - name: professor
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of PDFs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pdf"
+    post:
+      operationId: createPdf
+      tags: [pdfs]
+      summary: Upload a PDF (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PdfInput"
+      responses:
+        "201":
+          description: Created PDF
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pdf"
+
+  /pdfs/{id}:
+    get:
+      operationId: getPdf
+      tags: [pdfs]
+      summary: Get a PDF by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pdf"
+    delete:
+      operationId: deletePdf
+      tags: [pdfs]
+      summary: Delete a PDF
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── BOOKS ──────────────────────────────────────────────────────────────────
+  /books:
+    get:
+      operationId: listBooks
+      tags: [books]
+      summary: List books
+      parameters:
+        - name: subject
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of books
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+    post:
+      operationId: createBook
+      tags: [books]
+      summary: Add a book (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookInput"
+      responses:
+        "201":
+          description: Created book
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+
+  /books/{id}:
+    delete:
+      operationId: deleteBook
+      tags: [books]
+      summary: Delete a book
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── QUIZZES ────────────────────────────────────────────────────────────────
+  /quizzes:
+    get:
+      operationId: listQuizzes
+      tags: [quizzes]
+      summary: List quizzes
+      parameters:
+        - name: subject
+          in: query
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of quizzes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quiz"
+    post:
+      operationId: createQuiz
+      tags: [quizzes]
+      summary: Create a quiz (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizInput"
+      responses:
+        "201":
+          description: Created quiz
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quiz"
+
+  /quizzes/{id}:
+    get:
+      operationId: getQuiz
+      tags: [quizzes]
+      summary: Get a quiz with questions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Quiz with questions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizWithQuestions"
+    delete:
+      operationId: deleteQuiz
+      tags: [quizzes]
+      summary: Delete a quiz
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /quizzes/{id}/attempt:
+    post:
+      operationId: submitQuizAttempt
+      tags: [quizzes]
+      summary: Submit quiz answers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizAttemptInput"
+      responses:
+        "200":
+          description: Attempt result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizAttemptResult"
+
+  /quiz-attempts:
+    get:
+      operationId: listQuizAttempts
+      tags: [quizzes]
+      summary: Get my quiz attempts
+      responses:
+        "200":
+          description: List of attempts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuizAttempt"
+
+  # ─── COMMUNITY ──────────────────────────────────────────────────────────────
+  /community/posts:
+    get:
+      operationId: listCommunityPosts
+      tags: [community]
+      summary: List community posts
+      parameters:
+        - name: group
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CommunityPost"
+    post:
+      operationId: createCommunityPost
+      tags: [community]
+      summary: Create a community post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommunityPostInput"
+      responses:
+        "201":
+          description: Created post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityPost"
+
+  /community/groups:
+    get:
+      operationId: listCommunityGroups
+      tags: [community]
+      summary: List study groups
+      responses:
+        "200":
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CommunityGroup"
+
+  # ─── ANNOUNCEMENTS / NEWS ───────────────────────────────────────────────────
+  /announcements:
+    get:
+      operationId: listAnnouncements
+      tags: [announcements]
+      summary: List announcements and news
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of announcements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Announcement"
+    post:
+      operationId: createAnnouncement
+      tags: [announcements]
+      summary: Create an announcement (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementInput"
+      responses:
+        "201":
+          description: Created announcement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+
+  /announcements/{id}:
+    delete:
+      operationId: deleteAnnouncement
+      tags: [announcements]
+      summary: Delete an announcement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── PROGRESS ───────────────────────────────────────────────────────────────
+  /progress:
+    get:
+      operationId: getMyProgress
+      tags: [progress]
+      summary: Get my learning progress
+      responses:
+        "200":
+          description: Progress data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Progress"
+
+  /progress/activity:
+    get:
+      operationId: getRecentActivity
+      tags: [progress]
+      summary: Get recent activity feed
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  # ─── BOOKMARKS ──────────────────────────────────────────────────────────────
+  /bookmarks:
+    get:
+      operationId: listBookmarks
+      tags: [bookmarks]
+      summary: List my bookmarks
+      responses:
+        "200":
+          description: Bookmarks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bookmark"
+    post:
+      operationId: createBookmark
+      tags: [bookmarks]
+      summary: Add a bookmark
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookmarkInput"
+      responses:
+        "201":
+          description: Created bookmark
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bookmark"
+
+  /bookmarks/{id}:
+    delete:
+      operationId: deleteBookmark
+      tags: [bookmarks]
+      summary: Remove bookmark
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── CALENDAR ───────────────────────────────────────────────────────────────
+  /calendar:
+    get:
+      operationId: listCalendarEvents
+      tags: [calendar]
+      summary: List calendar events
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CalendarEvent"
+    post:
+      operationId: createCalendarEvent
+      tags: [calendar]
+      summary: Create a calendar event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalendarEventInput"
+      responses:
+        "201":
+          description: Created event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarEvent"
+
+  /calendar/{id}:
+    delete:
+      operationId: deleteCalendarEvent
+      tags: [calendar]
+      summary: Delete calendar event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── DASHBOARD AGGREGATES ───────────────────────────────────────────────────
+  /dashboard/student-stats:
+    get:
+      operationId: getStudentDashboardStats
+      tags: [dashboard]
+      summary: Get student dashboard stats
+      responses:
+        "200":
+          description: Student stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentDashboardStats"
+
+  /dashboard/admin-stats:
+    get:
+      operationId: getAdminDashboardStats
+      tags: [dashboard]
+      summary: Get admin dashboard stats
+      responses:
+        "200":
+          description: Admin stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboardStats"
+
+  /dashboard/top-subjects:
+    get:
+      operationId: getTopSubjects
+      tags: [dashboard]
+      summary: Get top subjects engagement
+      responses:
+        "200":
+          description: Top subjects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubjectStat"
+
+  /dashboard/student-growth:
+    get:
+      operationId: getStudentGrowth
+      tags: [dashboard]
+      summary: Get student growth over time
+      responses:
+        "200":
+          description: Growth data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GrowthDataPoint"
+
+  /dashboard/content-overview:
+    get:
+      operationId: getContentOverview
+      tags: [dashboard]
+      summary: Get content distribution overview
+      responses:
+        "200":
+          description: Content overview
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContentOverviewItem"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    # ─── Auth ─────────────────────────────────────────────────────────────────
+    StudentRegisterInput:
+      type: object
+      required: [fullName, email, password, confirmPassword, year, college]
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+        mobileNumber:
+          type: ["string", "null"]
+        password:
+          type: string
+        confirmPassword:
+          type: string
+        year:
+          type: string
+        college:
+          type: string
+        agreeTerms:
+          type: boolean
+
+    AdminRegisterInput:
+      type: object
+      required: [fullName, workEmail, password, confirmPassword, inviteCode]
+      properties:
+        fullName:
+          type: string
+        workEmail:
+          type: string
+        password:
+          type: string
+        confirmPassword:
+          type: string
+        inviteCode:
+          type: string
+        agreeTerms:
+          type: boolean
+
+    LoginInput:
+      type: object
+      required: [identifier, password]
+      properties:
+        identifier:
+          type: string
+        password:
+          type: string
+        rememberMe:
+          type: boolean
+
+    AdminLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        rememberMe:
+          type: boolean
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    User:
+      type: object
+      required: [id, fullName, email, role, createdAt]
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        email:
+          type: string
+        mobileNumber:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [student, admin]
+        year:
+          type: ["string", "null"]
+        college:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        studyStreak:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    UserUpdate:
+      type: object
+      properties:
+        fullName:
+          type: string
+        year:
+          type: string
+        college:
+          type: string
+        avatarUrl:
+          type: string
+
+    UserListResponse:
+      type: object
+      required: [users, total, page, limit]
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    # ─── Notes ────────────────────────────────────────────────────────────────
+    Note:
+      type: object
+      required: [id, title, subject, content, createdAt, downloadCount]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        subject:
+          type: string
+        content:
+          type: string
+        author:
+          type: ["string", "null"]
+        downloadCount:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: ["string", "null"]
+
+    NoteInput:
+      type: object
+      required: [title, subject, content]
+      properties:
+        title:
+          type: string
+        subject:
+          type: string
+        content:
+          type: string
+        author:
+          type: string
+
+    NoteUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        subject:
+          type: string
+        content:
+          type: string
+
+    # ─── PDFs ─────────────────────────────────────────────────────────────────
+    Pdf:
+      type: object
+      required: [id, title, subject, url, createdAt, downloadCount]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        subject:
+          type: string
+        professor:
+          type: ["string", "null"]
+        year:
+          type: ["string", "null"]
+        url:
+          type: string
+        thumbnailUrl:
+          type: ["string", "null"]
+        downloadCount:
+          type: integer
+        pages:
+          type: ["integer", "null"]
+        size:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    PdfInput:
+      type: object
+      required: [title, subject, url]
+      properties:
+        title:
+          type: string
+        subject:
+          type: string
+        professor:
+          type: string
+        year:
+          type: string
+        url:
+          type: string
+        thumbnailUrl:
+          type: string
+        pages:
+          type: integer
+        size:
+          type: string
+
+    # ─── Books ────────────────────────────────────────────────────────────────
+    Book:
+      type: object
+      required: [id, title, subject, url, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        subject:
+          type: string
+        author:
+          type: ["string", "null"]
+        url:
+          type: string
+        coverUrl:
+          type: ["string", "null"]
+        downloadCount:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    BookInput:
+      type: object
+      required: [title, subject, url]
+      properties:
+        title:
+          type: string
+        subject:
+          type: string
+        author:
+          type: string
+        url:
+          type: string
+        coverUrl:
+          type: string
+
+    # ─── Quizzes ──────────────────────────────────────────────────────────────
+    Quiz:
+      type: object
+      required: [id, title, subject, questionCount, difficulty, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        subject:
+          type: string
+        description:
+          type: ["string", "null"]
+        questionCount:
+          type: integer
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        durationMinutes:
+          type: ["integer", "null"]
+        isFeatured:
+          type: boolean
+        createdAt:
+          type: string
+
+    QuizInput:
+      type: object
+      required: [title, subject, difficulty]
+      properties:
+        title:
+          type: string
+        subject:
+          type: string
+        description:
+          type: string
+        difficulty:
+          type: string
+        durationMinutes:
+          type: integer
+        isFeatured:
+          type: boolean
+
+    Question:
+      type: object
+      required: [id, text, options, correctOption]
+      properties:
+        id:
+          type: integer
+        text:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        correctOption:
+          type: integer
+        explanation:
+          type: ["string", "null"]
+
+    QuizWithQuestions:
+      type: object
+      required: [id, title, subject, questionCount, difficulty, questions, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        subject:
+          type: string
+        description:
+          type: ["string", "null"]
+        questionCount:
+          type: integer
+        difficulty:
+          type: string
+        durationMinutes:
+          type: ["integer", "null"]
+        isFeatured:
+          type: boolean
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Question"
+        createdAt:
+          type: string
+
+    QuizAttemptInput:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items:
+            type: object
+            required: [questionId, selectedOption]
+            properties:
+              questionId:
+                type: integer
+              selectedOption:
+                type: integer
+
+    QuizAttemptResult:
+      type: object
+      required: [score, total, percentage, passed]
+      properties:
+        score:
+          type: integer
+        total:
+          type: integer
+        percentage:
+          type: number
+        passed:
+          type: boolean
+        correctAnswers:
+          type: array
+          items:
+            type: object
+            required: [questionId, correct]
+            properties:
+              questionId:
+                type: integer
+              correct:
+                type: boolean
+              correctOption:
+                type: integer
+              explanation:
+                type: ["string", "null"]
+
+    QuizAttempt:
+      type: object
+      required: [id, quizId, quizTitle, subject, score, total, percentage, createdAt]
+      properties:
+        id:
+          type: integer
+        quizId:
+          type: integer
+        quizTitle:
+          type: string
+        subject:
+          type: string
+        score:
+          type: integer
+        total:
+          type: integer
+        percentage:
+          type: number
+        createdAt:
+          type: string
+
+    # ─── Community ────────────────────────────────────────────────────────────
+    CommunityPost:
+      type: object
+      required: [id, title, content, author, groupName, createdAt, likeCount]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        author:
+          type: string
+        authorAvatarUrl:
+          type: ["string", "null"]
+        groupName:
+          type: string
+        likeCount:
+          type: integer
+        replyCount:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    CommunityPostInput:
+      type: object
+      required: [title, content, groupName]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        groupName:
+          type: string
+
+    CommunityGroup:
+      type: object
+      required: [id, name, subject, memberCount]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        subject:
+          type: string
+        memberCount:
+          type: integer
+        lastMessage:
+          type: ["string", "null"]
+        lastMessageTime:
+          type: ["string", "null"]
+        unreadCount:
+          type: ["integer", "null"]
+
+    # ─── Announcements ────────────────────────────────────────────────────────
+    Announcement:
+      type: object
+      required: [id, title, content, type, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        type:
+          type: string
+          enum: [announcement, news, event]
+        createdAt:
+          type: string
+
+    AnnouncementInput:
+      type: object
+      required: [title, content, type]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        type:
+          type: string
+
+    # ─── Progress ─────────────────────────────────────────────────────────────
+    Progress:
+      type: object
+      required: [notesCompleted, pdfsDownloaded, quizzesAttempted, studyStreak, studyHoursWeek, avgScore]
+      properties:
+        notesCompleted:
+          type: integer
+        pdfsDownloaded:
+          type: integer
+        quizzesAttempted:
+          type: integer
+        studyStreak:
+          type: integer
+        studyHoursWeek:
+          type: number
+        avgScore:
+          type: number
+        subjectProgress:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubjectProgress"
+
+    SubjectProgress:
+      type: object
+      required: [subject, percentage]
+      properties:
+        subject:
+          type: string
+        percentage:
+          type: number
+        completedTopics:
+          type: ["integer", "null"]
+        totalTopics:
+          type: ["integer", "null"]
+
+    ActivityItem:
+      type: object
+      required: [id, type, description, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [quiz, note, pdf, video, bookmark]
+        description:
+          type: string
+        score:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    # ─── Bookmarks ────────────────────────────────────────────────────────────
+    Bookmark:
+      type: object
+      required: [id, resourceType, resourceId, resourceTitle, subject, createdAt]
+      properties:
+        id:
+          type: integer
+        resourceType:
+          type: string
+          enum: [note, pdf, book, quiz]
+        resourceId:
+          type: integer
+        resourceTitle:
+          type: string
+        subject:
+          type: string
+        createdAt:
+          type: string
+
+    BookmarkInput:
+      type: object
+      required: [resourceType, resourceId, resourceTitle, subject]
+      properties:
+        resourceType:
+          type: string
+        resourceId:
+          type: integer
+        resourceTitle:
+          type: string
+        subject:
+          type: string
+
+    # ─── Calendar ─────────────────────────────────────────────────────────────
+    CalendarEvent:
+      type: object
+      required: [id, title, startTime, endTime, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        subject:
+          type: ["string", "null"]
+        startTime:
+          type: string
+        endTime:
+          type: string
+        color:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    CalendarEventInput:
+      type: object
+      required: [title, startTime, endTime]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        subject:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        color:
+          type: string
+
+    # ─── Dashboard ────────────────────────────────────────────────────────────
+    StudentDashboardStats:
+      type: object
+      required: [notesCount, pdfsDownloaded, quizzesAttempted, studyStreak]
+      properties:
+        notesCount:
+          type: integer
+        notesChangePercent:
+          type: number
+        pdfsDownloaded:
+          type: integer
+        pdfsChangePercent:
+          type: number
+        quizzesAttempted:
+          type: integer
+        quizzesChangePercent:
+          type: number
+        studyStreak:
+          type: integer
+
+    AdminDashboardStats:
+      type: object
+      required: [totalStudents, totalNotes, totalPdfs, totalBooks, totalQuizzes]
+      properties:
+        totalStudents:
+          type: integer
+        studentsChangePercent:
+          type: number
+        totalNotes:
+          type: integer
+        notesChangePercent:
+          type: number
+        totalPdfs:
+          type: integer
+        pdfsChangePercent:
+          type: number
+        totalBooks:
+          type: integer
+        booksChangePercent:
+          type: number
+        totalQuizzes:
+          type: integer
+        quizzesChangePercent:
+          type: number
+        activeUsersToday:
+          type: integer
+        totalContentPublished:
+          type: integer
+        serverStatus:
+          type: string
+        appVersion:
+          type: string
+
+    SubjectStat:
+      type: object
+      required: [subject, percentage]
+      properties:
+        subject:
+          type: string
+        percentage:
+          type: number
+
+    GrowthDataPoint:
+      type: object
+      required: [day, count]
+      properties:
+        day:
+          type: string
+        count:
+          type: integer
+
+    ContentOverviewItem:
+      type: object
+      required: [name, value, percentage]
+      properties:
+        name:
+          type: string
+        value:
+          type: integer
+        percentage:
+          type: number
