@@ -7,8 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useListPdfs, useCreatePdf, useDeletePdf, getListPdfsQueryKey } from "@workspace/api-client-react";
-import { Search, Plus, MoreVertical, Trash2, FileIcon, Link } from "lucide-react";
+import { useListPdfs, useCreatePdf, useDeletePdf, getListPdfsQueryKey, customFetch } from "@workspace/api-client-react";
+import { Search, Plus, MoreVertical, Trash2, FileIcon, Link, Pencil } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -16,10 +16,16 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "Medicine", "Surgery"];
 
+type PdfItem = { id: number; title: string; subject: string; professor?: string | null; year?: string | null; url: string; pages?: number | null; size?: string | null; downloadCount?: number; createdAt: string | Date };
+
 export default function AdminPDFs() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<PdfItem | null>(null);
+  const [editPending, setEditPending] = useState(false);
   const [form, setForm] = useState({ title: "", subject: "", professor: "", year: "", url: "", pages: "", size: "" });
+  const [editForm, setEditForm] = useState({ title: "", subject: "", professor: "", year: "", url: "", pages: "", size: "" });
   const queryClient = useQueryClient();
 
   const { data: pdfs, isLoading } = useListPdfs(
@@ -36,10 +42,7 @@ export default function AdminPDFs() {
       return;
     }
     createPdf.mutate({
-      data: {
-        ...form,
-        pages: form.pages ? parseInt(form.pages) : undefined,
-      }
+      data: { ...form, pages: form.pages ? parseInt(form.pages) : undefined }
     }, {
       onSuccess: () => {
         toast.success("PDF added successfully!");
@@ -49,6 +52,42 @@ export default function AdminPDFs() {
       },
       onError: () => toast.error("Failed to add PDF."),
     });
+  };
+
+  const openEdit = (pdf: PdfItem) => {
+    setEditTarget(pdf);
+    setEditForm({
+      title: pdf.title,
+      subject: pdf.subject,
+      professor: pdf.professor || "",
+      year: pdf.year || "",
+      url: pdf.url,
+      pages: pdf.pages?.toString() || "",
+      size: pdf.size || "",
+    });
+    setEditOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editTarget || !editForm.title || !editForm.subject || !editForm.url) {
+      toast.error("Title, subject and URL are required.");
+      return;
+    }
+    setEditPending(true);
+    try {
+      await customFetch(`/api/pdfs/${editTarget.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ ...editForm, pages: editForm.pages ? parseInt(editForm.pages) : undefined }),
+      });
+      toast.success("PDF updated successfully!");
+      queryClient.invalidateQueries({ queryKey: getListPdfsQueryKey() });
+      setEditOpen(false);
+      setEditTarget(null);
+    } catch {
+      toast.error("Failed to update PDF.");
+    } finally {
+      setEditPending(false);
+    }
   };
 
   const handleDelete = (id: number) => {
@@ -144,6 +183,9 @@ export default function AdminPDFs() {
                           <Button variant="ghost" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(pdf as PdfItem)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => handleDelete(pdf.id)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
@@ -213,6 +255,66 @@ export default function AdminPDFs() {
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button onClick={handleAdd} disabled={createPdf.isPending}>
               {createPdf.isPending ? "Uploading..." : "Upload PDF"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="bg-card border-border/50 max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit PDF</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Title <span className="text-destructive">*</span></Label>
+              <Input className="bg-background/50" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Subject <span className="text-destructive">*</span></Label>
+                <Select value={editForm.subject} onValueChange={(v) => setEditForm({ ...editForm, subject: v })}>
+                  <SelectTrigger className="bg-background/50"><SelectValue placeholder="Select subject" /></SelectTrigger>
+                  <SelectContent>
+                    {SUBJECTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Year</Label>
+                <Select value={editForm.year} onValueChange={(v) => setEditForm({ ...editForm, year: v })}>
+                  <SelectTrigger className="bg-background/50"><SelectValue placeholder="Select year" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1st Year">1st Year</SelectItem>
+                    <SelectItem value="2nd Year">2nd Year</SelectItem>
+                    <SelectItem value="3rd Year">3rd Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>PDF URL <span className="text-destructive">*</span></Label>
+              <Input className="bg-background/50" value={editForm.url} onChange={(e) => setEditForm({ ...editForm, url: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label>Professor</Label>
+                <Input className="bg-background/50" value={editForm.professor} onChange={(e) => setEditForm({ ...editForm, professor: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Pages</Label>
+                <Input type="number" className="bg-background/50" value={editForm.pages} onChange={(e) => setEditForm({ ...editForm, pages: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>File Size</Label>
+                <Input placeholder="e.g. 5.2 MB" className="bg-background/50" value={editForm.size} onChange={(e) => setEditForm({ ...editForm, size: e.target.value })} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleEdit} disabled={editPending}>
+              {editPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -24,7 +24,17 @@ export const communityPostsTable = pgTable("community_posts", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const communityMessagesTable = pgTable("community_messages", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  senderName: text("sender_name").notNull(),
+  senderAvatarUrl: text("sender_avatar_url"),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertCommunityPostSchema = createInsertSchema(communityPostsTable).omit({ id: true, createdAt: true, likeCount: true });
 export type InsertCommunityPost = z.infer<typeof insertCommunityPostSchema>;
 export type CommunityPost = typeof communityPostsTable.$inferSelect;
 export type CommunityGroup = typeof communityGroupsTable.$inferSelect;
+export type CommunityMessage = typeof communityMessagesTable.$inferSelect;

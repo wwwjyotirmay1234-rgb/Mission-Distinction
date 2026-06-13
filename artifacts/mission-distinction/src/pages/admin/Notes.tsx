@@ -8,8 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useListNotes, useCreateNote, useDeleteNote, getListNotesQueryKey } from "@workspace/api-client-react";
-import { Search, Plus, MoreVertical, Trash2, FileText } from "lucide-react";
+import { useListNotes, useCreateNote, useDeleteNote, useUpdateNote, getListNotesQueryKey } from "@workspace/api-client-react";
+import { Search, Plus, MoreVertical, Trash2, FileText, Pencil } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -17,10 +17,15 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "Medicine", "Surgery"];
 
+type NoteItem = { id: number; title: string; subject: string; content: string; author?: string | null; downloadCount?: number; createdAt: string | Date };
+
 export default function AdminNotes() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<NoteItem | null>(null);
   const [form, setForm] = useState({ title: "", subject: "", content: "", author: "" });
+  const [editForm, setEditForm] = useState({ title: "", subject: "", content: "", author: "" });
   const queryClient = useQueryClient();
 
   const { data: notes, isLoading } = useListNotes(
@@ -30,6 +35,7 @@ export default function AdminNotes() {
 
   const createNote = useCreateNote();
   const deleteNote = useDeleteNote();
+  const updateNote = useUpdateNote();
 
   const handleAdd = () => {
     if (!form.title || !form.subject || !form.content) {
@@ -44,6 +50,28 @@ export default function AdminNotes() {
         setForm({ title: "", subject: "", content: "", author: "" });
       },
       onError: () => toast.error("Failed to add note."),
+    });
+  };
+
+  const openEdit = (note: NoteItem) => {
+    setEditTarget(note);
+    setEditForm({ title: note.title, subject: note.subject, content: note.content, author: note.author || "" });
+    setEditOpen(true);
+  };
+
+  const handleEdit = () => {
+    if (!editTarget || !editForm.title || !editForm.subject || !editForm.content) {
+      toast.error("Title, subject and content are required.");
+      return;
+    }
+    updateNote.mutate({ id: editTarget.id, data: editForm }, {
+      onSuccess: () => {
+        toast.success("Note updated successfully!");
+        queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
+        setEditOpen(false);
+        setEditTarget(null);
+      },
+      onError: () => toast.error("Failed to update note."),
     });
   };
 
@@ -132,6 +160,9 @@ export default function AdminNotes() {
                           <Button variant="ghost" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(note as NoteItem)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => handleDelete(note.id)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
@@ -180,6 +211,45 @@ export default function AdminNotes() {
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button onClick={handleAdd} disabled={createNote.isPending}>
               {createNote.isPending ? "Adding..." : "Add Note"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="bg-card border-border/50 max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Note</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Title <span className="text-destructive">*</span></Label>
+              <Input placeholder="e.g. Upper Limb - Bones and Joints" className="bg-background/50" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Subject <span className="text-destructive">*</span></Label>
+                <Select value={editForm.subject} onValueChange={(v) => setEditForm({ ...editForm, subject: v })}>
+                  <SelectTrigger className="bg-background/50"><SelectValue placeholder="Select subject" /></SelectTrigger>
+                  <SelectContent>
+                    {SUBJECTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Author</Label>
+                <Input placeholder="e.g. Dr. Sharma" className="bg-background/50" value={editForm.author} onChange={(e) => setEditForm({ ...editForm, author: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Content <span className="text-destructive">*</span></Label>
+              <Textarea placeholder="Enter the note content here..." className="bg-background/50 min-h-[140px] resize-none" value={editForm.content} onChange={(e) => setEditForm({ ...editForm, content: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleEdit} disabled={updateNote.isPending}>
+              {updateNote.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

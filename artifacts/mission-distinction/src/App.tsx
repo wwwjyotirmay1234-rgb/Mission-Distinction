@@ -34,6 +34,7 @@ import AdminPDFs from "@/pages/admin/PDFs";
 import AdminBooks from "@/pages/admin/Books";
 import AdminQuizzes from "@/pages/admin/Quizzes";
 import AdminAnnouncements from "@/pages/admin/Announcements";
+import AdminAnalytics from "@/pages/admin/Analytics";
 
 const queryClient = new QueryClient();
 
@@ -76,7 +77,7 @@ function Router() {
               <Route path="/admin/quizzes" component={AdminQuizzes} />
               <Route path="/admin/news" component={() => <StubPage title="News & Discoveries" />} />
               <Route path="/admin/announcements" component={AdminAnnouncements} />
-              <Route path="/admin/analytics" component={() => <StubPage title="Analytics" />} />
+              <Route path="/admin/analytics" component={AdminAnalytics} />
               <Route path="/admin/reports" component={() => <StubPage title="Reports" />} />
               <Route path="/admin/feedback" component={() => <StubPage title="Feedback" />} />
               <Route path="/admin/settings" component={() => <StubPage title="Settings" />} />

@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useListBooks, useCreateBook, useDeleteBook, getListBooksQueryKey } from "@workspace/api-client-react";
-import { Search, Plus, MoreVertical, Trash2, BookOpen } from "lucide-react";
+import { customFetch } from "@workspace/api-client-react";
+import { Search, Plus, MoreVertical, Trash2, BookOpen, Pencil } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -16,10 +17,16 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "Medicine", "Surgery"];
 
+type BookItem = { id: number; title: string; subject: string; author?: string | null; url: string; coverUrl?: string | null; downloadCount?: number; createdAt: string | Date };
+
 export default function AdminBooks() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<BookItem | null>(null);
+  const [editPending, setEditPending] = useState(false);
   const [form, setForm] = useState({ title: "", subject: "", author: "", url: "", coverUrl: "" });
+  const [editForm, setEditForm] = useState({ title: "", subject: "", author: "", url: "", coverUrl: "" });
   const queryClient = useQueryClient();
 
   const { data: books, isLoading } = useListBooks(
@@ -44,6 +51,40 @@ export default function AdminBooks() {
       },
       onError: () => toast.error("Failed to add book."),
     });
+  };
+
+  const openEdit = (book: BookItem) => {
+    setEditTarget(book);
+    setEditForm({
+      title: book.title,
+      subject: book.subject,
+      author: book.author || "",
+      url: book.url,
+      coverUrl: book.coverUrl || "",
+    });
+    setEditOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editTarget || !editForm.title || !editForm.subject || !editForm.url) {
+      toast.error("Title, subject and URL are required.");
+      return;
+    }
+    setEditPending(true);
+    try {
+      await customFetch(`/api/books/${editTarget.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(editForm),
+      });
+      toast.success("Book updated successfully!");
+      queryClient.invalidateQueries({ queryKey: getListBooksQueryKey() });
+      setEditOpen(false);
+      setEditTarget(null);
+    } catch {
+      toast.error("Failed to update book.");
+    } finally {
+      setEditPending(false);
+    }
   };
 
   const handleDelete = (id: number) => {
@@ -131,6 +172,9 @@ export default function AdminBooks() {
                           <Button variant="ghost" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(book as BookItem)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => handleDelete(book.id)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
@@ -183,6 +227,49 @@ export default function AdminBooks() {
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button onClick={handleAdd} disabled={createBook.isPending}>
               {createBook.isPending ? "Adding..." : "Add Book"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="bg-card border-border/50 max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Book</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Book Title <span className="text-destructive">*</span></Label>
+              <Input className="bg-background/50" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Subject <span className="text-destructive">*</span></Label>
+                <Select value={editForm.subject} onValueChange={(v) => setEditForm({ ...editForm, subject: v })}>
+                  <SelectTrigger className="bg-background/50"><SelectValue placeholder="Select subject" /></SelectTrigger>
+                  <SelectContent>
+                    {SUBJECTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Author</Label>
+                <Input className="bg-background/50" value={editForm.author} onChange={(e) => setEditForm({ ...editForm, author: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Book URL <span className="text-destructive">*</span></Label>
+              <Input className="bg-background/50" value={editForm.url} onChange={(e) => setEditForm({ ...editForm, url: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Cover Image URL</Label>
+              <Input className="bg-background/50" value={editForm.coverUrl} onChange={(e) => setEditForm({ ...editForm, coverUrl: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleEdit} disabled={editPending}>
+              {editPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
