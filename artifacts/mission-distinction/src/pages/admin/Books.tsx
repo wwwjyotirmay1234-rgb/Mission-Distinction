@@ -1,35 +1,62 @@
 import React, { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useListBooks, useDeleteBook, getListBooksQueryKey } from "@workspace/api-client-react";
-import { Search, Plus, MoreVertical, Trash2, Edit, Book } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useListBooks, useCreateBook, useDeleteBook, getListBooksQueryKey } from "@workspace/api-client-react";
+import { Search, Plus, MoreVertical, Trash2, BookOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
+const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "Medicine", "Surgery"];
+
 export default function AdminBooks() {
   const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ title: "", subject: "", author: "", url: "", coverUrl: "" });
   const queryClient = useQueryClient();
 
-  const { data: booksData, isLoading } = useListBooks(
+  const { data: books, isLoading } = useListBooks(
     { search: search || undefined },
     { query: { queryKey: getListBooksQueryKey({ search: search || undefined }) } }
   );
 
+  const createBook = useCreateBook();
   const deleteBook = useDeleteBook();
+
+  const handleAdd = () => {
+    if (!form.title || !form.subject || !form.url) {
+      toast.error("Title, subject and URL are required.");
+      return;
+    }
+    createBook.mutate({ data: form }, {
+      onSuccess: () => {
+        toast.success("Book added successfully!");
+        queryClient.invalidateQueries({ queryKey: getListBooksQueryKey() });
+        setOpen(false);
+        setForm({ title: "", subject: "", author: "", url: "", coverUrl: "" });
+      },
+      onError: () => toast.error("Failed to add book."),
+    });
+  };
 
   const handleDelete = (id: number) => {
     deleteBook.mutate({ id }, {
       onSuccess: () => {
-        toast.success("Book deleted successfully");
+        toast.success("Book deleted.");
         queryClient.invalidateQueries({ queryKey: getListBooksQueryKey() });
-      }
+      },
+      onError: () => toast.error("Failed to delete book."),
     });
   };
+
+  const bookList = Array.isArray(books) ? books : [];
 
   return (
     <div className="space-y-6">
@@ -41,14 +68,9 @@ export default function AdminBooks() {
         <div className="flex gap-2">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input 
-              placeholder="Search books..." 
-              className="pl-9 bg-card/50 border-border/50"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <Input placeholder="Search books..." className="pl-9 bg-card/50 border-border/50" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Button><Plus className="mr-2 h-4 w-4" /> Add Book</Button>
+          <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" /> Add Book</Button>
         </div>
       </div>
 
@@ -59,6 +81,7 @@ export default function AdminBooks() {
               <TableRow className="border-border/40">
                 <TableHead>Book</TableHead>
                 <TableHead>Subject</TableHead>
+                <TableHead>Author</TableHead>
                 <TableHead>Downloads</TableHead>
                 <TableHead>Added On</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -68,53 +91,46 @@ export default function AdminBooks() {
               {isLoading ? (
                 Array(5).fill(0).map((_, i) => (
                   <TableRow key={i}>
-                     <TableCell><Skeleton className="h-4 w-48 mb-2" /><Skeleton className="h-3 w-24" /></TableCell>
-                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                     <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md ml-auto" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-48 mb-2" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md ml-auto" /></TableCell>
                   </TableRow>
                 ))
-              ) : !booksData?.books || booksData.books.length === 0 ? (
+              ) : bookList.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                    No books found.
+                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center gap-2">
+                      <BookOpen className="h-8 w-8 opacity-30" />
+                      <span>No books yet. Click "Add Book" to get started.</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                booksData.books.map((book) => (
+                bookList.map((book) => (
                   <TableRow key={book.id} className="border-border/40 hover:bg-muted/20">
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-10 rounded bg-purple-500/20 text-purple-500 flex items-center justify-center shrink-0 overflow-hidden">
-                          {book.coverUrl ? <img src={book.coverUrl} className="w-full h-full object-cover" /> : <Book size={16} />}
+                          {book.coverUrl ? <img src={book.coverUrl} className="w-full h-full object-cover" alt={book.title} /> : <BookOpen size={16} />}
                         </div>
-                        <div>
-                          <div className="font-medium text-foreground">{book.title}</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">{book.author || "Unknown"}</div>
-                        </div>
+                        <div className="font-medium text-foreground">{book.title}</div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="bg-purple-500/5 border-purple-500/20 text-purple-500">
-                        {book.subject}
-                      </Badge>
+                      <Badge variant="outline" className="bg-purple-500/5 border-purple-500/20 text-purple-500">{book.subject}</Badge>
                     </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{book.author || "—"}</TableCell>
                     <TableCell className="text-sm">{book.downloadCount || 0}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {new Date(book.createdAt).toLocaleDateString()}
-                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{new Date(book.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
+                          <Button variant="ghost" className="h-8 w-8 p-0"><MoreVertical className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" /> Edit
-                          </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => handleDelete(book.id)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
@@ -128,6 +144,49 @@ export default function AdminBooks() {
           </Table>
         </div>
       </Card>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="bg-card border-border/50 max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add New Book</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Book Title <span className="text-destructive">*</span></Label>
+              <Input placeholder="e.g. Gray's Anatomy" className="bg-background/50" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Subject <span className="text-destructive">*</span></Label>
+                <Select value={form.subject} onValueChange={(v) => setForm({ ...form, subject: v })}>
+                  <SelectTrigger className="bg-background/50"><SelectValue placeholder="Select subject" /></SelectTrigger>
+                  <SelectContent>
+                    {SUBJECTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Author</Label>
+                <Input placeholder="e.g. Henry Gray" className="bg-background/50" value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Book URL (PDF/Drive link) <span className="text-destructive">*</span></Label>
+              <Input placeholder="https://drive.google.com/..." className="bg-background/50" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Cover Image URL</Label>
+              <Input placeholder="https://..." className="bg-background/50" value={form.coverUrl} onChange={(e) => setForm({ ...form, coverUrl: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button onClick={handleAdd} disabled={createBook.isPending}>
+              {createBook.isPending ? "Adding..." : "Add Book"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
