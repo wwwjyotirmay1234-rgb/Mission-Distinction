@@ -111,6 +111,39 @@ router.post("/admin/login", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/google", async (req: Request, res: Response) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      res.status(400).json({ error: "Missing idToken" });
+      return;
+    }
+    const { getFirebaseAdmin } = await import("../lib/firebase-admin");
+    const admin = getFirebaseAdmin();
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const { email, name, uid } = decoded;
+    if (!email) {
+      res.status(400).json({ error: "Google account has no email" });
+      return;
+    }
+    let [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+    if (!user) {
+      [user] = await db.insert(usersTable).values({
+        fullName: name || email.split("@")[0],
+        email,
+        passwordHash: hashPassword(uid),
+        role: "student",
+        studyStreak: 0,
+      }).returning();
+    }
+    const token = generateToken(user.id, user.role);
+    res.json({ token, user: sanitizeUser(user) });
+  } catch (err: any) {
+    console.error("Google auth error:", err);
+    res.status(401).json({ error: "Google sign-in failed: " + err.message });
+  }
+});
+
 router.post("/logout", (_req: Request, res: Response) => {
   res.json({ message: "Logged out" });
 });
