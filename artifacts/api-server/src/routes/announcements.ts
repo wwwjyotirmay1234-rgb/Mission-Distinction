@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { announcementsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
+import { parseId } from "../lib/auth";
 
 const router = Router();
 
@@ -30,7 +31,8 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
 
 router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     await db.delete(announcementsTable).where(eq(announcementsTable.id, id));
     res.status(204).send();
   } catch (err) {

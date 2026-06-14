@@ -115,7 +115,9 @@ export default function StudentDashboard() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Continue Learning</h2>
-              <Button variant="ghost" size="sm" className="text-primary h-8">View All <ArrowRight className="ml-1 w-4 h-4" /></Button>
+              <Link href="/student/notes">
+                <Button variant="ghost" size="sm" className="text-primary h-8">View All <ArrowRight className="ml-1 w-4 h-4" /></Button>
+              </Link>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar">
               {continueLearning.map((item, i) => (

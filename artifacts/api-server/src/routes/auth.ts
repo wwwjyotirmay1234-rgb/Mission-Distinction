@@ -140,7 +140,7 @@ router.post("/google", async (req: Request, res: Response) => {
     res.json({ token, user: sanitizeUser(user) });
   } catch (err: any) {
     console.error("Google auth error:", err);
-    res.status(401).json({ error: "Google sign-in failed: " + err.message });
+    res.status(401).json({ error: "Google sign-in failed. Please try again." });
   }
 });
 

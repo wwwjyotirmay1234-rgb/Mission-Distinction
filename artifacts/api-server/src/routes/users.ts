@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { adminMiddleware, authMiddleware } from "../middlewares/auth";
+import { parseId } from "../lib/auth";
 
 const router = Router();
 
@@ -12,8 +13,7 @@ router.get("/", adminMiddleware, async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 20;
     const role = req.query.role as string;
 
-    let query = db.select().from(usersTable);
-    const users = await query;
+    const users = await db.select().from(usersTable);
     const filtered = role ? users.filter(u => u.role === role) : users;
     const total = filtered.length;
     const paginated = filtered.slice((page - 1) * limit, page * limit);
@@ -31,7 +31,15 @@ router.get("/", adminMiddleware, async (req: Request, res: Response) => {
 
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
+
+    const requestingUser = (req as any).user;
+    if (requestingUser.role !== "admin" && requestingUser.id !== id) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
     if (!user) { res.status(404).json({ error: "Not found" }); return; }
     res.json(sanitizeUser(user));
@@ -42,12 +50,31 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 
 router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
+
+    const requestingUser = (req as any).user;
+    if (requestingUser.role !== "admin" && requestingUser.id !== id) {
+      res.status(403).json({ error: "You can only update your own profile" });
+      return;
+    }
+
     const { fullName, year, college, avatarUrl } = req.body;
+
+    if (fullName !== undefined && (typeof fullName !== "string" || fullName.trim().length < 2)) {
+      res.status(400).json({ error: "Name must be at least 2 characters" }); return;
+    }
+
     const [user] = await db.update(usersTable)
-      .set({ fullName, year, college, avatarUrl })
+      .set({
+        fullName: fullName?.trim(),
+        year: year?.trim(),
+        college: college?.trim(),
+        avatarUrl: avatarUrl?.trim() || null,
+      })
       .where(eq(usersTable.id, id))
       .returning();
+
     if (!user) { res.status(404).json({ error: "Not found" }); return; }
     res.json(sanitizeUser(user));
   } catch (err) {
@@ -57,7 +84,8 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
 
 router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
     await db.delete(usersTable).where(eq(usersTable.id, id));
     res.status(204).send();
   } catch (err) {

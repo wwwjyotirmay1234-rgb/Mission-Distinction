@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { notesTable } from "@workspace/db";
 import { eq, ilike, and } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
+import { parseId } from "../lib/auth";
 
 const router = Router();
 
@@ -31,7 +32,8 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
 
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const [note] = await db.select().from(notesTable).where(eq(notesTable.id, id));
     if (!note) { res.status(404).json({ error: "Not found" }); return; }
     res.json(note);
@@ -42,7 +44,8 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 
 router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const { title, subject, content } = req.body;
     const [note] = await db.update(notesTable).set({ title, subject, content, updatedAt: new Date() }).where(eq(notesTable.id, id)).returning();
     if (!note) { res.status(404).json({ error: "Not found" }); return; }
@@ -54,7 +57,8 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
 
 router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     await db.delete(notesTable).where(eq(notesTable.id, id));
     res.status(204).send();
   } catch (err) {

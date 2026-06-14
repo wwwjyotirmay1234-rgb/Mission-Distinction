@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { pdfsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
+import { parseId } from "../lib/auth";
 
 const router = Router();
 
@@ -32,7 +33,8 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
 
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const [pdf] = await db.select().from(pdfsTable).where(eq(pdfsTable.id, id));
     if (!pdf) { res.status(404).json({ error: "Not found" }); return; }
     res.json(pdf);
@@ -43,7 +45,8 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 
 router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const { title, subject, professor, year, url, pages, size } = req.body;
     const [pdf] = await db.update(pdfsTable).set({ title, subject, professor, year, url, pages, size }).where(eq(pdfsTable.id, id)).returning();
     if (!pdf) { res.status(404).json({ error: "Not found" }); return; }
@@ -55,7 +58,8 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
 
 router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     await db.delete(pdfsTable).where(eq(pdfsTable.id, id));
     res.status(204).send();
   } catch (err) {

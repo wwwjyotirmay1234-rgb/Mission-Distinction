@@ -1,0 +1,4 @@
+- [Auth token system](auth-tokens.md) — tokens are signed JWT (jsonwebtoken), not base64; JWT_SECRET env var with fallback
+- [Mobile sidebar pattern](mobile-sidebar.md) — SidebarContext drives Sheet open state; sidebars use hidden md:flex + Sheet for mobile
+- [Route ID validation](route-id-validation.md) — all routes use parseId() from auth.ts lib, not parseInt(); returns 400 on invalid IDs
+- [Upload auth](upload-auth.md) — upload routes require adminMiddleware, not authMiddleware; file type validated server-side
