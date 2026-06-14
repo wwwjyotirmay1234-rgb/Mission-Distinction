@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 // Pages
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/auth/LandingPage";
+import ComingSoon from "@/pages/auth/ComingSoon";
 
 // Layouts
 import { StudentLayout } from "@/components/layout/StudentLayout";
@@ -43,6 +44,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={LandingPage} />
+      <Route path="/coming-soon" component={ComingSoon} />
       
       {/* Student Routes */}
       <Route path="/student/*">

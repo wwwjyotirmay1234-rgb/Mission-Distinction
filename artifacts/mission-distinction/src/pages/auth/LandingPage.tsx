@@ -11,12 +11,37 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Eye, EyeOff, Activity, ShieldCheck, TrendingUp, Award, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+
+const ODISHA_GOVT_COLLEGES = [
+  "AIIMS Bhubaneswar",
+  "SCB Medical College and Hospital, Cuttack",
+  "MKCG Medical College and Hospital, Berhampur",
+  "VSS Institute of Medical Sciences & Research (VIMSAR), Burla",
+  "Pandit Raghunath Murmu Medical College & Hospital, Baripada",
+  "Saheed Laxman Nayak Medical College & Hospital, Koraput",
+  "Government Medical College, Bolangir",
+  "Government Medical College, Balasore",
+  "Government Medical College, Puri",
+  "Government Medical College, Phulbani",
+  "Government Medical College, Sundargarh",
+];
+
+const ODISHA_PRIVATE_COLLEGES = [
+  "Hi-Tech Medical College & Hospital, Bhubaneswar",
+  "IMS & SUM Hospital (SOA University), Bhubaneswar",
+  "Kalinga Institute of Medical Sciences (KIMS), Bhubaneswar",
+  "Shri Jagannath Medical College & Research Institute, Puri",
+];
+
+function getRouteByYear(year: string | undefined) {
+  return year === "1st Year MBBS" ? "/student/dashboard" : "/coming-soon";
+}
 
 const studentLoginSchema = z.object({
   identifier: z.string().min(1, "Email or Mobile is required"),
@@ -82,7 +107,7 @@ export default function LandingPage() {
       const data = await res.json();
       login(data);
       toast.success("Signed in with Google!");
-      setLocation("/student/dashboard");
+      setLocation(getRouteByYear(data.user?.year));
     } catch (err: any) {
       if (err.code !== "auth/popup-closed-by-user") {
         toast.error("Google sign-in failed. Please try again.");
@@ -121,9 +146,9 @@ export default function LandingPage() {
       onSuccess: (res) => {
         login(res);
         toast.success("Login successful!");
-        setLocation("/student/dashboard");
+        setLocation(getRouteByYear(res.user?.year));
       },
-      onError: (err) => {
+      onError: () => {
         toast.error("Login failed. Please check your credentials.");
       }
     });
@@ -134,9 +159,9 @@ export default function LandingPage() {
       onSuccess: (res) => {
         login(res);
         toast.success("Account created successfully!");
-        setLocation("/student/dashboard");
+        setLocation(getRouteByYear(values.year));
       },
-      onError: (err) => {
+      onError: () => {
         toast.error("Registration failed. Please try again.");
       }
     });
@@ -388,19 +413,27 @@ export default function LandingPage() {
                             control={studentRegisterForm.control}
                             name="college"
                             render={({ field }) => (
-                              <FormItem>
+                              <FormItem className="col-span-2">
                                 <FormLabel>College</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                   <FormControl>
                                     <SelectTrigger className="bg-background/50">
-                                      <SelectValue placeholder="Select College" />
+                                      <SelectValue placeholder="Select your medical college" />
                                     </SelectTrigger>
                                   </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="AIIMS Delhi">AIIMS Delhi</SelectItem>
-                                    <SelectItem value="MAMC Delhi">MAMC Delhi</SelectItem>
-                                    <SelectItem value="AFMC Pune">AFMC Pune</SelectItem>
-                                    <SelectItem value="JIPMER Pune">JIPMER Pune</SelectItem>
+                                  <SelectContent className="max-h-64">
+                                    <SelectGroup>
+                                      <SelectLabel className="text-xs text-primary font-semibold px-2 py-1">🏛️ Government Colleges</SelectLabel>
+                                      {ODISHA_GOVT_COLLEGES.map((c) => (
+                                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                                      ))}
+                                    </SelectGroup>
+                                    <SelectGroup>
+                                      <SelectLabel className="text-xs text-secondary font-semibold px-2 py-1 mt-1">🏥 Private Colleges</SelectLabel>
+                                      {ODISHA_PRIVATE_COLLEGES.map((c) => (
+                                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                                      ))}
+                                    </SelectGroup>
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
