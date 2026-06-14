@@ -13,6 +13,7 @@ export const usersTable = pgTable("users", {
   college: text("college"),
   avatarUrl: text("avatar_url"),
   studyStreak: integer("study_streak").default(0),
+  emailVerified: boolean("email_verified").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

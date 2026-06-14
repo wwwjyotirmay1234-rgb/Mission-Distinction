@@ -304,7 +304,7 @@ export default function LandingPage() {
                             <FormItem>
                               <div className="flex items-center justify-between">
                                 <FormLabel>Password</FormLabel>
-                                <a href="#" className="text-xs text-primary hover:underline">Forgot Password?</a>
+                                <a href="/forgot-password" className="text-xs text-primary hover:underline">Forgot Password?</a>
                               </div>
                               <FormControl>
                                 <div className="relative">
@@ -516,7 +516,7 @@ export default function LandingPage() {
                             <FormItem>
                               <div className="flex items-center justify-between">
                                 <FormLabel>Password</FormLabel>
-                                <a href="#" className="text-xs text-secondary hover:underline">Forgot Password?</a>
+                                <a href="/forgot-password" className="text-xs text-secondary hover:underline">Forgot Password?</a>
                               </div>
                               <FormControl>
                                 <div className="relative">

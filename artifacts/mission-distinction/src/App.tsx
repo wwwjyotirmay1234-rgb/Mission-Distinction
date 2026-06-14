@@ -9,6 +9,9 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/auth/LandingPage";
 import ComingSoon from "@/pages/auth/ComingSoon";
+import ForgotPassword from "@/pages/auth/ForgotPassword";
+import ResetPassword from "@/pages/auth/ResetPassword";
+import VerifyEmail from "@/pages/auth/VerifyEmail";
 
 // Layouts
 import { StudentLayout } from "@/components/layout/StudentLayout";
@@ -52,6 +55,9 @@ function Router() {
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/coming-soon" component={ComingSoon} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/verify-email" component={VerifyEmail} />
       
       {/* Student Routes */}
       <Route path="/student/*">
