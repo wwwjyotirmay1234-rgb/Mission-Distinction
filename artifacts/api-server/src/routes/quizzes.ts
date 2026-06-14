@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { quizzesTable, questionsTable, quizAttemptsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 
 const router = Router();
@@ -45,11 +45,76 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { title, subject, description, difficulty, durationMinutes, isFeatured } = req.body;
+    const [quiz] = await db.update(quizzesTable)
+      .set({ title, subject, description, difficulty, durationMinutes, isFeatured })
+      .where(eq(quizzesTable.id, id))
+      .returning();
+    if (!quiz) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(quiz);
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
     await db.delete(questionsTable).where(eq(questionsTable.quizId, id));
     await db.delete(quizzesTable).where(eq(quizzesTable.id, id));
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/:id/questions", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const quizId = parseInt(req.params.id);
+    const { text, options, correctOption, explanation } = req.body;
+    if (!text || !options || !Array.isArray(options) || options.length < 2 || correctOption === undefined) {
+      res.status(400).json({ error: "text, options (array), and correctOption are required" }); return;
+    }
+    const [question] = await db.insert(questionsTable)
+      .values({ quizId, text, options, correctOption, explanation: explanation || null })
+      .returning();
+    await db.update(quizzesTable)
+      .set({ questionCount: sql`${quizzesTable.questionCount} + 1` })
+      .where(eq(quizzesTable.id, quizId));
+    res.status(201).json(question);
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.patch("/:id/questions/:qid", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const qid = parseInt(req.params.qid);
+    const { text, options, correctOption, explanation } = req.body;
+    const [question] = await db.update(questionsTable)
+      .set({ text, options, correctOption, explanation: explanation || null })
+      .where(eq(questionsTable.id, qid))
+      .returning();
+    if (!question) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(question);
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/:id/questions/:qid", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const quizId = parseInt(req.params.id);
+    const qid = parseInt(req.params.qid);
+    const deleted = await db.delete(questionsTable).where(eq(questionsTable.id, qid)).returning();
+    if (deleted.length > 0) {
+      await db.update(quizzesTable)
+        .set({ questionCount: sql`GREATEST(${quizzesTable.questionCount} - 1, 0)` })
+        .where(eq(quizzesTable.id, quizId));
+    }
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
@@ -78,13 +143,8 @@ router.post("/:id/attempt", authMiddleware, async (req: Request, res: Response) 
     const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
 
     await db.insert(quizAttemptsTable).values({
-      userId: user.id,
-      quizId,
-      quizTitle: quiz.title,
-      subject: quiz.subject,
-      score,
-      total,
-      percentage,
+      userId: user.id, quizId, quizTitle: quiz.title, subject: quiz.subject,
+      score, total, percentage,
     });
 
     res.json({ score, total, percentage, passed: percentage >= 60, correctAnswers });

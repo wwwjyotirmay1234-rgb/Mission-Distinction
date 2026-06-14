@@ -35,6 +35,7 @@ import AdminBooks from "@/pages/admin/Books";
 import AdminQuizzes from "@/pages/admin/Quizzes";
 import AdminAnnouncements from "@/pages/admin/Announcements";
 import AdminAnalytics from "@/pages/admin/Analytics";
+import AdminQuizEditor from "@/pages/admin/QuizEditor";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,7 @@ function Router() {
               <Route path="/admin/content/notes" component={AdminNotes} />
               <Route path="/admin/content/pdfs" component={AdminPDFs} />
               <Route path="/admin/content/books" component={AdminBooks} />
+              <Route path="/admin/quizzes/:id/edit" component={AdminQuizEditor} />
               <Route path="/admin/quizzes" component={AdminQuizzes} />
               <Route path="/admin/news" component={() => <StubPage title="News & Discoveries" />} />
               <Route path="/admin/announcements" component={AdminAnnouncements} />
