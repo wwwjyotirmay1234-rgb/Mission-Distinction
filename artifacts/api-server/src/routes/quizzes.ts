@@ -72,6 +72,31 @@ router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+router.post("/:id/questions/bulk", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const quizId = parseInt(req.params.id);
+    const { questions } = req.body;
+    if (!Array.isArray(questions) || questions.length === 0) {
+      res.status(400).json({ error: "questions must be a non-empty array" }); return;
+    }
+    const inserted: any[] = [];
+    for (const q of questions) {
+      const { text, options, correctOption, explanation } = q;
+      if (!text || !Array.isArray(options) || options.length < 2 || correctOption === undefined) continue;
+      const [question] = await db.insert(questionsTable)
+        .values({ quizId, text, options, correctOption, explanation: explanation || null })
+        .returning();
+      inserted.push(question);
+    }
+    await db.update(quizzesTable)
+      .set({ questionCount: sql`${quizzesTable.questionCount} + ${inserted.length}` })
+      .where(eq(quizzesTable.id, quizId));
+    res.status(201).json({ imported: inserted.length, questions: inserted });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/:id/questions", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const quizId = parseInt(req.params.id);

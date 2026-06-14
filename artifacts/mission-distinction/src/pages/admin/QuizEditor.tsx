@@ -21,7 +21,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft, Plus, Pencil, Trash2, CheckCircle2, Brain,
-  Clock, BookOpen, Sparkles, AlertCircle,
+  Clock, BookOpen, Sparkles, AlertCircle, Upload, HelpCircle,
 } from "lucide-react";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "Medicine", "Surgery", "Mixed"];
@@ -70,11 +70,76 @@ export default function QuizEditor() {
   });
   const [savingMeta, setSavingMeta] = useState(false);
 
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [bulkPreview, setBulkPreview] = useState<any[] | null>(null);
+  const [bulkError, setBulkError] = useState("");
+
   const { data: quiz, isLoading, refetch } = useQuery<QuizDetail>({
     queryKey: ["quiz-detail", quizId],
     queryFn: () => customFetch(`/api/quizzes/${quizId}`),
     enabled: quizId !== null,
   });
+
+  const parseBulkText = (raw: string): { parsed: any[]; error: string } => {
+    const trimmed = raw.trim();
+    if (!trimmed) return { parsed: [], error: "Paste is empty." };
+    if (trimmed.startsWith("[")) {
+      try {
+        const arr = JSON.parse(trimmed);
+        if (!Array.isArray(arr)) return { parsed: [], error: "JSON must be an array." };
+        return { parsed: arr, error: "" };
+      } catch {
+        return { parsed: [], error: "Invalid JSON — check for missing quotes or commas." };
+      }
+    }
+    const lines = trimmed.split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#"));
+    const parsed: any[] = [];
+    const errors: string[] = [];
+    lines.forEach((line, i) => {
+      const parts = line.split("|").map(p => p.trim());
+      if (parts.length < 6) { errors.push(`Line ${i + 1}: needs at least 6 columns (question|A|B|C|D|correct|explanation?)`); return; }
+      const [text, a, b, c, d, correctRaw, explanation] = parts;
+      const correctMap: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, "0": 0, "1": 1, "2": 2, "3": 3 };
+      const correctOption = correctMap[correctRaw.toUpperCase()];
+      if (correctOption === undefined) { errors.push(`Line ${i + 1}: correct answer must be A/B/C/D or 0/1/2/3`); return; }
+      parsed.push({ text, options: [a, b, c, d], correctOption, explanation: explanation || null });
+    });
+    if (errors.length) return { parsed, error: errors.join("\n") };
+    return { parsed, error: "" };
+  };
+
+  const handleBulkPreview = () => {
+    setBulkError("");
+    const { parsed, error } = parseBulkText(bulkText);
+    if (error && parsed.length === 0) { setBulkError(error); setBulkPreview(null); return; }
+    if (error) setBulkError(error);
+    setBulkPreview(parsed);
+  };
+
+  const handleBulkImport = async () => {
+    if (!quizId || !bulkPreview || bulkPreview.length === 0) return;
+    setBulkImporting(true);
+    try {
+      const res = await customFetch(`/api/quizzes/${quizId}/questions/bulk`, {
+        method: "POST",
+        body: JSON.stringify({ questions: bulkPreview }),
+      });
+      const data = await res.json?.() ?? res;
+      toast.success(`Imported ${data.imported ?? bulkPreview.length} question${(data.imported ?? bulkPreview.length) !== 1 ? "s" : ""}!`);
+      queryClient.invalidateQueries({ queryKey: getListQuizzesQueryKey() });
+      refetch();
+      setBulkOpen(false);
+      setBulkText("");
+      setBulkPreview(null);
+      setBulkError("");
+    } catch {
+      toast.error("Import failed. Please check the format and try again.");
+    } finally {
+      setBulkImporting(false);
+    }
+  };
 
   const openAddQuestion = () => {
     setEditQ(null);
@@ -265,9 +330,14 @@ export default function QuizEditor() {
         <h2 className="text-lg font-semibold">
           Questions <span className="text-muted-foreground font-normal text-sm ml-1">({quiz.questions.length})</span>
         </h2>
-        <Button onClick={openAddQuestion}>
-          <Plus className="mr-2 h-4 w-4" /> Add Question
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => { setBulkText(""); setBulkPreview(null); setBulkError(""); setBulkOpen(true); }}>
+            <Upload className="mr-2 h-3.5 w-3.5" /> Bulk Import
+          </Button>
+          <Button onClick={openAddQuestion}>
+            <Plus className="mr-2 h-4 w-4" /> Add Question
+          </Button>
+        </div>
       </div>
 
       {quiz.questions.length === 0 ? (
@@ -467,6 +537,89 @@ export default function QuizEditor() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={bulkOpen} onOpenChange={(o) => { if (!o) { setBulkOpen(false); setBulkPreview(null); setBulkError(""); } }}>
+        <DialogContent className="bg-card border-border/50 max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-4 w-4" /> Bulk Import Questions
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 space-y-2">
+              <p className="text-sm font-medium text-blue-300 flex items-center gap-2">
+                <HelpCircle className="h-4 w-4 shrink-0" /> Accepted formats
+              </p>
+              <div className="space-y-2 text-xs text-blue-200/70">
+                <p className="font-semibold text-blue-300/80">① Pipe-separated (one question per line):</p>
+                <code className="block bg-background/40 rounded p-2 font-mono leading-relaxed whitespace-pre">
+{`Question text | Option A | Option B | Option C | Option D | A | Explanation (optional)
+Which nerve supplies the skin of the anterior thigh? | Femoral | Obturator | Sciatic | Lateral cutaneous | A | Femoral nerve (L2-L4)`}
+                </code>
+                <p className="font-semibold text-blue-300/80 pt-1">② JSON array:</p>
+                <code className="block bg-background/40 rounded p-2 font-mono leading-relaxed whitespace-pre">
+{`[{"text":"Question?","options":["A","B","C","D"],"correctOption":0,"explanation":"..."}]`}
+                </code>
+                <p className="text-blue-200/50">For correct answer: use A/B/C/D or 0/1/2/3. Lines starting with # are ignored.</p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Paste your questions</Label>
+              <Textarea
+                className="bg-background/50 font-mono text-xs resize-none min-h-[160px]"
+                placeholder={"Which nerve supplies the skin of the anterior thigh? | Femoral | Obturator | Sciatic | Lateral cutaneous | A | Femoral nerve (L2–L4)\nWhat is the action of deltoid muscle? | Flexion | Abduction | Adduction | Extension | B"}
+                value={bulkText}
+                onChange={(e) => { setBulkText(e.target.value); setBulkPreview(null); setBulkError(""); }}
+              />
+            </div>
+
+            {bulkError && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive whitespace-pre-wrap font-mono">
+                {bulkError}
+              </div>
+            )}
+
+            {bulkPreview && bulkPreview.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-green-400">
+                  ✓ {bulkPreview.length} question{bulkPreview.length !== 1 ? "s" : ""} ready to import
+                </p>
+                <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
+                  {bulkPreview.map((q, i) => (
+                    <div key={i} className="rounded-lg border border-border/30 bg-muted/10 p-3 text-sm">
+                      <p className="font-medium mb-1">{i + 1}. {q.text}</p>
+                      <div className="grid grid-cols-2 gap-1">
+                        {(q.options as string[]).map((opt: string, j: number) => (
+                          <span key={j} className={`text-xs px-2 py-0.5 rounded ${j === q.correctOption ? "bg-green-500/15 text-green-400" : "text-muted-foreground"}`}>
+                            {OPTION_LABELS[j]}. {opt} {j === q.correctOption ? "✓" : ""}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setBulkOpen(false); setBulkPreview(null); setBulkError(""); }}>
+              Cancel
+            </Button>
+            {!bulkPreview ? (
+              <Button onClick={handleBulkPreview} disabled={!bulkText.trim()}>
+                Preview Questions
+              </Button>
+            ) : (
+              <Button onClick={handleBulkImport} disabled={bulkImporting || bulkPreview.length === 0}>
+                {bulkImporting ? "Importing..." : `Import ${bulkPreview.length} Question${bulkPreview.length !== 1 ? "s" : ""}`}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

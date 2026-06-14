@@ -121,7 +121,11 @@ router.post("/admin/register", registerLimiter, async (req: Request, res: Respon
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
-    const validInviteCode = process.env.ADMIN_INVITE_CODE || "2004";
+    const validInviteCode = process.env.ADMIN_INVITE_CODE;
+    if (!validInviteCode) {
+      res.status(500).json({ error: "Admin registration is not configured. Contact the platform owner." });
+      return;
+    }
     if (inviteCode !== validInviteCode) {
       res.status(400).json({ error: "Invalid invite code" });
       return;

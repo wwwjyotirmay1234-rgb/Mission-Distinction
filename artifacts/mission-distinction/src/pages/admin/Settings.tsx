@@ -196,7 +196,7 @@ export default function AdminSettings() {
           {[
             { label: "Platform Name", value: "Mission Distinction" },
             { label: "Target Audience", value: "1st Year MBBS — Odisha" },
-            { label: "Admin Invite Code", value: "2004" },
+            { label: "Admin Invite Code", value: "Protected — set via ADMIN_INVITE_CODE env var" },
             { label: "Authentication", value: "JWT + Firebase Google Auth" },
             { label: "Database", value: "PostgreSQL (Drizzle ORM)" },
           ].map(({ label, value }) => (

@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useListNotes, getListNotesQueryKey } from "@workspace/api-client-react";
+import { useListNotes, getListNotesQueryKey, customFetch } from "@workspace/api-client-react";
 import { Search, Filter, FileText, Download, BookMarked, X, ChevronLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -76,10 +76,18 @@ function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void })
 
 const CATEGORIES = ["All Subjects", "Anatomy", "Physiology", "Biochemistry", "Pharmacology", "Pathology"];
 
+function trackNoteRead(noteId: number) {
+  customFetch(`/api/notes/${noteId}/read`, { method: "POST" }).catch(() => {});
+}
+
 export default function StudentNotes() {
   const [search, setSearch] = useState("");
   const [activeSubject, setActiveSubject] = useState("All Subjects");
   const [viewingNote, setViewingNote] = useState<Note | null>(null);
+
+  useEffect(() => {
+    if (viewingNote) trackNoteRead(viewingNote.id);
+  }, [viewingNote?.id]);
 
   const { data: notesData, isLoading } = useListNotes(
     { search: search || undefined, subject: activeSubject === "All Subjects" ? undefined : activeSubject },
