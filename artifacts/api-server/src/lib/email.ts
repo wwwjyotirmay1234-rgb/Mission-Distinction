@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 
 export function generateEmailToken(): string {
   return crypto.randomBytes(32).toString("hex");
@@ -17,25 +17,16 @@ export function getAppUrl(): string {
 }
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  const smtpEmail = process.env.SMTP_EMAIL;
-  const smtpPassword = process.env.SMTP_PASSWORD;
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.SMTP_EMAIL || "noreply@missiondistinction.in";
 
-  if (!smtpEmail || !smtpPassword) {
-    console.log(`[Email] SMTP not configured. Would send to: ${to} | Subject: ${subject}`);
+  if (!apiKey) {
+    console.log(`[Email] SendGrid not configured. Would send to: ${to} | Subject: ${subject}`);
     return false;
   }
 
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: smtpEmail, pass: smtpPassword },
-  });
-
-  await transporter.sendMail({
-    from: `"Mission Distinction" <${smtpEmail}>`,
-    to,
-    subject,
-    html,
-  });
+  sgMail.setApiKey(apiKey);
+  await sgMail.send({ to, from: { name: "Mission Distinction", email: fromEmail }, subject, html });
   return true;
 }
 
