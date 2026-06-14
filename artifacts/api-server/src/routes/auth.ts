@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import { usersTable, emailTokensTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { hashPassword, verifyPassword, generateToken } from "../lib/auth";
-import { authMiddleware } from "../middlewares/auth";
+import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import {
   generateEmailToken,
   getAppUrl,
@@ -342,6 +342,66 @@ router.post("/logout", (_req: Request, res: Response) => {
 // ─── Me ───────────────────────────────────────────────────────────────────────
 router.get("/me", authMiddleware, (req: Request, res: Response) => {
   res.json(sanitizeUser((req as any).user));
+});
+
+// ─── Admin: Test Email ────────────────────────────────────────────────────────
+router.post("/admin/test-email", adminMiddleware, async (req: Request, res: Response) => {
+  const smtpEmail = process.env.SMTP_EMAIL;
+  const smtpPassword = process.env.SMTP_PASSWORD;
+
+  const envCheck = {
+    SMTP_EMAIL: !!smtpEmail,
+    SMTP_PASSWORD: !!smtpPassword,
+  };
+
+  if (!smtpEmail || !smtpPassword) {
+    res.status(503).json({
+      ok: false,
+      message: "SMTP credentials not configured in environment.",
+      envCheck,
+    });
+    return;
+  }
+
+  try {
+    const nodemailer = await import("nodemailer");
+    const transporter = nodemailer.default.createTransport({
+      service: "gmail",
+      auth: { user: smtpEmail, pass: smtpPassword },
+    });
+
+    // Verify SMTP connection
+    await transporter.verify();
+
+    // Send test email
+    const appUrl = getAppUrl();
+    const info = await transporter.sendMail({
+      from: `"Mission Distinction" <${smtpEmail}>`,
+      to: smtpEmail,
+      subject: "✅ Mission Distinction — Email system test",
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0f0f1a;color:#e2e8f0;padding:40px;border-radius:12px;">
+          <h2 style="color:#7c3aed;margin-top:0;">Mission Distinction</h2>
+          <h3>✅ Email system is working!</h3>
+          <p style="color:#94a3b8;">Test email sent at <strong>${new Date().toISOString()}</strong></p>
+          <p style="color:#94a3b8;">All transactional emails (registration verification, password reset) are operational.</p>
+        </div>`,
+    });
+
+    res.json({
+      ok: true,
+      message: `Test email delivered to ${smtpEmail}`,
+      messageId: info.messageId,
+      envCheck,
+      appUrl,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      ok: false,
+      message: `Email failed: ${err.message}`,
+      envCheck,
+    });
+  }
 });
 
 function sanitizeUser(user: any) {
