@@ -37,5 +37,3 @@ externalPort = 3000
 [userenv]
 
 [userenv.shared]
-JWT_SECRET = "cc21f9be89eda869b34ee91c4aec039d2c8d1bee896c2fc6037519e12843f945be327149e5f98e19fcf9cd3e6c2f9ad37ea1ddc823f1371ccc8f5b93dab3cca3"
-ADMIN_INVITE_CODE = "2004"
