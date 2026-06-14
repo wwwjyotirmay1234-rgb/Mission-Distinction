@@ -1,8 +1,9 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
-import { quizzesTable, questionsTable, quizAttemptsTable } from "@workspace/db";
+import { quizzesTable, questionsTable, quizAttemptsTable, activityTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
+import { updateStreak } from "../lib/streak";
 
 const router = Router();
 
@@ -146,6 +147,15 @@ router.post("/:id/attempt", authMiddleware, async (req: Request, res: Response) 
       userId: user.id, quizId, quizTitle: quiz.title, subject: quiz.subject,
       score, total, percentage,
     });
+
+    await db.insert(activityTable).values({
+      userId: user.id,
+      type: "quiz",
+      description: `Completed quiz: ${quiz.title}`,
+      score: `${score}/${total} (${percentage}%)`,
+    });
+
+    await updateStreak(user.id);
 
     res.json({ score, total, percentage, passed: percentage >= 60, correctAnswers });
   } catch (err) {

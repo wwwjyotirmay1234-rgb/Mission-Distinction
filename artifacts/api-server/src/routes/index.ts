@@ -14,6 +14,8 @@ import calendarRouter from "./calendar";
 import dashboardRouter from "./dashboard";
 import uploadRouter from "./upload";
 import feedbackRouter from "./feedback";
+import leaderboardRouter from "./leaderboard";
+import doubtsRouter from "./doubts";
 
 const router: IRouter = Router();
 
@@ -36,5 +38,7 @@ router.use("/calendar", calendarRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/upload", uploadRouter);
 router.use("/feedback", feedbackRouter);
+router.use("/leaderboard", leaderboardRouter);
+router.use("/doubts", doubtsRouter);
 
 export default router;

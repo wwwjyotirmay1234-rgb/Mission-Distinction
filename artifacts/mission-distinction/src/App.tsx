@@ -27,11 +27,10 @@ import StudentProgress from "@/pages/student/Progress";
 import StudentBookmarks from "@/pages/student/Bookmarks";
 import StudentCalendar from "@/pages/student/Calendar";
 import StudentSettings from "@/pages/student/Settings";
-// Stubs for remaining
-const StubPage = ({ title }: { title: string }) => <div className="p-8 text-center"><h1 className="text-2xl font-bold">{title}</h1><p className="text-muted-foreground mt-4">Coming soon.</p></div>;
-
 // Student Pages (additional)
 import StudentAnnouncements from "@/pages/student/Announcements";
+import StudentLeaderboard from "@/pages/student/Leaderboard";
+import StudentDoubts from "@/pages/student/Doubts";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/Dashboard";
@@ -71,6 +70,8 @@ function Router() {
               <Route path="/student/community" component={StudentCommunity} />
               <Route path="/student/announcements" component={StudentAnnouncements} />
               <Route path="/student/progress" component={StudentProgress} />
+              <Route path="/student/leaderboard" component={StudentLeaderboard} />
+              <Route path="/student/doubts" component={StudentDoubts} />
               <Route path="/student/bookmarks" component={StudentBookmarks} />
               <Route path="/student/calendar" component={StudentCalendar} />
               <Route path="/student/settings" component={StudentSettings} />

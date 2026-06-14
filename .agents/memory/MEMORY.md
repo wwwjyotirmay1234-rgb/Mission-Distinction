@@ -2,3 +2,6 @@
 - [Mobile sidebar pattern](mobile-sidebar.md) — SidebarContext drives Sheet open state; sidebars use hidden md:flex + Sheet for mobile
 - [Route ID validation](route-id-validation.md) — all routes use parseId() from auth.ts lib, not parseInt(); returns 400 on invalid IDs
 - [Upload auth](upload-auth.md) — upload routes require adminMiddleware, not authMiddleware; file type validated server-side
+- [Quiz taking flow](quiz-taking.md) — quiz submission uses direct fetch (not orval hook); listQuizzes returns Quiz[] not {quizzes:[]}
+- [Streak logic](streak-logic.md) — updateStreak() in api-server/src/lib/streak.ts; lastStreakDate text column on users table
+- [PDF list shape](pdf-list-shape.md) — listPdfs/listQuizzes return plain arrays; use Array.isArray guard when iterating in components

@@ -1,31 +1,64 @@
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGetStudentDashboardStats, useGetRecentActivity, getGetStudentDashboardStatsQueryKey, getGetRecentActivityQueryKey } from "@workspace/api-client-react";
+import {
+  useGetStudentDashboardStats,
+  useGetRecentActivity,
+  useListAnnouncements,
+  useListCommunityGroups,
+  getGetStudentDashboardStatsQueryKey,
+  getGetRecentActivityQueryKey,
+  getListAnnouncementsQueryKey,
+  getListCommunityGroupsQueryKey,
+} from "@workspace/api-client-react";
 import { FileText, File, CheckCircle, Flame, Play, BookOpen, Bookmark, Calendar, ArrowRight, MessageSquare, Bell } from "lucide-react";
 import { Link } from "wouter";
 
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return `${Math.floor(d / 7)}w ago`;
+}
+
 export default function StudentDashboard() {
   const { user } = useAuth();
-  
+
   const { data: stats, isLoading: statsLoading } = useGetStudentDashboardStats({
-    query: { queryKey: getGetStudentDashboardStatsQueryKey() }
+    query: { queryKey: getGetStudentDashboardStatsQueryKey() },
   });
 
   const { data: activities, isLoading: activitiesLoading } = useGetRecentActivity({
-    query: { queryKey: getGetRecentActivityQueryKey() }
+    query: { queryKey: getGetRecentActivityQueryKey() },
   });
+
+  const { data: announcements, isLoading: announcementsLoading } = useListAnnouncements(
+    {},
+    { query: { queryKey: getListAnnouncementsQueryKey({}) } }
+  );
+
+  const { data: communityGroups, isLoading: groupsLoading } = useListCommunityGroups({
+    query: { queryKey: getListCommunityGroupsQueryKey() },
+  });
+
+  const recentAnnouncements = Array.isArray(announcements) ? (announcements as any[]).slice(0, 3) : [];
+  const recentGroups = Array.isArray(communityGroups) ? (communityGroups as any[]).slice(0, 3) : [];
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Welcome back, {user?.fullName?.split(' ')[0]}! 👋</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Welcome back, {user?.fullName?.split(" ")[0]}! 👋
+          </h1>
           <p className="text-muted-foreground">Ready to conquer your goals today?</p>
         </div>
         <div className="flex gap-2">
@@ -38,62 +71,61 @@ export default function StudentDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-card/50 backdrop-blur border-border/50">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
+            <div className="flex items-center justify-between pb-2">
               <p className="text-sm font-medium">Notes Read</p>
               <FileText className="h-4 w-4 text-blue-500" />
             </div>
             {statsLoading ? <Skeleton className="h-8 w-16" /> : (
               <div className="flex items-baseline gap-2">
                 <h2 className="text-3xl font-bold">{stats?.notesCount || 0}</h2>
-                <span className="text-xs text-green-500 font-medium">+{stats?.notesChangePercent || 0}%</span>
               </div>
             )}
-            <p className="text-xs text-muted-foreground mt-1">from last week</p>
+            <p className="text-xs text-muted-foreground mt-1">total notes</p>
           </CardContent>
         </Card>
-        
+
         <Card className="bg-card/50 backdrop-blur border-border/50">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
+            <div className="flex items-center justify-between pb-2">
               <p className="text-sm font-medium">PDFs Downloaded</p>
               <File className="h-4 w-4 text-orange-500" />
             </div>
             {statsLoading ? <Skeleton className="h-8 w-16" /> : (
               <div className="flex items-baseline gap-2">
                 <h2 className="text-3xl font-bold">{stats?.pdfsDownloaded || 0}</h2>
-                <span className="text-xs text-green-500 font-medium">+{stats?.pdfsChangePercent || 0}%</span>
               </div>
             )}
-            <p className="text-xs text-muted-foreground mt-1">from last week</p>
+            <p className="text-xs text-muted-foreground mt-1">total downloads</p>
           </CardContent>
         </Card>
 
         <Card className="bg-card/50 backdrop-blur border-border/50">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
+            <div className="flex items-center justify-between pb-2">
               <p className="text-sm font-medium">Quizzes Attempted</p>
               <CheckCircle className="h-4 w-4 text-primary" />
             </div>
             {statsLoading ? <Skeleton className="h-8 w-16" /> : (
               <div className="flex items-baseline gap-2">
                 <h2 className="text-3xl font-bold">{stats?.quizzesAttempted || 0}</h2>
-                <span className="text-xs text-green-500 font-medium">+{stats?.quizzesChangePercent || 0}%</span>
               </div>
             )}
-            <p className="text-xs text-muted-foreground mt-1">from last week</p>
+            <p className="text-xs text-muted-foreground mt-1">quizzes done</p>
           </CardContent>
         </Card>
 
         <Card className="bg-card/50 backdrop-blur border-border/50 border-primary/20 relative overflow-hidden">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-xl pointer-events-none" />
           <CardContent className="p-6">
-            <div className="flex items-center justify-between space-y-0 pb-2">
+            <div className="flex items-center justify-between pb-2">
               <p className="text-sm font-medium">Study Streak</p>
               <Flame className="h-4 w-4 text-orange-500" />
             </div>
             {statsLoading ? <Skeleton className="h-8 w-16" /> : (
               <div className="flex items-baseline gap-2">
-                <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">{stats?.studyStreak || 0}</h2>
+                <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
+                  {stats?.studyStreak || 0}
+                </h2>
                 <span className="text-sm font-bold text-orange-500">Days</span>
               </div>
             )}
@@ -104,19 +136,6 @@ export default function StudentDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          {/* Continue Learning */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Continue Learning</h2>
-              <Link href="/student/notes">
-                <Button variant="ghost" size="sm" className="text-primary h-8">View All <ArrowRight className="ml-1 w-4 h-4" /></Button>
-              </Link>
-            </div>
-            <div className="p-8 text-center border border-dashed border-border/50 rounded-xl text-muted-foreground text-sm">
-              No content yet. Check back once your admin publishes notes and PDFs.
-            </div>
-          </div>
-
           {/* Quick Access */}
           <div>
             <h2 className="text-lg font-semibold mb-4">Quick Access</h2>
@@ -152,23 +171,27 @@ export default function StudentDashboard() {
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-10 w-full" />
                   </div>
-                ) : !activities || activities.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground text-sm">No recent activity found.</div>
+                ) : !activities || (activities as any[]).length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground text-sm">
+                    No recent activity. Take a quiz or read some notes to get started!
+                  </div>
                 ) : (
                   <div className="divide-y divide-border/40">
-                    {activities.map((activity) => (
+                    {(activities as any[]).map((activity: any) => (
                       <div key={activity.id} className="p-4 flex items-center gap-4 hover:bg-muted/20 transition-colors">
                         <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                          {activity.type === 'quiz' && <CheckCircle size={16} className="text-primary" />}
-                          {activity.type === 'note' && <FileText size={16} className="text-blue-500" />}
-                          {activity.type === 'pdf' && <File size={16} className="text-orange-500" />}
-                          {activity.type === 'bookmark' && <Bookmark size={16} className="text-red-500" />}
+                          {activity.type === "quiz" && <CheckCircle size={16} className="text-primary" />}
+                          {activity.type === "note" && <FileText size={16} className="text-blue-500" />}
+                          {activity.type === "pdf" && <File size={16} className="text-orange-500" />}
+                          {activity.type === "bookmark" && <Bookmark size={16} className="text-red-500" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{activity.description}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-border/50 capitalize">{activity.type}</Badge>
-                            <span className="text-xs text-muted-foreground">2 hours ago</span>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-border/50 capitalize">
+                              {activity.type}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">{timeAgo(activity.createdAt)}</span>
                           </div>
                         </div>
                         {activity.score && (
@@ -185,6 +208,7 @@ export default function StudentDashboard() {
 
         {/* Right Panel */}
         <div className="space-y-6">
+          {/* Community */}
           <Card className="bg-card/40 border-border/40">
             <CardHeader className="p-4 pb-2 border-b border-border/40">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -192,58 +216,79 @@ export default function StudentDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-border/40">
-                {[
-                  { name: "NEET PG 2025 Aspirants", msgs: 12, latest: "Has anyone completed the..." },
-                  { name: "Anatomy Study Group", msgs: 3, latest: "Check out these flashcards" },
-                  { name: "1st Year Doubts", msgs: 0, latest: "Thanks for the explanation!" }
-                ].map((grp, i) => (
-                  <div key={i} className="p-3 flex items-start gap-3 hover:bg-muted/20 cursor-pointer transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
-                      {grp.name.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center">
-                        <p className="text-sm font-medium truncate">{grp.name}</p>
-                        {grp.msgs > 0 && <Badge className="h-5 w-5 p-0 flex items-center justify-center bg-primary rounded-full">{grp.msgs}</Badge>}
+              {groupsLoading ? (
+                <div className="p-3 space-y-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : recentGroups.length === 0 ? (
+                <div className="p-4 text-center text-xs text-muted-foreground">No groups yet.</div>
+              ) : (
+                <div className="divide-y divide-border/40">
+                  {recentGroups.map((grp: any) => (
+                    <div key={grp.id} className="p-3 flex items-start gap-3 hover:bg-muted/20 cursor-pointer transition-colors">
+                      <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
+                        {grp.name?.charAt(0)}
                       </div>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">{grp.latest}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{grp.name}</p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{grp.description || "Study together"}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               <div className="p-3 border-t border-border/40">
-                <Button variant="outline" className="w-full text-xs h-8 border-dashed">Join a New Group</Button>
+                <Link href="/student/community">
+                  <Button variant="outline" className="w-full text-xs h-8 border-dashed">
+                    View Community <ArrowRight className="ml-1 w-3 h-3" />
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
 
+          {/* Announcements */}
           <Card className="bg-card/40 border-border/40">
             <CardHeader className="p-4 pb-2 border-b border-border/40 flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Bell size={16} className="text-secondary" /> News & Announcements
               </CardTitle>
+              <Link href="/student/announcements">
+                <Button variant="ghost" size="sm" className="h-7 text-xs text-primary px-2">
+                  View All
+                </Button>
+              </Link>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-border/40">
-                {[
-                  { title: "New Physiology Quiz Added", type: "update", time: "2h ago" },
-                  { title: "Server Maintenance on Sunday", type: "alert", time: "1d ago" },
-                  { title: "Welcome to the new platform!", type: "news", time: "3d ago" }
-                ].map((news, i) => (
-                  <div key={i} className="p-4 hover:bg-muted/20 transition-colors">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 uppercase tracking-wider
-                        ${news.type === 'alert' ? 'text-red-500 border-red-500/30' : 
-                          news.type === 'update' ? 'text-primary border-primary/30' : 'text-blue-500 border-blue-500/30'}`}>
-                        {news.type}
-                      </Badge>
-                      <span className="text-[10px] text-muted-foreground">{news.time}</span>
+              {announcementsLoading ? (
+                <div className="p-3 space-y-2">
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                </div>
+              ) : recentAnnouncements.length === 0 ? (
+                <div className="p-6 text-center text-xs text-muted-foreground">
+                  No announcements yet.
+                </div>
+              ) : (
+                <div className="divide-y divide-border/40">
+                  {recentAnnouncements.map((a: any) => (
+                    <div key={a.id} className="p-4 hover:bg-muted/20 transition-colors">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 uppercase tracking-wider ${
+                          a.type === "alert" ? "text-red-500 border-red-500/30" :
+                          a.type === "update" ? "text-primary border-primary/30" :
+                          "text-blue-500 border-blue-500/30"
+                        }`}>
+                          {a.type}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">{timeAgo(a.createdAt)}</span>
+                      </div>
+                      <p className="text-sm">{a.title}</p>
                     </div>
-                    <p className="text-sm">{news.title}</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

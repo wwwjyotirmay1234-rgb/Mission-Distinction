@@ -11,11 +11,36 @@ import {
   resetPasswordEmail,
   verifyEmailTemplate,
 } from "../lib/email";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 12,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many login attempts. Please try again in 15 minutes." },
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many registration attempts. Please try again in an hour." },
+});
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many password reset requests. Please try again in 15 minutes." },
+});
+
 // ─── Student Register ────────────────────────────────────────────────────────
-router.post("/student/register", async (req: Request, res: Response) => {
+router.post("/student/register", registerLimiter, async (req: Request, res: Response) => {
   try {
     const { fullName, email, mobileNumber, password, year, college } = req.body;
     if (!fullName || !email || !password || !year || !college) {
@@ -65,7 +90,7 @@ router.post("/student/register", async (req: Request, res: Response) => {
 });
 
 // ─── Student Login ────────────────────────────────────────────────────────────
-router.post("/student/login", async (req: Request, res: Response) => {
+router.post("/student/login", loginLimiter, async (req: Request, res: Response) => {
   try {
     const { identifier, password } = req.body;
     if (!identifier || !password) {
@@ -89,7 +114,7 @@ router.post("/student/login", async (req: Request, res: Response) => {
 });
 
 // ─── Admin Register ───────────────────────────────────────────────────────────
-router.post("/admin/register", async (req: Request, res: Response) => {
+router.post("/admin/register", registerLimiter, async (req: Request, res: Response) => {
   try {
     const { fullName, workEmail, password, inviteCode } = req.body;
     if (!fullName || !workEmail || !password || !inviteCode) {
@@ -121,7 +146,7 @@ router.post("/admin/register", async (req: Request, res: Response) => {
 });
 
 // ─── Admin Login ──────────────────────────────────────────────────────────────
-router.post("/admin/login", async (req: Request, res: Response) => {
+router.post("/admin/login", loginLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -184,7 +209,7 @@ router.post("/google", async (req: Request, res: Response) => {
 });
 
 // ─── Forgot Password ──────────────────────────────────────────────────────────
-router.post("/forgot-password", async (req: Request, res: Response) => {
+router.post("/forgot-password", forgotPasswordLimiter, async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
     if (!email) {

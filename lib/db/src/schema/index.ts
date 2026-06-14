@@ -10,3 +10,4 @@ export * from "./bookmarks";
 export * from "./calendar";
 export * from "./feedback";
 export * from "./emailTokens";
+export * from "./doubts";

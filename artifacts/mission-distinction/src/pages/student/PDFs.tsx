@@ -57,6 +57,16 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
   );
 }
 
+async function trackDownload(pdfId: number) {
+  try {
+    const token = localStorage.getItem("token");
+    await fetch(`/api/pdfs/${pdfId}/download`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {}
+}
+
 export default function StudentPDFs() {
   const [search, setSearch] = useState("");
   const [viewingPdf, setViewingPdf] = useState<Pdf | null>(null);
@@ -98,12 +108,12 @@ export default function StudentPDFs() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 xl:gap-6">
           {isLoading ? (
             Array(8).fill(0).map((_, i) => <Skeleton key={i} className="aspect-[3/4] w-full rounded-xl" />)
-          ) : !pdfsData?.pdfs || pdfsData.pdfs.length === 0 ? (
+          ) : !pdfsData || (Array.isArray(pdfsData) ? pdfsData.length === 0 : !(pdfsData as any).pdfs?.length) ? (
             <div className="col-span-full p-12 text-center border border-dashed rounded-xl text-muted-foreground">
               No PDFs yet. Check back once your admin uploads study materials.
             </div>
           ) : (
-            pdfsData.pdfs.map((pdf) => (
+            (Array.isArray(pdfsData) ? pdfsData : (pdfsData as any).pdfs ?? []).map((pdf: any) => (
               <div key={pdf.id} className="group relative">
                 <div className="aspect-[3/4] bg-muted/30 rounded-xl border border-border/50 overflow-hidden relative shadow-md transition-transform group-hover:-translate-y-1">
                   {pdf.thumbnailUrl ? (
@@ -117,10 +127,13 @@ export default function StudentPDFs() {
                     <Button size="sm" className="w-full" onClick={() => setViewingPdf(pdf as Pdf)}>
                       <BookOpen className="mr-2 h-4 w-4" /> Read
                     </Button>
-                    <Button size="sm" variant="secondary" className="w-full" asChild>
-                      <a href={pdf.url} target="_blank" rel="noopener noreferrer">
-                        <Download className="mr-2 h-4 w-4" /> Download
-                      </a>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => { trackDownload(pdf.id); window.open(pdf.url, "_blank", "noopener,noreferrer"); }}
+                    >
+                      <Download className="mr-2 h-4 w-4" /> Download
                     </Button>
                   </div>
                 </div>

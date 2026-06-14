@@ -1,9 +1,10 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
-import { pdfsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { pdfsTable, activityTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+import { updateStreak } from "../lib/streak";
 
 const router = Router();
 
@@ -51,6 +52,29 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     const [pdf] = await db.update(pdfsTable).set({ title, subject, professor, year, url, pages, size }).where(eq(pdfsTable.id, id)).returning();
     if (!pdf) { res.status(404).json({ error: "Not found" }); return; }
     res.json(pdf);
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/:id/download", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+    const user = (req as any).user;
+    const [pdf] = await db
+      .update(pdfsTable)
+      .set({ downloadCount: sql`${pdfsTable.downloadCount} + 1` })
+      .where(eq(pdfsTable.id, id))
+      .returning();
+    if (!pdf) { res.status(404).json({ error: "Not found" }); return; }
+    await db.insert(activityTable).values({
+      userId: user.id,
+      type: "pdf",
+      description: `Downloaded PDF: ${pdf.title}`,
+    });
+    await updateStreak(user.id);
+    res.json({ downloadCount: pdf.downloadCount });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
