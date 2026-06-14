@@ -227,7 +227,8 @@ export default function AdminPDFs() {
                   <SelectContent>
                     <SelectItem value="1st Year">1st Year</SelectItem>
                     <SelectItem value="2nd Year">2nd Year</SelectItem>
-                    <SelectItem value="3rd Year">3rd Year</SelectItem>
+                    <SelectItem value="4th Year">4th Year</SelectItem>
+                    <SelectItem value="Final Year">Final Year</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -287,7 +288,8 @@ export default function AdminPDFs() {
                   <SelectContent>
                     <SelectItem value="1st Year">1st Year</SelectItem>
                     <SelectItem value="2nd Year">2nd Year</SelectItem>
-                    <SelectItem value="3rd Year">3rd Year</SelectItem>
+                    <SelectItem value="4th Year">4th Year</SelectItem>
+                    <SelectItem value="Final Year">Final Year</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

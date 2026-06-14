@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Eye, EyeOff, Activity, ShieldCheck, TrendingUp, Award, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 
 const ODISHA_GOVT_COLLEGES = [
@@ -25,6 +25,7 @@ const ODISHA_GOVT_COLLEGES = [
   "VSS Institute of Medical Sciences & Research (VIMSAR), Burla",
   "Pandit Raghunath Murmu Medical College & Hospital, Baripada",
   "Saheed Laxman Nayak Medical College & Hospital, Koraput",
+  "Shri Jagannath Medical College & Research Institute, Puri",
   "Government Medical College, Bolangir",
   "Government Medical College, Balasore",
   "Government Medical College, Puri",
@@ -36,11 +37,10 @@ const ODISHA_PRIVATE_COLLEGES = [
   "Hi-Tech Medical College & Hospital, Bhubaneswar",
   "IMS & SUM Hospital (SOA University), Bhubaneswar",
   "Kalinga Institute of Medical Sciences (KIMS), Bhubaneswar",
-  "Shri Jagannath Medical College & Research Institute, Puri",
 ];
 
 function getRouteByYear(year: string | undefined) {
-  return year === "1st Year MBBS" ? "/student/dashboard" : "/coming-soon";
+  return (year === "1st Year" || year === "1st Year MBBS") ? "/student/dashboard" : "/coming-soon";
 }
 
 const studentLoginSchema = z.object({
@@ -92,28 +92,38 @@ export default function LandingPage() {
   const adminLoginMutation = useAdminLogin();
   const adminRegisterMutation = useAdminRegister();
 
+  React.useEffect(() => {
+    getRedirectResult(auth).then(async (result) => {
+      if (!result) return;
+      setGoogleLoading(true);
+      try {
+        const idToken = await result.user.getIdToken();
+        const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+        const res = await fetch(`${baseUrl}/api/auth/google`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        });
+        if (!res.ok) throw new Error("Server auth failed");
+        const data = await res.json();
+        login(data);
+        toast.success("Signed in with Google!");
+        setLocation(getRouteByYear(data.user?.year));
+      } catch {
+        toast.error("Google sign-in failed. Please try again.");
+      } finally {
+        setGoogleLoading(false);
+      }
+    }).catch(() => {});
+  }, []);
+
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
-      const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-      const res = await fetch(`${baseUrl}/api/auth/google`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
-      if (!res.ok) throw new Error("Server auth failed");
-      const data = await res.json();
-      login(data);
-      toast.success("Signed in with Google!");
-      setLocation(getRouteByYear(data.user?.year));
-    } catch (err: any) {
-      if (err.code !== "auth/popup-closed-by-user") {
-        toast.error("Google sign-in failed. Please try again.");
-      }
-    } finally {
+      await signInWithRedirect(auth, googleProvider);
+    } catch {
       setGoogleLoading(false);
+      toast.error("Google sign-in failed. Please try again.");
     }
   };
 
@@ -399,10 +409,10 @@ export default function LandingPage() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    <SelectItem value="1st Year MBBS">1st Year MBBS</SelectItem>
-                                    <SelectItem value="2nd Year MBBS">2nd Year MBBS</SelectItem>
-                                    <SelectItem value="3rd Year MBBS">3rd Year MBBS</SelectItem>
-                                    <SelectItem value="4th Year MBBS">4th Year MBBS</SelectItem>
+                                    <SelectItem value="1st Year">1st Year</SelectItem>
+                                    <SelectItem value="2nd Year">2nd Year</SelectItem>
+                                    <SelectItem value="4th Year">4th Year</SelectItem>
+                                    <SelectItem value="Final Year">Final Year</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
