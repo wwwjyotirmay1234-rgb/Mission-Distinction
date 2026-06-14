@@ -144,6 +144,31 @@ router.post("/google", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/change-password", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ error: "Missing fields" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      res.status(400).json({ error: "New password must be at least 6 characters" });
+      return;
+    }
+    const userId = (req as any).user?.id;
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    if (!verifyPassword(currentPassword, user.passwordHash)) {
+      res.status(401).json({ error: "Current password is incorrect" });
+      return;
+    }
+    await db.update(usersTable).set({ passwordHash: hashPassword(newPassword) }).where(eq(usersTable.id, userId));
+    res.json({ message: "Password changed successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/logout", (_req: Request, res: Response) => {
   res.json({ message: "Logged out" });
 });

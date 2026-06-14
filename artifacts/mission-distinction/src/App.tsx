@@ -27,6 +27,9 @@ import StudentSettings from "@/pages/student/Settings";
 // Stubs for remaining
 const StubPage = ({ title }: { title: string }) => <div className="p-8 text-center"><h1 className="text-2xl font-bold">{title}</h1><p className="text-muted-foreground mt-4">Coming soon.</p></div>;
 
+// Student Pages (additional)
+import StudentAnnouncements from "@/pages/student/Announcements";
+
 // Admin Pages
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminUsers from "@/pages/admin/Users";
@@ -37,6 +40,8 @@ import AdminQuizzes from "@/pages/admin/Quizzes";
 import AdminAnnouncements from "@/pages/admin/Announcements";
 import AdminAnalytics from "@/pages/admin/Analytics";
 import AdminQuizEditor from "@/pages/admin/QuizEditor";
+import AdminNews from "@/pages/admin/News";
+import AdminSettings from "@/pages/admin/Settings";
 
 const queryClient = new QueryClient();
 
@@ -56,7 +61,7 @@ function Router() {
               <Route path="/student/notes" component={StudentNotes} />
               <Route path="/student/pdfs" component={StudentPDFs} />
               <Route path="/student/community" component={StudentCommunity} />
-              <Route path="/student/announcements" component={() => <StubPage title="Announcements" />} />
+              <Route path="/student/announcements" component={StudentAnnouncements} />
               <Route path="/student/progress" component={StudentProgress} />
               <Route path="/student/bookmarks" component={StudentBookmarks} />
               <Route path="/student/calendar" component={StudentCalendar} />
@@ -79,12 +84,12 @@ function Router() {
               <Route path="/admin/content/books" component={AdminBooks} />
               <Route path="/admin/quizzes/:id/edit" component={AdminQuizEditor} />
               <Route path="/admin/quizzes" component={AdminQuizzes} />
-              <Route path="/admin/news" component={() => <StubPage title="News & Discoveries" />} />
+              <Route path="/admin/news" component={AdminNews} />
               <Route path="/admin/announcements" component={AdminAnnouncements} />
               <Route path="/admin/analytics" component={AdminAnalytics} />
               <Route path="/admin/reports" component={() => <StubPage title="Reports" />} />
               <Route path="/admin/feedback" component={() => <StubPage title="Feedback" />} />
-              <Route path="/admin/settings" component={() => <StubPage title="Settings" />} />
+              <Route path="/admin/settings" component={AdminSettings} />
               <Route component={NotFound} />
             </Switch>
           </AdminLayout>
