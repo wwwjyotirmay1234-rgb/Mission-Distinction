@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { communityPostsTable, communityGroupsTable, communityMessagesTable } from "@workspace/db";
 import { authMiddleware } from "../middlewares/auth";
+import { parseId } from "../lib/auth";
 import { eq, desc } from "drizzle-orm";
 
 const router = Router();
@@ -45,7 +46,8 @@ router.get("/groups", authMiddleware, async (req: Request, res: Response) => {
 
 router.get("/messages/:groupId", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const groupId = parseInt(req.params.groupId);
+    const groupId = parseId(req.params.groupId);
+    if (!groupId) { res.status(400).json({ error: "Invalid group ID" }); return; }
     const messages = await db
       .select()
       .from(communityMessagesTable)
@@ -61,7 +63,8 @@ router.get("/messages/:groupId", authMiddleware, async (req: Request, res: Respo
 router.post("/messages/:groupId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const groupId = parseInt(req.params.groupId);
+    const groupId = parseId(req.params.groupId);
+    if (!groupId) { res.status(400).json({ error: "Invalid group ID" }); return; }
     const { content } = req.body;
     if (!content?.trim()) { res.status(400).json({ error: "Message content required" }); return; }
     const [message] = await db.insert(communityMessagesTable).values({

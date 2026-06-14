@@ -8,3 +8,4 @@ export * from "./announcements";
 export * from "./activity";
 export * from "./bookmarks";
 export * from "./calendar";
+export * from "./feedback";

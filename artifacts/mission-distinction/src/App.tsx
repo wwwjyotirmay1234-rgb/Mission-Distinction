@@ -42,6 +42,8 @@ import AdminAnalytics from "@/pages/admin/Analytics";
 import AdminQuizEditor from "@/pages/admin/QuizEditor";
 import AdminNews from "@/pages/admin/News";
 import AdminSettings from "@/pages/admin/Settings";
+import AdminReports from "@/pages/admin/Reports";
+import AdminFeedback from "@/pages/admin/Feedback";
 
 const queryClient = new QueryClient();
 
@@ -87,8 +89,8 @@ function Router() {
               <Route path="/admin/news" component={AdminNews} />
               <Route path="/admin/announcements" component={AdminAnnouncements} />
               <Route path="/admin/analytics" component={AdminAnalytics} />
-              <Route path="/admin/reports" component={() => <StubPage title="Reports" />} />
-              <Route path="/admin/feedback" component={() => <StubPage title="Feedback" />} />
+              <Route path="/admin/reports" component={AdminReports} />
+              <Route path="/admin/feedback" component={AdminFeedback} />
               <Route path="/admin/settings" component={AdminSettings} />
               <Route component={NotFound} />
             </Switch>

@@ -66,7 +66,8 @@ router.post("/admin/register", async (req: Request, res: Response) => {
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
-    if (inviteCode !== "2004") {
+    const validInviteCode = process.env.ADMIN_INVITE_CODE || "2004";
+    if (inviteCode !== validInviteCode) {
       res.status(400).json({ error: "Invalid invite code" });
       return;
     }

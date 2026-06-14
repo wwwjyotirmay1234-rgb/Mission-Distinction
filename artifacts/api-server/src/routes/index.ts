@@ -13,6 +13,7 @@ import bookmarksRouter from "./bookmarks";
 import calendarRouter from "./calendar";
 import dashboardRouter from "./dashboard";
 import uploadRouter from "./upload";
+import feedbackRouter from "./feedback";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use("/bookmarks", bookmarksRouter);
 router.use("/calendar", calendarRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/upload", uploadRouter);
+router.use("/feedback", feedbackRouter);
 
 export default router;
