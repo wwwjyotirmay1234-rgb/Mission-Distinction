@@ -20,13 +20,6 @@ export default function StudentDashboard() {
     query: { queryKey: getGetRecentActivityQueryKey() }
   });
 
-  // Mock data for Continue Learning
-  const continueLearning = [
-    { subject: "Anatomy", topic: "Upper Limb - Muscles", progress: 65, color: "bg-blue-500" },
-    { subject: "Physiology", topic: "Cardiovascular System", progress: 32, color: "bg-red-500" },
-    { subject: "Biochemistry", topic: "Carbohydrate Metabolism", progress: 85, color: "bg-green-500" },
-  ];
-
   return (
     <div className="space-y-6 pb-12">
       {/* Header */}
@@ -119,30 +112,8 @@ export default function StudentDashboard() {
                 <Button variant="ghost" size="sm" className="text-primary h-8">View All <ArrowRight className="ml-1 w-4 h-4" /></Button>
               </Link>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar">
-              {continueLearning.map((item, i) => (
-                <Card key={i} className="min-w-[280px] snap-start bg-card/40 border-border/40 shrink-0">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-1">{item.subject}</p>
-                        <h3 className="font-semibold line-clamp-1">{item.topic}</h3>
-                      </div>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${item.color} bg-opacity-20 text-white`}>
-                        <Play className="w-3 h-3 fill-current" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Progress</span>
-                        <span className="font-medium">{item.progress}%</span>
-                      </div>
-                      <Progress value={item.progress} className="h-1.5" />
-                    </div>
-                    <Button className="w-full mt-4 h-8 text-xs" variant="secondary">Continue</Button>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="p-8 text-center border border-dashed border-border/50 rounded-xl text-muted-foreground text-sm">
+              No content yet. Check back once your admin publishes notes and PDFs.
             </div>
           </div>
 
