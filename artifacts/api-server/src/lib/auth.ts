@@ -1,7 +1,10 @@
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "mission_distinction_jwt_2025_changeme_in_production";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is not set. Add it to Replit Secrets before starting the server.");
+}
 const JWT_EXPIRES_IN = "30d";
 
 export function hashPassword(password: string): string {
