@@ -648,29 +648,29 @@ export default function LandingPage() {
           <div className="bg-card/40 backdrop-blur border border-border p-4 rounded-xl flex items-center gap-3">
             <div className="p-2 bg-primary/20 text-primary rounded-lg"><ShieldCheck size={20} /></div>
             <div>
-              <h4 className="text-sm font-semibold">Secure & Reliable</h4>
-              <p className="text-xs text-muted-foreground">Trusted by thousands</p>
+              <h4 className="text-sm font-semibold">MBBS-First Content</h4>
+              <p className="text-xs text-muted-foreground">1st year syllabus, Odisha-curated</p>
             </div>
           </div>
           <div className="bg-card/40 backdrop-blur border border-border p-4 rounded-xl flex items-center gap-3">
             <div className="p-2 bg-secondary/20 text-secondary rounded-lg"><Zap size={20} /></div>
             <div>
-              <h4 className="text-sm font-semibold">Seamless Learning</h4>
-              <p className="text-xs text-muted-foreground">On any device</p>
+              <h4 className="text-sm font-semibold">Anatomy to Biochemistry</h4>
+              <p className="text-xs text-muted-foreground">All pre-clinical subjects covered</p>
             </div>
           </div>
           <div className="bg-card/40 backdrop-blur border border-border p-4 rounded-xl flex items-center gap-3">
             <div className="p-2 bg-green-500/20 text-green-500 rounded-lg"><TrendingUp size={20} /></div>
             <div>
-              <h4 className="text-sm font-semibold">Track Progress</h4>
-              <p className="text-xs text-muted-foreground">Real-time analytics</p>
+              <h4 className="text-sm font-semibold">Beat the MBBS Curve</h4>
+              <p className="text-xs text-muted-foreground">Track streaks & college rank</p>
             </div>
           </div>
           <div className="bg-card/40 backdrop-blur border border-border p-4 rounded-xl flex items-center gap-3">
             <div className="p-2 bg-orange-500/20 text-orange-500 rounded-lg"><Award size={20} /></div>
             <div>
-              <h4 className="text-sm font-semibold">Achieve More</h4>
-              <p className="text-xs text-muted-foreground">Rank higher</p>
+              <h4 className="text-sm font-semibold">Doubt? Ask Instantly</h4>
+              <p className="text-xs text-muted-foreground">Peer Q&A + senior mentors</p>
             </div>
           </div>
         </div>

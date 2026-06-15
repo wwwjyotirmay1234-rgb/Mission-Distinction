@@ -1,9 +1,15 @@
 ---
-name: Auth token system
-description: JWT token generation/verification using jsonwebtoken package
+name: Auth token architecture
+description: How access and refresh tokens are structured in Mission Distinction
 ---
-Tokens are signed JWTs using jsonwebtoken. Secret is process.env.JWT_SECRET with fallback "mission_distinction_jwt_2025_changeme_in_production". Expiry is 30d. parseToken() calls jwt.verify() — forged tokens are rejected. generateToken() calls jwt.sign().
 
-**Why:** Previous base64 "tokens" were completely forgeable by anyone — attacker could impersonate any user including admins.
+Access token: JWT, 15 min expiry (`JWT_EXPIRES_IN = "15m"`), signed with JWT_SECRET.
+Refresh token: `crypto.randomUUID()`, stored in `refresh_tokens` DB table, 30-day expiry.
+Token rotation: each `/api/auth/refresh` call deletes the old row and inserts a new one.
+Auto-refresh: `main.tsx` `setAuthTokenGetter` is async — parses JWT exp, refreshes if < 60s remaining.
+Logout: sends refreshToken in body to `/api/auth/logout` which deletes it from DB.
+Storage keys: `mission_token` (access), `mission_refresh_token` (refresh), `mission_user` (JSON user).
 
-**How to apply:** Any new auth mechanism must use generateToken/parseToken from lib/auth.ts. Never encode userId/role directly without signing.
+**Why:** Short-lived access tokens limit blast radius of token theft. Rotating refresh tokens give 30-day sessions without the security risk of long-lived JWTs.
+
+**How to apply:** All login endpoints (student, admin, google, register) must insert a refresh_tokens row and include refreshToken in response. Never store JWT secret or raw passwords — those stay in env vars.

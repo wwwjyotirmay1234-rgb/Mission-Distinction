@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
+import { randomUUID } from "crypto";
 import { db } from "@workspace/db";
-import { usersTable, emailTokensTable } from "@workspace/db";
+import { usersTable, emailTokensTable, refreshTokensTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { hashPassword, verifyPassword, generateToken } from "../lib/auth";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
@@ -79,8 +80,11 @@ router.post("/student/register", registerLimiter, async (req: Request, res: Resp
     const emailSent = await sendEmail(user.email, "Verify your email — Mission Distinction", verifyEmailTemplate(verifyUrl, user.fullName));
 
     const jwtToken = generateToken(user.id, user.role);
+    const refreshValue = randomUUID();
+    await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     res.status(201).json({
       token: jwtToken,
+      refreshToken: refreshValue,
       user: sanitizeUser(user),
       ...(process.env.NODE_ENV !== "production" && !emailSent && { verifyLink: verifyUrl }),
     });
@@ -107,7 +111,9 @@ router.post("/student/login", loginLimiter, async (req: Request, res: Response) 
       return;
     }
     const token = generateToken(user.id, user.role);
-    res.json({ token, user: sanitizeUser(user) });
+    const refreshValue = randomUUID();
+    await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+    res.json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -143,7 +149,9 @@ router.post("/admin/register", registerLimiter, async (req: Request, res: Respon
       emailVerified: true,
     }).returning();
     const token = generateToken(user.id, user.role);
-    res.status(201).json({ token, user: sanitizeUser(user) });
+    const refreshValue = randomUUID();
+    await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+    res.status(201).json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -167,7 +175,9 @@ router.post("/admin/login", loginLimiter, async (req: Request, res: Response) =>
       return;
     }
     const token = generateToken(user.id, user.role);
-    res.json({ token, user: sanitizeUser(user) });
+    const refreshValue = randomUUID();
+    await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+    res.json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -205,7 +215,9 @@ router.post("/google", async (req: Request, res: Response) => {
       user = { ...user, emailVerified: true };
     }
     const token = generateToken(user.id, user.role);
-    res.json({ token, user: sanitizeUser(user) });
+    const refreshValue = randomUUID();
+    await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+    res.json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
   } catch (err: any) {
     console.error("Google auth error:", err);
     res.status(401).json({ error: "Google sign-in failed. Please try again." });
@@ -363,8 +375,36 @@ router.post("/change-password", authMiddleware, async (req: Request, res: Respon
   }
 });
 
+// ─── Refresh Token ────────────────────────────────────────────────────────────
+router.post("/refresh", async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) { res.status(400).json({ error: "Missing refresh token" }); return; }
+    const [tokenRow] = await db.select().from(refreshTokensTable).where(eq(refreshTokensTable.token, refreshToken));
+    if (!tokenRow || tokenRow.expiresAt < new Date()) {
+      res.status(401).json({ error: "Refresh token invalid or expired. Please log in again." }); return;
+    }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, tokenRow.userId));
+    if (!user || user.bannedAt) {
+      res.status(401).json({ error: "Account not found or suspended" }); return;
+    }
+    await db.delete(refreshTokensTable).where(eq(refreshTokensTable.id, tokenRow.id));
+    const newRefreshValue = randomUUID();
+    const newExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await db.insert(refreshTokensTable).values({ userId: user.id, token: newRefreshValue, expiresAt: newExpiry });
+    const newAccessToken = generateToken(user.id, user.role);
+    res.json({ token: newAccessToken, refreshToken: newRefreshValue, user: sanitizeUser(user) });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ─── Logout ───────────────────────────────────────────────────────────────────
-router.post("/logout", (_req: Request, res: Response) => {
+router.post("/logout", async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+  if (refreshToken) {
+    await db.delete(refreshTokensTable).where(eq(refreshTokensTable.token, refreshToken)).catch(() => {});
+  }
   res.json({ message: "Logged out" });
 });
 

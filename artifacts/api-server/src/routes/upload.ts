@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { adminMiddleware } from "../middlewares/auth";
+import { adminMiddleware, authMiddleware } from "../middlewares/auth";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { Readable } from "stream";
@@ -87,6 +87,27 @@ router.post("/image", adminMiddleware, upload.single("file"), async (req: Reques
     res.json({ url: result.secure_url, fileName: result.public_id });
   } catch (err: any) {
     console.error("Image upload error:", err);
+    res.status(500).json({ error: "Upload failed. Please try again." });
+  }
+});
+
+router.post("/avatar", authMiddleware, upload.single("file"), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      res.status(400).json({ error: "Only JPG, PNG, WebP or GIF images are allowed" }); return;
+    }
+    const userId = (req as any).user?.id;
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "mission-distinction/avatars",
+      resource_type: "image",
+      public_id: `avatar_${userId}_${Date.now()}`,
+      transformation: [{ width: 400, height: 400, crop: "fill", gravity: "face", quality: "auto", fetch_format: "auto" }],
+    });
+    res.json({ url: result.secure_url });
+  } catch (err: any) {
+    console.error("Avatar upload error:", err);
     res.status(500).json({ error: "Upload failed. Please try again." });
   }
 });

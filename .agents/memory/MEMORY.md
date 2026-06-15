@@ -1,3 +1,2 @@
-- [Socket.io path routing](socket-io-routing.md) — Socket.io must use path /api/socket.io/ on both server and client so Replit proxy routes correctly to port 8080
-- [Push VAPID key storage](vapid-keys.md) — VAPID keys auto-generated on first startup, stored in app_settings table (key/value), exposed via GET /api/push/vapid-key
-- [Playwright test auth](playwright-auth.md) — Use page.addInitScript to inject localStorage auth before page load; form fill doesn't work reliably with React Hook Form in Playwright agent
+- [Auth token architecture](auth-tokens.md) — 15min access JWT + 30d rotating refresh token (DB-stored in refresh_tokens table)
+- [AuthContext lazy init](auth-context.md) — useState must use lazy initializer for localStorage or ProtectedRoute flashes/redirects on first render
