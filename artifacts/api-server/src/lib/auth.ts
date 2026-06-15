@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -6,13 +6,17 @@ if (!JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is not set. Add it to Replit Secrets before starting the server.");
 }
 const JWT_EXPIRES_IN = "30d";
+const BCRYPT_ROUNDS = 12;
 
-export function hashPassword(password: string): string {
-  return crypto.createHash("sha256").update(password + "md_salt_2025").digest("hex");
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
 
-export function verifyPassword(password: string, hash: string): boolean {
-  return hashPassword(password) === hash;
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  if (hash.length === 64 && !hash.startsWith("$2")) {
+    return false;
+  }
+  return bcrypt.compare(password, hash);
 }
 
 export function generateToken(userId: number, role: string): string {

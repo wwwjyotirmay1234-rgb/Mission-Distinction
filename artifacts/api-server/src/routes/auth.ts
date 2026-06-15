@@ -56,7 +56,7 @@ router.post("/student/register", registerLimiter, async (req: Request, res: Resp
       fullName,
       email,
       mobileNumber: mobileNumber || null,
-      passwordHash: hashPassword(password),
+      passwordHash: await hashPassword(password),
       role: "student",
       year,
       college,
@@ -102,7 +102,7 @@ router.post("/student/login", loginLimiter, async (req: Request, res: Response) 
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
-    if (!verifyPassword(password, user.passwordHash)) {
+    if (!await verifyPassword(password, user.passwordHash)) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
@@ -138,7 +138,7 @@ router.post("/admin/register", registerLimiter, async (req: Request, res: Respon
     const [user] = await db.insert(usersTable).values({
       fullName,
       email: workEmail,
-      passwordHash: hashPassword(password),
+      passwordHash: await hashPassword(password),
       role: "admin",
       emailVerified: true,
     }).returning();
@@ -162,7 +162,7 @@ router.post("/admin/login", loginLimiter, async (req: Request, res: Response) =>
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
-    if (!verifyPassword(password, user.passwordHash)) {
+    if (!await verifyPassword(password, user.passwordHash)) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
@@ -194,7 +194,7 @@ router.post("/google", async (req: Request, res: Response) => {
       [user] = await db.insert(usersTable).values({
         fullName: name || email.split("@")[0],
         email,
-        passwordHash: hashPassword(uid),
+        passwordHash: await hashPassword(uid),
         role: "student",
         studyStreak: 0,
         emailVerified: true, // Google already verified the email
@@ -274,7 +274,7 @@ router.post("/reset-password", async (req: Request, res: Response) => {
       return;
     }
     await db.update(usersTable)
-      .set({ passwordHash: hashPassword(newPassword) })
+      .set({ passwordHash: await hashPassword(newPassword) })
       .where(eq(usersTable.id, tokenRow.userId));
     await db.update(emailTokensTable).set({ used: true }).where(eq(emailTokensTable.id, tokenRow.id));
     res.json({ message: "Password reset successfully. You can now log in." });
@@ -352,11 +352,11 @@ router.post("/change-password", authMiddleware, async (req: Request, res: Respon
     const userId = (req as any).user?.id;
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
-    if (!verifyPassword(currentPassword, user.passwordHash)) {
+    if (!await verifyPassword(currentPassword, user.passwordHash)) {
       res.status(401).json({ error: "Current password is incorrect" });
       return;
     }
-    await db.update(usersTable).set({ passwordHash: hashPassword(newPassword) }).where(eq(usersTable.id, userId));
+    await db.update(usersTable).set({ passwordHash: await hashPassword(newPassword) }).where(eq(usersTable.id, userId));
     res.json({ message: "Password changed successfully" });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
@@ -375,54 +375,43 @@ router.get("/me", authMiddleware, (req: Request, res: Response) => {
 
 // ─── Admin: Test Email ────────────────────────────────────────────────────────
 router.post("/admin/test-email", adminMiddleware, async (req: Request, res: Response) => {
-  const smtpEmail = process.env.SMTP_EMAIL;
-  const smtpPassword = process.env.SMTP_PASSWORD;
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.SMTP_EMAIL;
+  const toEmail = fromEmail || "admin@missiondistinction.in";
 
   const envCheck = {
-    SMTP_EMAIL: !!smtpEmail,
-    SMTP_PASSWORD: !!smtpPassword,
+    SENDGRID_API_KEY: !!apiKey,
+    SENDGRID_FROM_EMAIL: !!fromEmail,
   };
 
-  if (!smtpEmail || !smtpPassword) {
+  if (!apiKey) {
     res.status(503).json({
       ok: false,
-      message: "SMTP credentials not configured in environment.",
+      message: "SENDGRID_API_KEY not configured in environment.",
       envCheck,
     });
     return;
   }
 
   try {
-    const nodemailer = await import("nodemailer");
-    const transporter = nodemailer.default.createTransport({
-      service: "gmail",
-      auth: { user: smtpEmail, pass: smtpPassword },
-    });
+    const sent = await sendEmail(
+      toEmail,
+      "✅ Mission Distinction — Email system test",
+      `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0f0f1a;color:#e2e8f0;padding:40px;border-radius:12px;">
+        <h2 style="color:#7c3aed;margin-top:0;">Mission Distinction</h2>
+        <h3>✅ Email system is working!</h3>
+        <p style="color:#94a3b8;">Test email sent via <strong>SendGrid</strong> at <strong>${new Date().toISOString()}</strong></p>
+        <p style="color:#94a3b8;">All transactional emails (registration verification, password reset) are operational.</p>
+      </div>`
+    );
 
-    // Verify SMTP connection
-    await transporter.verify();
-
-    // Send test email
-    const appUrl = getAppUrl();
-    const info = await transporter.sendMail({
-      from: `"Mission Distinction" <${smtpEmail}>`,
-      to: smtpEmail,
-      subject: "✅ Mission Distinction — Email system test",
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0f0f1a;color:#e2e8f0;padding:40px;border-radius:12px;">
-          <h2 style="color:#7c3aed;margin-top:0;">Mission Distinction</h2>
-          <h3>✅ Email system is working!</h3>
-          <p style="color:#94a3b8;">Test email sent at <strong>${new Date().toISOString()}</strong></p>
-          <p style="color:#94a3b8;">All transactional emails (registration verification, password reset) are operational.</p>
-        </div>`,
-    });
+    if (!sent) throw new Error("SendGrid returned false — check API key and sender verification.");
 
     res.json({
       ok: true,
-      message: `Test email delivered to ${smtpEmail}`,
-      messageId: info.messageId,
+      message: `Test email delivered to ${toEmail} via SendGrid`,
       envCheck,
-      appUrl,
+      appUrl: getAppUrl(),
     });
   } catch (err: any) {
     res.status(500).json({
