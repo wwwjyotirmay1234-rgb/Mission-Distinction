@@ -54,8 +54,8 @@ export default function AdminSettings() {
       toast.error("All password fields are required.");
       return;
     }
-    if (pwForm.next.length < 6) {
-      toast.error("New password must be at least 6 characters.");
+    if (pwForm.next.length < 8) {
+      toast.error("New password must be at least 8 characters.");
       return;
     }
     if (pwForm.next !== pwForm.confirm) {
@@ -146,7 +146,7 @@ export default function AdminSettings() {
           <CardTitle className="flex items-center gap-2">
             <Key className="h-4 w-4 text-secondary" /> Change Password
           </CardTitle>
-          <CardDescription>Update your admin account password. Minimum 6 characters.</CardDescription>
+          <CardDescription>Update your admin account password. Minimum 8 characters.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {(["current", "next", "confirm"] as const).map((field) => (

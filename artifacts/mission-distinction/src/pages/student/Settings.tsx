@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { customFetch } from "@workspace/api-client-react";
+import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "sonner";
 import { Star, MessageSquare, Bell, BellOff, Loader2, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,10 +37,8 @@ export default function StudentSettings() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const token = localStorage.getItem("mission_token");
-      const uploadRes = await fetch("/api/upload/avatar", {
+      const uploadRes = await apiFetch("/api/upload/avatar", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       if (!uploadRes.ok) {
@@ -47,9 +46,9 @@ export default function StudentSettings() {
         throw new Error(d.error || "Upload failed");
       }
       const { url } = await uploadRes.json();
-      const patchRes = await fetch(`/api/users/${user.id}`, {
+      const patchRes = await apiFetch(`/api/users/${user.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ avatarUrl: url }),
       });
       if (!patchRes.ok) throw new Error("Failed to save avatar");

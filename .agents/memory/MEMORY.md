@@ -1,5 +1,2 @@
-- [Auth token architecture](auth-tokens.md) — 15min access JWT + 30d rotating refresh token (DB-stored in refresh_tokens table)
-- [AuthContext lazy init](auth-context.md) — useState must use lazy initializer for localStorage or ProtectedRoute flashes/redirects on first render
-- [Quiz answer exposure pattern](quiz-security.md) — correctOption must be stripped from student GET /quizzes/:id responses; only admins see it
-- [API server build](api-build.md) — uses esbuild (build.mjs), not tsc; pre-existing tsc errors exist but don't affect runtime
-- [Socket CORS pattern](socket-cors.md) — Socket.io CORS must use env-derived origin list matching HTTP CORS; never wildcard in production
+- [Auth token storage keys](auth-token-keys.md) — localStorage keys are mission_token / mission_refresh_token / mission_user (NOT "token")
+- [Token refresh architecture](token-refresh-arch.md) — auto-refresh via setTokenRefresher in custom-fetch.ts + apiFetch.ts for raw fetch calls + AuthContext event bus

@@ -279,8 +279,8 @@ router.post("/reset-password", async (req: Request, res: Response) => {
       res.status(400).json({ error: "Missing fields" });
       return;
     }
-    if (newPassword.length < 6) {
-      res.status(400).json({ error: "Password must be at least 6 characters" });
+    if (newPassword.length < 8) {
+      res.status(400).json({ error: "Password must be at least 8 characters" });
       return;
     }
     const [tokenRow] = await db.select().from(emailTokensTable).where(
@@ -362,8 +362,8 @@ router.post("/change-password", authMiddleware, async (req: Request, res: Respon
       res.status(400).json({ error: "Missing fields" });
       return;
     }
-    if (newPassword.length < 6) {
-      res.status(400).json({ error: "New password must be at least 6 characters" });
+    if (newPassword.length < 8) {
+      res.status(400).json({ error: "New password must be at least 8 characters" });
       return;
     }
     const userId = (req as any).user?.id;

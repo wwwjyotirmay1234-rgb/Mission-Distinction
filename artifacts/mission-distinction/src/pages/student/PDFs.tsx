@@ -59,11 +59,8 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
 
 async function trackDownload(pdfId: number) {
   try {
-    const token = localStorage.getItem("token");
-    await fetch(`/api/pdfs/${pdfId}/download`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const { apiFetch } = await import("@/lib/apiFetch");
+    await apiFetch(`/api/pdfs/${pdfId}/download`, { method: "POST" });
   } catch {}
 }
 

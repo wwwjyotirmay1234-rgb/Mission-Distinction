@@ -11,8 +11,8 @@ import { Activity, CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 const schema = z.object({
-  newPassword: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Confirm your password"),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Confirm your password"),
 }).refine((d) => d.newPassword === d.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -124,7 +124,7 @@ export default function ResetPassword() {
                           <div className="relative">
                             <Input
                               type={showPassword ? "text" : "password"}
-                              placeholder="Min. 6 characters"
+                              placeholder="Min. 8 characters"
                               className="bg-background/50 pr-10"
                               {...field}
                             />

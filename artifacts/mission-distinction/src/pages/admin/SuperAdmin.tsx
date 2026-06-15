@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { apiFetch as authFetch } from "@/lib/apiFetch";
 
 interface UserRow {
   id: number;
@@ -50,11 +51,11 @@ function timeAgo(d: string) {
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 async function apiFetch(path: string, opts: RequestInit = {}) {
-  const token = localStorage.getItem("token");
-  return fetch(`${BASE}${path}`, {
-    ...opts,
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
-  });
+  const headers = new Headers({ "Content-Type": "application/json" });
+  if (opts.headers) {
+    new Headers(opts.headers as HeadersInit).forEach((v, k) => headers.set(k, v));
+  }
+  return authFetch(`${BASE}${path}`, { ...opts, headers });
 }
 
 export default function SuperAdminPanel() {

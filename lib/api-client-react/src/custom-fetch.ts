@@ -17,6 +17,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _tokenRefresher: (() => Promise<string | null>) | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -42,6 +43,16 @@ export function setBaseUrl(url: string | null): void {
  */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
+}
+
+/**
+ * Register an async function that refreshes the access token.
+ * When `customFetch` receives a 401 response, it calls this function.
+ * If it returns a new token the original request is retried once with
+ * the updated Authorization header.  Return `null` to propagate the 401.
+ */
+export function setTokenRefresher(refresher: (() => Promise<string | null>) | null): void {
+  _tokenRefresher = refresher;
 }
 
 function isRequest(input: RequestInfo | URL): input is Request {
@@ -361,6 +372,19 @@ export async function customFetch<T = unknown>(
   const requestInfo = { method, url: resolveUrl(input) };
 
   const response = await fetch(input, { ...init, method, headers });
+
+  if (response.status === 401 && _tokenRefresher) {
+    const newToken = await _tokenRefresher().catch(() => null);
+    if (newToken) {
+      headers.set("authorization", `Bearer ${newToken}`);
+      const retryResponse = await fetch(input, { ...init, method, headers });
+      if (!retryResponse.ok) {
+        const retryData = await parseErrorBody(retryResponse, method);
+        throw new ApiError(retryResponse, retryData, requestInfo);
+      }
+      return (await parseSuccessBody(retryResponse, responseType, requestInfo)) as T;
+    }
+  }
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

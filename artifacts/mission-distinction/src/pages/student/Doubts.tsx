@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, Plus, ChevronLeft, Send, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { apiFetch } from "@/lib/apiFetch";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "NEET PG", "General"];
 
@@ -40,25 +41,23 @@ interface DoubtDetail extends Doubt {
   answers: DoubtAnswer[];
 }
 
-const token = () => localStorage.getItem("token") ?? "";
-
 async function fetchDoubts(subject?: string): Promise<Doubt[]> {
   const url = subject && subject !== "All" ? `/api/doubts?subject=${subject}` : "/api/doubts";
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token()}` } });
+  const res = await apiFetch(url);
   if (!res.ok) throw new Error("Failed to load questions");
   return res.json();
 }
 
 async function fetchDoubt(id: number): Promise<DoubtDetail> {
-  const res = await fetch(`/api/doubts/${id}`, { headers: { Authorization: `Bearer ${token()}` } });
+  const res = await apiFetch(`/api/doubts/${id}`);
   if (!res.ok) throw new Error("Failed to load question");
   return res.json();
 }
 
 async function createDoubt(data: { subject: string; title: string; question: string }) {
-  const res = await fetch("/api/doubts", {
+  const res = await apiFetch("/api/doubts", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Failed to post question");
@@ -66,9 +65,9 @@ async function createDoubt(data: { subject: string; title: string; question: str
 }
 
 async function postAnswer(doubtId: number, answer: string) {
-  const res = await fetch(`/api/doubts/${doubtId}/answers`, {
+  const res = await apiFetch(`/api/doubts/${doubtId}/answers`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ answer }),
   });
   if (!res.ok) throw new Error("Failed to post answer");
@@ -76,9 +75,8 @@ async function postAnswer(doubtId: number, answer: string) {
 }
 
 async function acceptAnswer(doubtId: number, answerId: number) {
-  const res = await fetch(`/api/doubts/${doubtId}/answers/${answerId}/accept`, {
+  const res = await apiFetch(`/api/doubts/${doubtId}/answers/${answerId}/accept`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token()}` },
   });
   if (!res.ok) throw new Error("Failed to accept answer");
   return res.json();

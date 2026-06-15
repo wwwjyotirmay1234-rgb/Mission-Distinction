@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { Trophy, Flame, Medal } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { apiFetch } from "@/lib/apiFetch";
 
 interface LeaderboardEntry {
   id: number;
@@ -18,10 +19,7 @@ interface LeaderboardEntry {
 }
 
 async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
-  const token = localStorage.getItem("token");
-  const res = await fetch("/api/leaderboard", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await apiFetch("/api/leaderboard");
   if (!res.ok) throw new Error("Failed to fetch leaderboard");
   return res.json();
 }

@@ -53,10 +53,9 @@ async function uploadNoteFile(
   try {
     const formData = new FormData();
     formData.append("file", file);
-    const token = localStorage.getItem("mission_token") || "";
-    const res = await fetch("/api/upload/note-file", {
+    const { apiFetch } = await import("@/lib/apiFetch");
+    const res = await apiFetch("/api/upload/note-file", {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
     if (!res.ok) {

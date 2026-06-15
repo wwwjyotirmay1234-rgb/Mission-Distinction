@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
-import { User } from "@workspace/api-client-react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { User, setTokenRefresher, setAuthTokenGetter } from "@workspace/api-client-react";
 
 interface LoginResponse {
   token: string;
@@ -61,6 +61,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(newUser);
     localStorage.setItem("mission_user", JSON.stringify(newUser));
   };
+
+  useEffect(() => {
+    setAuthTokenGetter(() => localStorage.getItem("mission_token"));
+    setTokenRefresher(async () => {
+      const refreshToken = localStorage.getItem("mission_refresh_token");
+      if (!refreshToken) {
+        window.dispatchEvent(new Event("auth:logout"));
+        return null;
+      }
+      try {
+        const res = await fetch("/api/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+        });
+        if (!res.ok) {
+          window.dispatchEvent(new Event("auth:logout"));
+          return null;
+        }
+        const data = await res.json();
+        localStorage.setItem("mission_token", data.token);
+        localStorage.setItem("mission_user", JSON.stringify(data.user));
+        if (data.refreshToken) {
+          localStorage.setItem("mission_refresh_token", data.refreshToken);
+        }
+        window.dispatchEvent(new CustomEvent("auth:tokenRefreshed", { detail: data }));
+        return data.token as string;
+      } catch {
+        window.dispatchEvent(new Event("auth:logout"));
+        return null;
+      }
+    });
+
+    return () => {
+      setTokenRefresher(null);
+      setAuthTokenGetter(null);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onLogout = () => {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem("mission_user");
+      localStorage.removeItem("mission_token");
+      localStorage.removeItem("mission_refresh_token");
+    };
+    const onRefreshed = (e: Event) => {
+      const { token: t, user: u, refreshToken: rt } = (e as CustomEvent<LoginResponse>).detail;
+      setToken(t);
+      setUser(u);
+      if (rt) localStorage.setItem("mission_refresh_token", rt);
+    };
+    window.addEventListener("auth:logout", onLogout);
+    window.addEventListener("auth:tokenRefreshed", onRefreshed as EventListener);
+    return () => {
+      window.removeEventListener("auth:logout", onLogout);
+      window.removeEventListener("auth:tokenRefreshed", onRefreshed as EventListener);
+    };
+  }, []);
 
   return (
     <AuthContext.Provider

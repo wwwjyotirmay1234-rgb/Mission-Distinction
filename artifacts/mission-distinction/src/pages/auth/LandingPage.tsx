@@ -45,15 +45,15 @@ function getRouteByYear(year: string | undefined) {
 
 const studentLoginSchema = z.object({
   identifier: z.string().min(1, "Email or Mobile is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 const studentRegisterSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   email: z.string().email("Invalid email address"),
   mobileNumber: z.string().optional(),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Confirm password"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Confirm password"),
   year: z.string().min(1, "Select your year"),
   college: z.string().min(1, "Select your college"),
   agreeTerms: z.boolean().refine(val => val === true, "You must agree to the terms"),
@@ -71,8 +71,8 @@ const adminLoginSchema = z.object({
 const adminRegisterSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   workEmail: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Confirm password"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Confirm password"),
   inviteCode: z.string().min(1, "Invite code is required"),
   agreeTerms: z.boolean().refine(val => val === true, "You must agree to the terms"),
 }).refine((data) => data.password === data.confirmPassword, {
