@@ -10,11 +10,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { customFetch } from "@workspace/api-client-react";
 import { toast } from "sonner";
-import { Star, MessageSquare } from "lucide-react";
+import { Star, MessageSquare, Bell, BellOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 export default function StudentSettings() {
   const { user } = useAuth();
+  const { supported, permission, subscribed, loading: pushLoading, requestAndSubscribe, unsubscribe } = usePushNotifications();
   const [feedback, setFeedback] = useState({ category: "general", subject: "", message: "", rating: 0 });
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
@@ -90,16 +92,43 @@ export default function StudentSettings() {
 
       <Card className="bg-card/40 border-border/40">
         <CardHeader>
-          <CardTitle>Notifications</CardTitle>
-          <CardDescription>Configure how you receive alerts.</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-4 w-4 text-primary" /> Notifications
+          </CardTitle>
+          <CardDescription>Configure how you receive alerts and push notifications.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-3 border border-border/40 rounded-lg">
-            <div className="space-y-0.5">
-              <Label className="text-sm font-medium">New Content Alerts</Label>
-              <p className="text-xs text-muted-foreground">Receive push notifications when new notes or PDFs are added.</p>
+          <div className="flex items-center justify-between p-4 border border-border/40 rounded-lg bg-background/30">
+            <div className="space-y-0.5 flex-1">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                {subscribed ? <Bell className="h-3.5 w-3.5 text-green-400" /> : <BellOff className="h-3.5 w-3.5 text-muted-foreground" />}
+                Push Notifications
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {!supported
+                  ? "Not supported in this browser."
+                  : permission === "denied"
+                  ? "Blocked — enable notifications in browser settings."
+                  : subscribed
+                  ? "You'll receive alerts for new announcements and updates."
+                  : "Get instant alerts for new announcements and content."}
+              </p>
             </div>
-            <Switch defaultChecked />
+            <Button
+              variant={subscribed ? "outline" : "default"}
+              size="sm"
+              disabled={pushLoading || !supported || permission === "denied"}
+              onClick={subscribed ? unsubscribe : requestAndSubscribe}
+              className="ml-4 shrink-0"
+            >
+              {pushLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : subscribed ? (
+                "Disable"
+              ) : (
+                "Enable"
+              )}
+            </Button>
           </div>
           <div className="flex items-center justify-between p-3 border border-border/40 rounded-lg">
             <div className="space-y-0.5">

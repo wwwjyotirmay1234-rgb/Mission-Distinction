@@ -11,3 +11,4 @@ export * from "./calendar";
 export * from "./feedback";
 export * from "./emailTokens";
 export * from "./doubts";
+export * from "./push";

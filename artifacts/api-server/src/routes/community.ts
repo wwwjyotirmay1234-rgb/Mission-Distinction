@@ -5,6 +5,7 @@ import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
 import { eq, desc } from "drizzle-orm";
+import { getIO } from "../lib/socket-server";
 
 const router = Router();
 
@@ -84,6 +85,7 @@ router.post("/messages/:groupId", authMiddleware, async (req: Request, res: Resp
       senderAvatarUrl: user.avatarUrl || null,
       content: safeContent,
     }).returning();
+    try { getIO().to(`chat:${groupId}`).emit("new-message", message); } catch { }
     res.status(201).json(message);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });

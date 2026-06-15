@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,13 +12,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useListCommunityPosts, useListCommunityGroups, useCreateCommunityPost, getListCommunityPostsQueryKey } from "@workspace/api-client-react";
 import { customFetch } from "@workspace/api-client-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Edit3, Heart, MessageSquare, Share2, Clock, Users, PlusCircle, Send, MessageCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { Search, Edit3, Heart, MessageSquare, Share2, Clock, Users, PlusCircle, Send, MessageCircle, ArrowLeft, Loader2, Wifi, WifiOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { io, Socket } from "socket.io-client";
 
 type ChatMessage = { id: number; groupId: number; senderName: string; senderAvatarUrl?: string | null; content: string; createdAt: string };
 type Group = { id: number; name: string; subject: string; memberCount: number; lastMessage?: string | null };
+
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 export default function StudentCommunity() {
   const [activeTab, setActiveTab] = useState("for-you");
@@ -28,9 +31,14 @@ export default function StudentCommunity() {
   const [sendingMsg, setSendingMsg] = useState(false);
   const [postOpen, setPostOpen] = useState(false);
   const [postForm, setPostForm] = useState({ title: "", content: "", groupName: "" });
+  const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([]);
+  const [typingUser, setTypingUser] = useState<string | null>(null);
+  const [connected, setConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   const { data: postsData, isLoading: postsLoading } = useListCommunityPosts(
     { search: search || undefined },
@@ -43,18 +51,72 @@ export default function StudentCommunity() {
   const groupsList: Group[] = Array.isArray(groups) ? groups : [];
   const activeGroup = groupsList.find(g => g.id === chatGroupId);
 
-  const { data: chatMessages = [], isLoading: chatLoading } = useQuery<ChatMessage[]>({
+  const { data: initialMessages = [], isLoading: chatLoading } = useQuery<ChatMessage[]>({
     queryKey: ["chat-messages", chatGroupId],
     queryFn: () => customFetch(`/api/community/messages/${chatGroupId}`),
     enabled: chatGroupId !== null,
-    refetchInterval: 3000,
   });
+
+  useEffect(() => {
+    if (initialMessages.length > 0) {
+      setLiveMessages(initialMessages as ChatMessage[]);
+    }
+  }, [initialMessages]);
+
+  const chatMessages = liveMessages.length > 0 ? liveMessages : (initialMessages as ChatMessage[]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [chatMessages]);
+  }, [chatMessages, typingUser]);
+
+  useEffect(() => {
+    if (!token) return;
+    const sock = io(window.location.origin, {
+      path: `${BASE}/api/socket.io/`,
+      auth: { token },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
+    });
+    socketRef.current = sock;
+
+    sock.on("connect", () => setConnected(true));
+    sock.on("disconnect", () => setConnected(false));
+    sock.on("connect_error", () => setConnected(false));
+
+    sock.on("new-message", (msg: ChatMessage) => {
+      setLiveMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+    });
+
+    sock.on("user-typing", ({ name }: { name: string }) => {
+      setTypingUser(name);
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(() => setTypingUser(null), 2500);
+    });
+
+    return () => {
+      sock.disconnect();
+      socketRef.current = null;
+    };
+  }, [token]);
+
+  useEffect(() => {
+    const sock = socketRef.current;
+    if (!sock) return;
+    if (chatGroupId !== null) {
+      sock.emit("join-room", chatGroupId);
+      setLiveMessages([]);
+    }
+    return () => {
+      if (chatGroupId !== null && sock) sock.emit("leave-room", chatGroupId);
+    };
+  }, [chatGroupId]);
 
   const handleSendMessage = async () => {
     if (!chatMessage.trim() || !chatGroupId || sendingMsg) return;
@@ -65,11 +127,17 @@ export default function StudentCommunity() {
         body: JSON.stringify({ content: chatMessage.trim() }),
       });
       setChatMessage("");
-      queryClient.invalidateQueries({ queryKey: ["chat-messages", chatGroupId] });
     } catch {
       toast.error("Failed to send message.");
     } finally {
       setSendingMsg(false);
+    }
+  };
+
+  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setChatMessage(e.target.value);
+    if (chatGroupId && socketRef.current?.connected) {
+      socketRef.current.emit("typing", chatGroupId);
     }
   };
 
@@ -97,7 +165,7 @@ export default function StudentCommunity() {
         {chatGroupId !== null ? (
           <div className="flex flex-col h-full">
             <div className="flex items-center gap-3 mb-4">
-              <Button variant="ghost" size="icon" onClick={() => setChatGroupId(null)}>
+              <Button variant="ghost" size="icon" onClick={() => { setChatGroupId(null); setLiveMessages([]); }}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-sm">
@@ -105,13 +173,18 @@ export default function StudentCommunity() {
               </div>
               <div>
                 <p className="font-semibold text-sm">{activeGroup?.name}</p>
-                <p className="text-xs text-muted-foreground">{activeGroup?.memberCount} members · Live Chat</p>
+                <p className="text-xs text-muted-foreground">{activeGroup?.memberCount} members</p>
               </div>
-              <Badge variant="outline" className="ml-auto text-xs border-green-500/30 text-green-400 bg-green-500/5">● Live</Badge>
+              <Badge
+                variant="outline"
+                className={`ml-auto text-xs ${connected ? "border-green-500/30 text-green-400 bg-green-500/5" : "border-yellow-500/30 text-yellow-400 bg-yellow-500/5"}`}
+              >
+                {connected ? "● Live" : "○ Connecting…"}
+              </Badge>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-3 pr-1 pb-2">
-              {chatLoading ? (
+              {chatLoading && liveMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-32 text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading messages...
                 </div>
@@ -144,6 +217,16 @@ export default function StudentCommunity() {
                   );
                 })
               )}
+              {typingUser && (
+                <div className="flex gap-2 items-center px-1">
+                  <div className="flex gap-0.5 items-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">{typingUser} is typing…</span>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -152,7 +235,7 @@ export default function StudentCommunity() {
                 placeholder="Type a message..."
                 className="bg-card/50 border-border/50 flex-1"
                 value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
+                onChange={handleTyping}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
               />
               <Button size="icon" onClick={handleSendMessage} disabled={sendingMsg || !chatMessage.trim()}>

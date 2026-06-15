@@ -1,7 +1,3 @@
-- [Auth token system](auth-tokens.md) — tokens are signed JWT (jsonwebtoken), not base64; JWT_SECRET env var with fallback
-- [Mobile sidebar pattern](mobile-sidebar.md) — SidebarContext drives Sheet open state; sidebars use hidden md:flex + Sheet for mobile
-- [Route ID validation](route-id-validation.md) — all routes use parseId() from auth.ts lib, not parseInt(); returns 400 on invalid IDs
-- [Upload auth](upload-auth.md) — upload routes require adminMiddleware, not authMiddleware; file type validated server-side
-- [Quiz taking flow](quiz-taking.md) — quiz submission uses direct fetch (not orval hook); listQuizzes returns Quiz[] not {quizzes:[]}
-- [Streak logic](streak-logic.md) — updateStreak() in api-server/src/lib/streak.ts; lastStreakDate text column on users table
-- [PDF list shape](pdf-list-shape.md) — listPdfs/listQuizzes return plain arrays; use Array.isArray guard when iterating in components
+- [Socket.io path routing](socket-io-routing.md) — Socket.io must use path /api/socket.io/ on both server and client so Replit proxy routes correctly to port 8080
+- [Push VAPID key storage](vapid-keys.md) — VAPID keys auto-generated on first startup, stored in app_settings table (key/value), exposed via GET /api/push/vapid-key
+- [Playwright test auth](playwright-auth.md) — Use page.addInitScript to inject localStorage auth before page load; form fill doesn't work reliably with React Hook Form in Playwright agent

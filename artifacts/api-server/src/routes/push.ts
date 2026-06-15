@@ -1,0 +1,107 @@
+import { Router, Request, Response } from "express";
+import webpush from "web-push";
+import { db } from "@workspace/db";
+import { pushSubscriptionsTable, appSettingsTable } from "@workspace/db";
+import { authMiddleware } from "../middlewares/auth";
+import { eq } from "drizzle-orm";
+
+const router = Router();
+
+async function getOrCreateVapidKeys(): Promise<{ publicKey: string; privateKey: string }> {
+  const [pub] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "vapid_public_key"));
+  if (pub) {
+    const [priv] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "vapid_private_key"));
+    return { publicKey: pub.value, privateKey: priv.value };
+  }
+  const keys = webpush.generateVAPIDKeys();
+  await db.insert(appSettingsTable).values([
+    { key: "vapid_public_key", value: keys.publicKey },
+    { key: "vapid_private_key", value: keys.privateKey },
+  ]);
+  return keys;
+}
+
+let vapidReady = false;
+async function ensureVapid() {
+  if (vapidReady) return;
+  const keys = await getOrCreateVapidKeys();
+  webpush.setVapidDetails(
+    "mailto:missiondistinction108@gmail.com",
+    keys.publicKey,
+    keys.privateKey
+  );
+  vapidReady = true;
+}
+
+router.get("/vapid-key", async (_req: Request, res: Response) => {
+  try {
+    const keys = await getOrCreateVapidKeys();
+    res.json({ publicKey: keys.publicKey });
+  } catch {
+    res.status(500).json({ error: "Failed to get VAPID key" });
+  }
+});
+
+router.post("/subscribe", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const { endpoint, keys } = req.body;
+    if (!endpoint || !keys?.p256dh || !keys?.auth) {
+      res.status(400).json({ error: "Invalid subscription" });
+      return;
+    }
+    await db.insert(pushSubscriptionsTable).values({
+      userId: user.id,
+      endpoint,
+      p256dh: keys.p256dh,
+      auth: keys.auth,
+    }).onConflictDoUpdate({
+      target: pushSubscriptionsTable.endpoint,
+      set: { userId: user.id, p256dh: keys.p256dh, auth: keys.auth },
+    });
+    res.json({ message: "Subscribed to push notifications" });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/subscribe", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const { endpoint } = req.body;
+    if (!endpoint) { res.status(400).json({ error: "Missing endpoint" }); return; }
+    await db.delete(pushSubscriptionsTable)
+      .where(eq(pushSubscriptionsTable.endpoint, endpoint));
+    res.json({ message: "Unsubscribed" });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+export async function sendPushToAll(title: string, body: string, url = "/") {
+  try {
+    await ensureVapid();
+    const subs = await db.select().from(pushSubscriptionsTable);
+    const payload = JSON.stringify({ title, body, url, icon: "/logo.jpeg" });
+    const results = await Promise.allSettled(
+      subs.map((sub) =>
+        webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          payload
+        )
+      )
+    );
+    const failed = results.filter(r => r.status === "rejected" || (r.status === "fulfilled" && (r.value.statusCode === 410 || r.value.statusCode === 404)));
+    if (failed.length > 0) {
+      const failedEndpoints = subs.filter((_, i) => {
+        const r = results[i];
+        return r.status === "rejected" || (r.status === "fulfilled" && (r.value.statusCode === 410 || r.value.statusCode === 404));
+      }).map(s => s.endpoint);
+      for (const ep of failedEndpoints) {
+        await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.endpoint, ep)).catch(() => {});
+      }
+    }
+  } catch { }
+}
+
+export default router;

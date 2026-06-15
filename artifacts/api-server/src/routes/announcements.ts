@@ -4,6 +4,7 @@ import { announcementsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+import { sendPushToAll } from "./push";
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
     const { title, content, type } = req.body;
     if (!title || !content || !type) { res.status(400).json({ error: "Missing fields" }); return; }
     const [announcement] = await db.insert(announcementsTable).values({ title, content, type }).returning();
+    sendPushToAll(`📢 ${title}`, content.substring(0, 120), "/student/announcements").catch(() => {});
     res.status(201).json(announcement);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
