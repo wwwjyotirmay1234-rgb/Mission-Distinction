@@ -67,9 +67,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       <div className="p-6 flex items-center gap-3 shrink-0">
-        <div className="w-8 h-8 bg-primary/20 text-primary rounded-lg flex items-center justify-center border border-primary/30">
-          <Activity size={18} className="text-primary" />
-        </div>
+        <img src="/logo.jpeg" alt="Mission Distinction" className="h-8 w-8 object-contain rounded-lg" />
         <span className="font-bold text-lg text-foreground tracking-tight">
           Mission<span className="text-primary">Distinction</span>
         </span>

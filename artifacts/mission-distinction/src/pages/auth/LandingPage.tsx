@@ -212,9 +212,7 @@ export default function LandingPage() {
       {/* Header */}
       <header className="container mx-auto px-4 py-6 flex items-center justify-between z-10">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary/20 text-primary rounded-xl flex items-center justify-center border border-primary/30">
-            <Activity size={24} className="text-primary" />
-          </div>
+          <img src="/logo.jpeg" alt="Mission Distinction" className="h-10 w-10 object-contain rounded-xl" />
           <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
             Mission Distinction
           </span>

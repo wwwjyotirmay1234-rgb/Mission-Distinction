@@ -47,9 +47,7 @@ export default function VerifyEmail() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center gap-2 mb-8 justify-center">
-          <div className="w-10 h-10 bg-primary/20 text-primary rounded-xl flex items-center justify-center border border-primary/30">
-            <Activity size={22} className="text-primary" />
-          </div>
+          <img src="/logo.jpeg" alt="Mission Distinction" className="h-10 w-10 object-contain rounded-xl" />
           <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
             Mission Distinction
           </span>
