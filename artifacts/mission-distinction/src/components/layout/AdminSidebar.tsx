@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useSidebar } from "@/contexts/SidebarContext";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
   Users,
@@ -14,7 +15,7 @@ import {
   FileBarChart,
   MessageSquare,
   Settings,
-  Activity,
+  Crown,
 } from "lucide-react";
 
 const navItems = [
@@ -41,6 +42,7 @@ const navItems = [
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
+  const { isSuperAdmin } = useAuth();
 
   return (
     <>
@@ -110,6 +112,25 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             </Link>
           );
         })}
+
+        {isSuperAdmin && (
+          <>
+            <div className="my-3 border-t border-border/40" />
+            <Link href="/admin/super" onClick={onNavigate}>
+              <div
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer mb-1",
+                  location === "/admin/super"
+                    ? "bg-yellow-500/20 text-yellow-400 shadow-sm"
+                    : "text-yellow-500/70 hover:bg-yellow-500/10 hover:text-yellow-400"
+                )}
+              >
+                <Crown size={18} />
+                Super Admin
+              </div>
+            </Link>
+          </>
+        )}
       </nav>
     </>
   );

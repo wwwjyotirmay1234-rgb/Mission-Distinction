@@ -21,6 +21,10 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     res.status(401).json({ error: "User not found" });
     return;
   }
+  if (user.bannedAt) {
+    res.status(403).json({ error: "Your account has been suspended. Contact support." });
+    return;
+  }
   (req as any).user = user;
   next();
 }
@@ -30,6 +34,17 @@ export async function adminMiddleware(req: Request, res: Response, next: NextFun
     const user = (req as any).user;
     if (user?.role !== "admin") {
       res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    next();
+  });
+}
+
+export async function superAdminMiddleware(req: Request, res: Response, next: NextFunction) {
+  await authMiddleware(req, res, () => {
+    const user = (req as any).user;
+    if (!user?.isSuperAdmin) {
+      res.status(403).json({ error: "Super admin access required" });
       return;
     }
     next();

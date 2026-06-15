@@ -57,6 +57,7 @@ export interface User {
   /** @nullable */
   mobileNumber?: string | null;
   role: UserRole;
+  isSuperAdmin?: boolean;
   /** @nullable */
   year?: string | null;
   /** @nullable */
@@ -65,6 +66,8 @@ export interface User {
   avatarUrl?: string | null;
   /** @nullable */
   studyStreak?: number | null;
+  /** @nullable */
+  bannedAt?: string | null;
   createdAt: string;
 }
 

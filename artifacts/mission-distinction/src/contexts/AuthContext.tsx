@@ -6,6 +6,7 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   login: (response: AuthResponse) => void;
   logout: () => void;
 }
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         isAuthenticated: !!token,
         isAdmin: user?.role === "admin",
+        isSuperAdmin: !!(user?.isSuperAdmin),
         login,
         logout: logoutContext,
       }}

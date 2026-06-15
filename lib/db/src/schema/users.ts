@@ -9,12 +9,15 @@ export const usersTable = pgTable("users", {
   mobileNumber: text("mobile_number"),
   passwordHash: text("password_hash").notNull(),
   role: text("role").notNull().default("student"), // student | admin
+  isSuperAdmin: boolean("is_super_admin").default(false).notNull(),
   year: text("year"),
   college: text("college"),
   avatarUrl: text("avatar_url"),
   studyStreak: integer("study_streak").default(0),
   lastStreakDate: text("last_streak_date"),
   emailVerified: boolean("email_verified").default(false).notNull(),
+  bannedAt: timestamp("banned_at"),
+  banReason: text("ban_reason"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

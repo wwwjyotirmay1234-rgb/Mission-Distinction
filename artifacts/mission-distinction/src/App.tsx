@@ -46,6 +46,7 @@ import AdminNews from "@/pages/admin/News";
 import AdminSettings from "@/pages/admin/Settings";
 import AdminReports from "@/pages/admin/Reports";
 import AdminFeedback from "@/pages/admin/Feedback";
+import SuperAdminPanel from "@/pages/admin/SuperAdmin";
 
 const queryClient = new QueryClient();
 
@@ -99,6 +100,7 @@ function Router() {
               <Route path="/admin/reports" component={AdminReports} />
               <Route path="/admin/feedback" component={AdminFeedback} />
               <Route path="/admin/settings" component={AdminSettings} />
+              <Route path="/admin/super" component={SuperAdminPanel} />
               <Route component={NotFound} />
             </Switch>
           </AdminLayout>

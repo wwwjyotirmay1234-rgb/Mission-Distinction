@@ -16,6 +16,7 @@ import uploadRouter from "./upload";
 import feedbackRouter from "./feedback";
 import leaderboardRouter from "./leaderboard";
 import doubtsRouter from "./doubts";
+import superAdminRouter from "./superAdmin";
 
 const router: IRouter = Router();
 
@@ -40,5 +41,6 @@ router.use("/upload", uploadRouter);
 router.use("/feedback", feedbackRouter);
 router.use("/leaderboard", leaderboardRouter);
 router.use("/doubts", doubtsRouter);
+router.use("/super-admin", superAdminRouter);
 
 export default router;
