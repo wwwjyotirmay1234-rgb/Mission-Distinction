@@ -14,22 +14,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("mission_user");
-    const storedToken = localStorage.getItem("mission_token");
-    if (storedUser && storedToken) {
-      try {
-        setUser(JSON.parse(storedUser));
-        setToken(storedToken);
-      } catch (e) {
-        localStorage.removeItem("mission_user");
-        localStorage.removeItem("mission_token");
-      }
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem("mission_token"));
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const stored = localStorage.getItem("mission_user");
+      return stored ? (JSON.parse(stored) as User) : null;
+    } catch {
+      return null;
     }
-  }, []);
+  });
 
   const login = (response: AuthResponse) => {
     setUser(response.user);
