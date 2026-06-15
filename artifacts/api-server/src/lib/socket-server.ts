@@ -29,20 +29,30 @@ export function initSocketServer(httpServer: HttpServer) {
   io.on("connection", (socket: Socket) => {
     const user = (socket as any).user as { id: number; fullName: string };
 
-    socket.on("join-room", (groupId: number) => {
+    socket.on("join-room", async (groupId: number) => {
       socket.join(`chat:${groupId}`);
       socket.to(`chat:${groupId}`).emit("user-joined", { name: user.fullName });
+      const sockets = await io.in(`chat:${groupId}`).fetchSockets();
+      io.to(`chat:${groupId}`).emit("room-count", { groupId, count: sockets.length });
     });
 
-    socket.on("leave-room", (groupId: number) => {
+    socket.on("leave-room", async (groupId: number) => {
       socket.leave(`chat:${groupId}`);
+      const sockets = await io.in(`chat:${groupId}`).fetchSockets();
+      io.to(`chat:${groupId}`).emit("room-count", { groupId, count: sockets.length });
     });
 
     socket.on("typing", (groupId: number) => {
       socket.to(`chat:${groupId}`).emit("user-typing", { name: user.fullName });
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
+      for (const room of socket.rooms) {
+        if (room.startsWith("chat:")) {
+          const sockets = await io.in(room).fetchSockets();
+          io.to(room).emit("room-count", { groupId: parseInt(room.replace("chat:", "")), count: sockets.length });
+        }
+      }
     });
   });
 

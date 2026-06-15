@@ -34,6 +34,7 @@ export default function StudentCommunity() {
   const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([]);
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  const [onlineCount, setOnlineCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -100,6 +101,10 @@ export default function StudentCommunity() {
       typingTimerRef.current = setTimeout(() => setTypingUser(null), 2500);
     });
 
+    sock.on("room-count", ({ count }: { count: number }) => {
+      setOnlineCount(count);
+    });
+
     return () => {
       sock.disconnect();
       socketRef.current = null;
@@ -112,6 +117,7 @@ export default function StudentCommunity() {
     if (chatGroupId !== null) {
       sock.emit("join-room", chatGroupId);
       setLiveMessages([]);
+      setOnlineCount(0);
     }
     return () => {
       if (chatGroupId !== null && sock) sock.emit("leave-room", chatGroupId);
@@ -179,7 +185,7 @@ export default function StudentCommunity() {
                 variant="outline"
                 className={`ml-auto text-xs ${connected ? "border-green-500/30 text-green-400 bg-green-500/5" : "border-yellow-500/30 text-yellow-400 bg-yellow-500/5"}`}
               >
-                {connected ? "● Live" : "○ Connecting…"}
+                {connected ? `● Live${onlineCount > 0 ? ` · ${onlineCount} online` : ""}` : "○ Connecting…"}
               </Badge>
             </div>
 

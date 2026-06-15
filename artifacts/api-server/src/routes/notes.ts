@@ -23,10 +23,15 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 router.post("/", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const admin = (req as any).user;
-    const { title, subject, content, author } = req.body;
-    if (!title || !subject || !content) { res.status(400).json({ error: "Missing fields" }); return; }
+    const { title, subject, content, fileUrl, fileType } = req.body;
+    if (!title || !subject) { res.status(400).json({ error: "Title and subject are required." }); return; }
+    if (!content && !fileUrl) { res.status(400).json({ error: "Either text content or a file upload is required." }); return; }
     const [note] = await db.insert(notesTable).values({
-      title, subject, content, author,
+      title,
+      subject,
+      content: content || null,
+      fileUrl: fileUrl || null,
+      fileType: fileType || (content ? "text" : null),
       createdBy: admin.id,
     }).returning();
     res.status(201).json(note);
@@ -57,9 +62,16 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     if (existing.createdBy !== null && existing.createdBy !== admin.id) {
       res.status(403).json({ error: "You can only edit notes you created" }); return;
     }
-    const { title, subject, content } = req.body;
+    const { title, subject, content, fileUrl, fileType } = req.body;
     const [note] = await db.update(notesTable)
-      .set({ title, subject, content, updatedAt: new Date() })
+      .set({
+        title,
+        subject,
+        content: content !== undefined ? (content || null) : existing.content,
+        fileUrl: fileUrl !== undefined ? (fileUrl || null) : existing.fileUrl,
+        fileType: fileType !== undefined ? (fileType || null) : existing.fileType,
+        updatedAt: new Date(),
+      })
       .where(eq(notesTable.id, id))
       .returning();
     res.json(note);

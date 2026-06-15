@@ -11,6 +11,7 @@ cloudinary.config({
 });
 
 const router = Router();
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
@@ -21,6 +22,28 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error("Invalid file type. Only PDF and images are allowed."));
+    }
+  },
+});
+
+const NOTE_FILE_MIME: Record<string, string> = {
+  "image/jpeg": "image",
+  "image/png": "image",
+  "image/webp": "image",
+  "image/gif": "image",
+  "application/pdf": "pdf",
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "ppt",
+};
+
+const noteFileUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (NOTE_FILE_MIME[file.mimetype]) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid file type. Allowed: Photo (JPG/PNG/WebP), PDF, PPT/PPTX."));
     }
   },
 });
@@ -108,6 +131,36 @@ router.post("/avatar", authMiddleware, upload.single("file"), async (req: Reques
     res.json({ url: result.secure_url });
   } catch (err: any) {
     console.error("Avatar upload error:", err);
+    res.status(500).json({ error: "Upload failed. Please try again." });
+  }
+});
+
+router.post("/note-file", adminMiddleware, noteFileUpload.single("file"), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
+    const fileType = NOTE_FILE_MIME[req.file.mimetype];
+    if (!fileType) { res.status(400).json({ error: "Unsupported file type" }); return; }
+
+    let result;
+    if (fileType === "image") {
+      result = await uploadToCloudinary(req.file.buffer, {
+        folder: "mission-distinction/notes",
+        resource_type: "image",
+        transformation: [{ quality: "auto", fetch_format: "auto" }],
+      });
+    } else {
+      result = await uploadToCloudinary(req.file.buffer, {
+        folder: "mission-distinction/notes",
+        resource_type: "raw",
+        public_id: `${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")}`,
+        use_filename: true,
+        unique_filename: false,
+      });
+    }
+
+    res.json({ url: result.secure_url, fileType, fileName: result.public_id });
+  } catch (err: any) {
+    console.error("Note file upload error:", err);
     res.status(500).json({ error: "Upload failed. Please try again." });
   }
 });

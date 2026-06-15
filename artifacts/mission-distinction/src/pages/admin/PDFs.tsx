@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "Medicine", "Surgery"];
 
-type PdfItem = { id: number; title: string; subject: string; professor?: string | null; year?: string | null; url: string; pages?: number | null; size?: string | null; downloadCount?: number; createdAt: string | Date };
+type PdfItem = { id: number; title: string; subject: string; year?: string | null; url: string; pages?: number | null; downloadCount?: number; createdAt: string | Date };
 
 export default function AdminPDFs() {
   const [search, setSearch] = useState("");
@@ -24,8 +24,8 @@ export default function AdminPDFs() {
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PdfItem | null>(null);
   const [editPending, setEditPending] = useState(false);
-  const [form, setForm] = useState({ title: "", subject: "", professor: "", year: "", url: "", pages: "", size: "" });
-  const [editForm, setEditForm] = useState({ title: "", subject: "", professor: "", year: "", url: "", pages: "", size: "" });
+  const [form, setForm] = useState({ title: "", subject: "", year: "", url: "", pages: "" });
+  const [editForm, setEditForm] = useState({ title: "", subject: "", year: "", url: "", pages: "" });
   const queryClient = useQueryClient();
 
   const { data: pdfs, isLoading } = useListPdfs(
@@ -48,7 +48,7 @@ export default function AdminPDFs() {
         toast.success("PDF added successfully!");
         queryClient.invalidateQueries({ queryKey: getListPdfsQueryKey() });
         setOpen(false);
-        setForm({ title: "", subject: "", professor: "", year: "", url: "", pages: "", size: "" });
+        setForm({ title: "", subject: "", year: "", url: "", pages: "" });
       },
       onError: () => toast.error("Failed to add PDF."),
     });
@@ -59,11 +59,9 @@ export default function AdminPDFs() {
     setEditForm({
       title: pdf.title,
       subject: pdf.subject,
-      professor: pdf.professor || "",
       year: pdf.year || "",
       url: pdf.url,
       pages: pdf.pages?.toString() || "",
-      size: pdf.size || "",
     });
     setEditOpen(true);
   };
@@ -125,9 +123,8 @@ export default function AdminPDFs() {
               <TableRow className="border-border/40">
                 <TableHead>Document</TableHead>
                 <TableHead>Subject</TableHead>
-                <TableHead>Professor</TableHead>
                 <TableHead>Downloads</TableHead>
-                <TableHead>Size / Pages</TableHead>
+                <TableHead>Pages</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -137,15 +134,14 @@ export default function AdminPDFs() {
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-4 w-48 mb-2" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md ml-auto" /></TableCell>
                   </TableRow>
                 ))
               ) : pdfList.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <FileIcon className="h-8 w-8 opacity-30" />
                       <span>No PDFs yet. Click "Upload PDF" to add one.</span>
@@ -171,12 +167,8 @@ export default function AdminPDFs() {
                     <TableCell>
                       <Badge variant="outline" className="bg-orange-500/5 border-orange-500/20 text-orange-500">{pdf.subject}</Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{pdf.professor || "—"}</TableCell>
-                    <TableCell className="text-sm">{pdf.downloadCount}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      <div>{pdf.size || "—"}</div>
-                      <div className="text-xs">{pdf.pages ? `${pdf.pages} pages` : "—"}</div>
-                    </TableCell>
+                    <TableCell className="text-sm">{pdf.downloadCount ?? 0}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{pdf.pages ? `${pdf.pages} pages` : "—"}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -200,6 +192,7 @@ export default function AdminPDFs() {
         </div>
       </Card>
 
+      {/* Add Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="bg-card border-border/50 max-w-lg">
           <DialogHeader>
@@ -237,19 +230,9 @@ export default function AdminPDFs() {
               <Label>PDF URL <span className="text-destructive">*</span></Label>
               <Input placeholder="https://drive.google.com/..." className="bg-background/50" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <Label>Professor</Label>
-                <Input placeholder="Dr. Name" className="bg-background/50" value={form.professor} onChange={(e) => setForm({ ...form, professor: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Pages</Label>
-                <Input type="number" placeholder="e.g. 120" className="bg-background/50" value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>File Size</Label>
-                <Input placeholder="e.g. 5.2 MB" className="bg-background/50" value={form.size} onChange={(e) => setForm({ ...form, size: e.target.value })} />
-              </div>
+            <div className="space-y-1.5 w-1/2">
+              <Label>Pages</Label>
+              <Input type="number" placeholder="e.g. 120" className="bg-background/50" value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} />
             </div>
           </div>
           <DialogFooter>
@@ -261,6 +244,7 @@ export default function AdminPDFs() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="bg-card border-border/50 max-w-lg">
           <DialogHeader>
@@ -298,19 +282,9 @@ export default function AdminPDFs() {
               <Label>PDF URL <span className="text-destructive">*</span></Label>
               <Input className="bg-background/50" value={editForm.url} onChange={(e) => setEditForm({ ...editForm, url: e.target.value })} />
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <Label>Professor</Label>
-                <Input className="bg-background/50" value={editForm.professor} onChange={(e) => setEditForm({ ...editForm, professor: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Pages</Label>
-                <Input type="number" className="bg-background/50" value={editForm.pages} onChange={(e) => setEditForm({ ...editForm, pages: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>File Size</Label>
-                <Input placeholder="e.g. 5.2 MB" className="bg-background/50" value={editForm.size} onChange={(e) => setEditForm({ ...editForm, size: e.target.value })} />
-              </div>
+            <div className="space-y-1.5 w-1/2">
+              <Label>Pages</Label>
+              <Input type="number" className="bg-background/50" value={editForm.pages} onChange={(e) => setEditForm({ ...editForm, pages: e.target.value })} />
             </div>
           </div>
           <DialogFooter>

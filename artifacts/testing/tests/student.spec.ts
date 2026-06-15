@@ -90,4 +90,50 @@ test.describe("Student pages", () => {
     await expect(page.getByText(/push notification/i)).toBeVisible({ timeout: 8000 });
     await expect(page.getByRole("button", { name: /enable|disable/i })).toBeVisible();
   });
+
+  test("quiz page loads and shows subject list or quiz content", async ({ page }) => {
+    const studentUser = { id: 6, fullName: "Mission Distinction", email: ADMIN_EMAIL, role: "student", isSuperAdmin: false };
+    await page.addInitScript(({ t, u }: any) => {
+      localStorage.setItem("mission_token", t);
+      localStorage.setItem("mission_user", JSON.stringify(u));
+    }, { t: adminToken, u: studentUser });
+
+    await page.goto("/student/quiz");
+    await page.waitForTimeout(3000);
+    await expect(page.getByText(/quiz|subject|anatomy|physiology|biochemistry/i).first()).toBeVisible({ timeout: 8000 });
+  });
+
+  test("quiz API returns questions for a subject", async () => {
+    const token = adminToken;
+    const res = await fetch(`${API_BASE}/api/quizzes?subject=Anatomy`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.ok).toBe(true);
+    const data = await res.json();
+    expect(Array.isArray(data)).toBe(true);
+  });
+
+  test("student PDFs page loads with subject filter", async ({ page }) => {
+    const studentUser = { id: 6, fullName: "Mission Distinction", email: ADMIN_EMAIL, role: "student", isSuperAdmin: false };
+    await page.addInitScript(({ t, u }: any) => {
+      localStorage.setItem("mission_token", t);
+      localStorage.setItem("mission_user", JSON.stringify(u));
+    }, { t: adminToken, u: studentUser });
+
+    await page.goto("/student/pdfs");
+    await page.waitForTimeout(2000);
+    await expect(page.getByText(/pdf|document|anatomy|library/i).first()).toBeVisible({ timeout: 8000 });
+  });
+
+  test("student notes page loads", async ({ page }) => {
+    const studentUser = { id: 6, fullName: "Mission Distinction", email: ADMIN_EMAIL, role: "student", isSuperAdmin: false };
+    await page.addInitScript(({ t, u }: any) => {
+      localStorage.setItem("mission_token", t);
+      localStorage.setItem("mission_user", JSON.stringify(u));
+    }, { t: adminToken, u: studentUser });
+
+    await page.goto("/student/notes");
+    await page.waitForTimeout(2000);
+    await expect(page.getByText(/note|study/i).first()).toBeVisible({ timeout: 8000 });
+  });
 });
