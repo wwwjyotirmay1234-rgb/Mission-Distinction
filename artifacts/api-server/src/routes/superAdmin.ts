@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { usersTable, quizAttemptsTable, activityTable } from "@workspace/db";
 import { eq, desc, sql } from "drizzle-orm";
 import { superAdminMiddleware } from "../middlewares/auth";
+import { parseId } from "../lib/auth";
 
 const router = Router();
 
@@ -33,7 +34,9 @@ router.get("/users", superAdminMiddleware, async (_req: Request, res: Response) 
 
 router.get("/users/:id/activity", superAdminMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.id);
+    const userId = parseId(req.params.id);
+    if (!userId) { res.status(400).json({ error: "Invalid user ID" }); return; }
+
     const [user] = await db
       .select({
         id: usersTable.id,
@@ -82,7 +85,8 @@ router.get("/users/:id/activity", superAdminMiddleware, async (req: Request, res
 router.post("/users/:id/ban", superAdminMiddleware, async (req: Request, res: Response) => {
   try {
     const caller = (req as any).user;
-    const userId = parseInt(req.params.id);
+    const userId = parseId(req.params.id);
+    if (!userId) { res.status(400).json({ error: "Invalid user ID" }); return; }
     const { reason } = req.body;
 
     if (userId === caller.id) {
@@ -108,7 +112,8 @@ router.post("/users/:id/ban", superAdminMiddleware, async (req: Request, res: Re
 
 router.post("/users/:id/unban", superAdminMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.id);
+    const userId = parseId(req.params.id);
+    if (!userId) { res.status(400).json({ error: "Invalid user ID" }); return; }
     const [target] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
     if (!target) { res.status(404).json({ error: "User not found" }); return; }
 
@@ -125,7 +130,8 @@ router.post("/users/:id/unban", superAdminMiddleware, async (req: Request, res: 
 router.delete("/users/:id", superAdminMiddleware, async (req: Request, res: Response) => {
   try {
     const caller = (req as any).user;
-    const userId = parseInt(req.params.id);
+    const userId = parseId(req.params.id);
+    if (!userId) { res.status(400).json({ error: "Invalid user ID" }); return; }
     if (userId === caller.id) {
       res.status(400).json({ error: "You cannot delete your own account" });
       return;

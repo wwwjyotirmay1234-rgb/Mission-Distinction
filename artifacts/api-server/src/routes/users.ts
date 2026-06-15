@@ -1,22 +1,26 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { adminMiddleware, authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+
+const CLOUDINARY_URL_RE = /^https:\/\/res\.cloudinary\.com\//;
 
 const router = Router();
 
 router.get("/", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const role = req.query.role as string;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const role = req.query.role as string | undefined;
 
-    const users = await db.select().from(usersTable);
-    const filtered = role ? users.filter(u => u.role === role) : users;
-    const total = filtered.length;
-    const paginated = filtered.slice((page - 1) * limit, page * limit);
+    const allUsers = role
+      ? await db.select().from(usersTable).where(eq(usersTable.role, role)).orderBy(desc(usersTable.createdAt))
+      : await db.select().from(usersTable).orderBy(desc(usersTable.createdAt));
+
+    const total = allUsers.length;
+    const paginated = allUsers.slice((page - 1) * limit, page * limit);
 
     res.json({
       users: paginated.map(sanitizeUser),
@@ -63,6 +67,12 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
 
     if (fullName !== undefined && (typeof fullName !== "string" || fullName.trim().length < 2)) {
       res.status(400).json({ error: "Name must be at least 2 characters" }); return;
+    }
+
+    if (avatarUrl !== undefined && avatarUrl !== null && avatarUrl !== "") {
+      if (!CLOUDINARY_URL_RE.test(avatarUrl)) {
+        res.status(400).json({ error: "avatarUrl must be a valid Cloudinary URL" }); return;
+      }
     }
 
     const [user] = await db.update(usersTable)

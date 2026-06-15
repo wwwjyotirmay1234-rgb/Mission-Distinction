@@ -4,6 +4,7 @@ import { notesTable, activityTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+import { stripHtml } from "../lib/sanitize";
 import { updateStreak } from "../lib/streak";
 
 const router = Router();
@@ -26,9 +27,13 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
     const { title, subject, content, fileUrl, fileType } = req.body;
     if (!title || !subject) { res.status(400).json({ error: "Title and subject are required." }); return; }
     if (!content && !fileUrl) { res.status(400).json({ error: "Either text content or a file upload is required." }); return; }
+    const safeTitle = stripHtml(String(title));
+    const safeSubject = stripHtml(String(subject));
+    if (!safeTitle) { res.status(400).json({ error: "Invalid title" }); return; }
+    if (!safeSubject) { res.status(400).json({ error: "Invalid subject" }); return; }
     const [note] = await db.insert(notesTable).values({
-      title,
-      subject,
+      title: safeTitle,
+      subject: safeSubject,
       content: content || null,
       fileUrl: fileUrl || null,
       fileType: fileType || (content ? "text" : null),

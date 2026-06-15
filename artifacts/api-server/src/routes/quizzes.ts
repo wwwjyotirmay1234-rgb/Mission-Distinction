@@ -1,8 +1,9 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { quizzesTable, questionsTable, quizAttemptsTable, activityTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq, ilike, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
+import { parseId } from "../lib/auth";
 import { updateStreak } from "../lib/streak";
 
 const router = Router();
@@ -34,13 +35,29 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+router.get("/attempts/my", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const attempts = await db.select().from(quizAttemptsTable).where(eq(quizAttemptsTable.userId, user.id));
+    res.json(attempts);
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
     const [quiz] = await db.select().from(quizzesTable).where(eq(quizzesTable.id, id));
     if (!quiz) { res.status(404).json({ error: "Not found" }); return; }
     const questions = await db.select().from(questionsTable).where(eq(questionsTable.quizId, id));
-    res.json({ ...quiz, questions });
+    const requestingUser = (req as any).user;
+    const isAdmin = requestingUser?.role === "admin";
+    const sanitizedQuestions = isAdmin
+      ? questions
+      : questions.map(({ correctOption, explanation, ...rest }) => rest);
+    res.json({ ...quiz, questions: sanitizedQuestions });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -48,7 +65,8 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 
 router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
     const { title, subject, description, difficulty, durationMinutes, isFeatured } = req.body;
     const [quiz] = await db.update(quizzesTable)
       .set({ title, subject, description, difficulty, durationMinutes, isFeatured })
@@ -63,7 +81,8 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
 
 router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
     await db.delete(questionsTable).where(eq(questionsTable.quizId, id));
     await db.delete(quizzesTable).where(eq(quizzesTable.id, id));
     res.status(204).send();
@@ -74,7 +93,8 @@ router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
 
 router.post("/:id/questions/bulk", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const quizId = parseInt(req.params.id);
+    const quizId = parseId(req.params.id);
+    if (!quizId) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
     const { questions } = req.body;
     if (!Array.isArray(questions) || questions.length === 0) {
       res.status(400).json({ error: "questions must be a non-empty array" }); return;
@@ -99,7 +119,8 @@ router.post("/:id/questions/bulk", adminMiddleware, async (req: Request, res: Re
 
 router.post("/:id/questions", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const quizId = parseInt(req.params.id);
+    const quizId = parseId(req.params.id);
+    if (!quizId) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
     const { text, options, correctOption, explanation } = req.body;
     if (!text || !options || !Array.isArray(options) || options.length < 2 || correctOption === undefined) {
       res.status(400).json({ error: "text, options (array), and correctOption are required" }); return;
@@ -118,7 +139,9 @@ router.post("/:id/questions", adminMiddleware, async (req: Request, res: Respons
 
 router.patch("/:id/questions/:qid", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const qid = parseInt(req.params.qid);
+    const quizId = parseId(req.params.id);
+    const qid = parseId(req.params.qid);
+    if (!quizId || !qid) { res.status(400).json({ error: "Invalid ID" }); return; }
     const { text, options, correctOption, explanation } = req.body;
     const [question] = await db.update(questionsTable)
       .set({ text, options, correctOption, explanation: explanation || null })
@@ -133,8 +156,9 @@ router.patch("/:id/questions/:qid", adminMiddleware, async (req: Request, res: R
 
 router.delete("/:id/questions/:qid", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const quizId = parseInt(req.params.id);
-    const qid = parseInt(req.params.qid);
+    const quizId = parseId(req.params.id);
+    const qid = parseId(req.params.qid);
+    if (!quizId || !qid) { res.status(400).json({ error: "Invalid ID" }); return; }
     const deleted = await db.delete(questionsTable).where(eq(questionsTable.id, qid)).returning();
     if (deleted.length > 0) {
       await db.update(quizzesTable)
@@ -149,7 +173,8 @@ router.delete("/:id/questions/:qid", adminMiddleware, async (req: Request, res: 
 
 router.post("/:id/attempt", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const quizId = parseInt(req.params.id);
+    const quizId = parseId(req.params.id);
+    if (!quizId) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
     const user = (req as any).user;
     const { answers } = req.body;
 
@@ -183,16 +208,6 @@ router.post("/:id/attempt", authMiddleware, async (req: Request, res: Response) 
     await updateStreak(user.id);
 
     res.json({ score, total, percentage, passed: percentage >= 60, correctAnswers });
-  } catch (err) {
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-router.get("/attempts/my", authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user;
-    const attempts = await db.select().from(quizAttemptsTable).where(eq(quizAttemptsTable.userId, user.id));
-    res.json(attempts);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }

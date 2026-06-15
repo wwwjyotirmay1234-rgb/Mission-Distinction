@@ -6,22 +6,42 @@ import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
 import { eq, desc } from "drizzle-orm";
 import { getIO } from "../lib/socket-server";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
+
+const postCreateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: { error: "Too many posts created. Please wait before posting again." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const messageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: "Sending messages too fast. Please slow down." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 router.get("/posts", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { group, search } = req.query;
-    let posts = await db.select().from(communityPostsTable);
+    let posts = await db
+      .select()
+      .from(communityPostsTable)
+      .orderBy(desc(communityPostsTable.createdAt));
     if (group) posts = posts.filter(p => p.groupName.toLowerCase().includes((group as string).toLowerCase()));
     if (search) posts = posts.filter(p => p.title.toLowerCase().includes((search as string).toLowerCase()) || p.content.toLowerCase().includes((search as string).toLowerCase()));
-    res.json(posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    res.json(posts);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-router.post("/posts", authMiddleware, async (req: Request, res: Response) => {
+router.post("/posts", authMiddleware, postCreateLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const { title, content, groupName } = req.body;
@@ -69,7 +89,7 @@ router.get("/messages/:groupId", authMiddleware, async (req: Request, res: Respo
   }
 });
 
-router.post("/messages/:groupId", authMiddleware, async (req: Request, res: Response) => {
+router.post("/messages/:groupId", authMiddleware, messageLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const groupId = parseId(req.params.groupId);

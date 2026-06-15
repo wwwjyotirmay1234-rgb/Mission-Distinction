@@ -3,7 +3,7 @@ import webpush from "web-push";
 import { db } from "@workspace/db";
 import { pushSubscriptionsTable, appSettingsTable } from "@workspace/db";
 import { authMiddleware } from "../middlewares/auth";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 const router = Router();
 
@@ -71,7 +71,10 @@ router.delete("/subscribe", authMiddleware, async (req: Request, res: Response) 
     const { endpoint } = req.body;
     if (!endpoint) { res.status(400).json({ error: "Missing endpoint" }); return; }
     await db.delete(pushSubscriptionsTable)
-      .where(eq(pushSubscriptionsTable.endpoint, endpoint));
+      .where(and(
+        eq(pushSubscriptionsTable.endpoint, endpoint),
+        eq(pushSubscriptionsTable.userId, user.id),
+      ));
     res.json({ message: "Unsubscribed" });
   } catch {
     res.status(500).json({ error: "Internal server error" });
@@ -91,15 +94,12 @@ export async function sendPushToAll(title: string, body: string, url = "/") {
         )
       )
     );
-    const failed = results.filter(r => r.status === "rejected" || (r.status === "fulfilled" && (r.value.statusCode === 410 || r.value.statusCode === 404)));
-    if (failed.length > 0) {
-      const failedEndpoints = subs.filter((_, i) => {
-        const r = results[i];
-        return r.status === "rejected" || (r.status === "fulfilled" && (r.value.statusCode === 410 || r.value.statusCode === 404));
-      }).map(s => s.endpoint);
-      for (const ep of failedEndpoints) {
-        await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.endpoint, ep)).catch(() => {});
-      }
+    const failedEndpoints = subs.filter((_, i) => {
+      const r = results[i];
+      return r.status === "rejected" || (r.status === "fulfilled" && (r.value.statusCode === 410 || r.value.statusCode === 404));
+    }).map(s => s.endpoint);
+    for (const ep of failedEndpoints) {
+      await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.endpoint, ep)).catch(() => {});
     }
   } catch { }
 }

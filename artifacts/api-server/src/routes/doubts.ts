@@ -1,8 +1,10 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { doubtsTable, doubtAnswersTable } from "@workspace/db";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, and } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
+import { parseId } from "../lib/auth";
+import { stripHtml } from "../lib/sanitize";
 import rateLimit from "express-rate-limit";
 
 const router = Router();
@@ -50,20 +52,24 @@ router.post("/", authMiddleware, doubtPostLimiter, async (req: Request, res: Res
       res.status(400).json({ error: "subject, title, and question are required" });
       return;
     }
-    if (title.length > 200) {
+    const safeTitle = stripHtml(String(title));
+    const safeQuestion = stripHtml(String(question));
+    if (!safeTitle) { res.status(400).json({ error: "Invalid title" }); return; }
+    if (!safeQuestion) { res.status(400).json({ error: "Invalid question" }); return; }
+    if (safeTitle.length > 200) {
       res.status(400).json({ error: "Title must be under 200 characters" });
       return;
     }
-    if (question.length > 5000) {
+    if (safeQuestion.length > 5000) {
       res.status(400).json({ error: "Question must be under 5000 characters" });
       return;
     }
     const [doubt] = await db.insert(doubtsTable).values({
       userId: user.id,
       authorName: user.fullName,
-      subject,
-      title: title.trim(),
-      question: question.trim(),
+      subject: stripHtml(String(subject)),
+      title: safeTitle,
+      question: safeQuestion,
     }).returning();
     res.status(201).json(doubt);
   } catch (err) {
@@ -74,7 +80,8 @@ router.post("/", authMiddleware, doubtPostLimiter, async (req: Request, res: Res
 // ─── Get doubt with answers ───────────────────────────────────────────────────
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid doubt ID" }); return; }
     const [doubt] = await db.select().from(doubtsTable).where(eq(doubtsTable.id, id));
     if (!doubt) { res.status(404).json({ error: "Not found" }); return; }
     const answers = await db
@@ -92,10 +99,13 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 router.post("/:id/answers", authMiddleware, answerPostLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const doubtId = parseInt(req.params.id);
+    const doubtId = parseId(req.params.id);
+    if (!doubtId) { res.status(400).json({ error: "Invalid doubt ID" }); return; }
     const { answer } = req.body;
     if (!answer?.trim()) { res.status(400).json({ error: "answer is required" }); return; }
-    if (answer.length > 10000) { res.status(400).json({ error: "Answer must be under 10000 characters" }); return; }
+    const safeAnswer = stripHtml(String(answer));
+    if (!safeAnswer) { res.status(400).json({ error: "Invalid answer content" }); return; }
+    if (safeAnswer.length > 10000) { res.status(400).json({ error: "Answer must be under 10000 characters" }); return; }
 
     const result = await db.transaction(async (tx) => {
       const [doubt] = await tx.select().from(doubtsTable).where(eq(doubtsTable.id, doubtId));
@@ -104,7 +114,7 @@ router.post("/:id/answers", authMiddleware, answerPostLimiter, async (req: Reque
         doubtId,
         userId: user.id,
         authorName: user.fullName,
-        answer: answer.trim(),
+        answer: safeAnswer,
       }).returning();
       await tx.update(doubtsTable)
         .set({ answerCount: sql`${doubtsTable.answerCount} + 1` })
@@ -123,13 +133,18 @@ router.post("/:id/answers", authMiddleware, answerPostLimiter, async (req: Reque
 router.patch("/:id/answers/:aid/accept", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const doubtId = parseInt(req.params.id);
-    const answerId = parseInt(req.params.aid);
+    const doubtId = parseId(req.params.id);
+    const answerId = parseId(req.params.aid);
+    if (!doubtId || !answerId) { res.status(400).json({ error: "Invalid ID" }); return; }
 
     await db.transaction(async (tx) => {
       const [doubt] = await tx.select().from(doubtsTable).where(eq(doubtsTable.id, doubtId));
       if (!doubt) throw Object.assign(new Error("Not found"), { status: 404 });
       if (doubt.userId !== user.id) throw Object.assign(new Error("Only the question author can accept answers"), { status: 403 });
+
+      const [answerRow] = await tx.select().from(doubtAnswersTable)
+        .where(and(eq(doubtAnswersTable.id, answerId), eq(doubtAnswersTable.doubtId, doubtId)));
+      if (!answerRow) throw Object.assign(new Error("Answer not found for this doubt"), { status: 404 });
 
       await tx.update(doubtAnswersTable).set({ isAccepted: false }).where(eq(doubtAnswersTable.doubtId, doubtId));
       await tx.update(doubtAnswersTable).set({ isAccepted: true }).where(eq(doubtAnswersTable.id, answerId));
@@ -148,7 +163,8 @@ router.patch("/:id/answers/:aid/accept", authMiddleware, async (req: Request, re
 router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid doubt ID" }); return; }
     await db.transaction(async (tx) => {
       const [doubt] = await tx.select().from(doubtsTable).where(eq(doubtsTable.id, id));
       if (!doubt) throw Object.assign(new Error("Not found"), { status: 404 });

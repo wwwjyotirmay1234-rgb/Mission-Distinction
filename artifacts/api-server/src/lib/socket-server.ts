@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { IncomingMessage, Server as HttpServer } from "http";
+import { Server as HttpServer } from "http";
 import { parseToken } from "./auth";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
@@ -7,10 +7,20 @@ import { eq } from "drizzle-orm";
 
 let io: Server;
 
+function getAllowedOrigins(): string | string[] | boolean {
+  if (process.env.NODE_ENV !== "production") return true;
+  const domains = (process.env.REPLIT_DOMAINS || "")
+    .split(",")
+    .map((d) => d.trim())
+    .filter(Boolean)
+    .map((d) => `https://${d}`);
+  return domains.length > 0 ? domains : false;
+}
+
 export function initSocketServer(httpServer: HttpServer) {
   io = new Server(httpServer, {
     path: "/api/socket.io/",
-    cors: { origin: "*", methods: ["GET", "POST"] },
+    cors: { origin: getAllowedOrigins(), methods: ["GET", "POST"] },
     transports: ["websocket", "polling"],
   });
 

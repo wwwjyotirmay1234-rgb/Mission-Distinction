@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { calendarEventsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
+import { parseId } from "../lib/auth";
 
 const router = Router();
 
@@ -49,7 +50,8 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
 router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const id = parseInt(req.params.id);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid event ID" }); return; }
     await db.delete(calendarEventsTable).where(and(eq(calendarEventsTable.id, id), eq(calendarEventsTable.userId, user.id)));
     res.status(204).send();
   } catch (err) {

@@ -1,9 +1,10 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { feedbackTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+import { stripHtml } from "../lib/sanitize";
 
 const router = Router();
 
@@ -27,13 +28,17 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
       res.status(400).json({ error: "Rating must be 1–5" });
       return;
     }
+    const safeSubject = stripHtml(subject.trim());
+    const safeMessage = stripHtml(message.trim());
+    if (!safeSubject) { res.status(400).json({ error: "Invalid subject" }); return; }
+    if (!safeMessage) { res.status(400).json({ error: "Invalid message" }); return; }
     const [item] = await db.insert(feedbackTable).values({
       userId: user.id,
       userName: user.fullName,
       userEmail: user.email,
-      category: category || "general",
-      subject: subject.trim(),
-      message: message.trim(),
+      category: stripHtml(String(category || "general")),
+      subject: safeSubject,
+      message: safeMessage,
       rating: rating ?? null,
     }).returning();
     res.status(201).json(item);
@@ -44,8 +49,8 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
 
 router.get("/", adminMiddleware, async (_req: Request, res: Response) => {
   try {
-    const items = await db.select().from(feedbackTable);
-    res.json(items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    const items = await db.select().from(feedbackTable).orderBy(desc(feedbackTable.createdAt));
+    res.json(items);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
