@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Eye, EyeOff, Activity, ShieldCheck, TrendingUp, Award, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 
 const ODISHA_GOVT_COLLEGES = [
@@ -92,24 +92,55 @@ export default function LandingPage() {
   const adminLoginMutation = useAdminLogin();
   const adminRegisterMutation = useAdminRegister();
 
+  const finishGoogleAuth = async (idToken: string) => {
+    const res = await fetch(`/api/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || "Server auth failed");
+    }
+    const data = await res.json();
+    login(data);
+    toast.success("Signed in with Google!");
+    setLocation(getRouteByYear(data.user?.year));
+  };
+
+  useEffect(() => {
+    let active = true;
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (!result || !active) return;
+        const idToken = await result.user.getIdToken();
+        await finishGoogleAuth(idToken);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
-      const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-      const res = await fetch(`${baseUrl}/api/auth/google`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      });
-      if (!res.ok) throw new Error("Server auth failed");
-      const data = await res.json();
-      login(data);
-      toast.success("Signed in with Google!");
-      setLocation(getRouteByYear(data.user?.year));
-    } catch {
-      toast.error("Google sign-in failed. Please try again.");
+      await finishGoogleAuth(idToken);
+    } catch (err: any) {
+      const code: string = err?.code ?? "";
+      if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+        } catch {
+          toast.error("Google sign-in failed. Please allow popups or try a different browser.");
+        }
+      } else if (code === "auth/unauthorized-domain") {
+        toast.error("This domain is not authorised for Google sign-in. Please contact support.");
+      } else if (code === "auth/popup-closed-by-user") {
+        // user dismissed — no toast needed
+      } else {
+        toast.error("Google sign-in failed. Please try again.");
+      }
     } finally {
       setGoogleLoading(false);
     }

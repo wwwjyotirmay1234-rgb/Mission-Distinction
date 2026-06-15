@@ -1,0 +1,162 @@
+MISSION DISTINCTION — PRE-PRODUCTION SECURITY, PERFORMANCE & BUG AUDIT
+
+Perform a complete production-readiness audit of the entire Mission Distinction codebase.
+
+Your task is to act as a senior software architect, penetration tester, QA engineer, DevOps engineer, and security auditor.
+
+DO NOT add new features unless required to fix bugs or vulnerabilities.
+
+Audit and verify the following:
+
+1. AUTHENTICATION & AUTHORIZATION
+
+* Verify JWT authentication is secure.
+* Check for privilege escalation vulnerabilities.
+* Ensure students cannot access admin routes.
+* Ensure admins cannot access super-admin functions.
+* Verify banned users are blocked from all protected routes.
+* Verify Google OAuth implementation.
+* Verify password reset flow.
+* Verify email verification flow.
+* Check session expiration behavior.
+* Search for authentication bypass vulnerabilities.
+
+2. SECURITY AUDIT
+
+* Check for SQL injection vulnerabilities.
+* Check for XSS vulnerabilities.
+* Check for CSRF vulnerabilities.
+* Check for insecure direct object references (IDOR).
+* Verify rate limiting works correctly.
+* Verify secrets are not exposed in frontend bundles.
+* Verify environment variables are protected.
+* Check Cloudinary security configuration.
+* Check SendGrid security configuration.
+* Check WebSocket authentication and authorization.
+* Check file upload validation.
+* Check MIME type validation.
+* Check avatar upload security.
+* Verify input sanitization on all forms.
+* Check dependency vulnerabilities.
+* Check for exposed API keys.
+* Check CORS configuration.
+* Check security headers.
+
+3. DATABASE REVIEW
+
+* Review all database schemas.
+* Verify foreign key integrity.
+* Identify missing indexes.
+* Check query performance.
+* Search for N+1 query issues.
+* Verify soft delete logic.
+* Verify audit logs.
+* Review migrations.
+* Check for data consistency issues.
+
+4. FRONTEND QA
+
+* Test every page.
+* Test all forms.
+* Test loading states.
+* Test error states.
+* Test empty states.
+* Verify responsive behavior.
+* Verify dark theme consistency.
+* Verify navigation.
+* Verify protected routes.
+* Verify role-based UI visibility.
+* Verify avatar upload functionality.
+* Verify profile updates.
+* Verify logout behavior.
+
+5. QUIZ SYSTEM
+
+* Verify quiz creation.
+* Verify quiz editing.
+* Verify quiz submission.
+* Verify score calculation.
+* Verify answer explanations.
+* Verify leaderboard updates.
+* Verify progress tracking.
+
+6. COMMUNITY & CHAT
+
+* Verify WebSocket connection.
+* Verify message delivery.
+* Verify typing indicators.
+* Verify room isolation.
+* Verify message persistence.
+* Verify reconnection handling.
+* Verify unauthorized users cannot access chats.
+
+7. PUSH NOTIFICATIONS
+
+* Verify service worker registration.
+* Verify notification subscriptions.
+* Verify VAPID configuration.
+* Verify announcement broadcasts.
+* Verify notification click handling.
+* Verify unsubscribe flow.
+
+8. ADMIN PANEL
+
+* Test all CRUD operations.
+* Test user management.
+* Test content management.
+* Test announcements.
+* Test reports.
+* Test analytics.
+* Test feedback management.
+* Test super-admin controls.
+
+9. PERFORMANCE REVIEW
+
+* Identify slow routes.
+* Identify large bundles.
+* Check image optimization.
+* Check API response times.
+* Check unnecessary re-renders.
+* Check memory leaks.
+* Check WebSocket efficiency.
+* Check caching opportunities.
+
+10. PRODUCTION READINESS
+
+* Verify environment configuration.
+* Verify build process.
+* Verify deployment settings.
+* Verify logging.
+* Verify error monitoring.
+* Verify backup strategy.
+* Verify PWA configuration.
+* Verify manifest.json.
+* Verify offline behavior.
+
+FINAL OUTPUT REQUIRED:
+
+A. Critical Issues (must fix before launch)
+B. High Priority Issues
+C. Medium Priority Issues
+D. Low Priority Improvements
+E. Security Score / 10
+F. Performance Score / 10
+G. Scalability Score / 10
+H. Production Readiness Score / 10
+I. Launch Recommendation:
+
+* NOT READY
+* READY WITH FIXES
+* READY FOR PUBLIC BETA
+* READY FOR PRODUCTION
+
+Automatically fix any issue that is safe to fix without changing intended functionality.
+
+After all fixes, generate a final publication report with:
+
+* Bugs found
+* Bugs fixed
+* Security improvements
+* Performance improvements
+* Remaining recommendations
+* Final launch score
