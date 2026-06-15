@@ -9,6 +9,7 @@ export const notesTable = pgTable("notes", {
   content: text("content").notNull(),
   author: text("author"),
   downloadCount: integer("download_count").default(0).notNull(),
+  createdBy: integer("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at"),
 });

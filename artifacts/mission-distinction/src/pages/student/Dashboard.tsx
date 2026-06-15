@@ -17,6 +17,27 @@ import {
 import { FileText, File, CheckCircle, Flame, Play, BookOpen, Bookmark, Calendar, ArrowRight, MessageSquare, Bell } from "lucide-react";
 import { Link } from "wouter";
 
+interface DashboardActivity {
+  id: number;
+  type: "quiz" | "note" | "pdf" | "bookmark";
+  description: string;
+  createdAt: string;
+  score?: string;
+}
+
+interface CommunityGroup {
+  id: number;
+  name: string;
+  description?: string;
+}
+
+interface DashboardAnnouncement {
+  id: number;
+  title: string;
+  type: "alert" | "update" | "info";
+  createdAt: string;
+}
+
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const m = Math.floor(diff / 60000);
@@ -49,8 +70,8 @@ export default function StudentDashboard() {
     query: { queryKey: getListCommunityGroupsQueryKey() },
   });
 
-  const recentAnnouncements = Array.isArray(announcements) ? (announcements as any[]).slice(0, 3) : [];
-  const recentGroups = Array.isArray(communityGroups) ? (communityGroups as any[]).slice(0, 3) : [];
+  const recentAnnouncements = Array.isArray(announcements) ? (announcements as DashboardAnnouncement[]).slice(0, 3) : [];
+  const recentGroups = Array.isArray(communityGroups) ? (communityGroups as CommunityGroup[]).slice(0, 3) : [];
 
   return (
     <div className="space-y-6 pb-12">
@@ -171,13 +192,13 @@ export default function StudentDashboard() {
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-10 w-full" />
                   </div>
-                ) : !activities || (activities as any[]).length === 0 ? (
+                ) : !activities || (activities as DashboardActivity[]).length === 0 ? (
                   <div className="p-8 text-center text-muted-foreground text-sm">
                     No recent activity. Take a quiz or read some notes to get started!
                   </div>
                 ) : (
                   <div className="divide-y divide-border/40">
-                    {(activities as any[]).map((activity: any) => (
+                    {(activities as DashboardActivity[]).map((activity) => (
                       <div key={activity.id} className="p-4 flex items-center gap-4 hover:bg-muted/20 transition-colors">
                         <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
                           {activity.type === "quiz" && <CheckCircle size={16} className="text-primary" />}
@@ -225,7 +246,7 @@ export default function StudentDashboard() {
                 <div className="p-4 text-center text-xs text-muted-foreground">No groups yet.</div>
               ) : (
                 <div className="divide-y divide-border/40">
-                  {recentGroups.map((grp: any) => (
+                  {recentGroups.map((grp) => (
                     <div key={grp.id} className="p-3 flex items-start gap-3 hover:bg-muted/20 cursor-pointer transition-colors">
                       <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
                         {grp.name?.charAt(0)}
@@ -272,7 +293,7 @@ export default function StudentDashboard() {
                 </div>
               ) : (
                 <div className="divide-y divide-border/40">
-                  {recentAnnouncements.map((a: any) => (
+                  {recentAnnouncements.map((a) => (
                     <div key={a.id} className="p-4 hover:bg-muted/20 transition-colors">
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="outline" className={`text-[10px] px-1.5 py-0 uppercase tracking-wider ${

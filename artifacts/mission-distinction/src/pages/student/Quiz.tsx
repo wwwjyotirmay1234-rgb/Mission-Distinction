@@ -20,6 +20,25 @@ import { useQueryClient } from "@tanstack/react-query";
 
 type QuizMode = "browse" | "taking" | "results";
 
+interface QuizSummary {
+  id: number;
+  title: string;
+  subject: string;
+  difficulty: "easy" | "medium" | "hard";
+  questionCount: number;
+  durationMinutes: number;
+}
+
+interface QuizQuestion {
+  id: number;
+  text: string;
+  options: string[];
+}
+
+interface QuizDetail extends QuizSummary {
+  questions: QuizQuestion[];
+}
+
 interface QuizResult {
   score: number;
   total: number;
@@ -63,7 +82,8 @@ export default function StudentQuiz() {
     query: { enabled: !!selectedQuizId, queryKey: getGetQuizQueryKey(selectedQuizId!) },
   });
 
-  const questions: any[] = (quizData as any)?.questions ?? [];
+  const quizDetail = quizData as QuizDetail | undefined;
+  const questions: QuizQuestion[] = quizDetail?.questions ?? [];
 
   useEffect(() => {
     if (mode === "taking" && timeLeft > 0) {
@@ -81,7 +101,7 @@ export default function StudentQuiz() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [mode, selectedQuizId]);
 
-  const startQuiz = (quiz: any) => {
+  const startQuiz = (quiz: QuizSummary) => {
     if (!quiz.questionCount || quiz.questionCount === 0) {
       toast.error("This quiz has no questions yet.");
       return;
@@ -102,7 +122,7 @@ export default function StudentQuiz() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem("token");
-      const answerList = questions.map((q: any) => ({
+      const answerList = questions.map((q) => ({
         questionId: q.id,
         selectedOption: answers[q.id] ?? -1,
       }));
@@ -159,7 +179,7 @@ export default function StudentQuiz() {
 
         <h2 className="text-lg font-semibold">Answer Review</h2>
         <div className="space-y-3">
-          {questions.map((q: any, idx: number) => {
+          {questions.map((q, idx: number) => {
             const ca = result.correctAnswers.find((c) => c.questionId === q.id);
             const isCorrect = ca?.correct;
             const selected = answers[q.id];
@@ -206,7 +226,7 @@ export default function StudentQuiz() {
         </div>
 
         <div className="flex gap-3 pb-8">
-          <Button variant="outline" className="flex-1" onClick={() => startQuiz(quizData as any)}>
+          <Button variant="outline" className="flex-1" onClick={() => startQuiz(quizDetail!)}>
             Try Again
           </Button>
           <Button className="flex-1" onClick={() => setMode("browse")}>
@@ -229,7 +249,7 @@ export default function StudentQuiz() {
       );
     }
 
-    const quiz = quizData as any;
+    const quiz = quizDetail!;
     const q = questions[currentQ];
     const answered = Object.keys(answers).length;
     const progressPct = ((currentQ + 1) / questions.length) * 100;
@@ -337,7 +357,7 @@ export default function StudentQuiz() {
   }
 
   // ─── Browse Screen ───────────────────────────────────────────────────────────
-  const quizList: any[] = Array.isArray(quizzesData) ? quizzesData : [];
+  const quizList: QuizSummary[] = Array.isArray(quizzesData) ? (quizzesData as QuizSummary[]) : [];
 
   return (
     <div className="space-y-8">
@@ -365,7 +385,7 @@ export default function StudentQuiz() {
                 No quizzes found for this category.
               </div>
             ) : (
-              quizList.map((quiz: any) => (
+              quizList.map((quiz) => (
                 <Card key={quiz.id} className="bg-card/30 border-border/40 hover:bg-card/50 transition-colors">
                   <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                     <div className="space-y-2">

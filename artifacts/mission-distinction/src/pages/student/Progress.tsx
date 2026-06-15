@@ -10,6 +10,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Clock, Award, FileText, CheckCircle, Flame } from "lucide-react";
 import { Progress as ProgressBar } from "@/components/ui/progress";
 
+interface QuizAttempt {
+  id: number;
+  quizTitle: string;
+  subject: string;
+  percentage: number;
+  score: number;
+  total: number;
+  createdAt: string;
+}
+
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const m = Math.floor(diff / 60000);
@@ -156,7 +166,7 @@ export default function StudentProgress() {
               </div>
             ) : (
               <div className="divide-y divide-border/40">
-                {[...(attempts as any[])].reverse().slice(0, 8).map((a: any) => (
+                {[...(attempts as QuizAttempt[])].reverse().slice(0, 8).map((a) => (
                   <div key={a.id} className="p-4 flex items-center gap-3">
                     <div className={`w-2 h-8 rounded-full shrink-0 ${a.percentage >= 60 ? "bg-green-500" : "bg-red-500"}`} />
                     <div className="flex-1 min-w-0">

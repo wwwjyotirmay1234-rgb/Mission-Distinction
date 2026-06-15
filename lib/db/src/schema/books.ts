@@ -10,6 +10,7 @@ export const booksTable = pgTable("books", {
   url: text("url").notNull(),
   coverUrl: text("cover_url"),
   downloadCount: integer("download_count").default(0),
+  createdBy: integer("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
