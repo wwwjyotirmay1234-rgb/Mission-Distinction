@@ -1,15 +1,10 @@
 ---
 name: Auth token architecture
-description: How access and refresh tokens are structured in Mission Distinction
+description: Access/refresh token strategy — why short-lived access + rotating refresh
 ---
 
-Access token: JWT, 15 min expiry (`JWT_EXPIRES_IN = "15m"`), signed with JWT_SECRET.
-Refresh token: `crypto.randomUUID()`, stored in `refresh_tokens` DB table, 30-day expiry.
-Token rotation: each `/api/auth/refresh` call deletes the old row and inserts a new one.
-Auto-refresh: `main.tsx` `setAuthTokenGetter` is async — parses JWT exp, refreshes if < 60s remaining.
-Logout: sends refreshToken in body to `/api/auth/logout` which deletes it from DB.
-Storage keys: `mission_token` (access), `mission_refresh_token` (refresh), `mission_user` (JSON user).
+Mission Distinction uses two-token auth: short-lived access JWTs (15 min) + long-lived rotating refresh UUIDs (30 days, DB-stored, one-use).
 
-**Why:** Short-lived access tokens limit blast radius of token theft. Rotating refresh tokens give 30-day sessions without the security risk of long-lived JWTs.
+**Why:** Short-lived access tokens limit blast radius of theft. Rotating refresh tokens allow persistent sessions without long-lived JWT risk. Server-side DB storage enables real invalidation on logout or ban.
 
-**How to apply:** All login endpoints (student, admin, google, register) must insert a refresh_tokens row and include refreshToken in response. Never store JWT secret or raw passwords — those stay in env vars.
+**How to apply:** Every login endpoint must issue both tokens. The `setAuthTokenGetter` in the frontend is async and must auto-refresh when the access token is near expiry (< 60s). Logout must clean up the refresh token row in DB. Any change to this flow must keep the `refresh_tokens` table in sync — expired rows accumulate if not pruned.

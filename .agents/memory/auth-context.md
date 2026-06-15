@@ -1,14 +1,10 @@
 ---
 name: AuthContext lazy init
-description: Why AuthContext must use lazy useState initializers, not useEffect
+description: Why lazy useState initializers are required — useEffect causes a ProtectedRoute redirect flash
 ---
 
-**Rule:** Initialize `token` and `user` state with lazy initializer functions that read localStorage synchronously:
-```typescript
-const [token, setToken] = useState<string | null>(() => localStorage.getItem("mission_token"));
-const [user, setUser] = useState<User | null>(() => { try { const s = localStorage.getItem("mission_user"); return s ? JSON.parse(s) : null; } catch { return null; } });
-```
+**Rule:** Auth state (token, user) must be initialized synchronously from localStorage using lazy `useState` initializers, not a `useEffect`.
 
-**Why:** `useState(null)` + `useEffect` means the first render always has `token = null`. ProtectedRoute sees `isAuthenticated = false` and redirects to `/` before the effect can run. This causes: (a) a visible redirect flash for real users, (b) testing agents that set localStorage before navigation can never see authenticated pages.
+**Why:** With `useEffect`, the first React render always sees `token = null`, so `ProtectedRoute` immediately redirects to `/` before the effect fires. This breaks: (a) real users who see a flash/redirect on page reload, and (b) any automated test or tool that sets localStorage before navigation and expects to land on a protected route.
 
-**How to apply:** Never use a `useEffect` to hydrate auth state from localStorage in a SPA. Use the lazy initializer pattern above. Existing `login()` and `logout()` functions stay the same.
+**How to apply:** When touching AuthContext, keep the lazy initializer pattern. If the pattern is lost and tests/screenshots show unexpected redirects to the landing page from protected routes, this is almost certainly the cause.
