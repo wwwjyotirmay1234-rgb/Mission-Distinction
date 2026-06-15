@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 // Pages
 import NotFound from "@/pages/not-found";
@@ -121,6 +122,7 @@ function App() {
             <Router />
           </WouterRouter>
           <Toaster theme="dark" />
+          <InstallPrompt />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
