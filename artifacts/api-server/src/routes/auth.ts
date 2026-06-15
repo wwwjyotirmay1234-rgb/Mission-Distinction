@@ -77,7 +77,12 @@ router.post("/student/register", registerLimiter, async (req: Request, res: Resp
     });
 
     const verifyUrl = `${getAppUrl()}/verify-email?token=${verifyToken}`;
-    const emailSent = await sendEmail(user.email, "Verify your email — Mission Distinction", verifyEmailTemplate(verifyUrl, user.fullName));
+    let emailSent = false;
+    try {
+      emailSent = await sendEmail(user.email, "Verify your email — Mission Distinction", verifyEmailTemplate(verifyUrl, user.fullName));
+    } catch (emailErr) {
+      console.warn("[register] email send failed (non-fatal):", (emailErr as any)?.message);
+    }
 
     const jwtToken = generateToken(user.id, user.role);
     const refreshValue = randomUUID();

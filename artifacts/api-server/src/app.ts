@@ -6,6 +6,10 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+// Trust the first proxy hop (Replit's reverse proxy) so that express-rate-limit
+// can correctly identify client IPs from the X-Forwarded-For header.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
