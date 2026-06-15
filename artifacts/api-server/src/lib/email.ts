@@ -18,16 +18,45 @@ export function getAppUrl(): string {
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   const apiKey = process.env.SENDGRID_API_KEY;
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.SMTP_EMAIL || "noreply@missiondistinction.in";
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.SMTP_EMAIL;
 
   if (!apiKey) {
-    console.log(`[Email] SendGrid not configured. Would send to: ${to} | Subject: ${subject}`);
+    console.warn(`[Email] SENDGRID_API_KEY not set — email to ${to} skipped. Set SENDGRID_API_KEY and SENDGRID_FROM_EMAIL in Replit Secrets.`);
     return false;
   }
 
-  sgMail.setApiKey(apiKey);
-  await sgMail.send({ to, from: { name: "Mission Distinction", email: fromEmail }, subject, html });
-  return true;
+  if (!fromEmail) {
+    console.warn(`[Email] SENDGRID_FROM_EMAIL not set — email to ${to} skipped. Set a verified SendGrid sender address in SENDGRID_FROM_EMAIL.`);
+    return false;
+  }
+
+  try {
+    sgMail.setApiKey(apiKey);
+    await sgMail.send({
+      to,
+      from: { name: "Mission Distinction", email: fromEmail },
+      subject,
+      html,
+    });
+    console.log(`[Email] Sent to ${to} | Subject: ${subject}`);
+    return true;
+  } catch (err: any) {
+    const status = err?.response?.status;
+    const body = err?.response?.body;
+    if (status === 403) {
+      console.error(
+        `[Email] SendGrid 403 Forbidden — sender "${fromEmail}" is not verified. ` +
+        `Go to app.sendgrid.com → Settings → Sender Authentication and verify this address or domain. ` +
+        `Then ensure SENDGRID_FROM_EMAIL in Replit Secrets matches a verified sender.`,
+        body
+      );
+    } else if (status === 401) {
+      console.error(`[Email] SendGrid 401 Unauthorized — SENDGRID_API_KEY may be invalid or revoked.`, body);
+    } else {
+      console.error(`[Email] SendGrid error (status ${status ?? "unknown"}):`, body ?? err?.message ?? err);
+    }
+    return false;
+  }
 }
 
 export function resetPasswordEmail(resetUrl: string): string {

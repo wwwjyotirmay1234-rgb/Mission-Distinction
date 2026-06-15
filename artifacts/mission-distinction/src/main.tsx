@@ -2,6 +2,9 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { initAnalytics } from "./lib/analytics";
+
+initAnalytics();
 
 setAuthTokenGetter(async () => {
   const token = localStorage.getItem("mission_token");

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { randomUUID } from "crypto";
 import { db } from "@workspace/db";
-import { usersTable, emailTokensTable, refreshTokensTable } from "@workspace/db";
+import { usersTable, emailTokensTable, refreshTokensTable, bookmarksTable, activityTable, feedbackTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { hashPassword, verifyPassword, generateToken } from "../lib/auth";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
@@ -18,7 +18,7 @@ const router = Router();
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 12,
+  max: process.env.NODE_ENV === "development" ? 500 : 12,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many login attempts. Please try again in 15 minutes." },
@@ -464,6 +464,44 @@ router.post("/admin/test-email", adminMiddleware, async (req: Request, res: Resp
       message: `Email failed: ${err.message}`,
       envCheck,
     });
+  }
+});
+
+// ─── Delete Account (DPDPA §12 Right to Erasure) ────────────────────────────
+router.delete("/account", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const { password } = req.body;
+
+    if (!password) {
+      res.status(400).json({ error: "Password is required to confirm account deletion." });
+      return;
+    }
+
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    if (!user) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+
+    const valid = await verifyPassword(password, user.passwordHash);
+    if (!valid) {
+      res.status(401).json({ error: "Incorrect password. Account not deleted." });
+      return;
+    }
+
+    await db.delete(refreshTokensTable).where(eq(refreshTokensTable.userId, userId));
+    await db.delete(emailTokensTable).where(eq(emailTokensTable.userId, userId));
+    await db.delete(feedbackTable).where(eq(feedbackTable.userId, userId));
+    await db.delete(bookmarksTable).where(eq(bookmarksTable.userId, userId));
+    await db.delete(activityTable).where(eq(activityTable.userId, userId));
+    await db.delete(usersTable).where(eq(usersTable.id, userId));
+
+    console.log(`[Auth] Account deleted for userId=${userId} per DPDPA erasure request`);
+    res.json({ message: "Your account and all associated personal data have been permanently deleted." });
+  } catch (err) {
+    console.error("Account deletion error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

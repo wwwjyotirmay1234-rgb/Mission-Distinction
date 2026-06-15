@@ -1,2 +1,5 @@
 - [Auth token storage keys](auth-token-keys.md) — localStorage keys are mission_token / mission_refresh_token / mission_user (NOT "token")
 - [Token refresh architecture](token-refresh-arch.md) — auto-refresh via setTokenRefresher in custom-fetch.ts + apiFetch.ts for raw fetch calls + AuthContext event bus
+- [Playwright NixOS environment](playwright-nixos.md) — Playwright Chromium can't run in Replit NixOS sandbox (missing libglib); API-only tests (no { page }) pass fine.
+- [Rate limiter dev mode](rate-limiter-dev.md) — loginLimiter uses max 500 in NODE_ENV=development to avoid test suite trips; resets on server restart.
+- [Admin login endpoint](admin-login.md) — POST /api/auth/admin/login returns { token, refreshToken, user }; rate-limited; test helper must cache token across describe blocks.

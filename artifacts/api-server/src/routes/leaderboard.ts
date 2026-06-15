@@ -3,11 +3,22 @@ import { db } from "@workspace/db";
 import { usersTable, quizAttemptsTable } from "@workspace/db";
 import { eq, sql, desc } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
+import { getCache, setCache } from "../lib/cache";
 
 const router = Router();
 
+const CACHE_KEY = "leaderboard:all";
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 router.get("/", authMiddleware, async (_req: Request, res: Response) => {
   try {
+    const cached = getCache<{ topScorers: unknown[]; streakLeaders: unknown[] }>(CACHE_KEY);
+    if (cached) {
+      res.setHeader("X-Cache", "HIT");
+      res.json(cached);
+      return;
+    }
+
     const [scoreStats, streakStats] = await Promise.all([
       db
         .select({
@@ -78,7 +89,10 @@ router.get("/", authMiddleware, async (_req: Request, res: Response) => {
       avgScore: 0,
     }));
 
-    res.json({ topScorers, streakLeaders });
+    const result = { topScorers, streakLeaders };
+    setCache(CACHE_KEY, result, CACHE_TTL_MS);
+    res.setHeader("X-Cache", "MISS");
+    res.json(result);
   } catch (err) {
     console.error("Leaderboard error:", err);
     res.status(500).json({ error: "Internal server error" });

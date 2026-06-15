@@ -13,6 +13,8 @@ import ComingSoon from "@/pages/auth/ComingSoon";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
 import ResetPassword from "@/pages/auth/ResetPassword";
 import VerifyEmail from "@/pages/auth/VerifyEmail";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
 
 // Layouts
 import { StudentLayout } from "@/components/layout/StudentLayout";
@@ -59,6 +61,8 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms" component={TermsOfService} />
       
       {/* Student Routes */}
       <Route path="/student/*">

@@ -481,7 +481,10 @@ export default function LandingPage() {
                               </FormControl>
                               <div className="space-y-1 leading-none">
                                 <FormLabel className="text-sm font-normal text-muted-foreground">
-                                  I agree to the Terms & Conditions
+                                  I agree to the{" "}
+                                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">Terms of Service</a>
+                                  {" "}and{" "}
+                                  <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">Privacy Policy</a>
                                 </FormLabel>
                               </div>
                             </FormItem>
@@ -642,7 +645,10 @@ export default function LandingPage() {
                               </FormControl>
                               <div className="space-y-1 leading-none">
                                 <FormLabel className="text-sm font-normal text-muted-foreground">
-                                  I agree to the Terms & Conditions
+                                  I agree to the{" "}
+                                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">Terms of Service</a>
+                                  {" "}and{" "}
+                                  <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">Privacy Policy</a>
                                 </FormLabel>
                               </div>
                             </FormItem>
