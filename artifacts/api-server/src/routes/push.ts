@@ -8,16 +8,33 @@ import { eq, and } from "drizzle-orm";
 const router = Router();
 
 async function getOrCreateVapidKeys(): Promise<{ publicKey: string; privateKey: string }> {
+  const envPublic = process.env.VAPID_PUBLIC_KEY;
+  const envPrivate = process.env.VAPID_PRIVATE_KEY;
+  if (envPublic && envPrivate) {
+    return { publicKey: envPublic, privateKey: envPrivate };
+  }
+
   const [pub] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "vapid_public_key"));
   if (pub) {
     const [priv] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "vapid_private_key"));
-    return { publicKey: pub.value, privateKey: priv.value };
+    if (priv) {
+      console.warn(
+        "[Push] VAPID keys loaded from database. For better security, move them to Replit Secrets " +
+        "as VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY."
+      );
+      return { publicKey: pub.value, privateKey: priv.value };
+    }
   }
+
   const keys = webpush.generateVAPIDKeys();
   await db.insert(appSettingsTable).values([
     { key: "vapid_public_key", value: keys.publicKey },
     { key: "vapid_private_key", value: keys.privateKey },
   ]);
+  console.warn(
+    "[Push] Generated new VAPID keys and stored in database. For better security, add them to " +
+    "Replit Secrets as VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY, then remove the DB entries."
+  );
   return keys;
 }
 

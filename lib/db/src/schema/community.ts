@@ -17,6 +17,7 @@ export const communityPostsTable = pgTable("community_posts", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   author: text("author").notNull(),
+  authorId: integer("author_id"),
   authorAvatarUrl: text("author_avatar_url"),
   groupName: text("group_name").notNull(),
   likeCount: integer("like_count").default(0).notNull(),

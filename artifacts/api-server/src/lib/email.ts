@@ -21,12 +21,12 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.SMTP_EMAIL;
 
   if (!apiKey) {
-    console.warn(`[Email] SENDGRID_API_KEY not set — email to ${to} skipped. Set SENDGRID_API_KEY and SENDGRID_FROM_EMAIL in Replit Secrets.`);
+    console.warn(`[Email] SENDGRID_API_KEY not set — email skipped. Set SENDGRID_API_KEY and SENDGRID_FROM_EMAIL in Replit Secrets.`);
     return false;
   }
 
   if (!fromEmail) {
-    console.warn(`[Email] SENDGRID_FROM_EMAIL not set — email to ${to} skipped. Set a verified SendGrid sender address in SENDGRID_FROM_EMAIL.`);
+    console.warn(`[Email] SENDGRID_FROM_EMAIL not set — email skipped. Set a verified SendGrid sender address in SENDGRID_FROM_EMAIL.`);
     return false;
   }
 
@@ -38,7 +38,7 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
       subject,
       html,
     });
-    console.log(`[Email] Sent to ${to} | Subject: ${subject}`);
+    console.info(`[Email] Sent | Subject: ${subject}`);
     return true;
   } catch (err: any) {
     const status = err?.response?.status;

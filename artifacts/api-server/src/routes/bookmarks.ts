@@ -1,11 +1,14 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { bookmarksTable } from "@workspace/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+import { stripHtml } from "../lib/sanitize";
 
 const router = Router();
+
+const MAX_BOOKMARKS_PER_USER = 500;
 
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
@@ -28,12 +31,24 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
     if (!resourceType || !resourceId || !resourceTitle || !subject) {
       res.status(400).json({ error: "Missing fields" }); return;
     }
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(bookmarksTable)
+      .where(eq(bookmarksTable.userId, user.id));
+    if (Number(total) >= MAX_BOOKMARKS_PER_USER) {
+      res.status(400).json({ error: `Bookmark limit reached (max ${MAX_BOOKMARKS_PER_USER})` }); return;
+    }
+    const safeTitle = stripHtml(String(resourceTitle));
+    const safeSubject = stripHtml(String(subject));
+    const safeType = stripHtml(String(resourceType));
+    if (!safeTitle) { res.status(400).json({ error: "Invalid resourceTitle" }); return; }
+    if (!safeSubject) { res.status(400).json({ error: "Invalid subject" }); return; }
     const [bookmark] = await db.insert(bookmarksTable).values({
       userId: user.id,
-      resourceType,
+      resourceType: safeType,
       resourceId,
-      resourceTitle,
-      subject,
+      resourceTitle: safeTitle,
+      subject: safeSubject,
     }).returning();
     res.status(201).json(bookmark);
   } catch (err) {

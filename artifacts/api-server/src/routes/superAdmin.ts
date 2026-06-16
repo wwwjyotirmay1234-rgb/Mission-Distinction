@@ -25,7 +25,8 @@ router.get("/users", superAdminMiddleware, async (_req: Request, res: Response) 
         createdAt: usersTable.createdAt,
       })
       .from(usersTable)
-      .orderBy(desc(usersTable.createdAt));
+      .orderBy(desc(usersTable.createdAt))
+      .limit(1000);
     res.json(users);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });

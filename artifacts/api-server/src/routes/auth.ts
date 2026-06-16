@@ -40,6 +40,29 @@ const forgotPasswordLimiter = rateLimit({
   message: { error: "Too many password reset requests. Please try again in 15 minutes." },
 });
 
+const resetPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: process.env.NODE_ENV === "development" ? 500 : 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many password reset attempts. Please try again in an hour." },
+});
+
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "development" ? 500 : 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many token refresh requests. Please try again shortly." },
+});
+
+function validatePasswordStrength(password: string): string | null {
+  if (password.length < 8) return "Password must be at least 8 characters";
+  if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter";
+  if (!/[0-9]/.test(password)) return "Password must contain at least one number";
+  return null;
+}
+
 // ─── Student Register ────────────────────────────────────────────────────────
 router.post("/student/register", registerLimiter, async (req: Request, res: Response) => {
   try {
@@ -48,6 +71,8 @@ router.post("/student/register", registerLimiter, async (req: Request, res: Resp
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
+    const pwError = validatePasswordStrength(password);
+    if (pwError) { res.status(400).json({ error: pwError }); return; }
     const existing = await db.select().from(usersTable).where(eq(usersTable.email, email));
     if (existing.length > 0) {
       res.status(400).json({ error: "Email already registered" });
@@ -132,6 +157,8 @@ router.post("/admin/register", registerLimiter, async (req: Request, res: Respon
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
+    const pwError = validatePasswordStrength(password);
+    if (pwError) { res.status(400).json({ error: pwError }); return; }
     const validInviteCode = process.env.ADMIN_INVITE_CODE;
     if (!validInviteCode) {
       res.status(500).json({ error: "Admin registration is not configured. Contact the platform owner." });
@@ -189,7 +216,7 @@ router.post("/admin/login", loginLimiter, async (req: Request, res: Response) =>
 });
 
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
-router.post("/google", async (req: Request, res: Response) => {
+router.post("/google", registerLimiter, async (req: Request, res: Response) => {
   try {
     const { idToken } = req.body;
     if (!idToken) {
@@ -272,17 +299,15 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req: Request, res:
 });
 
 // ─── Reset Password ───────────────────────────────────────────────────────────
-router.post("/reset-password", async (req: Request, res: Response) => {
+router.post("/reset-password", resetPasswordLimiter, async (req: Request, res: Response) => {
   try {
     const { token, newPassword } = req.body;
     if (!token || !newPassword) {
       res.status(400).json({ error: "Missing fields" });
       return;
     }
-    if (newPassword.length < 8) {
-      res.status(400).json({ error: "Password must be at least 8 characters" });
-      return;
-    }
+    const pwError = validatePasswordStrength(newPassword);
+    if (pwError) { res.status(400).json({ error: pwError }); return; }
     const [tokenRow] = await db.select().from(emailTokensTable).where(
       and(eq(emailTokensTable.token, token), eq(emailTokensTable.type, "reset"))
     );
@@ -362,10 +387,8 @@ router.post("/change-password", authMiddleware, async (req: Request, res: Respon
       res.status(400).json({ error: "Missing fields" });
       return;
     }
-    if (newPassword.length < 8) {
-      res.status(400).json({ error: "New password must be at least 8 characters" });
-      return;
-    }
+    const pwError = validatePasswordStrength(newPassword);
+    if (pwError) { res.status(400).json({ error: pwError }); return; }
     const userId = (req as any).user?.id;
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
@@ -381,7 +404,7 @@ router.post("/change-password", authMiddleware, async (req: Request, res: Respon
 });
 
 // ─── Refresh Token ────────────────────────────────────────────────────────────
-router.post("/refresh", async (req: Request, res: Response) => {
+router.post("/refresh", refreshLimiter, async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) { res.status(400).json({ error: "Missing refresh token" }); return; }
@@ -497,7 +520,7 @@ router.delete("/account", authMiddleware, async (req: Request, res: Response) =>
     await db.delete(activityTable).where(eq(activityTable.userId, userId));
     await db.delete(usersTable).where(eq(usersTable.id, userId));
 
-    console.log(`[Auth] Account deleted for userId=${userId} per DPDPA erasure request`);
+    console.info(`[Auth] Account deleted per DPDPA erasure request`);
     res.json({ message: "Your account and all associated personal data have been permanently deleted." });
   } catch (err) {
     console.error("Account deletion error:", err);

@@ -32,7 +32,8 @@ router.get("/posts", authMiddleware, async (req: Request, res: Response) => {
     let posts = await db
       .select()
       .from(communityPostsTable)
-      .orderBy(desc(communityPostsTable.createdAt));
+      .orderBy(desc(communityPostsTable.createdAt))
+      .limit(500);
     if (group) posts = posts.filter(p => p.groupName.toLowerCase().includes((group as string).toLowerCase()));
     if (search) posts = posts.filter(p => p.title.toLowerCase().includes((search as string).toLowerCase()) || p.content.toLowerCase().includes((search as string).toLowerCase()));
     res.json(posts);
@@ -56,6 +57,7 @@ router.post("/posts", authMiddleware, postCreateLimiter, async (req: Request, re
       content: safeContent,
       groupName: stripHtml(groupName),
       author: user.fullName,
+      authorId: user.id,
       authorAvatarUrl: user.avatarUrl || null,
     }).returning();
     res.status(201).json(post);

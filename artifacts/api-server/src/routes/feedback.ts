@@ -49,7 +49,9 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
 
 router.get("/", adminMiddleware, async (_req: Request, res: Response) => {
   try {
-    const items = await db.select().from(feedbackTable).orderBy(desc(feedbackTable.createdAt));
+    const items = await db.select().from(feedbackTable)
+      .orderBy(desc(feedbackTable.createdAt))
+      .limit(500);
     res.json(items);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });

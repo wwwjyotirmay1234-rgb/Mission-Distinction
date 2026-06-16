@@ -7,10 +7,19 @@ import { parseId } from "../lib/auth";
 
 const router = Router();
 
+const CLOUDINARY_REGEX = /^https:\/\/res\.cloudinary\.com\//;
+
+function isValidHttpsUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:";
+  } catch { return false; }
+}
+
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { subject, search } = req.query;
-    let books = await db.select().from(booksTable);
+    let books = await db.select().from(booksTable).limit(500);
     if (subject) books = books.filter(b => b.subject.toLowerCase() === (subject as string).toLowerCase());
     if (search) books = books.filter(b => b.title.toLowerCase().includes((search as string).toLowerCase()));
     res.json(books);
@@ -24,6 +33,10 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
     const admin = (req as any).user;
     const { title, subject, author, url, coverUrl } = req.body;
     if (!title || !subject || !url) { res.status(400).json({ error: "Missing fields" }); return; }
+    if (!isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
+    if (coverUrl && !CLOUDINARY_REGEX.test(coverUrl)) {
+      res.status(400).json({ error: "coverUrl must be a Cloudinary URL" }); return;
+    }
     const [book] = await db.insert(booksTable).values({
       title, subject, author, url, coverUrl,
       createdBy: admin.id,
@@ -45,6 +58,10 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
       res.status(403).json({ error: "You can only edit books you added" }); return;
     }
     const { title, subject, author, url, coverUrl } = req.body;
+    if (url && !isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
+    if (coverUrl && !CLOUDINARY_REGEX.test(coverUrl)) {
+      res.status(400).json({ error: "coverUrl must be a Cloudinary URL" }); return;
+    }
     const [book] = await db.update(booksTable)
       .set({ title, subject, author, url, coverUrl })
       .where(eq(booksTable.id, id))

@@ -12,7 +12,7 @@ const router = Router();
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { subject, search } = req.query;
-    let notes = await db.select().from(notesTable);
+    let notes = await db.select().from(notesTable).limit(500);
     if (subject) notes = notes.filter(n => n.subject.toLowerCase() === (subject as string).toLowerCase());
     if (search) notes = notes.filter(n => n.title.toLowerCase().includes((search as string).toLowerCase()));
     res.json(notes);
@@ -68,10 +68,14 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
       res.status(403).json({ error: "You can only edit notes you created" }); return;
     }
     const { title, subject, content, fileUrl, fileType } = req.body;
+    const safeTitle = title !== undefined ? stripHtml(String(title)) : undefined;
+    const safeSubject = subject !== undefined ? stripHtml(String(subject)) : undefined;
+    if (safeTitle !== undefined && !safeTitle) { res.status(400).json({ error: "Invalid title" }); return; }
+    if (safeSubject !== undefined && !safeSubject) { res.status(400).json({ error: "Invalid subject" }); return; }
     const [note] = await db.update(notesTable)
       .set({
-        title,
-        subject,
+        title: safeTitle,
+        subject: safeSubject,
         content: content !== undefined ? (content || null) : existing.content,
         fileUrl: fileUrl !== undefined ? (fileUrl || null) : existing.fileUrl,
         fileType: fileType !== undefined ? (fileType || null) : existing.fileType,

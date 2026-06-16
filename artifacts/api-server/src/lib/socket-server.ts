@@ -2,7 +2,7 @@ import { Server, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
 import { parseToken } from "./auth";
 import { db } from "@workspace/db";
-import { usersTable } from "@workspace/db";
+import { usersTable, communityGroupsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 let io: Server;
@@ -40,6 +40,12 @@ export function initSocketServer(httpServer: HttpServer) {
     const user = (socket as any).user as { id: number; fullName: string };
 
     socket.on("join-room", async (groupId: number) => {
+      if (!groupId || typeof groupId !== "number") return;
+      const [group] = await db
+        .select({ id: communityGroupsTable.id })
+        .from(communityGroupsTable)
+        .where(eq(communityGroupsTable.id, groupId));
+      if (!group) return;
       socket.join(`chat:${groupId}`);
       socket.to(`chat:${groupId}`).emit("user-joined", { name: user.fullName });
       const sockets = await io.in(`chat:${groupId}`).fetchSockets();

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
-import { quizAttemptsTable, activityTable, notesTable, pdfsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { quizAttemptsTable, activityTable } from "@workspace/db";
+import { eq, desc } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 
 const router = Router();
@@ -9,8 +9,14 @@ const router = Router();
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const attempts = await db.select().from(quizAttemptsTable).where(eq(quizAttemptsTable.userId, user.id));
-    const activity = await db.select().from(activityTable).where(eq(activityTable.userId, user.id));
+    const [attempts, activity] = await Promise.all([
+      db.select().from(quizAttemptsTable)
+        .where(eq(quizAttemptsTable.userId, user.id))
+        .limit(500),
+      db.select().from(activityTable)
+        .where(eq(activityTable.userId, user.id))
+        .limit(500),
+    ]);
 
     const quizzesAttempted = attempts.length;
     const avgScore = attempts.length > 0
@@ -47,8 +53,10 @@ router.get("/activity", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const activity = await db.select().from(activityTable)
-      .where(eq(activityTable.userId, user.id));
-    res.json(activity.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 20));
+      .where(eq(activityTable.userId, user.id))
+      .orderBy(desc(activityTable.createdAt))
+      .limit(20);
+    res.json(activity);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }

@@ -36,7 +36,8 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
             .from(doubtsTable)
             .where(eq(doubtsTable.subject, subject as string))
             .orderBy(desc(doubtsTable.createdAt))
-        : await db.select().from(doubtsTable).orderBy(desc(doubtsTable.createdAt));
+            .limit(500)
+        : await db.select().from(doubtsTable).orderBy(desc(doubtsTable.createdAt)).limit(500);
     res.json(doubts);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });

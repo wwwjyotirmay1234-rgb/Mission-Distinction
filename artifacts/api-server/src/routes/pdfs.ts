@@ -5,13 +5,32 @@ import { eq, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { updateStreak } from "../lib/streak";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
+
+const downloadCountLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: process.env.NODE_ENV === "development" ? 500 : 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many download count increments for this PDF. Try again later." },
+  keyGenerator: (req) => `pdf-dl-${(req as any).user?.id}-${req.params.id}`,
+});
+
+function isValidHttpsUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:";
+  } catch { return false; }
+}
+
+const CLOUDINARY_REGEX = /^https:\/\/res\.cloudinary\.com\//;
 
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { subject, professor, search } = req.query;
-    let pdfs = await db.select().from(pdfsTable);
+    let pdfs = await db.select().from(pdfsTable).limit(500);
     if (subject) pdfs = pdfs.filter(p => p.subject.toLowerCase() === (subject as string).toLowerCase());
     if (professor) pdfs = pdfs.filter(p => p.professor?.toLowerCase().includes((professor as string).toLowerCase()));
     if (search) pdfs = pdfs.filter(p => p.title.toLowerCase().includes((search as string).toLowerCase()));
@@ -26,6 +45,10 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
     const admin = (req as any).user;
     const { title, subject, professor, year, url, thumbnailUrl, pages, size } = req.body;
     if (!title || !subject || !url) { res.status(400).json({ error: "Missing fields" }); return; }
+    if (!isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
+    if (thumbnailUrl && !CLOUDINARY_REGEX.test(thumbnailUrl)) {
+      res.status(400).json({ error: "thumbnailUrl must be a Cloudinary URL" }); return;
+    }
     const [pdf] = await db.insert(pdfsTable).values({
       title, subject, professor, year, url, thumbnailUrl, pages, size,
       createdBy: admin.id,
@@ -59,6 +82,7 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
       res.status(403).json({ error: "You can only edit PDFs you uploaded" }); return;
     }
     const { title, subject, professor, year, url, pages, size } = req.body;
+    if (url && !isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
     const [pdf] = await db.update(pdfsTable)
       .set({ title, subject, professor, year, url, pages, size })
       .where(eq(pdfsTable.id, id))
@@ -69,7 +93,7 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-router.post("/:id/download", authMiddleware, async (req: Request, res: Response) => {
+router.post("/:id/download", authMiddleware, downloadCountLimiter, async (req: Request, res: Response) => {
   try {
     const id = parseId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
