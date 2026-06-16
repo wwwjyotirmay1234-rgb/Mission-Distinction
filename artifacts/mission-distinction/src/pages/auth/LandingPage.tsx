@@ -140,6 +140,14 @@ export default function LandingPage() {
   }, []);
 
   const handleGoogleSignIn = async () => {
+    // Google sign-in cannot run inside an iframe (Replit canvas preview).
+    // Open the app in a real top-level tab where popups and redirects work normally.
+    if (window.self !== window.top) {
+      window.open(window.location.href, "_blank");
+      toast.info("Opening in a new tab — sign in with Google there.");
+      return;
+    }
+
     setGoogleLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
