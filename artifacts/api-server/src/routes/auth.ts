@@ -223,9 +223,9 @@ router.post("/google", registerLimiter, async (req: Request, res: Response) => {
       res.status(400).json({ error: "Missing idToken" });
       return;
     }
-    const { getFirebaseAdmin } = await import("../lib/firebase-admin");
-    const admin = getFirebaseAdmin();
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const { getFirebaseAuth } = await import("../lib/firebase-admin");
+    const firebaseAuth = getFirebaseAuth();
+    const decoded = await firebaseAuth.verifyIdToken(idToken);
     const { email, name, uid } = decoded;
     if (!email) {
       res.status(400).json({ error: "Google account has no email" });
