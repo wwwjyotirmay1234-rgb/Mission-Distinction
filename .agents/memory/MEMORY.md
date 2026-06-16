@@ -1,5 +1,4 @@
-- [Auth token storage keys](auth-token-keys.md) — localStorage keys are mission_token / mission_refresh_token / mission_user (NOT "token")
-- [Token refresh architecture](token-refresh-arch.md) — auto-refresh via setTokenRefresher in custom-fetch.ts + apiFetch.ts for raw fetch calls + AuthContext event bus
-- [Playwright NixOS environment](playwright-nixos.md) — Playwright Chromium can't run in Replit NixOS sandbox (missing libglib); API-only tests (no { page }) pass fine.
-- [Rate limiter dev mode](rate-limiter-dev.md) — loginLimiter uses max 500 in NODE_ENV=development to avoid test suite trips; resets on server restart.
-- [Admin login endpoint](admin-login.md) — POST /api/auth/admin/login returns { token, refreshToken, user }; rate-limited; test helper must cache token across describe blocks.
+- [JWT UA fingerprinting](jwt-ua-fingerprint.md) — generateToken takes optional ua param, embeds 16-char SHA256 uah claim; soft-checked in authMiddleware (warn, never reject)
+- [JWT timing test fix](jwt-timing.md) — JWT iat is second-precision; refresh-rotation test needs ≥1100ms sleep or tokens will be identical within same second
+- [Bundle minification](bundle-minification.md) — adding minify+treeShaking to esbuild cut bundle 4.4MB→2.3MB; sourcemap still 7.9MB (linked, not inline, fine)
+- [Load test baseline](load-test-baseline.md) — localhost: 2032 req/s, 0% errors, p95=20ms, p99=41ms; thresholds: error<1%, p95<2000ms, rps>10

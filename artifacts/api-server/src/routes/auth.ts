@@ -84,7 +84,7 @@ router.post("/student/register", registerLimiter, async (req: Request, res: Resp
       console.warn("[register] email send failed (non-fatal):", (emailErr as any)?.message);
     }
 
-    const jwtToken = generateToken(user.id, user.role);
+    const jwtToken = generateToken(user.id, user.role, req.headers["user-agent"] as string | undefined);
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     res.status(201).json({
@@ -115,7 +115,7 @@ router.post("/student/login", loginLimiter, async (req: Request, res: Response) 
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
-    const token = generateToken(user.id, user.role);
+    const token = generateToken(user.id, user.role, req.headers["user-agent"] as string | undefined);
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     res.json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
@@ -153,7 +153,7 @@ router.post("/admin/register", registerLimiter, async (req: Request, res: Respon
       role: "admin",
       emailVerified: true,
     }).returning();
-    const token = generateToken(user.id, user.role);
+    const token = generateToken(user.id, user.role, req.headers["user-agent"] as string | undefined);
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     res.status(201).json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
@@ -179,7 +179,7 @@ router.post("/admin/login", loginLimiter, async (req: Request, res: Response) =>
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
-    const token = generateToken(user.id, user.role);
+    const token = generateToken(user.id, user.role, req.headers["user-agent"] as string | undefined);
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     res.json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
@@ -219,7 +219,7 @@ router.post("/google", async (req: Request, res: Response) => {
       await db.update(usersTable).set({ emailVerified: true }).where(eq(usersTable.id, user.id));
       user = { ...user, emailVerified: true };
     }
-    const token = generateToken(user.id, user.role);
+    const token = generateToken(user.id, user.role, req.headers["user-agent"] as string | undefined);
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     res.json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
@@ -397,7 +397,7 @@ router.post("/refresh", async (req: Request, res: Response) => {
     const newRefreshValue = randomUUID();
     const newExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await db.insert(refreshTokensTable).values({ userId: user.id, token: newRefreshValue, expiresAt: newExpiry });
-    const newAccessToken = generateToken(user.id, user.role);
+    const newAccessToken = generateToken(user.id, user.role, req.headers["user-agent"] as string | undefined);
     res.json({ token: newAccessToken, refreshToken: newRefreshValue, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });

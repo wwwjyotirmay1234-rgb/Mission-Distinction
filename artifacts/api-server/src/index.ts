@@ -40,3 +40,21 @@ httpServer.listen(port, (err?: Error) => {
   }
   logger.info({ port }, "Server listening");
 });
+
+// ─── Structured monitoring — unhandled errors (A09) ──────────────────────────
+process.on("unhandledRejection", (reason, promise) => {
+  logger.error({ reason, promise: String(promise) }, "[Monitor] Unhandled Promise Rejection — review stack and fix root cause");
+});
+
+process.on("uncaughtException", (err) => {
+  logger.fatal({ err }, "[Monitor] Uncaught Exception — server will exit");
+  process.exit(1);
+});
+
+process.on("SIGTERM", () => {
+  logger.info("[Monitor] SIGTERM received — graceful shutdown initiated");
+  httpServer.close(() => {
+    logger.info("[Monitor] All connections closed — process exiting");
+    process.exit(0);
+  });
+});

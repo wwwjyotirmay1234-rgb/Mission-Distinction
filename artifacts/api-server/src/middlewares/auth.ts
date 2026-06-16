@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { parseToken } from "../lib/auth";
+import { parseToken, uaHash } from "../lib/auth";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -15,6 +15,17 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   if (!parsed) {
     res.status(401).json({ error: "Invalid token" });
     return;
+  }
+
+  if (parsed.uah) {
+    const currentUah = uaHash(req.headers["user-agent"]);
+    if (currentUah && parsed.uah !== currentUah) {
+      console.warn(
+        `[Security] JWT user-agent mismatch for userId=${parsed.userId} — ` +
+        `token_uah=${parsed.uah} request_uah=${currentUah}. ` +
+        `Possible token reuse across devices or browser change.`
+      );
+    }
   }
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, parsed.userId));
   if (!user) {

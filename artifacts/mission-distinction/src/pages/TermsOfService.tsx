@@ -79,11 +79,35 @@ export default function TermsOfService() {
             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 text-sm">
               <p className="text-yellow-400 font-medium mb-2">⚠️ Important Notice</p>
               <p>
-                All quiz questions, notes, and study materials on Mission Distinction are for educational and
-                supplementary learning purposes only. Content is <strong className="text-foreground">not officially
-                endorsed by the National Medical Commission (NMC), any medical university, or hospital</strong>.
-                Always verify clinical information with authoritative sources before applying it in any professional
-                context. Mission Distinction accepts no responsibility for academic outcomes.
+                All quiz questions, notes, and study materials on Mission Distinction are for{" "}
+                <strong className="text-foreground">educational and supplementary learning purposes only</strong>. This
+                platform is designed as a self-study companion for 1st year MBBS students in Odisha, India — it is
+                not a substitute for official university instruction, prescribed textbooks, or licensed clinical training.
+              </p>
+              <ul className="list-disc list-inside space-y-1.5 mt-3 text-muted-foreground">
+                <li>
+                  Content is <strong className="text-foreground">not officially endorsed</strong> by the{" "}
+                  <strong className="text-foreground">National Medical Commission (NMC)</strong>, the University Grants
+                  Commission (UGC), any affiliated medical college, or any hospital.
+                </li>
+                <li>
+                  This platform does <strong className="text-foreground">not seek NMC accreditation</strong> and is
+                  intended solely as a supplementary study tool.
+                </li>
+                <li>
+                  Quiz questions and study notes are curated by platform administrators. While we aim for accuracy,{" "}
+                  <strong className="text-foreground">content has not been independently verified</strong> by licensed
+                  medical professionals or subject-matter experts. Always cross-reference with your official
+                  curriculum materials.
+                </li>
+                <li>
+                  <strong className="text-foreground">No content on this platform constitutes medical advice.</strong>{" "}
+                  Do not apply any information here in a clinical or patient-care context without proper verification.
+                </li>
+              </ul>
+              <p className="mt-3">
+                Mission Distinction accepts no responsibility for academic outcomes, examination results, or decisions
+                made based on platform content.
               </p>
             </div>
           </section>
@@ -199,7 +223,42 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-foreground mb-3">14. Changes to These Terms</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-3">14. Intermediary Liability (IT Act 2000, §79)</h2>
+            <p>
+              Mission Distinction operates as an <strong className="text-foreground">online intermediary</strong> as
+              defined under Section 79 of the Information Technology Act, 2000 (as amended) and the Information
+              Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.
+            </p>
+            <ul className="list-disc list-inside space-y-2 mt-3">
+              <li>
+                We provide a platform for administrators to upload educational content and for students to access it.
+                We are <strong className="text-foreground">not the originator</strong> of third-party content uploaded
+                to the platform.
+              </li>
+              <li>
+                We exercise due diligence as required under the IT Rules 2021, including publishing these Terms,
+                maintaining a grievance redressal mechanism, and removing unlawful content upon notice.
+              </li>
+              <li>
+                Our <strong className="text-foreground">safe harbour protection</strong> under §79 applies to the
+                extent we do not initiate, select recipients of, or modify third-party content. We reserve the right
+                to act on takedown notices and remove content that violates applicable law, these Terms, or the rights
+                of third parties.
+              </li>
+              <li>
+                If you believe any content on this platform infringes your intellectual property or violates law,
+                please contact our Grievance Officer at{" "}
+                <a href="mailto:missiondistinction108@gmail.com" className="text-primary hover:underline">
+                  missiondistinction108@gmail.com
+                </a>{" "}
+                with details of the content and the legal basis for your complaint. We will respond within 72 hours
+                on business days.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-foreground mb-3">15. Changes to These Terms</h2>
             <p>
               We may update these Terms from time to time. We will provide at least 7 days' notice via an in-app
               announcement before material changes take effect. Continued use of the platform after that date

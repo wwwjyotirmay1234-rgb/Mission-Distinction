@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { createHash } from "crypto";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -19,18 +20,28 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
-export function generateToken(userId: number, role: string): string {
-  return jwt.sign({ userId, role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+function uaHash(userAgent?: string): string | undefined {
+  if (!userAgent) return undefined;
+  return createHash("sha256").update(userAgent).digest("hex").slice(0, 16);
 }
 
-export function parseToken(token: string): { userId: number; role: string } | null {
+export function generateToken(userId: number, role: string, userAgent?: string): string {
+  const payload: Record<string, unknown> = { userId, role };
+  const uah = uaHash(userAgent);
+  if (uah) payload.uah = uah;
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+}
+
+export function parseToken(token: string): { userId: number; role: string; uah?: string } | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
-    return { userId: decoded.userId, role: decoded.role };
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; role: string; uah?: string };
+    return { userId: decoded.userId, role: decoded.role, uah: decoded.uah };
   } catch {
     return null;
   }
 }
+
+export { uaHash };
 
 export function parseId(param: string): number | null {
   const id = parseInt(param, 10);

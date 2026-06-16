@@ -213,7 +213,33 @@ export default function PrivacyPolicy() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-foreground mb-3">12. Grievance Officer & Contact</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-3">12. Data Localisation & Cross-Border Transfers</h2>
+            <p>
+              Mission Distinction is operated from <strong className="text-foreground">Odisha, India</strong>. Your
+              personal data is processed and stored on servers provided by our infrastructure partner,{" "}
+              <strong className="text-foreground">Replit, Inc.</strong> (United States). By using this platform, you
+              acknowledge that your data may be transferred to and processed in the United States or other countries
+              outside India.
+            </p>
+            <p className="mt-3">
+              Such cross-border transfers are carried out in compliance with the{" "}
+              <strong className="text-foreground">Digital Personal Data Protection Act, 2023 (DPDPA)</strong> and any
+              rules made thereunder. Where required by law, we rely on appropriate safeguards (including
+              standard contractual clauses or equivalent mechanisms) when transferring data internationally.
+            </p>
+            <div className="bg-card/40 border border-border/40 rounded-lg p-3 text-sm mt-3 space-y-1">
+              <p className="font-medium text-foreground">Data processors and their hosting locations:</p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <li><strong className="text-foreground">Replit, Inc.</strong> — application hosting &amp; database (USA)</li>
+                <li><strong className="text-foreground">Cloudinary, Inc.</strong> — media/file storage &amp; CDN (USA/global CDN)</li>
+                <li><strong className="text-foreground">Twilio SendGrid</strong> — transactional email delivery (USA)</li>
+                <li><strong className="text-foreground">Google Firebase</strong> — OAuth authentication (USA/global)</li>
+              </ul>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-foreground mb-3">13. Grievance Officer & Contact</h2>
             <div className="bg-card/40 border border-border/40 rounded-lg p-4 text-sm space-y-1">
               <p className="text-foreground font-medium">Grievance Officer: Mission Distinction Admin</p>
               <p>Email: <a href="mailto:missiondistinction108@gmail.com" className="text-primary hover:underline">missiondistinction108@gmail.com</a></p>
