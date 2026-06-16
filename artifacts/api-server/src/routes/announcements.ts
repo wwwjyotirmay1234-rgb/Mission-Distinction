@@ -30,8 +30,10 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
       ? await db.select().from(announcementsTable)
           .where(eq(announcementsTable.type, type as string))
           .orderBy(desc(announcementsTable.createdAt))
+          .limit(200)
       : await db.select().from(announcementsTable)
-          .orderBy(desc(announcementsTable.createdAt));
+          .orderBy(desc(announcementsTable.createdAt))
+          .limit(200);
 
     setCache(cacheKey, announcements, CACHE_TTL_MS);
     res.setHeader("X-Cache", "MISS");

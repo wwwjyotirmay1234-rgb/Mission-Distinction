@@ -52,10 +52,13 @@ router.post("/posts", authMiddleware, postCreateLimiter, async (req: Request, re
     if (!safeTitle || !safeContent) { res.status(400).json({ error: "Invalid content" }); return; }
     if (safeTitle.length > 200) { res.status(400).json({ error: "Title must be under 200 characters" }); return; }
     if (safeContent.length > 5000) { res.status(400).json({ error: "Content must be under 5000 characters" }); return; }
+    const groups = await db.select({ name: communityGroupsTable.name }).from(communityGroupsTable);
+    const validGroup = groups.find(g => g.name === groupName);
+    if (!validGroup) { res.status(400).json({ error: "Invalid group" }); return; }
     const [post] = await db.insert(communityPostsTable).values({
       title: safeTitle,
       content: safeContent,
-      groupName: stripHtml(groupName),
+      groupName: validGroup.name,
       author: user.fullName,
       authorId: user.id,
       authorAvatarUrl: user.avatarUrl || null,

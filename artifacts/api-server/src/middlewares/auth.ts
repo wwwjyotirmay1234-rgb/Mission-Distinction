@@ -21,8 +21,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     const currentUah = uaHash(req.headers["user-agent"]);
     if (currentUah && parsed.uah !== currentUah) {
       console.warn(
-        `[Security] JWT user-agent mismatch for userId=${parsed.userId} — ` +
-        `token_uah=${parsed.uah} request_uah=${currentUah}. ` +
+        `[Security] JWT user-agent mismatch detected — ` +
         `Possible token reuse across devices or browser change.`
       );
     }

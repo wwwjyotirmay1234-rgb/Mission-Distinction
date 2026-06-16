@@ -1,9 +1,10 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
-import { usersTable, quizAttemptsTable, activityTable } from "@workspace/db";
+import { usersTable, quizAttemptsTable, activityTable, bookmarksTable, feedbackTable, emailTokensTable, refreshTokensTable } from "@workspace/db";
 import { eq, desc, sql } from "drizzle-orm";
 import { superAdminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+import { stripHtml } from "../lib/sanitize";
 
 const router = Router();
 
@@ -101,8 +102,9 @@ router.post("/users/:id/ban", superAdminMiddleware, async (req: Request, res: Re
       return;
     }
 
+    const safeReason = reason?.trim() ? stripHtml(String(reason.trim())) : "Violation of platform rules";
     await db.update(usersTable)
-      .set({ bannedAt: new Date(), banReason: reason?.trim() || "Violation of platform rules" })
+      .set({ bannedAt: new Date(), banReason: safeReason })
       .where(eq(usersTable.id, userId));
 
     res.json({ message: `${target.fullName} has been suspended` });
@@ -144,6 +146,12 @@ router.delete("/users/:id", superAdminMiddleware, async (req: Request, res: Resp
       return;
     }
 
+    await db.delete(refreshTokensTable).where(eq(refreshTokensTable.userId, userId));
+    await db.delete(emailTokensTable).where(eq(emailTokensTable.userId, userId));
+    await db.delete(feedbackTable).where(eq(feedbackTable.userId, userId));
+    await db.delete(bookmarksTable).where(eq(bookmarksTable.userId, userId));
+    await db.delete(activityTable).where(eq(activityTable.userId, userId));
+    await db.delete(quizAttemptsTable).where(eq(quizAttemptsTable.userId, userId));
     await db.delete(usersTable).where(eq(usersTable.id, userId));
     res.json({ message: `${target.fullName}'s account has been permanently deleted` });
   } catch (err) {

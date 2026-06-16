@@ -66,11 +66,12 @@ function validatePasswordStrength(password: string): string | null {
 // ─── Student Register ────────────────────────────────────────────────────────
 router.post("/student/register", registerLimiter, async (req: Request, res: Response) => {
   try {
-    const { fullName, email, mobileNumber, password, year, college } = req.body;
-    if (!fullName || !email || !password || !year || !college) {
+    const { fullName, email: rawEmail, mobileNumber, password, year, college } = req.body;
+    if (!fullName || !rawEmail || !password || !year || !college) {
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
+    const email = rawEmail.trim().toLowerCase();
     const pwError = validatePasswordStrength(password);
     if (pwError) { res.status(400).json({ error: pwError }); return; }
     const existing = await db.select().from(usersTable).where(eq(usersTable.email, email));
@@ -126,11 +127,12 @@ router.post("/student/register", registerLimiter, async (req: Request, res: Resp
 // ─── Student Login ────────────────────────────────────────────────────────────
 router.post("/student/login", loginLimiter, async (req: Request, res: Response) => {
   try {
-    const { identifier, password } = req.body;
-    if (!identifier || !password) {
+    const { identifier: rawIdentifier, password } = req.body;
+    if (!rawIdentifier || !password) {
       res.status(400).json({ error: "Missing credentials" });
       return;
     }
+    const identifier = rawIdentifier.trim().toLowerCase();
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, identifier));
     if (!user || user.role !== "student") {
       res.status(401).json({ error: "Invalid credentials" });
@@ -152,11 +154,12 @@ router.post("/student/login", loginLimiter, async (req: Request, res: Response) 
 // ─── Admin Register ───────────────────────────────────────────────────────────
 router.post("/admin/register", registerLimiter, async (req: Request, res: Response) => {
   try {
-    const { fullName, workEmail, password, inviteCode } = req.body;
-    if (!fullName || !workEmail || !password || !inviteCode) {
+    const { fullName, workEmail: rawWorkEmail, password, inviteCode } = req.body;
+    if (!fullName || !rawWorkEmail || !password || !inviteCode) {
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
+    const workEmail = rawWorkEmail.trim().toLowerCase();
     const pwError = validatePasswordStrength(password);
     if (pwError) { res.status(400).json({ error: pwError }); return; }
     const validInviteCode = process.env.ADMIN_INVITE_CODE;
@@ -192,11 +195,12 @@ router.post("/admin/register", registerLimiter, async (req: Request, res: Respon
 // ─── Admin Login ──────────────────────────────────────────────────────────────
 router.post("/admin/login", loginLimiter, async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
+    const { email: rawAdminEmail, password } = req.body;
+    if (!rawAdminEmail || !password) {
       res.status(400).json({ error: "Missing credentials" });
       return;
     }
+    const email = rawAdminEmail.trim().toLowerCase();
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
     if (!user || user.role !== "admin") {
       res.status(401).json({ error: "Invalid credentials" });
@@ -226,11 +230,12 @@ router.post("/google", registerLimiter, async (req: Request, res: Response) => {
     const { getFirebaseAuth } = await import("../lib/firebase-admin");
     const firebaseAuth = getFirebaseAuth();
     const decoded = await firebaseAuth.verifyIdToken(idToken);
-    const { email, name, uid } = decoded;
-    if (!email) {
+    const { email: rawGoogleEmail, name, uid } = decoded;
+    if (!rawGoogleEmail) {
       res.status(400).json({ error: "Google account has no email" });
       return;
     }
+    const email = rawGoogleEmail.trim().toLowerCase();
     let [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
     if (!user) {
       [user] = await db.insert(usersTable).values({
@@ -259,11 +264,12 @@ router.post("/google", registerLimiter, async (req: Request, res: Response) => {
 // ─── Forgot Password ──────────────────────────────────────────────────────────
 router.post("/forgot-password", forgotPasswordLimiter, async (req: Request, res: Response) => {
   try {
-    const { email } = req.body;
-    if (!email) {
+    const { email: rawForgotEmail } = req.body;
+    if (!rawForgotEmail) {
       res.status(400).json({ error: "Email is required" });
       return;
     }
+    const email = rawForgotEmail.trim().toLowerCase();
     // Always respond the same to prevent email enumeration
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
     if (!user) {
