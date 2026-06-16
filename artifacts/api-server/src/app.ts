@@ -4,6 +4,7 @@ import helmet from "helmet";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { csrfDefense } from "./middlewares/csrf";
 
 const app: Express = express();
 
@@ -34,6 +35,13 @@ app.use(
 app.use(
   helmet({
     crossOriginEmbedderPolicy: false,
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: process.env.NODE_ENV === "production",
+    },
+    permittedCrossDomainPolicies: false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
@@ -43,7 +51,10 @@ app.use(
         connectSrc: ["'self'"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         frameSrc: ["'none'"],
+        frameAncestors: ["'none'"],
         objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
         upgradeInsecureRequests: [],
       },
     },
@@ -62,6 +73,7 @@ const allowedOrigins: string[] | boolean =
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
+app.use("/api", csrfDefense);
 
 app.use("/api", router);
 
