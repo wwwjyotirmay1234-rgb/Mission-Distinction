@@ -119,10 +119,23 @@ export default function LandingPage() {
     getRedirectResult(auth)
       .then(async (result) => {
         if (!result || !active) return;
-        const idToken = await result.user.getIdToken();
-        await finishGoogleAuth(idToken);
+        try {
+          const idToken = await result.user.getIdToken();
+          await finishGoogleAuth(idToken);
+        } catch (err: any) {
+          toast.error(err?.message || "Google sign-in failed after redirect. Please try again.");
+        }
       })
-      .catch(() => {});
+      .catch((err: any) => {
+        const code: string = err?.code ?? "";
+        if (code === "auth/unauthorized-domain") {
+          toast.error(
+            `Google sign-in blocked: add "${window.location.hostname}" to Firebase Console → Authentication → Settings → Authorized domains.`
+          );
+        } else if (code && code !== "auth/no-auth-event") {
+          toast.error(`Google sign-in failed (${code}). Please try again.`);
+        }
+      });
     return () => { active = false; };
   }, []);
 
@@ -137,13 +150,19 @@ export default function LandingPage() {
       if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
         try {
           await signInWithRedirect(auth, googleProvider);
+          // page navigates away — setGoogleLoading handled on return via useEffect
+          return;
         } catch {
           toast.error("Google sign-in failed. Please allow popups or try a different browser.");
         }
       } else if (code === "auth/unauthorized-domain") {
-        toast.error("This domain is not authorised for Google sign-in. Please contact support.");
+        toast.error(
+          `Google sign-in blocked: add "${window.location.hostname}" to Firebase Console → Authentication → Settings → Authorized domains.`
+        );
       } else if (code === "auth/popup-closed-by-user") {
         // user dismissed — no toast needed
+      } else if (err?.message) {
+        toast.error(err.message);
       } else {
         toast.error("Google sign-in failed. Please try again.");
       }
