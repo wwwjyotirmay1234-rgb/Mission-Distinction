@@ -15,9 +15,10 @@ router.get("/", adminMiddleware, async (req: Request, res: Response) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
     const role = req.query.role as string | undefined;
 
+    const DB_CAP = 10000;
     const allUsers = role
-      ? await db.select().from(usersTable).where(eq(usersTable.role, role)).orderBy(desc(usersTable.createdAt))
-      : await db.select().from(usersTable).orderBy(desc(usersTable.createdAt));
+      ? await db.select().from(usersTable).where(eq(usersTable.role, role)).orderBy(desc(usersTable.createdAt)).limit(DB_CAP)
+      : await db.select().from(usersTable).orderBy(desc(usersTable.createdAt)).limit(DB_CAP);
 
     const total = allUsers.length;
     const paginated = allUsers.slice((page - 1) * limit, page * limit);

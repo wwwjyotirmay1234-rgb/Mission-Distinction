@@ -58,6 +58,7 @@ router.get("/", authMiddleware, async (_req: Request, res: Response) => {
             })
             .from(usersTable)
             .where(eq(usersTable.role, "student"))
+            .limit(50)
         : [];
 
     const profileMap = new Map(studentProfiles.map((u) => [u.id, u]));

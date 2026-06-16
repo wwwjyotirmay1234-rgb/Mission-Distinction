@@ -4,6 +4,7 @@ import { booksTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+import { stripHtml } from "../lib/sanitize";
 
 const router = Router();
 
@@ -37,8 +38,13 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
     if (coverUrl && !CLOUDINARY_REGEX.test(coverUrl)) {
       res.status(400).json({ error: "coverUrl must be a Cloudinary URL" }); return;
     }
+    const safeTitle = stripHtml(String(title));
+    const safeSubject = stripHtml(String(subject));
+    const safeAuthor = author ? stripHtml(String(author)) : null;
+    if (!safeTitle) { res.status(400).json({ error: "Invalid title" }); return; }
+    if (!safeSubject) { res.status(400).json({ error: "Invalid subject" }); return; }
     const [book] = await db.insert(booksTable).values({
-      title, subject, author, url, coverUrl,
+      title: safeTitle, subject: safeSubject, author: safeAuthor, url, coverUrl,
       createdBy: admin.id,
     }).returning();
     res.status(201).json(book);
@@ -62,8 +68,13 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     if (coverUrl && !CLOUDINARY_REGEX.test(coverUrl)) {
       res.status(400).json({ error: "coverUrl must be a Cloudinary URL" }); return;
     }
+    const safeTitle = title !== undefined ? stripHtml(String(title)) : undefined;
+    const safeSubject = subject !== undefined ? stripHtml(String(subject)) : undefined;
+    const safeAuthor = author !== undefined ? (author ? stripHtml(String(author)) : null) : undefined;
+    if (safeTitle !== undefined && !safeTitle) { res.status(400).json({ error: "Invalid title" }); return; }
+    if (safeSubject !== undefined && !safeSubject) { res.status(400).json({ error: "Invalid subject" }); return; }
     const [book] = await db.update(booksTable)
-      .set({ title, subject, author, url, coverUrl })
+      .set({ title: safeTitle, subject: safeSubject, author: safeAuthor, url, coverUrl })
       .where(eq(booksTable.id, id))
       .returning();
     res.json(book);
