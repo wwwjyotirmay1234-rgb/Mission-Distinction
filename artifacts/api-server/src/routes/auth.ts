@@ -220,7 +220,7 @@ router.post("/admin/login", loginLimiter, async (req: Request, res: Response) =>
 });
 
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
-router.post("/google", registerLimiter, async (req: Request, res: Response) => {
+router.post("/google", loginLimiter, async (req: Request, res: Response) => {
   try {
     const { idToken } = req.body;
     if (!idToken) {

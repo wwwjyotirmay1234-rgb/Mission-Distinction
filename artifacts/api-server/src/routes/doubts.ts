@@ -89,7 +89,8 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
       .select()
       .from(doubtAnswersTable)
       .where(eq(doubtAnswersTable.doubtId, id))
-      .orderBy(desc(doubtAnswersTable.isAccepted), desc(doubtAnswersTable.createdAt));
+      .orderBy(desc(doubtAnswersTable.isAccepted), desc(doubtAnswersTable.createdAt))
+      .limit(100);
     res.json({ ...doubt, answers });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });

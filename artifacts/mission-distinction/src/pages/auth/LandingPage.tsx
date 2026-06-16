@@ -52,8 +52,11 @@ const studentRegisterSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   email: z.string().email("Invalid email address"),
   mobileNumber: z.string().optional(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(8, "Confirm password"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
   year: z.string().min(1, "Select your year"),
   college: z.string().min(1, "Select your college"),
   agreeTerms: z.boolean().refine(val => val === true, "You must agree to the terms"),
@@ -71,8 +74,11 @@ const adminLoginSchema = z.object({
 const adminRegisterSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   workEmail: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(8, "Confirm password"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
   inviteCode: z.string().min(1, "Invite code is required"),
   agreeTerms: z.boolean().refine(val => val === true, "You must agree to the terms"),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -170,6 +176,13 @@ export default function LandingPage() {
     },
   });
 
+  function getApiError(err: unknown, fallback: string): string {
+    const data = (err as any)?.data;
+    if (data?.error && typeof data.error === "string") return data.error;
+    if (data?.message && typeof data.message === "string") return data.message;
+    return fallback;
+  }
+
   const onStudentLogin = (values: z.infer<typeof studentLoginSchema>) => {
     studentLoginMutation.mutate({ data: values }, {
       onSuccess: (res) => {
@@ -177,8 +190,8 @@ export default function LandingPage() {
         toast.success("Login successful!");
         setLocation(getRouteByYear(res.user?.year));
       },
-      onError: () => {
-        toast.error("Login failed. Please check your credentials.");
+      onError: (err) => {
+        toast.error(getApiError(err, "Login failed. Please check your credentials."));
       }
     });
   };
@@ -190,8 +203,8 @@ export default function LandingPage() {
         toast.success("Account created successfully!");
         setLocation(getRouteByYear(values.year));
       },
-      onError: () => {
-        toast.error("Registration failed. Please try again.");
+      onError: (err) => {
+        toast.error(getApiError(err, "Registration failed. Please try again."));
       }
     });
   };
@@ -204,7 +217,7 @@ export default function LandingPage() {
         setLocation("/admin/dashboard");
       },
       onError: (err) => {
-        toast.error("Admin login failed.");
+        toast.error(getApiError(err, "Admin login failed. Please check your credentials."));
       }
     });
   };
@@ -217,7 +230,7 @@ export default function LandingPage() {
         setLocation("/admin/dashboard");
       },
       onError: (err) => {
-        toast.error("Admin registration failed.");
+        toast.error(getApiError(err, "Admin registration failed. Please try again."));
       }
     });
   };
