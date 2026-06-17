@@ -350,13 +350,34 @@ export default function LandingPage() {
           transition={{ duration: 0.5, delay: 0.15 }}
           className="w-full max-w-md text-center mb-5 px-4"
         >
-          {/* Top ornate lotus divider */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex-1 h-px" style={{background:"linear-gradient(to right, transparent, #C8A340)"}}/>
-            <span style={{color:"#C8A340",fontSize:11,lineHeight:1}}>ↄ</span>
-            <span style={{fontSize:18,lineHeight:1,filter:"sepia(1) saturate(5) hue-rotate(5deg) brightness(1.1)"}}>🪷</span>
-            <span style={{color:"#C8A340",fontSize:11,lineHeight:1}}>c</span>
-            <div className="flex-1 h-px" style={{background:"linear-gradient(to left, transparent, #C8A340)"}}/>
+          {/* Top ornate lotus divider — SVG, matches reference exactly */}
+          <div className="flex justify-center mb-3">
+            <svg width="320" height="36" viewBox="0 0 320 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Left line */}
+              <line x1="0" y1="18" x2="118" y2="18" stroke="#C8A340" strokeWidth="0.8" opacity="0.85"/>
+              {/* Left scroll ε */}
+              <path d="M122 18 C124 14,130 12,132 16 C130 19,124 20,122 18Z" stroke="#C8A340" strokeWidth="0.85" fill="none"/>
+              {/* Right scroll ɜ */}
+              <path d="M198 18 C196 14,190 12,188 16 C190 19,196 20,198 18Z" stroke="#C8A340" strokeWidth="0.85" fill="none"/>
+              {/* Right line */}
+              <line x1="202" y1="18" x2="320" y2="18" stroke="#C8A340" strokeWidth="0.8" opacity="0.85"/>
+
+              {/* ── Lotus petals (center 160, 20) ── */}
+              {/* Center tall petal */}
+              <path d="M160 5 C157 9,155 15,158 20 C160 22,162 20,162 20 C165 15,163 9,160 5Z" stroke="#C8A340" strokeWidth="0.9" fill="none"/>
+              {/* Inner left petal */}
+              <path d="M152 10 C147 11,144 16,147 20 C150 23,156 21,158 20" stroke="#C8A340" strokeWidth="0.9" fill="none"/>
+              {/* Inner right petal */}
+              <path d="M168 10 C173 11,176 16,173 20 C170 23,164 21,162 20" stroke="#C8A340" strokeWidth="0.9" fill="none"/>
+              {/* Outer left petal */}
+              <path d="M145 14 C139 12,136 18,140 23 C143 26,150 23,152 21" stroke="#C8A340" strokeWidth="0.9" fill="none"/>
+              {/* Outer right petal */}
+              <path d="M175 14 C181 12,184 18,180 23 C177 26,170 23,168 21" stroke="#C8A340" strokeWidth="0.9" fill="none"/>
+              {/* Base horizontal stem */}
+              <path d="M144 22 Q160 28 176 22" stroke="#C8A340" strokeWidth="0.8" fill="none"/>
+              {/* Centre seed dot */}
+              <circle cx="160" cy="24" r="1.4" fill="#C8A340"/>
+            </svg>
           </div>
 
           {/* Sanskrit */}
