@@ -306,9 +306,12 @@ export default function LandingPage() {
           className="relative w-full flex justify-center items-end"
           style={{ height: 210 }}
         >
-          {/* Thin subtle arc — no fill, open background as per reference */}
+          {/* Two arc lines framing the caduceus — as per reference */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 375 210" preserveAspectRatio="xMidYMax meet">
-            <path d="M 20 210 A 168 195 0 0 1 355 210" fill="none" stroke="rgba(109,40,217,0.18)" strokeWidth="1"/>
+            {/* Outer arc — wide dome */}
+            <path d="M -10 215 A 210 260 0 0 1 385 215" fill="none" stroke="rgba(109,40,217,0.38)" strokeWidth="1.2"/>
+            {/* Inner arc — tighter dome */}
+            <path d="M 30 215 A 160 185 0 0 1 345 215" fill="none" stroke="rgba(109,40,217,0.22)" strokeWidth="1"/>
           </svg>
 
           {/* Sparkle stars */}
