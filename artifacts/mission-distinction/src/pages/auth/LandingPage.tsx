@@ -269,15 +269,15 @@ export default function LandingPage() {
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-secondary/10 blur-[120px] rounded-full pointer-events-none" />
 
       {/* Header */}
-      <header className="container mx-auto px-4 py-6 flex items-center justify-between z-10">
-        <div className="flex items-center gap-2">
-          <img src="/logo.jpeg" alt="Mission Distinction" className="h-10 w-10 object-contain rounded-xl" />
-          <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+      <header className="container mx-auto px-4 py-4 flex items-center justify-between z-10">
+        <div className="flex items-center gap-2 min-w-0">
+          <img src="/logo.jpeg" alt="Mission Distinction" className="h-9 w-9 flex-shrink-0 object-contain rounded-xl" />
+          <span className="text-base font-bold whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
             Mission Distinction
           </span>
         </div>
         
-        <div className="flex items-center bg-card border border-border rounded-full p-1">
+        <div className="flex items-center bg-card border border-border rounded-full p-1 ml-2 flex-shrink-0">
           <button
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${role === "student" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
             onClick={() => setRole("student")}
@@ -296,38 +296,87 @@ export default function LandingPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center container mx-auto px-4 py-6 gap-0 z-10">
+      <main className="flex-1 flex flex-col items-center justify-center container mx-auto px-4 py-2 gap-0 z-10">
 
-        {/* Caduceus Symbol */}
+        {/* Caduceus with arc background */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6 }}
-          className="mb-4"
+          transition={{ duration: 0.7 }}
+          className="relative flex items-center justify-center mb-2"
+          style={{ width: 280, height: 190 }}
         >
-          <svg width="80" height="100" viewBox="0 0 80 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Wings */}
-            <ellipse cx="20" cy="28" rx="18" ry="7" fill="#7C3AED" opacity="0.7" transform="rotate(-15 20 28)"/>
-            <ellipse cx="60" cy="28" rx="18" ry="7" fill="#7C3AED" opacity="0.7" transform="rotate(15 60 28)"/>
-            <ellipse cx="18" cy="22" rx="13" ry="5" fill="#9B59B6" opacity="0.5" transform="rotate(-25 18 22)"/>
-            <ellipse cx="62" cy="22" rx="13" ry="5" fill="#9B59B6" opacity="0.5" transform="rotate(25 62 22)"/>
-            {/* Staff */}
-            <rect x="38" y="15" width="4" height="75" rx="2" fill="#7C3AED"/>
-            {/* Snake 1 */}
-            <path d="M40 20 C30 28, 50 36, 40 44 C30 52, 50 60, 40 68 C30 76, 50 84, 40 90" stroke="#A78BFA" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-            {/* Snake 2 */}
-            <path d="M40 20 C50 28, 30 36, 40 44 C50 52, 30 60, 40 68 C50 76, 30 84, 40 90" stroke="#8B5CF6" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+          {/* Dark semi-circular arc behind the symbol */}
+          <div className="absolute inset-0 flex items-start justify-center pointer-events-none">
+            <div style={{
+              width: 260,
+              height: 160,
+              borderRadius: "50% 50% 0 0 / 100% 100% 0 0",
+              background: "radial-gradient(ellipse at 50% 80%, rgba(109,40,217,0.18) 0%, rgba(15,10,40,0.55) 60%, transparent 100%)",
+            }} />
+          </div>
+          {/* Sparkle dots */}
+          <div className="absolute top-4 left-8 w-1 h-1 rounded-full bg-purple-300/60" />
+          <div className="absolute top-8 left-16 w-0.5 h-0.5 rounded-full bg-purple-200/50" />
+          <div className="absolute top-3 right-10 w-1 h-1 rounded-full bg-purple-300/60" />
+          <div className="absolute top-10 right-14 w-0.5 h-0.5 rounded-full bg-purple-200/40" />
+          <div className="absolute top-16 left-6 w-0.5 h-0.5 rounded-full bg-purple-400/40" />
+          <div className="absolute top-16 right-6 w-0.5 h-0.5 rounded-full bg-purple-400/40" />
+          {/* The caduceus SVG */}
+          <svg width="200" height="185" viewBox="0 0 200 185" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
+            {/* --- Wings --- */}
+            {/* Left wing - outer feather */}
+            <path d="M100 48 C85 40, 55 30, 20 35 C40 38, 60 44, 75 52Z" fill="#7C3AED" opacity="0.85"/>
+            <path d="M100 48 C82 38, 48 24, 10 28 C32 33, 58 40, 78 50Z" fill="#6D28D9" opacity="0.65"/>
+            <path d="M100 48 C80 36, 44 18, 5 20 C28 27, 56 36, 80 48Z" fill="#5B21B6" opacity="0.45"/>
+            {/* Right wing - outer feather */}
+            <path d="M100 48 C115 40, 145 30, 180 35 C160 38, 140 44, 125 52Z" fill="#7C3AED" opacity="0.85"/>
+            <path d="M100 48 C118 38, 152 24, 190 28 C168 33, 142 40, 122 50Z" fill="#6D28D9" opacity="0.65"/>
+            <path d="M100 48 C120 36, 156 18, 195 20 C172 27, 144 36, 120 48Z" fill="#5B21B6" opacity="0.45"/>
+
+            {/* --- Laurel branches --- */}
+            {/* Left branch stem */}
+            <path d="M100 75 C88 78, 72 84, 55 95 C65 90, 78 86, 92 82Z" stroke="#6D28D9" strokeWidth="1.5" fill="none" opacity="0.8"/>
+            <path d="M100 90 C85 93, 68 100, 48 114 C60 107, 76 101, 92 96Z" stroke="#6D28D9" strokeWidth="1.5" fill="none" opacity="0.7"/>
+            <path d="M100 108 C84 112, 65 120, 44 136 C57 128, 74 121, 92 114Z" stroke="#5B21B6" strokeWidth="1.5" fill="none" opacity="0.6"/>
+            {/* Left leaves */}
+            <ellipse cx="70" cy="88" rx="10" ry="5" fill="#6D28D9" opacity="0.7" transform="rotate(-30 70 88)"/>
+            <ellipse cx="56" cy="103" rx="10" ry="5" fill="#6D28D9" opacity="0.65" transform="rotate(-35 56 103)"/>
+            <ellipse cx="50" cy="121" rx="10" ry="5" fill="#5B21B6" opacity="0.6" transform="rotate(-40 50 121)"/>
+            {/* Right branch stem */}
+            <path d="M100 75 C112 78, 128 84, 145 95 C135 90, 122 86, 108 82Z" stroke="#6D28D9" strokeWidth="1.5" fill="none" opacity="0.8"/>
+            <path d="M100 90 C115 93, 132 100, 152 114 C140 107, 124 101, 108 96Z" stroke="#6D28D9" strokeWidth="1.5" fill="none" opacity="0.7"/>
+            <path d="M100 108 C116 112, 135 120, 156 136 C143 128, 126 121, 108 114Z" stroke="#5B21B6" strokeWidth="1.5" fill="none" opacity="0.6"/>
+            {/* Right leaves */}
+            <ellipse cx="130" cy="88" rx="10" ry="5" fill="#6D28D9" opacity="0.7" transform="rotate(30 130 88)"/>
+            <ellipse cx="144" cy="103" rx="10" ry="5" fill="#6D28D9" opacity="0.65" transform="rotate(35 144 103)"/>
+            <ellipse cx="150" cy="121" rx="10" ry="5" fill="#5B21B6" opacity="0.6" transform="rotate(40 150 121)"/>
+
+            {/* --- Staff --- */}
+            <rect x="97" y="30" width="6" height="148" rx="3" fill="url(#staffGrad)"/>
+            <defs>
+              <linearGradient id="staffGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#C4B5FD"/>
+                <stop offset="100%" stopColor="#6D28D9"/>
+              </linearGradient>
+            </defs>
+
+            {/* --- Snakes --- */}
+            <path d="M100 45 C82 57, 118 72, 100 87 C82 102, 118 117, 100 132 C82 147, 118 162, 100 175" stroke="#A78BFA" strokeWidth="3" fill="none" strokeLinecap="round"/>
+            <path d="M100 45 C118 57, 82 72, 100 87 C118 102, 82 117, 100 132 C118 147, 82 162, 100 175" stroke="#8B5CF6" strokeWidth="3" fill="none" strokeLinecap="round"/>
             {/* Snake heads */}
-            <circle cx="34" cy="91" r="3" fill="#A78BFA"/>
-            <circle cx="46" cy="91" r="3" fill="#8B5CF6"/>
-            {/* Star at top */}
-            <circle cx="40" cy="13" r="4" fill="#C4B5FD"/>
-            <path d="M40 7 L41.5 11 L46 11 L42.5 13.5 L44 17.5 L40 15 L36 17.5 L37.5 13.5 L34 11 L38.5 11 Z" fill="#DDD6FE" opacity="0.9"/>
-            {/* Laurel leaves */}
-            <path d="M22 42 C18 38, 14 42, 18 46 C22 50, 26 46, 22 42Z" fill="#6D28D9" opacity="0.6"/>
-            <path d="M16 48 C12 44, 8 48, 12 52 C16 56, 20 52, 16 48Z" fill="#6D28D9" opacity="0.5"/>
-            <path d="M58 42 C62 38, 66 42, 62 46 C58 50, 54 46, 58 42Z" fill="#6D28D9" opacity="0.6"/>
-            <path d="M64 48 C68 44, 72 48, 68 52 C64 56, 60 52, 64 48Z" fill="#6D28D9" opacity="0.5"/>
+            <circle cx="92" cy="177" r="4.5" fill="#A78BFA"/>
+            <circle cx="108" cy="177" r="4.5" fill="#8B5CF6"/>
+            {/* Tongue left */}
+            <path d="M90 180 L87 183 M90 180 L88 184" stroke="#C4B5FD" strokeWidth="1" strokeLinecap="round"/>
+            {/* Tongue right */}
+            <path d="M110 180 L113 183 M110 180 L112 184" stroke="#DDD6FE" strokeWidth="1" strokeLinecap="round"/>
+
+            {/* --- Orb / Star at top --- */}
+            <circle cx="100" cy="26" r="7" fill="#C4B5FD" opacity="0.9"/>
+            <circle cx="100" cy="26" r="4" fill="white" opacity="0.7"/>
+            {/* Star rays */}
+            <path d="M100 16 L101.5 22 L108 22 L103 26 L105 32 L100 28 L95 32 L97 26 L92 22 L98.5 22 Z" fill="#EDE9FE" opacity="0.95"/>
           </svg>
         </motion.div>
 
@@ -338,8 +387,8 @@ export default function LandingPage() {
           transition={{ duration: 0.5 }}
           className="text-center mb-3"
         >
-          <p className="text-base text-muted-foreground mb-1">Welcome to</p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+          <p className="text-base text-foreground/70 mb-1 font-light">Welcome to</p>
+          <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-violet-400 to-secondary">
             Mission Distinction
           </h1>
         </motion.div>
@@ -349,35 +398,39 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
-          className="w-full max-w-md text-center mb-5 px-2"
+          className="w-full max-w-md text-center mb-5 px-3"
         >
-          {/* Top divider with lotus */}
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-amber-500/60" />
-            <span className="text-amber-400 text-lg">❀</span>
-            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-500/60" />
+          {/* Top divider — ornate lotus style */}
+          <div className="flex items-center justify-center gap-1.5 mb-3">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-600/50 to-amber-500/70" />
+            <span className="text-amber-500/80 text-xs">❧</span>
+            <span className="text-amber-400 text-base leading-none">🪷</span>
+            <span className="text-amber-500/80 text-xs">❧</span>
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent via-amber-600/50 to-amber-500/70" />
           </div>
 
           {/* Sanskrit */}
-          <p className="text-amber-400 font-semibold text-sm sm:text-base leading-relaxed mb-1" style={{ fontFamily: "'Noto Sans Devanagari', sans-serif" }}>
+          <p className="text-amber-400 font-bold text-sm sm:text-base leading-relaxed mb-1">
             || ज्ञानेन आरोग्यं, आरोग्येन सेवा, सेवया मानवकल्याणम् ||
           </p>
           {/* Transliteration */}
-          <p className="text-amber-300/70 text-xs sm:text-sm italic mb-2">
+          <p className="text-amber-300/65 text-xs sm:text-sm italic mb-2">
             (Jñānena Ārogyaṁ, Ārogyena Sevā, Sevayā Mānava-Kalyāṇam.)
           </p>
           {/* English */}
-          <p className="text-muted-foreground text-xs sm:text-sm italic leading-relaxed">
+          <p className="text-foreground/55 text-xs sm:text-sm italic leading-relaxed">
             Through knowledge comes health,<br/>
             through health comes service,<br/>
             and through service comes the welfare of humanity.
           </p>
 
-          {/* Bottom divider */}
-          <div className="flex items-center justify-center gap-2 mt-3">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-amber-500/40" />
-            <span className="text-amber-500/60 text-xs">✦ ❖ ✦</span>
-            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-500/40" />
+          {/* Bottom divider — diamond dots */}
+          <div className="flex items-center justify-center gap-1.5 mt-3">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-600/40 to-amber-500/50" />
+            <span className="text-amber-600/50 text-[8px]">◆</span>
+            <span className="text-amber-500/60 text-xs">✦</span>
+            <span className="text-amber-600/50 text-[8px]">◆</span>
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent via-amber-600/40 to-amber-500/50" />
           </div>
         </motion.div>
 
