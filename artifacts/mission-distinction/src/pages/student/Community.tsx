@@ -14,7 +14,8 @@ import { customFetch } from "@workspace/api-client-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Search, Edit3, Heart, MessageSquare, Share2, Clock, Users, PlusCircle, Send,
-  MessageCircle, ArrowLeft, Loader2, Paperclip, ImageIcon, FileText, X, Download
+  MessageCircle, ArrowLeft, Loader2, Paperclip, ImageIcon, FileText, X, Download,
+  UserPlus, Crown, UserMinus
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -61,6 +62,12 @@ export default function StudentCommunity() {
   const [connected, setConnected] = useState(false);
   const [onlineCount, setOnlineCount] = useState(0);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<{ id: number; fullName: string; avatarUrl?: string | null; college?: string | null }[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [inviting, setInviting] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -84,6 +91,47 @@ export default function StudentCommunity() {
     queryFn: () => customFetch(`/api/community/messages/${chatGroupId}`),
     enabled: chatGroupId !== null,
   });
+
+  const { data: groupMembers = [] } = useQuery<{ id: number; fullName: string; avatarUrl?: string | null; role: string }[]>({
+    queryKey: ["group-members", chatGroupId],
+    queryFn: () => customFetch(`/api/community/groups/${chatGroupId}/members`),
+    enabled: chatGroupId !== null && membersOpen,
+  });
+
+  const isGroupOwner = activeGroup && (activeGroup as any).memberRole === "owner";
+
+  const searchStudents = async (q: string) => {
+    if (q.length < 2) { setSearchResults([]); return; }
+    setSearching(true);
+    try {
+      const baseUrl = BASE;
+      const res = await fetch(`${baseUrl}/api/users/search?q=${encodeURIComponent(q)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setSearchResults(await res.json());
+    } catch {} finally { setSearching(false); }
+  };
+
+  const handleInvite = async (userId: number, name: string) => {
+    if (!chatGroupId) return;
+    setInviting(userId);
+    try {
+      const baseUrl = BASE;
+      const res = await fetch(`${baseUrl}/api/community/groups/${chatGroupId}/invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || `${name} added!`);
+        queryClient.invalidateQueries({ queryKey: getListCommunityGroupsQueryKey() });
+        setSearchResults(prev => prev.filter(u => u.id !== userId));
+      } else {
+        toast.error(data.error || "Failed to invite");
+      }
+    } catch { toast.error("Failed to invite"); } finally { setInviting(null); }
+  };
 
   useEffect(() => {
     if (initialMessages.length > 0) {
@@ -261,23 +309,33 @@ export default function StudentCommunity() {
       <div className="flex-1 flex flex-col min-w-0">
         {chatGroupId !== null ? (
           <div className="flex flex-col h-full">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-2 mb-4">
               <Button variant="ghost" size="icon" onClick={() => { setChatGroupId(null); setLiveMessages([]); }}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div className={`w-8 h-8 rounded-full font-bold flex items-center justify-center text-sm ${getGroupColor(activeGroup?.subject || "")}`}>
+              <div className={`w-8 h-8 rounded-full font-bold flex items-center justify-center text-sm shrink-0 ${getGroupColor(activeGroup?.subject || "")}`}>
                 {activeGroup?.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{activeGroup?.name}</p>
                 <p className="text-xs text-muted-foreground">{activeGroup?.subject} · {activeGroup?.memberCount} members</p>
               </div>
-              <Badge
-                variant="outline"
-                className={`ml-auto text-xs shrink-0 ${connected ? "border-green-500/30 text-green-400 bg-green-500/5" : "border-yellow-500/30 text-yellow-400 bg-yellow-500/5"}`}
-              >
-                {connected ? `● Live${onlineCount > 0 ? ` · ${onlineCount} online` : ""}` : "○ Connecting…"}
-              </Badge>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1" onClick={() => setMembersOpen(true)}>
+                  <Users size={12} /> Members
+                </Button>
+                {isGroupOwner && (
+                  <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1 text-primary border-primary/30 hover:bg-primary/10" onClick={() => { setInviteOpen(true); setMemberSearch(""); setSearchResults([]); }}>
+                    <UserPlus size={12} /> Invite
+                  </Button>
+                )}
+                <Badge
+                  variant="outline"
+                  className={`text-xs ${connected ? "border-green-500/30 text-green-400 bg-green-500/5" : "border-yellow-500/30 text-yellow-400 bg-yellow-500/5"}`}
+                >
+                  {connected ? `● ${onlineCount > 0 ? onlineCount : ""}` : "○"}
+                </Badge>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-3 pr-1 pb-2">
@@ -572,6 +630,91 @@ export default function StudentCommunity() {
               {createPost.isPending ? "Posting..." : "Post"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={membersOpen} onOpenChange={setMembersOpen}>
+        <DialogContent className="bg-card border-border/50 max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users size={16} /> {activeGroup?.name} — Members
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-72 overflow-y-auto py-1">
+            {groupMembers.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No members yet.</p>
+            ) : groupMembers.map(m => (
+              <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={m.avatarUrl || ""} />
+                  <AvatarFallback className="bg-primary/20 text-primary text-xs">{m.fullName.substring(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <span className="flex-1 text-sm font-medium truncate">{m.fullName}</span>
+                {m.role === "owner" && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 border-yellow-500/30 text-yellow-400 gap-1">
+                    <Crown size={9} /> Owner
+                  </Badge>
+                )}
+              </div>
+            ))}
+          </div>
+          {isGroupOwner && (
+            <div className="pt-2 border-t border-border/40">
+              <Button size="sm" className="w-full gap-2" onClick={() => { setMembersOpen(false); setInviteOpen(true); setMemberSearch(""); setSearchResults([]); }}>
+                <UserPlus size={14} /> Invite More Students
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="bg-card border-border/50 max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus size={16} /> Invite to {activeGroup?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search student by name..."
+                className="pl-9 bg-background/50"
+                value={memberSearch}
+                onChange={e => { setMemberSearch(e.target.value); searchStudents(e.target.value); }}
+              />
+              {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+            </div>
+            <div className="space-y-1.5 max-h-60 overflow-y-auto">
+              {searchResults.length === 0 && memberSearch.length >= 2 && !searching && (
+                <p className="text-sm text-muted-foreground text-center py-4">No students found.</p>
+              )}
+              {memberSearch.length < 2 && (
+                <p className="text-xs text-muted-foreground text-center py-4">Type a name to search for students.</p>
+              )}
+              {searchResults.map(u => (
+                <div key={u.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={u.avatarUrl || ""} />
+                    <AvatarFallback className="bg-primary/20 text-primary text-xs">{u.fullName.substring(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{u.fullName}</p>
+                    {u.college && <p className="text-xs text-muted-foreground truncate">{u.college}</p>}
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-7 px-3 shrink-0"
+                    disabled={inviting === u.id}
+                    onClick={() => handleInvite(u.id, u.fullName)}
+                  >
+                    {inviting === u.id ? <Loader2 size={12} className="animate-spin" /> : "Add"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

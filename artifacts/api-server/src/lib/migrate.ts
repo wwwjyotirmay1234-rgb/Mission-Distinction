@@ -14,6 +14,17 @@ export async function runStartupMigrations() {
         ADD COLUMN IF NOT EXISTS file_url TEXT,
         ADD COLUMN IF NOT EXISTS file_type TEXT,
         ADD COLUMN IF NOT EXISTS file_name TEXT;
+
+      CREATE TABLE IF NOT EXISTS group_members (
+        id SERIAL PRIMARY KEY,
+        group_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        role TEXT NOT NULL DEFAULT 'member',
+        joined_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS group_members_unique
+        ON group_members(group_id, user_id);
     `);
   } finally {
     client.release();

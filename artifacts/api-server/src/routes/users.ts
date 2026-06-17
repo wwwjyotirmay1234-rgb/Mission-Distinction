@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, ilike } from "drizzle-orm";
 import { adminMiddleware, authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 
@@ -32,6 +32,20 @@ router.get("/", adminMiddleware, async (req: Request, res: Response) => {
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+router.get("/search", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const q = (req.query.q as string)?.trim();
+    if (!q || q.length < 2) { res.json([]); return; }
+    const requester = (req as any).user;
+    const results = await db
+      .select({ id: usersTable.id, fullName: usersTable.fullName, avatarUrl: usersTable.avatarUrl, college: usersTable.college })
+      .from(usersTable)
+      .where(and(eq(usersTable.role, "student"), ilike(usersTable.fullName, `%${q}%`)))
+      .limit(10);
+    res.json(results.filter(u => u.id !== requester.id));
+  } catch { res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
