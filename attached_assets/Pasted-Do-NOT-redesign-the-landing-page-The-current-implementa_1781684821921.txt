@@ -1,0 +1,132 @@
+Do NOT redesign the landing page.
+
+The current implementation is incorrect.
+
+Treat the provided reference image as the source of truth and recreate it as closely as possible.
+
+Preserve Existing Layout
+
+Keep:
+
+* Mission Distinction logo top left
+* Student/Admin toggle top right
+* Dark navy medical theme
+* Login/Register card position
+* Feature cards below
+
+Do not move any sections.
+
+Hero Section Requirements
+
+Center a purple glowing Caduceus medical emblem above the heading.
+
+It must look like a traditional medical symbol with:
+
+* Wings
+* Staff
+* Twin serpents
+* Laurel accents
+
+Do not use abstract icons.
+
+Heading
+
+Display:
+
+Welcome to
+
+Mission Distinction
+
+Typography:
+
+* Welcome to = white
+* Mission Distinction = purple-blue gradient
+* Large bold display font
+* Perfect center alignment
+
+Motto Section
+
+Immediately below heading.
+
+No extra slogans.
+
+No “Smart Learning”.
+
+No marketing text.
+
+Add:
+
+ज्ञानेन आरोग्यं, आरोग्येन सेवा, सेवया मानवकल्याणम्।
+
+Below:
+
+(Jñānena Ārogyaṁ, Ārogyena Sevā, Sevayā Mānava-Kalyāṇam.)
+
+Below:
+
+Through knowledge comes health,
+through health comes service,
+and through service comes the welfare of humanity.
+
+Motto Styling
+
+Sanskrit:
+
+* Large
+* Gold gradient
+* Elegant
+* Premium institute appearance
+
+Transliteration:
+
+* Gold italic serif
+
+English translation:
+
+* Soft gold
+* Serif
+* Centered
+* Three lines
+
+Decorative Elements
+
+Use:
+
+* Thin gold horizontal lines
+* Lotus icon in center
+* Small ornamental separators
+
+Must resemble a prestigious medical institute.
+
+Background
+
+Keep:
+
+* Dark navy
+* Purple glow
+* Arc lines
+* Subtle stars
+
+Do not add panels behind the hero section.
+
+Do not create large purple rectangles.
+
+Do not create glowing hero containers.
+
+The background should remain open and spacious.
+
+Login Card
+
+Leave exactly as it currently exists.
+
+Do not redesign.
+
+Do not reposition.
+
+MOST IMPORTANT
+
+Match the uploaded reference image as closely as possible.
+
+Focus on replication rather than creativity.
+
+Do not introduce new symbols, layouts, containers, gradients, or design ideas.

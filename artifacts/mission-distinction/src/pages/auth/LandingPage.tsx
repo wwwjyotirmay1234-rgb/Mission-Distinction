@@ -361,18 +361,14 @@ export default function LandingPage() {
             {/* ── Staff ── */}
             <rect x="107" y="18" width="6" height="176" rx="3" fill="url(#sg)"/>
 
-            {/* ── Left wings — outermost layer (farthest reach, dark) ── */}
-            <path d="M110 58 C93,46 60,30 8,33 C33,40 72,50 100,61Z" fill="#3730A3" opacity="0.45"/>
-            {/* ── Left wings — mid layer ── */}
-            <path d="M110 58 C90,44 54,25 5,27 C32,34 70,46 102,60Z" fill="#5B21B6" opacity="0.70"/>
-            {/* ── Left wings — inner layer (most visible) ── */}
+            {/* ── Left wing — draw outer→inner so inner sits on top ── */}
+            <path d="M110 58 C93,46 60,30 8,33 C33,40 72,50 100,61Z" fill="#4C1D95" opacity="0.80"/>
+            <path d="M110 58 C90,44 54,25 5,27 C32,34 70,46 102,60Z" fill="#6D28D9" opacity="0.90"/>
             <path d="M110 58 C96,49 70,40 38,42 C60,47 84,53 104,62Z" fill="#7C3AED" opacity="1"/>
 
-            {/* ── Right wings — outermost layer ── */}
-            <path d="M110 58 C127,46 160,30 212,33 C187,40 148,50 120,61Z" fill="#3730A3" opacity="0.45"/>
-            {/* ── Right wings — mid layer ── */}
-            <path d="M110 58 C130,44 166,25 215,27 C188,34 150,46 118,60Z" fill="#5B21B6" opacity="0.70"/>
-            {/* ── Right wings — inner layer ── */}
+            {/* ── Right wing ── */}
+            <path d="M110 58 C127,46 160,30 212,33 C187,40 148,50 120,61Z" fill="#4C1D95" opacity="0.80"/>
+            <path d="M110 58 C130,44 166,25 215,27 C188,34 150,46 118,60Z" fill="#6D28D9" opacity="0.90"/>
             <path d="M110 58 C124,49 150,40 182,42 C160,47 136,53 116,62Z" fill="#7C3AED" opacity="1"/>
 
             {/* ── Left laurel branch stems ── */}
@@ -421,7 +417,7 @@ export default function LandingPage() {
           transition={{ duration: 0.5 }}
           className="text-center mt-2 mb-4 px-4"
         >
-          <p className="text-base font-semibold text-white/80 mb-1 tracking-widest uppercase" style={{letterSpacing:"0.15em",fontSize:13}}>Welcome to</p>
+          <p className="font-normal text-white/75 mb-1" style={{fontSize:16}}>Welcome to</p>
           <h1 className="font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-violet-400 to-secondary" style={{fontSize:"2.6rem",lineHeight:1.1}}>
             Mission Distinction
           </h1>
