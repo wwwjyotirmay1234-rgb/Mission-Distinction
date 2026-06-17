@@ -319,14 +319,14 @@ export default function LandingPage() {
           <div className="absolute" style={{top:48,left:"9%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
           <div className="absolute" style={{top:48,right:"9%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
 
-          {/* ── Professional Caduceus from game-icons (CC BY 3.0) ── */}
+          {/* ── Caduceus hero image ── */}
           <img
-            src="/caduceus.svg"
+            src="/caduceus-hero-nobg.png"
             alt="Medical Caduceus"
-            width={190}
-            height={190}
+            width={220}
+            height={220}
             className="relative z-10"
-            style={{ filter: "drop-shadow(0 0 12px rgba(124,58,237,0.55))" }}
+            style={{ filter: "drop-shadow(0 0 18px rgba(124,58,237,0.65))" }}
           />
         </motion.div>
 
@@ -354,7 +354,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 mb-4">
             <div className="flex-1 h-px" style={{background:"linear-gradient(to right, transparent, #C8A340)"}}/>
             <span style={{color:"#C8A340",fontSize:11,lineHeight:1}}>ↄ</span>
-            <span style={{fontSize:18,lineHeight:1}}>🪷</span>
+            <span style={{fontSize:18,lineHeight:1,filter:"sepia(1) saturate(5) hue-rotate(5deg) brightness(1.1)"}}>🪷</span>
             <span style={{color:"#C8A340",fontSize:11,lineHeight:1}}>c</span>
             <div className="flex-1 h-px" style={{background:"linear-gradient(to left, transparent, #C8A340)"}}/>
           </div>
