@@ -1,6 +1,6 @@
-const CACHE_NAME = "mission-distinction-v4";
+const CACHE_NAME = "mission-distinction-v5";
 const STATIC_ASSETS = ["/", "/index.html"];
-const API_CACHE_NAME = "mission-distinction-api-v4";
+const API_CACHE_NAME = "mission-distinction-api-v5";
 
 const CACHEABLE_API_PREFIXES = [
   "/api/quizzes",
@@ -27,9 +27,12 @@ self.addEventListener("activate", (event) => {
           .filter((k) => k !== CACHE_NAME && k !== API_CACHE_NAME)
           .map((k) => caches.delete(k))
       )
+    ).then(() => self.clients.claim()).then(() =>
+      self.clients.matchAll({ type: "window" }).then((clients) => {
+        clients.forEach((client) => client.navigate(client.url));
+      })
     )
   );
-  self.clients.claim();
 });
 
 function isCacheableApi(url) {
