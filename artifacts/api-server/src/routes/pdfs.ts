@@ -89,16 +89,20 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     if (existing.createdBy !== null && existing.createdBy !== admin.id) {
       res.status(403).json({ error: "You can only edit PDFs you uploaded" }); return;
     }
-    const { title, subject, professor, year, url, pages, size } = req.body;
+    const { title, subject, professor, year, url, thumbnailUrl, pages, size } = req.body;
     if (url && !isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
+    if (thumbnailUrl && !CLOUDINARY_REGEX.test(thumbnailUrl)) {
+      res.status(400).json({ error: "thumbnailUrl must be a Cloudinary URL" }); return;
+    }
     const safeTitle = title !== undefined ? stripHtml(String(title)) : undefined;
     const safeSubject = subject !== undefined ? stripHtml(String(subject)) : undefined;
     const safeProfessor = professor !== undefined ? (professor ? stripHtml(String(professor)) : null) : undefined;
     const safeYear = year !== undefined ? (year ? stripHtml(String(year)) : null) : undefined;
     if (safeTitle !== undefined && !safeTitle) { res.status(400).json({ error: "Invalid title" }); return; }
     if (safeSubject !== undefined && !safeSubject) { res.status(400).json({ error: "Invalid subject" }); return; }
+    const thumbnailVal = thumbnailUrl !== undefined ? (thumbnailUrl || null) : undefined;
     const [pdf] = await db.update(pdfsTable)
-      .set({ title: safeTitle, subject: safeSubject, professor: safeProfessor, year: safeYear, url, pages, size })
+      .set({ title: safeTitle, subject: safeSubject, professor: safeProfessor, year: safeYear, url, thumbnailUrl: thumbnailVal, pages, size })
       .where(eq(pdfsTable.id, id))
       .returning();
     res.json(pdf);

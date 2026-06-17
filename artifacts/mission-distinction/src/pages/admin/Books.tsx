@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useListBooks, useCreateBook, useDeleteBook, getListBooksQueryKey } from "@workspace/api-client-react";
 import { customFetch } from "@workspace/api-client-react";
-import { Search, Plus, MoreVertical, Trash2, BookOpen, Pencil } from "lucide-react";
+import { Search, Plus, MoreVertical, Trash2, BookOpen, Pencil, ImagePlus, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -19,6 +19,14 @@ const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmac
 
 type BookItem = { id: number; title: string; subject: string; author?: string | null; url: string; coverUrl?: string | null; downloadCount?: number; createdAt: string | Date };
 
+async function uploadBookCover(file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const data = await customFetch<{ url: string }>("/api/upload/book-cover", { method: "POST", body: fd });
+  if (!data?.url) throw new Error("Upload failed");
+  return data.url;
+}
+
 export default function AdminBooks() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -27,7 +35,26 @@ export default function AdminBooks() {
   const [editPending, setEditPending] = useState(false);
   const [form, setForm] = useState({ title: "", subject: "", author: "", url: "", coverUrl: "" });
   const [editForm, setEditForm] = useState({ title: "", subject: "", author: "", url: "", coverUrl: "" });
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [editCoverUploading, setEditCoverUploading] = useState(false);
+  const coverRef = useRef<HTMLInputElement>(null);
+  const editCoverRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  const handleCoverUpload = async (file: File, mode: "add" | "edit") => {
+    const set = mode === "add" ? setCoverUploading : setEditCoverUploading;
+    set(true);
+    try {
+      const url = await uploadBookCover(file);
+      if (mode === "add") setForm(f => ({ ...f, coverUrl: url }));
+      else setEditForm(f => ({ ...f, coverUrl: url }));
+      toast.success("Cover uploaded!");
+    } catch {
+      toast.error("Cover upload failed.");
+    } finally {
+      set(false);
+    }
+  };
 
   const { data: books, isLoading } = useListBooks(
     { search: search || undefined },
@@ -219,13 +246,26 @@ export default function AdminBooks() {
               <Input placeholder="https://drive.google.com/..." className="bg-background/50" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <Label>Cover Image URL</Label>
-              <Input placeholder="https://..." className="bg-background/50" value={form.coverUrl} onChange={(e) => setForm({ ...form, coverUrl: e.target.value })} />
+              <Label>Cover Image</Label>
+              <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCoverUpload(f, "add"); e.target.value = ""; }} />
+              {form.coverUrl ? (
+                <div className="flex items-center gap-3">
+                  <img src={form.coverUrl} alt="Cover preview" className="h-16 w-12 object-cover rounded border border-border/50" />
+                  <Button type="button" variant="outline" size="sm" onClick={() => setForm(f => ({ ...f, coverUrl: "" }))}>
+                    <X className="h-3 w-3 mr-1" /> Remove
+                  </Button>
+                </div>
+              ) : (
+                <Button type="button" variant="outline" size="sm" disabled={coverUploading} onClick={() => coverRef.current?.click()}>
+                  <ImagePlus className="h-4 w-4 mr-2" />
+                  {coverUploading ? "Uploading..." : "Upload Cover Image"}
+                </Button>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={handleAdd} disabled={createBook.isPending}>
+            <Button onClick={handleAdd} disabled={createBook.isPending || coverUploading}>
               {createBook.isPending ? "Adding..." : "Add Book"}
             </Button>
           </DialogFooter>
@@ -262,13 +302,26 @@ export default function AdminBooks() {
               <Input className="bg-background/50" value={editForm.url} onChange={(e) => setEditForm({ ...editForm, url: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <Label>Cover Image URL</Label>
-              <Input className="bg-background/50" value={editForm.coverUrl} onChange={(e) => setEditForm({ ...editForm, coverUrl: e.target.value })} />
+              <Label>Cover Image</Label>
+              <input ref={editCoverRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCoverUpload(f, "edit"); e.target.value = ""; }} />
+              {editForm.coverUrl ? (
+                <div className="flex items-center gap-3">
+                  <img src={editForm.coverUrl} alt="Cover preview" className="h-16 w-12 object-cover rounded border border-border/50" />
+                  <Button type="button" variant="outline" size="sm" onClick={() => setEditForm(f => ({ ...f, coverUrl: "" }))}>
+                    <X className="h-3 w-3 mr-1" /> Remove
+                  </Button>
+                </div>
+              ) : (
+                <Button type="button" variant="outline" size="sm" disabled={editCoverUploading} onClick={() => editCoverRef.current?.click()}>
+                  <ImagePlus className="h-4 w-4 mr-2" />
+                  {editCoverUploading ? "Uploading..." : "Upload Cover Image"}
+                </Button>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-            <Button onClick={handleEdit} disabled={editPending}>
+            <Button onClick={handleEdit} disabled={editPending || editCoverUploading}>
               {editPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>

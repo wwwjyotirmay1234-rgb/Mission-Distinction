@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useListPdfs, useCreatePdf, useDeletePdf, getListPdfsQueryKey, customFetch } from "@workspace/api-client-react";
-import { Search, Plus, MoreVertical, Trash2, FileIcon, Link, Pencil } from "lucide-react";
+import { Search, Plus, MoreVertical, Trash2, FileIcon, Link, Pencil, ImagePlus, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -16,7 +16,15 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "Medicine", "Surgery"];
 
-type PdfItem = { id: number; title: string; subject: string; year?: string | null; url: string; pages?: number | null; downloadCount?: number; createdAt: string | Date };
+type PdfItem = { id: number; title: string; subject: string; year?: string | null; url: string; thumbnailUrl?: string | null; pages?: number | null; downloadCount?: number; createdAt: string | Date };
+
+async function uploadCover(file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const data = await customFetch<{ url: string }>("/api/upload/image", { method: "POST", body: fd });
+  if (!data?.url) throw new Error("Upload failed");
+  return data.url;
+}
 
 export default function AdminPDFs() {
   const [search, setSearch] = useState("");
@@ -24,9 +32,28 @@ export default function AdminPDFs() {
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PdfItem | null>(null);
   const [editPending, setEditPending] = useState(false);
-  const [form, setForm] = useState({ title: "", subject: "", year: "", url: "", pages: "" });
-  const [editForm, setEditForm] = useState({ title: "", subject: "", year: "", url: "", pages: "" });
+  const [form, setForm] = useState({ title: "", subject: "", year: "", url: "", pages: "", thumbnailUrl: "" });
+  const [editForm, setEditForm] = useState({ title: "", subject: "", year: "", url: "", pages: "", thumbnailUrl: "" });
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [editCoverUploading, setEditCoverUploading] = useState(false);
+  const coverRef = useRef<HTMLInputElement>(null);
+  const editCoverRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  const handleCoverUpload = async (file: File, mode: "add" | "edit") => {
+    const set = mode === "add" ? setCoverUploading : setEditCoverUploading;
+    set(true);
+    try {
+      const url = await uploadCover(file);
+      if (mode === "add") setForm(f => ({ ...f, thumbnailUrl: url }));
+      else setEditForm(f => ({ ...f, thumbnailUrl: url }));
+      toast.success("Cover uploaded!");
+    } catch {
+      toast.error("Cover upload failed.");
+    } finally {
+      set(false);
+    }
+  };
 
   const { data: pdfs, isLoading } = useListPdfs(
     { search: search || undefined },
@@ -48,7 +75,7 @@ export default function AdminPDFs() {
         toast.success("PDF added successfully!");
         queryClient.invalidateQueries({ queryKey: getListPdfsQueryKey() });
         setOpen(false);
-        setForm({ title: "", subject: "", year: "", url: "", pages: "" });
+        setForm({ title: "", subject: "", year: "", url: "", pages: "", thumbnailUrl: "" });
       },
       onError: () => toast.error("Failed to add PDF."),
     });
@@ -62,6 +89,7 @@ export default function AdminPDFs() {
       year: pdf.year || "",
       url: pdf.url,
       pages: pdf.pages?.toString() || "",
+      thumbnailUrl: pdf.thumbnailUrl || "",
     });
     setEditOpen(true);
   };
@@ -230,14 +258,33 @@ export default function AdminPDFs() {
               <Label>PDF URL <span className="text-destructive">*</span></Label>
               <Input placeholder="https://drive.google.com/..." className="bg-background/50" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
             </div>
-            <div className="space-y-1.5 w-1/2">
-              <Label>Pages</Label>
-              <Input type="number" placeholder="e.g. 120" className="bg-background/50" value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Pages</Label>
+                <Input type="number" placeholder="e.g. 120" className="bg-background/50" value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Cover Image</Label>
+              <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCoverUpload(f, "add"); e.target.value = ""; }} />
+              {form.thumbnailUrl ? (
+                <div className="flex items-center gap-3">
+                  <img src={form.thumbnailUrl} alt="Cover preview" className="h-16 w-12 object-cover rounded border border-border/50" />
+                  <Button type="button" variant="outline" size="sm" onClick={() => setForm(f => ({ ...f, thumbnailUrl: "" }))}>
+                    <X className="h-3 w-3 mr-1" /> Remove
+                  </Button>
+                </div>
+              ) : (
+                <Button type="button" variant="outline" size="sm" disabled={coverUploading} onClick={() => coverRef.current?.click()}>
+                  <ImagePlus className="h-4 w-4 mr-2" />
+                  {coverUploading ? "Uploading..." : "Upload Cover Image"}
+                </Button>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={handleAdd} disabled={createPdf.isPending}>
+            <Button onClick={handleAdd} disabled={createPdf.isPending || coverUploading}>
               {createPdf.isPending ? "Uploading..." : "Upload PDF"}
             </Button>
           </DialogFooter>
@@ -282,14 +329,33 @@ export default function AdminPDFs() {
               <Label>PDF URL <span className="text-destructive">*</span></Label>
               <Input className="bg-background/50" value={editForm.url} onChange={(e) => setEditForm({ ...editForm, url: e.target.value })} />
             </div>
-            <div className="space-y-1.5 w-1/2">
-              <Label>Pages</Label>
-              <Input type="number" className="bg-background/50" value={editForm.pages} onChange={(e) => setEditForm({ ...editForm, pages: e.target.value })} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Pages</Label>
+                <Input type="number" className="bg-background/50" value={editForm.pages} onChange={(e) => setEditForm({ ...editForm, pages: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Cover Image</Label>
+              <input ref={editCoverRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCoverUpload(f, "edit"); e.target.value = ""; }} />
+              {editForm.thumbnailUrl ? (
+                <div className="flex items-center gap-3">
+                  <img src={editForm.thumbnailUrl} alt="Cover preview" className="h-16 w-12 object-cover rounded border border-border/50" />
+                  <Button type="button" variant="outline" size="sm" onClick={() => setEditForm(f => ({ ...f, thumbnailUrl: "" }))}>
+                    <X className="h-3 w-3 mr-1" /> Remove
+                  </Button>
+                </div>
+              ) : (
+                <Button type="button" variant="outline" size="sm" disabled={editCoverUploading} onClick={() => editCoverRef.current?.click()}>
+                  <ImagePlus className="h-4 w-4 mr-2" />
+                  {editCoverUploading ? "Uploading..." : "Upload Cover Image"}
+                </Button>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-            <Button onClick={handleEdit} disabled={editPending}>
+            <Button onClick={handleEdit} disabled={editPending || editCoverUploading}>
               {editPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
