@@ -306,12 +306,9 @@ export default function LandingPage() {
           className="relative w-full flex justify-center items-end"
           style={{ height: 210 }}
         >
-          {/* Two arc lines framing the caduceus — as per reference */}
+          {/* Single faint arc beautifully curving behind caduceus */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 375 210" preserveAspectRatio="xMidYMax meet">
-            {/* Outer arc — wide dome */}
-            <path d="M -10 215 A 210 260 0 0 1 385 215" fill="none" stroke="rgba(109,40,217,0.38)" strokeWidth="1.2"/>
-            {/* Inner arc — tighter dome */}
-            <path d="M 30 215 A 160 185 0 0 1 345 215" fill="none" stroke="rgba(109,40,217,0.22)" strokeWidth="1"/>
+            <path d="M 0 210 A 188 220 0 0 1 375 210" fill="none" stroke="rgba(109,40,217,0.28)" strokeWidth="1"/>
           </svg>
 
           {/* Sparkle stars */}
