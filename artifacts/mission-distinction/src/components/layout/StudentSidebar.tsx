@@ -109,16 +109,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
 
-      <div className="p-4 mt-auto shrink-0">
-        <div className="bg-card border border-border rounded-xl p-4 text-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-bl-full pointer-events-none" />
-          <h4 className="text-sm font-bold mb-1">Need Help?</h4>
-          <p className="text-xs text-muted-foreground mb-3">Contact our mentor support 24/7</p>
-          <button className="w-full py-2 bg-primary/20 text-primary hover:bg-primary/30 text-xs font-semibold rounded-lg transition-colors">
-            Contact Support
-          </button>
-        </div>
-      </div>
     </>
   );
 }

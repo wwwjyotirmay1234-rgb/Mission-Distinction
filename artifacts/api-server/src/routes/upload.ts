@@ -165,4 +165,53 @@ router.post("/note-file", adminMiddleware, noteFileUpload.single("file"), async 
   }
 });
 
+const communityUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [
+      "image/jpeg", "image/png", "image/webp", "image/gif",
+      "application/pdf",
+    ];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Only images and PDFs are allowed."));
+  },
+});
+
+router.post("/community-file", authMiddleware, communityUpload.single("file"), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
+    const isPdf = req.file.mimetype === "application/pdf";
+    const isImage = req.file.mimetype.startsWith("image/");
+
+    let result;
+    if (isImage) {
+      result = await uploadToCloudinary(req.file.buffer, {
+        folder: "mission-distinction/community",
+        resource_type: "image",
+        transformation: [{ quality: "auto", fetch_format: "auto", width: 1200, crop: "limit" }],
+      });
+    } else if (isPdf) {
+      result = await uploadToCloudinary(req.file.buffer, {
+        folder: "mission-distinction/community",
+        resource_type: "raw",
+        public_id: `${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")}`,
+        use_filename: true,
+        unique_filename: false,
+      });
+    } else {
+      res.status(400).json({ error: "Unsupported file type" }); return;
+    }
+
+    res.json({
+      url: result.secure_url,
+      fileType: isImage ? "image" : "pdf",
+      fileName: req.file.originalname,
+    });
+  } catch (err: any) {
+    console.error("Community file upload error:", err);
+    res.status(500).json({ error: "Upload failed. Please try again." });
+  }
+});
+
 export default router;

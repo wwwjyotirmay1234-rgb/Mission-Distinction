@@ -43,18 +43,30 @@ function EmailVerificationBanner() {
       <div className="max-w-5xl mx-auto flex items-center gap-3 flex-wrap">
         <MailWarning size={16} className="text-yellow-400 shrink-0" />
         <p className="text-sm text-yellow-300 flex-1 min-w-0">
-          Please verify your email address to keep your account secure.
+          {devLink
+            ? "Email couldn't be sent — click the link below to verify your account."
+            : "Please verify your email address to keep your account secure."}
         </p>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           {devLink ? (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs gap-1 border-yellow-500/30 text-yellow-300 hover:bg-yellow-500/10"
-              onClick={() => { navigator.clipboard.writeText(devLink); toast.success("Verify link copied!"); }}
-            >
-              <Copy size={11} /> Copy Link
-            </Button>
+            <>
+              <a
+                href={devLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 h-7 px-3 text-xs font-medium bg-yellow-500/20 text-yellow-200 hover:bg-yellow-500/30 rounded-md transition-colors border border-yellow-500/30"
+              >
+                <CheckCircle size={11} /> Verify Now
+              </a>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1 border-yellow-500/30 text-yellow-300 hover:bg-yellow-500/10"
+                onClick={() => { navigator.clipboard.writeText(devLink); toast.success("Verify link copied!"); }}
+              >
+                <Copy size={11} /> Copy Link
+              </Button>
+            </>
           ) : (
             <Button
               size="sm"

@@ -26,6 +26,14 @@ const messageLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const groupCreateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: "Too many groups created. Please wait before creating another." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.get("/posts", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { group, search } = req.query;
@@ -71,8 +79,36 @@ router.post("/posts", authMiddleware, postCreateLimiter, async (req: Request, re
 
 router.get("/groups", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const groups = await db.select().from(communityGroupsTable);
+    const groups = await db.select().from(communityGroupsTable).orderBy(desc(communityGroupsTable.createdAt));
     res.json(groups);
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/groups", authMiddleware, groupCreateLimiter, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const { name, subject, description } = req.body;
+    if (!name?.trim() || !subject?.trim()) {
+      res.status(400).json({ error: "Group name and subject are required" }); return;
+    }
+    const safeName = stripHtml(name.trim());
+    const safeSubject = stripHtml(subject.trim());
+    const safeDescription = description ? stripHtml(description.trim()) : null;
+    if (!safeName || !safeSubject) { res.status(400).json({ error: "Invalid content" }); return; }
+    if (safeName.length > 80) { res.status(400).json({ error: "Group name must be under 80 characters" }); return; }
+    const existing = await db.select({ id: communityGroupsTable.id }).from(communityGroupsTable).where(eq(communityGroupsTable.name, safeName));
+    if (existing.length > 0) { res.status(409).json({ error: "A group with that name already exists" }); return; }
+    const [group] = await db.insert(communityGroupsTable).values({
+      name: safeName,
+      subject: safeSubject,
+      description: safeDescription,
+      createdBy: user.id,
+      isAdminCreated: user.role === "admin",
+      memberCount: 1,
+    }).returning();
+    res.status(201).json(group);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -99,17 +135,41 @@ router.post("/messages/:groupId", authMiddleware, messageLimiter, async (req: Re
     const user = (req as any).user;
     const groupId = parseId(req.params.groupId);
     if (!groupId) { res.status(400).json({ error: "Invalid group ID" }); return; }
-    const { content } = req.body;
-    if (!content?.trim()) { res.status(400).json({ error: "Message content required" }); return; }
-    const safeContent = stripHtml(content);
-    if (!safeContent) { res.status(400).json({ error: "Invalid content" }); return; }
+
+    const { content, fileUrl, fileType, fileName } = req.body;
+
+    if (!content?.trim() && !fileUrl) {
+      res.status(400).json({ error: "Message content or file required" }); return;
+    }
+
+    let safeContent = content ? stripHtml(content) : "";
     if (safeContent.length > 2000) { res.status(400).json({ error: "Message must be under 2000 characters" }); return; }
+
+    if (fileUrl) {
+      try { new URL(fileUrl); } catch { res.status(400).json({ error: "Invalid file URL" }); return; }
+      if (!fileUrl.startsWith("https://res.cloudinary.com/")) {
+        res.status(400).json({ error: "Invalid file URL" }); return;
+      }
+    }
+
     const [message] = await db.insert(communityMessagesTable).values({
       groupId,
+      senderId: user.id,
       senderName: user.fullName,
       senderAvatarUrl: user.avatarUrl || null,
       content: safeContent,
+      fileUrl: fileUrl || null,
+      fileType: fileType || null,
+      fileName: fileName || null,
     }).returning();
+
+    await db.update(communityGroupsTable)
+      .set({
+        lastMessage: safeContent || (fileType === "image" ? "📷 Photo" : fileType === "pdf" ? "📄 PDF" : "📎 File"),
+        lastMessageTime: new Date(),
+      })
+      .where(eq(communityGroupsTable.id, groupId));
+
     try { getIO().to(`chat:${groupId}`).emit("new-message", message); } catch { }
     res.status(201).json(message);
   } catch (err) {

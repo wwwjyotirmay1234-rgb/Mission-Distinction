@@ -2,6 +2,7 @@ import { createServer } from "http";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { initSocketServer } from "./lib/socket-server";
+import { runStartupMigrations } from "./lib/migrate";
 
 const rawPort = process.env["PORT"];
 
@@ -16,6 +17,10 @@ if (Number.isNaN(port) || port <= 0) {
 
 const httpServer = createServer(app);
 initSocketServer(httpServer);
+
+runStartupMigrations()
+  .then(() => logger.info("[DB] Startup migrations applied ✓"))
+  .catch((err) => logger.error({ err }, "[DB] Startup migration failed"));
 
 // ─── Startup config validation ────────────────────────────────────────────────
 const missingEmail: string[] = [];

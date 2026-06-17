@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,17 +9,39 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useListCommunityPosts, useListCommunityGroups, useCreateCommunityPost, getListCommunityPostsQueryKey } from "@workspace/api-client-react";
+import { useListCommunityPosts, useListCommunityGroups, useCreateCommunityPost, getListCommunityPostsQueryKey, getListCommunityGroupsQueryKey } from "@workspace/api-client-react";
 import { customFetch } from "@workspace/api-client-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Edit3, Heart, MessageSquare, Share2, Clock, Users, PlusCircle, Send, MessageCircle, ArrowLeft, Loader2, Wifi, WifiOff } from "lucide-react";
+import {
+  Search, Edit3, Heart, MessageSquare, Share2, Clock, Users, PlusCircle, Send,
+  MessageCircle, ArrowLeft, Loader2, Paperclip, ImageIcon, FileText, X, Download
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { io, Socket } from "socket.io-client";
 
-type ChatMessage = { id: number; groupId: number; senderName: string; senderAvatarUrl?: string | null; content: string; createdAt: string };
-type Group = { id: number; name: string; subject: string; memberCount: number; lastMessage?: string | null };
+type ChatMessage = {
+  id: number;
+  groupId: number;
+  senderId?: number | null;
+  senderName: string;
+  senderAvatarUrl?: string | null;
+  content: string;
+  fileUrl?: string | null;
+  fileType?: string | null;
+  fileName?: string | null;
+  createdAt: string;
+};
+type Group = {
+  id: number;
+  name: string;
+  subject: string;
+  description?: string | null;
+  memberCount: number;
+  lastMessage?: string | null;
+  createdBy?: number | null;
+};
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
@@ -30,14 +52,19 @@ export default function StudentCommunity() {
   const [chatMessage, setChatMessage] = useState("");
   const [sendingMsg, setSendingMsg] = useState(false);
   const [postOpen, setPostOpen] = useState(false);
+  const [groupOpen, setGroupOpen] = useState(false);
   const [postForm, setPostForm] = useState({ title: "", content: "", groupName: "" });
+  const [groupForm, setGroupForm] = useState({ name: "", subject: "", description: "" });
+  const [creatingGroup, setCreatingGroup] = useState(false);
   const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([]);
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [onlineCount, setOnlineCount] = useState(0);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { user, token } = useAuth();
 
@@ -83,32 +110,22 @@ export default function StudentCommunity() {
       reconnectionDelay: 2000,
     });
     socketRef.current = sock;
-
     sock.on("connect", () => setConnected(true));
     sock.on("disconnect", () => setConnected(false));
     sock.on("connect_error", () => setConnected(false));
-
     sock.on("new-message", (msg: ChatMessage) => {
       setLiveMessages(prev => {
         if (prev.some(m => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
     });
-
     sock.on("user-typing", ({ name }: { name: string }) => {
       setTypingUser(name);
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
       typingTimerRef.current = setTimeout(() => setTypingUser(null), 2500);
     });
-
-    sock.on("room-count", ({ count }: { count: number }) => {
-      setOnlineCount(count);
-    });
-
-    return () => {
-      sock.disconnect();
-      socketRef.current = null;
-    };
+    sock.on("room-count", ({ count }: { count: number }) => setOnlineCount(count));
+    return () => { sock.disconnect(); socketRef.current = null; };
   }, [token]);
 
   useEffect(() => {
@@ -124,15 +141,14 @@ export default function StudentCommunity() {
     };
   }, [chatGroupId]);
 
-  const handleSendMessage = async () => {
-    if (!chatMessage.trim() || !chatGroupId || sendingMsg) return;
+  const sendMessagePayload = async (payload: { content?: string; fileUrl?: string; fileType?: string; fileName?: string }) => {
+    if (!chatGroupId || sendingMsg) return;
     setSendingMsg(true);
     try {
       await customFetch(`/api/community/messages/${chatGroupId}`, {
         method: "POST",
-        body: JSON.stringify({ content: chatMessage.trim() }),
+        body: JSON.stringify(payload),
       });
-      setChatMessage("");
     } catch {
       toast.error("Failed to send message.");
     } finally {
@@ -140,10 +156,49 @@ export default function StudentCommunity() {
     }
   };
 
+  const handleSendMessage = async () => {
+    if (!chatMessage.trim()) return;
+    const text = chatMessage.trim();
+    setChatMessage("");
+    await sendMessagePayload({ content: text });
+  };
+
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     setChatMessage(e.target.value);
     if (chatGroupId && socketRef.current?.connected) {
       socketRef.current.emit("typing", chatGroupId);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("File must be under 20 MB.");
+      return;
+    }
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const baseUrl = BASE;
+      const res = await fetch(`${baseUrl}/api/upload/community-file`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Upload failed");
+      }
+      const data = await res.json();
+      await sendMessagePayload({ content: chatMessage.trim(), fileUrl: data.url, fileType: data.fileType, fileName: data.fileName });
+      setChatMessage("");
+    } catch (err: any) {
+      toast.error(err?.message || "Upload failed.");
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -163,7 +218,43 @@ export default function StudentCommunity() {
     });
   };
 
+  const handleCreateGroup = async () => {
+    if (!groupForm.name.trim() || !groupForm.subject.trim()) {
+      toast.error("Group name and subject are required.");
+      return;
+    }
+    setCreatingGroup(true);
+    try {
+      const baseUrl = BASE;
+      const res = await fetch(`${baseUrl}/api/community/groups`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(groupForm),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to create group");
+      }
+      toast.success("Group created!");
+      queryClient.invalidateQueries({ queryKey: getListCommunityGroupsQueryKey() });
+      setGroupOpen(false);
+      setGroupForm({ name: "", subject: "", description: "" });
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create group.");
+    } finally {
+      setCreatingGroup(false);
+    }
+  };
+
   const posts = Array.isArray(postsData) ? postsData : (postsData as any)?.posts ?? [];
+
+  const SUBJECT_COLORS: Record<string, string> = {
+    anatomy: "bg-red-500/20 text-red-400",
+    physiology: "bg-blue-500/20 text-blue-400",
+    biochemistry: "bg-green-500/20 text-green-400",
+    general: "bg-purple-500/20 text-purple-400",
+  };
+  const getGroupColor = (subject: string) => SUBJECT_COLORS[subject.toLowerCase()] ?? "bg-primary/20 text-primary";
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-8rem)]">
@@ -174,16 +265,16 @@ export default function StudentCommunity() {
               <Button variant="ghost" size="icon" onClick={() => { setChatGroupId(null); setLiveMessages([]); }}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-sm">
+              <div className={`w-8 h-8 rounded-full font-bold flex items-center justify-center text-sm ${getGroupColor(activeGroup?.subject || "")}`}>
                 {activeGroup?.name.charAt(0)}
               </div>
-              <div>
-                <p className="font-semibold text-sm">{activeGroup?.name}</p>
-                <p className="text-xs text-muted-foreground">{activeGroup?.memberCount} members</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm truncate">{activeGroup?.name}</p>
+                <p className="text-xs text-muted-foreground">{activeGroup?.subject} · {activeGroup?.memberCount} members</p>
               </div>
               <Badge
                 variant="outline"
-                className={`ml-auto text-xs ${connected ? "border-green-500/30 text-green-400 bg-green-500/5" : "border-yellow-500/30 text-yellow-400 bg-yellow-500/5"}`}
+                className={`ml-auto text-xs shrink-0 ${connected ? "border-green-500/30 text-green-400 bg-green-500/5" : "border-yellow-500/30 text-yellow-400 bg-yellow-500/5"}`}
               >
                 {connected ? `● Live${onlineCount > 0 ? ` · ${onlineCount} online` : ""}` : "○ Connecting…"}
               </Badge>
@@ -201,7 +292,7 @@ export default function StudentCommunity() {
                 </div>
               ) : (
                 chatMessages.map((msg) => {
-                  const isMe = msg.senderName === (user as any)?.fullName;
+                  const isMe = msg.senderId === (user as any)?.id || msg.senderName === (user as any)?.fullName;
                   return (
                     <div key={msg.id} className={`flex gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
                       <Avatar className="h-7 w-7 shrink-0 mt-1">
@@ -213,7 +304,29 @@ export default function StudentCommunity() {
                       <div className={`max-w-[70%] ${isMe ? "items-end" : "items-start"} flex flex-col`}>
                         <span className="text-[10px] text-muted-foreground mb-0.5 px-1">{msg.senderName}</span>
                         <div className={`rounded-2xl px-3 py-2 text-sm ${isMe ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-card border border-border/40 rounded-tl-sm"}`}>
-                          {msg.content}
+                          {msg.fileType === "image" && msg.fileUrl && (
+                            <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
+                              <img
+                                src={msg.fileUrl}
+                                alt={msg.fileName || "Image"}
+                                className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1 cursor-pointer hover:opacity-90 transition-opacity"
+                                loading="lazy"
+                              />
+                            </a>
+                          )}
+                          {msg.fileType === "pdf" && msg.fileUrl && (
+                            <a
+                              href={msg.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`flex items-center gap-2 text-xs underline mb-1 ${isMe ? "text-primary-foreground/80" : "text-primary"}`}
+                            >
+                              <FileText size={14} />
+                              <span className="truncate max-w-[180px]">{msg.fileName || "PDF Document"}</span>
+                              <Download size={12} />
+                            </a>
+                          )}
+                          {msg.content && <span>{msg.content}</span>}
                         </div>
                         <span className="text-[10px] text-muted-foreground mt-0.5 px-1">
                           {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -233,10 +346,34 @@ export default function StudentCommunity() {
                   <span className="text-[10px] text-muted-foreground">{typingUser} is typing…</span>
                 </div>
               )}
+              {uploadingFile && (
+                <div className="flex justify-center">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Loader2 size={12} className="animate-spin" /> Uploading file…
+                  </span>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
             <div className="flex gap-2 mt-3 pt-3 border-t border-border/40">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingFile || sendingMsg}
+                title="Attach photo or PDF"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
               <Input
                 placeholder="Type a message..."
                 className="bg-card/50 border-border/50 flex-1"
@@ -254,10 +391,10 @@ export default function StudentCommunity() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Community Hub</h1>
-                <p className="text-muted-foreground">Connect with peers, mentors, and alumni.</p>
+                <p className="text-muted-foreground">Connect with peers, share resources, and learn together.</p>
               </div>
               <div className="flex gap-2">
-                <div className="relative w-full sm:w-64">
+                <div className="relative w-full sm:w-56">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search posts..."
@@ -267,7 +404,7 @@ export default function StudentCommunity() {
                   />
                 </div>
                 <Button className="shrink-0" onClick={() => setPostOpen(true)}>
-                  <Edit3 className="mr-2 h-4 w-4" /> Create Post
+                  <Edit3 className="mr-2 h-4 w-4" /> Post
                 </Button>
               </div>
             </div>
@@ -302,7 +439,7 @@ export default function StudentCommunity() {
                               <AvatarFallback className="bg-primary/20 text-primary">{post.author.substring(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <div className="flex justify-between items-start mb-1">
+                              <div className="flex justify-between items-start mb-1 flex-wrap gap-2">
                                 <div>
                                   <span className="font-semibold text-sm">{post.author}</span>
                                   <span className="text-muted-foreground text-xs ml-2">in</span>
@@ -337,32 +474,39 @@ export default function StudentCommunity() {
         )}
       </div>
 
-      <div className="w-full lg:w-80 shrink-0 space-y-6">
+      <div className="w-full lg:w-80 shrink-0 space-y-4">
         <Card className="bg-card/40 border-border/40">
           <CardHeader className="p-4 pb-2 border-b border-border/40 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <MessageCircle size={16} className="text-primary" /> Group Chats
+              <MessageCircle size={16} className="text-primary" /> Groups
             </CardTitle>
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs gap-1 text-primary hover:text-primary" onClick={() => setGroupOpen(true)}>
+              <PlusCircle size={13} /> New Group
+            </Button>
           </CardHeader>
           <CardContent className="p-0">
             {groupsLoading ? (
               <div className="p-4"><Skeleton className="h-20 w-full" /></div>
             ) : groupsList.length === 0 ? (
-              <div className="p-4 text-xs text-center text-muted-foreground">No groups available.</div>
+              <div className="p-4 text-xs text-center text-muted-foreground">
+                No groups yet. Create the first one!
+              </div>
             ) : (
-              <div className="divide-y divide-border/40">
+              <div className="divide-y divide-border/40 max-h-80 overflow-y-auto">
                 {groupsList.map((g) => (
                   <button
                     key={g.id}
                     className="w-full p-3 hover:bg-muted/20 cursor-pointer flex items-center gap-3 text-left transition-colors"
                     onClick={() => { setChatGroupId(g.id); setActiveTab("for-you"); }}
                   >
-                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
+                    <div className={`w-8 h-8 rounded-full font-bold flex items-center justify-center text-xs shrink-0 ${getGroupColor(g.subject)}`}>
                       {g.name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{g.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{g.memberCount} members</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {g.lastMessage ? g.lastMessage : `${g.memberCount} members · ${g.subject}`}
+                      </p>
                     </div>
                     <MessageCircle size={14} className="text-muted-foreground shrink-0" />
                   </button>
@@ -375,29 +519,24 @@ export default function StudentCommunity() {
         <Card className="bg-card/40 border-border/40">
           <CardHeader className="p-4 pb-2 border-b border-border/40">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <span className="text-orange-500">🏆</span> Top Contributors
+              <ImageIcon size={15} className="text-primary" /> Share in Chat
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-border/40">
-              {[
-                { name: "Rahul S.", points: 1250, badge: "Expert" },
-                { name: "Priya M.", points: 980, badge: "Mentor" },
-                { name: "Dr. Arun", points: 850, badge: "Faculty" }
-              ].map((c, i) => (
-                <div key={i} className="p-3 hover:bg-muted/20 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="bg-muted text-[10px]">{c.name.substring(0, 2)}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs font-medium">{c.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[9px] px-1 py-0">{c.badge}</Badge>
-                    <span className="text-xs text-primary font-bold">{c.points}</span>
-                  </div>
-                </div>
-              ))}
+          <CardContent className="p-4">
+            <div className="space-y-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <ImageIcon size={13} className="text-blue-400 shrink-0" />
+                <span>Photos (JPG, PNG, WebP, GIF)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FileText size={13} className="text-red-400 shrink-0" />
+                <span>PDF documents</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Paperclip size={13} className="text-green-400 shrink-0" />
+                <span>Click 📎 in any group chat to attach</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground/60 pt-1">Max file size: 20 MB</p>
             </div>
           </CardContent>
         </Card>
@@ -431,6 +570,54 @@ export default function StudentCommunity() {
             <Button variant="outline" onClick={() => setPostOpen(false)}>Cancel</Button>
             <Button onClick={handleCreatePost} disabled={createPost.isPending}>
               {createPost.isPending ? "Posting..." : "Post"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={groupOpen} onOpenChange={setGroupOpen}>
+        <DialogContent className="bg-card border-border/50 max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create a Group</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Group Name <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="e.g. Anatomy Study Circle"
+                className="bg-background/50"
+                value={groupForm.name}
+                onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
+                maxLength={80}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Subject <span className="text-destructive">*</span></Label>
+              <Select value={groupForm.subject} onValueChange={(v) => setGroupForm({ ...groupForm, subject: v })}>
+                <SelectTrigger className="bg-background/50"><SelectValue placeholder="Select subject" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Anatomy">Anatomy</SelectItem>
+                  <SelectItem value="Physiology">Physiology</SelectItem>
+                  <SelectItem value="Biochemistry">Biochemistry</SelectItem>
+                  <SelectItem value="General">General</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Description <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Textarea
+                placeholder="What is this group about?"
+                className="bg-background/50 resize-none min-h-[80px]"
+                value={groupForm.description}
+                onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
+                maxLength={300}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGroupOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateGroup} disabled={creatingGroup || !groupForm.name.trim() || !groupForm.subject}>
+              {creatingGroup ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creating...</> : "Create Group"}
             </Button>
           </DialogFooter>
         </DialogContent>

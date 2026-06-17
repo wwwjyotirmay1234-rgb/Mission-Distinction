@@ -6,6 +6,9 @@ export const communityGroupsTable = pgTable("community_groups", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   subject: text("subject").notNull(),
+  description: text("description"),
+  createdBy: integer("created_by"),
+  isAdminCreated: boolean("is_admin_created").default(false),
   memberCount: integer("member_count").default(0).notNull(),
   lastMessage: text("last_message"),
   lastMessageTime: timestamp("last_message_time"),
@@ -28,9 +31,13 @@ export const communityPostsTable = pgTable("community_posts", {
 export const communityMessagesTable = pgTable("community_messages", {
   id: serial("id").primaryKey(),
   groupId: integer("group_id").notNull(),
+  senderId: integer("sender_id"),
   senderName: text("sender_name").notNull(),
   senderAvatarUrl: text("sender_avatar_url"),
-  content: text("content").notNull(),
+  content: text("content").notNull().default(""),
+  fileUrl: text("file_url"),
+  fileType: text("file_type"),
+  fileName: text("file_name"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

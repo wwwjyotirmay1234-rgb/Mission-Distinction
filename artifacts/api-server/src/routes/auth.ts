@@ -377,8 +377,9 @@ router.post("/resend-verification", authMiddleware, async (req: Request, res: Re
     const emailSent = await sendEmail(user.email, "Verify your email — Mission Distinction", verifyEmailTemplate(verifyUrl, user.fullName));
 
     res.json({
-      message: "Verification email sent.",
-      ...(process.env.NODE_ENV !== "production" && !emailSent && { devLink: verifyUrl }),
+      message: emailSent ? "Verification email sent." : "Could not send email — use the link below to verify.",
+      emailSent,
+      ...(!emailSent && { verifyLink: verifyUrl }),
     });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
