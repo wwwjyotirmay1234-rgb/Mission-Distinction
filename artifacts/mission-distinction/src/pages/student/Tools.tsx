@@ -34,7 +34,9 @@ function playBeep() {
       osc.stop(ctx.currentTime + i * 0.4 + 0.35);
     }
     setTimeout(() => ctx.close(), 2000);
-  } catch {}
+  } catch (e) {
+    if (import.meta.env.DEV) console.warn("[playBeep] AudioContext failed:", e);
+  }
 }
 
 async function requestNotificationPermission(): Promise<boolean> {

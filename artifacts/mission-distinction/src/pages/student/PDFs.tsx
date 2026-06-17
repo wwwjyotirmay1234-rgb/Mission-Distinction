@@ -61,7 +61,9 @@ async function trackDownload(pdfId: number) {
   try {
     const { apiFetch } = await import("@/lib/apiFetch");
     await apiFetch(`/api/pdfs/${pdfId}/download`, { method: "POST" });
-  } catch {}
+  } catch (e) {
+    if (import.meta.env.DEV) console.warn("[trackDownload] Failed to record download:", e);
+  }
 }
 
 export default function StudentPDFs() {
