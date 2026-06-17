@@ -351,39 +351,38 @@ export default function LandingPage() {
           className="w-full max-w-md text-center mb-5 px-4"
         >
           {/* Top ornate lotus divider */}
-          <div className="flex items-center gap-1.5 mb-4">
-            <div className="flex-1 h-px" style={{background:"linear-gradient(to right, transparent, #B45309, #D97706)"}}/>
-            <span style={{color:"#B45309",fontSize:10,letterSpacing:2}}>~ ~</span>
-            <span style={{fontSize:20,lineHeight:1,filter:"drop-shadow(0 0 4px rgba(217,119,6,0.5))"}}>🪷</span>
-            <span style={{color:"#B45309",fontSize:10,letterSpacing:2}}>~ ~</span>
-            <div className="flex-1 h-px" style={{background:"linear-gradient(to left, transparent, #B45309, #D97706)"}}/>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex-1 h-px" style={{background:"linear-gradient(to right, transparent, #C8A340)"}}/>
+            <span style={{color:"#C8A340",fontSize:11,lineHeight:1}}>ↄ</span>
+            <span style={{fontSize:18,lineHeight:1}}>🪷</span>
+            <span style={{color:"#C8A340",fontSize:11,lineHeight:1}}>c</span>
+            <div className="flex-1 h-px" style={{background:"linear-gradient(to left, transparent, #C8A340)"}}/>
           </div>
 
           {/* Sanskrit */}
-          <p className="font-semibold leading-relaxed mb-2" style={{
-            color:"#F59E0B",
-            fontSize:17,
-            textShadow:"0 0 18px rgba(245,158,11,0.35)",
-            background:"linear-gradient(135deg, #FFD700, #E6B85C)",
-            WebkitBackgroundClip:"text",
-            WebkitTextFillColor:"transparent",
+          <p className="font-bold mb-2" style={{
+            color:"#C8A340",
+            fontSize:20,
+            lineHeight:1.4,
+            fontFamily:"sans-serif",
           }}>
-            ॥ ज्ञानेन आरोग्यं, आरोग्येन सेवा, सेवया मानवकल्याणम् ॥
+            ।। ज्ञानेन आरोग्यं, आरोग्येन सेवा, सेवया मानवकल्याणम्।।
           </p>
-
-          {/* Thin separator line between Sanskrit and transliteration */}
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex-1 h-px" style={{background:"linear-gradient(to right, transparent, rgba(180,83,9,0.4))"}}/>
-            <span style={{color:"#B45309",fontSize:7}}>◆</span>
-            <div className="flex-1 h-px" style={{background:"linear-gradient(to left, transparent, rgba(180,83,9,0.4))"}}/>
-          </div>
 
           {/* Transliteration */}
-          <p className="italic mb-3" style={{color:"#D97706",fontSize:13,opacity:0.9,fontFamily:"Georgia, serif"}}>
+          <p className="italic mb-3" style={{color:"#C8A340",fontSize:13,fontFamily:"Georgia, serif",lineHeight:1.5}}>
             (Jñānena Ārogyaṁ, Ārogyena Sevā, Sevayā Mānava-Kalyāṇam.)
           </p>
+
+          {/* Middle divider — between transliteration and English */}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex-1 h-px" style={{background:"linear-gradient(to right, transparent, #C8A340)"}}/>
+            <span style={{color:"#C8A340",fontSize:10}}>◇</span>
+            <div className="flex-1 h-px" style={{background:"linear-gradient(to left, transparent, #C8A340)"}}/>
+          </div>
+
           {/* English */}
-          <p className="italic leading-relaxed" style={{color:"rgba(255,248,220,0.65)",fontSize:13,fontFamily:"Georgia, serif",lineHeight:1.75}}>
+          <p className="italic leading-relaxed" style={{color:"#C8A340",fontSize:13,fontFamily:"Georgia, serif",lineHeight:1.75}}>
             Through knowledge comes health,<br/>
             through health comes service,<br/>
             and through service comes the welfare of humanity.
@@ -391,13 +390,9 @@ export default function LandingPage() {
 
           {/* Bottom ornamental divider */}
           <div className="flex items-center gap-2 mt-4">
-            <div className="flex-1 h-px" style={{background:"linear-gradient(to right, transparent, #78350F)"}}/>
-            <span style={{color:"#B45309",fontSize:9}}>⟨</span>
-            <span style={{color:"#92400E",fontSize:8}}>◆</span>
-            <span style={{color:"#D97706",fontSize:13}}>✦</span>
-            <span style={{color:"#92400E",fontSize:8}}>◆</span>
-            <span style={{color:"#B45309",fontSize:9}}>⟩</span>
-            <div className="flex-1 h-px" style={{background:"linear-gradient(to left, transparent, #78350F)"}}/>
+            <div className="flex-1 h-px" style={{background:"linear-gradient(to right, transparent, #C8A340)"}}/>
+            <span style={{color:"#C8A340",fontSize:14}}>✾</span>
+            <div className="flex-1 h-px" style={{background:"linear-gradient(to left, transparent, #C8A340)"}}/>
           </div>
         </motion.div>
 
