@@ -49,7 +49,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js?v=6').then((reg) => {
+          navigator.serviceWorker.register('/sw.js?v=8').then((reg) => {
             reg.update();
           }).catch(() => {});
           navigator.serviceWorker.addEventListener('message', (e) => {

@@ -4,6 +4,7 @@ import { usersTable, quizAttemptsTable } from "@workspace/db";
 import { eq, sql, desc } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { getCache, setCache } from "../lib/cache";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -95,7 +96,7 @@ router.get("/", authMiddleware, async (_req: Request, res: Response) => {
     res.setHeader("X-Cache", "MISS");
     res.json(result);
   } catch (err) {
-    console.error("Leaderboard error:", err);
+    logger.error({ err }, "Leaderboard error");
     res.status(500).json({ error: "Internal server error" });
   }
 });
