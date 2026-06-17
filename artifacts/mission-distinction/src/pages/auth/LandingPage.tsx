@@ -298,115 +298,100 @@ export default function LandingPage() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center w-full px-4 py-2 gap-0 z-10">
 
-        {/* ── Hero: full-width dark arc + caduceus ── */}
+        {/* ── Hero: open background, subtle arc, caduceus ── */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.7 }}
           className="relative w-full flex justify-center items-end"
-          style={{ height: 220 }}
+          style={{ height: 210 }}
         >
-          {/* Dark dome fill */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: "radial-gradient(ellipse 90% 90% at 50% 0%, rgba(76,29,149,0.60) 0%, rgba(25,8,60,0.72) 45%, transparent 75%)",
-            }}
-          />
-
-          {/* Dome arc outline — thin glowing border */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 220" preserveAspectRatio="none">
-            <path d="M 15 220 A 186 210 0 0 1 385 220" fill="none" stroke="rgba(109,40,217,0.28)" strokeWidth="1.5"/>
+          {/* Thin subtle arc — no fill, open background as per reference */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 375 210" preserveAspectRatio="xMidYMax meet">
+            <path d="M 20 210 A 168 195 0 0 1 355 210" fill="none" stroke="rgba(109,40,217,0.18)" strokeWidth="1"/>
           </svg>
 
           {/* Sparkle stars */}
-          <div className="absolute" style={{top:20,left:"17%",width:5,height:5,borderRadius:"50%",background:"rgba(196,181,253,0.85)",boxShadow:"0 0 6px rgba(196,181,253,0.6)"}}/>
-          <div className="absolute" style={{top:11,left:"29%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.65)"}}/>
-          <div className="absolute" style={{top:38,left:"11%",width:2,height:2,borderRadius:"50%",background:"rgba(221,214,254,0.5)"}}/>
-          <div className="absolute" style={{top:16,right:"17%",width:5,height:5,borderRadius:"50%",background:"rgba(196,181,253,0.85)",boxShadow:"0 0 6px rgba(196,181,253,0.6)"}}/>
-          <div className="absolute" style={{top:9,right:"30%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.65)"}}/>
-          <div className="absolute" style={{top:42,right:"12%",width:2,height:2,borderRadius:"50%",background:"rgba(221,214,254,0.5)"}}/>
-          <div className="absolute" style={{top:62,left:"7%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.35)"}}/>
-          <div className="absolute" style={{top:62,right:"7%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.35)"}}/>
+          <div className="absolute" style={{top:18,left:"20%",width:4,height:4,borderRadius:"50%",background:"rgba(196,181,253,0.9)",boxShadow:"0 0 5px rgba(196,181,253,0.6)"}}/>
+          <div className="absolute" style={{top:10,left:"31%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.7)"}}/>
+          <div className="absolute" style={{top:16,right:"20%",width:4,height:4,borderRadius:"50%",background:"rgba(196,181,253,0.9)",boxShadow:"0 0 5px rgba(196,181,253,0.6)"}}/>
+          <div className="absolute" style={{top:9,right:"32%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.7)"}}/>
+          <div className="absolute" style={{top:48,left:"9%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
+          <div className="absolute" style={{top:48,right:"9%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
 
-          {/* Caduceus SVG */}
+          {/* ── Caduceus SVG ── */}
           <svg
-            width="220" height="210"
-            viewBox="0 0 220 210"
+            width="200" height="200"
+            viewBox="0 0 200 200"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             className="relative z-10"
           >
             <defs>
               <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#EDE9FE"/>
+                <stop offset="0%" stopColor="#DDD6FE"/>
                 <stop offset="100%" stopColor="#5B21B6"/>
               </linearGradient>
-              <linearGradient id="wg" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#3730A3" stopOpacity="0.2"/>
-                <stop offset="45%" stopColor="#6D28D9" stopOpacity="0.95"/>
-                <stop offset="55%" stopColor="#6D28D9" stopOpacity="0.95"/>
-                <stop offset="100%" stopColor="#3730A3" stopOpacity="0.2"/>
-              </linearGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="2" result="blur"/>
-                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
             </defs>
 
             {/* ── Top orb / star ── */}
-            <circle cx="110" cy="14" r="9" fill="#C4B5FD" opacity="0.95" filter="url(#glow)"/>
-            <path d="M110 4L112.4 10.4L119.5 10.4L113.7 14.5L116 21L110 17L104 21L106.3 14.5L100.5 10.4L107.6 10.4Z" fill="white" opacity="0.95"/>
+            <circle cx="100" cy="13" r="8" fill="#C4B5FD"/>
+            <path d="M100 4L102 10L109 10L103.5 14L105.5 20L100 17L94.5 20L96.5 14L91 10L98 10Z" fill="white" opacity="0.95"/>
 
             {/* ── Staff ── */}
-            <rect x="107" y="18" width="6" height="176" rx="3" fill="url(#sg)"/>
+            <rect x="97" y="17" width="6" height="170" rx="3" fill="url(#sg)"/>
 
-            {/* ── Left wing — draw outer→inner so inner sits on top ── */}
-            <path d="M110 58 C93,46 60,30 8,33 C33,40 72,50 100,61Z" fill="#4C1D95" opacity="0.80"/>
-            <path d="M110 58 C90,44 54,25 5,27 C32,34 70,46 102,60Z" fill="#6D28D9" opacity="0.90"/>
-            <path d="M110 58 C96,49 70,40 38,42 C60,47 84,53 104,62Z" fill="#7C3AED" opacity="1"/>
+            {/* ── LEFT WING ── three overlapping filled shapes, all high opacity */}
+            {/* Outermost feather — reaches x≈8 */}
+            <path d="M100 52 C87,42 60,27 10,29 C28,36 64,46 92,56Z" fill="#4C1D95" opacity="0.88"/>
+            {/* Mid feather — reaches x≈18 */}
+            <path d="M100 52 C84,39 54,23 14,25 C34,32 68,44 94,57Z" fill="#6D28D9" opacity="0.92"/>
+            {/* Inner feather — tightest, brightest */}
+            <path d="M100 52 C90,45 68,37 34,39 C54,44 78,50 97,56Z" fill="#7C3AED" opacity="1"/>
+            {/* Feather highlight lines */}
+            <path d="M100 52 C84,41 56,30 16,32" stroke="#A78BFA" strokeWidth="0.8" fill="none" opacity="0.45"/>
+            <path d="M100 52 C82,43 52,34 18,36" stroke="#8B5CF6" strokeWidth="0.8" fill="none" opacity="0.3"/>
 
-            {/* ── Right wing ── */}
-            <path d="M110 58 C127,46 160,30 212,33 C187,40 148,50 120,61Z" fill="#4C1D95" opacity="0.80"/>
-            <path d="M110 58 C130,44 166,25 215,27 C188,34 150,46 118,60Z" fill="#6D28D9" opacity="0.90"/>
-            <path d="M110 58 C124,49 150,40 182,42 C160,47 136,53 116,62Z" fill="#7C3AED" opacity="1"/>
+            {/* ── RIGHT WING ── mirror of left */}
+            <path d="M100 52 C113,42 140,27 190,29 C172,36 136,46 108,56Z" fill="#4C1D95" opacity="0.88"/>
+            <path d="M100 52 C116,39 146,23 186,25 C166,32 132,44 106,57Z" fill="#6D28D9" opacity="0.92"/>
+            <path d="M100 52 C110,45 132,37 166,39 C146,44 122,50 103,56Z" fill="#7C3AED" opacity="1"/>
+            <path d="M100 52 C116,41 144,30 184,32" stroke="#A78BFA" strokeWidth="0.8" fill="none" opacity="0.45"/>
+            <path d="M100 52 C118,43 148,34 182,36" stroke="#8B5CF6" strokeWidth="0.8" fill="none" opacity="0.3"/>
 
-            {/* ── Left laurel branch stems ── */}
-            <path d="M110 94 C97,99 82,107 62,120" stroke="#6D28D9" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-            <path d="M110 114 C95,120 78,129 55,144" stroke="#6D28D9" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-            <path d="M110 134 C93,141 74,152 50,168" stroke="#5B21B6" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+            {/* ── LEFT LAUREL BRANCH ── */}
+            {/* Main stem */}
+            <path d="M100 84 C88,90 74,98 55,112" stroke="#6D28D9" strokeWidth="2" fill="none" strokeLinecap="round"/>
+            <path d="M100 105 C86,112 70,122 48,137" stroke="#6D28D9" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+            <path d="M100 126 C84,134 66,144 42,160" stroke="#5B21B6" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+            {/* Leaves — paired alternating */}
+            <ellipse cx="78" cy="94" rx="10" ry="4" fill="#6D28D9" opacity="0.9" transform="rotate(-25 78 94)"/>
+            <ellipse cx="62" cy="107" rx="10" ry="4" fill="#6D28D9" opacity="0.80" transform="rotate(-32 62 107)"/>
+            <ellipse cx="73" cy="119" rx="10" ry="4" fill="#6D28D9" opacity="0.80" transform="rotate(-28 73 119)"/>
+            <ellipse cx="55" cy="133" rx="9"  ry="3.5" fill="#5B21B6" opacity="0.70" transform="rotate(-36 55 133)"/>
+            <ellipse cx="65" cy="146" rx="9"  ry="3.5" fill="#5B21B6" opacity="0.65" transform="rotate(-30 65 146)"/>
+            <ellipse cx="45" cy="158" rx="9"  ry="3.5" fill="#4C1D95" opacity="0.60" transform="rotate(-40 45 158)"/>
 
-            {/* ── Left leaves ── */}
-            <ellipse cx="80" cy="105" rx="11" ry="4.5" fill="#6D28D9" opacity="0.85" transform="rotate(-28 80 105)"/>
-            <ellipse cx="63" cy="118" rx="10" ry="4" fill="#6D28D9" opacity="0.70" transform="rotate(-34 63 118)"/>
-            <ellipse cx="75" cy="127" rx="11" ry="4.5" fill="#6D28D9" opacity="0.75" transform="rotate(-30 75 127)"/>
-            <ellipse cx="56" cy="141" rx="10" ry="4" fill="#5B21B6" opacity="0.65" transform="rotate(-38 56 141)"/>
-            <ellipse cx="68" cy="151" rx="10" ry="4" fill="#5B21B6" opacity="0.65" transform="rotate(-32 68 151)"/>
-            <ellipse cx="52" cy="166" rx="10" ry="3.5" fill="#4C1D95" opacity="0.6" transform="rotate(-42 52 166)"/>
+            {/* ── RIGHT LAUREL BRANCH ── mirror */}
+            <path d="M100 84 C112,90 126,98 145,112" stroke="#6D28D9" strokeWidth="2" fill="none" strokeLinecap="round"/>
+            <path d="M100 105 C114,112 130,122 152,137" stroke="#6D28D9" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+            <path d="M100 126 C116,134 134,144 158,160" stroke="#5B21B6" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+            <ellipse cx="122" cy="94" rx="10" ry="4" fill="#6D28D9" opacity="0.9" transform="rotate(25 122 94)"/>
+            <ellipse cx="138" cy="107" rx="10" ry="4" fill="#6D28D9" opacity="0.80" transform="rotate(32 138 107)"/>
+            <ellipse cx="127" cy="119" rx="10" ry="4" fill="#6D28D9" opacity="0.80" transform="rotate(28 127 119)"/>
+            <ellipse cx="145" cy="133" rx="9"  ry="3.5" fill="#5B21B6" opacity="0.70" transform="rotate(36 145 133)"/>
+            <ellipse cx="135" cy="146" rx="9"  ry="3.5" fill="#5B21B6" opacity="0.65" transform="rotate(30 135 146)"/>
+            <ellipse cx="155" cy="158" rx="9"  ry="3.5" fill="#4C1D95" opacity="0.60" transform="rotate(40 155 158)"/>
 
-            {/* ── Right laurel branch stems ── */}
-            <path d="M110 94 C123,99 138,107 158,120" stroke="#6D28D9" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-            <path d="M110 114 C125,120 142,129 165,144" stroke="#6D28D9" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-            <path d="M110 134 C127,141 146,152 170,168" stroke="#5B21B6" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
-
-            {/* ── Right leaves ── */}
-            <ellipse cx="140" cy="105" rx="11" ry="4.5" fill="#6D28D9" opacity="0.85" transform="rotate(28 140 105)"/>
-            <ellipse cx="157" cy="118" rx="10" ry="4" fill="#6D28D9" opacity="0.70" transform="rotate(34 157 118)"/>
-            <ellipse cx="145" cy="127" rx="11" ry="4.5" fill="#6D28D9" opacity="0.75" transform="rotate(30 145 127)"/>
-            <ellipse cx="164" cy="141" rx="10" ry="4" fill="#5B21B6" opacity="0.65" transform="rotate(38 164 141)"/>
-            <ellipse cx="152" cy="151" rx="10" ry="4" fill="#5B21B6" opacity="0.65" transform="rotate(32 152 151)"/>
-            <ellipse cx="168" cy="166" rx="10" ry="3.5" fill="#4C1D95" opacity="0.6" transform="rotate(42 168 166)"/>
-
-            {/* ── Snakes ── */}
-            <path d="M110 32 C88,48 132,68 110,88 C88,108 132,128 110,148 C88,168 132,186 110,200" stroke="#A78BFA" strokeWidth="3" fill="none" strokeLinecap="round"/>
-            <path d="M110 32 C132,48 88,68 110,88 C132,108 88,128 110,148 C132,168 88,186 110,200" stroke="#7C3AED" strokeWidth="3" fill="none" strokeLinecap="round"/>
-
+            {/* ── SNAKES ── two S-curves around staff */}
+            <path d="M100 28 C80,44 120,62 100,80 C80,98 120,116 100,134 C80,152 120,168 100,182" stroke="#A78BFA" strokeWidth="2.8" fill="none" strokeLinecap="round"/>
+            <path d="M100 28 C120,44 80,62 100,80 C120,98 80,116 100,134 C120,152 80,168 100,182" stroke="#7C3AED" strokeWidth="2.8" fill="none" strokeLinecap="round"/>
             {/* Snake heads */}
-            <circle cx="102" cy="202" r="5" fill="#A78BFA"/>
-            <circle cx="118" cy="202" r="5" fill="#7C3AED"/>
+            <circle cx="93"  cy="184" r="4.5" fill="#A78BFA"/>
+            <circle cx="107" cy="184" r="4.5" fill="#7C3AED"/>
             {/* Tongues */}
-            <path d="M99 206L95 210M99 206L97 211" stroke="#DDD6FE" strokeWidth="1.3" strokeLinecap="round"/>
-            <path d="M121 206L125 210M121 206L123 211" stroke="#DDD6FE" strokeWidth="1.3" strokeLinecap="round"/>
+            <path d="M91 188L88 191M91 188L89 192" stroke="#DDD6FE" strokeWidth="1.2" strokeLinecap="round"/>
+            <path d="M109 188L112 191M109 188L111 192" stroke="#DDD6FE" strokeWidth="1.2" strokeLinecap="round"/>
           </svg>
         </motion.div>
 
