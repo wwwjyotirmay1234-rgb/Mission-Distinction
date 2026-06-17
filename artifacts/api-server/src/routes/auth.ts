@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { randomUUID } from "crypto";
 import { db } from "@workspace/db";
 import { usersTable, emailTokensTable, refreshTokensTable, bookmarksTable, activityTable, feedbackTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { hashPassword, verifyPassword, generateToken } from "../lib/auth";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import {
@@ -133,7 +133,9 @@ router.post("/student/login", loginLimiter, async (req: Request, res: Response) 
       return;
     }
     const identifier = rawIdentifier.trim().toLowerCase();
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, identifier));
+    const [user] = await db.select().from(usersTable).where(
+      or(eq(usersTable.email, identifier), eq(usersTable.mobileNumber, identifier))
+    );
     if (!user || user.role !== "student") {
       res.status(401).json({ error: "Invalid credentials" });
       return;

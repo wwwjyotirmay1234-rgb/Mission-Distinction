@@ -1,11 +1,14 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
-import { eq, desc, and, ilike } from "drizzle-orm";
+import { eq, desc, and, ilike, or } from "drizzle-orm";
 import { adminMiddleware, authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+import rateLimit from "express-rate-limit";
 
 const CLOUDINARY_URL_RE = /^https:\/\/res\.cloudinary\.com\//;
+
+const searchLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: { error: "Too many searches. Slow down." }, standardHeaders: true, legacyHeaders: false });
 
 const router = Router();
 
@@ -34,7 +37,7 @@ router.get("/", adminMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-router.get("/search", authMiddleware, async (req: Request, res: Response) => {
+router.get("/search", authMiddleware, searchLimiter, async (req: Request, res: Response) => {
   try {
     const q = (req.query.q as string)?.trim();
     if (!q || q.length < 2) { res.json([]); return; }

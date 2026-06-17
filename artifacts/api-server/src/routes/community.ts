@@ -154,6 +154,9 @@ router.delete("/groups/:groupId/members/:userId", authMiddleware, async (req: Re
     if (requester.id !== targetId && !(await isOwner(groupId, requester.id)) && requester.role !== "admin") {
       res.status(403).json({ error: "Not authorised" }); return;
     }
+    if (await isOwner(groupId, targetId) && requester.role !== "admin") {
+      res.status(400).json({ error: "The group owner cannot leave. Transfer ownership or delete the group." }); return;
+    }
     await db.delete(groupMembersTable).where(and(eq(groupMembersTable.groupId, groupId), eq(groupMembersTable.userId, targetId)));
     const [group] = await db.select({ memberCount: communityGroupsTable.memberCount }).from(communityGroupsTable).where(eq(communityGroupsTable.id, groupId));
     if (group) await db.update(communityGroupsTable).set({ memberCount: Math.max(0, group.memberCount - 1) }).where(eq(communityGroupsTable.id, groupId));
