@@ -296,33 +296,92 @@ export default function LandingPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col lg:flex-row items-center justify-center container mx-auto px-4 py-12 gap-12 z-10">
-        
-        {/* Left Side: Hero Text */}
-        <div className="flex-1 text-center lg:text-left max-w-2xl">
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-4xl lg:text-6xl font-extrabold tracking-tight mb-6"
-          >
-            Welcome to <br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-              Mission Distinction
-            </span>
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-lg lg:text-xl text-muted-foreground mb-8"
-          >
-            Smart Learning. Better Results. Bright Future. <br/>
-            The definitive medical education platform for 1st year MBBS students.
-          </motion.p>
-        </div>
+      <main className="flex-1 flex flex-col items-center justify-center container mx-auto px-4 py-6 gap-0 z-10">
 
-        {/* Right Side: Auth Forms */}
+        {/* Caduceus Symbol */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="mb-4"
+        >
+          <svg width="80" height="100" viewBox="0 0 80 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Wings */}
+            <ellipse cx="20" cy="28" rx="18" ry="7" fill="#7C3AED" opacity="0.7" transform="rotate(-15 20 28)"/>
+            <ellipse cx="60" cy="28" rx="18" ry="7" fill="#7C3AED" opacity="0.7" transform="rotate(15 60 28)"/>
+            <ellipse cx="18" cy="22" rx="13" ry="5" fill="#9B59B6" opacity="0.5" transform="rotate(-25 18 22)"/>
+            <ellipse cx="62" cy="22" rx="13" ry="5" fill="#9B59B6" opacity="0.5" transform="rotate(25 62 22)"/>
+            {/* Staff */}
+            <rect x="38" y="15" width="4" height="75" rx="2" fill="#7C3AED"/>
+            {/* Snake 1 */}
+            <path d="M40 20 C30 28, 50 36, 40 44 C30 52, 50 60, 40 68 C30 76, 50 84, 40 90" stroke="#A78BFA" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+            {/* Snake 2 */}
+            <path d="M40 20 C50 28, 30 36, 40 44 C50 52, 30 60, 40 68 C50 76, 30 84, 40 90" stroke="#8B5CF6" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+            {/* Snake heads */}
+            <circle cx="34" cy="91" r="3" fill="#A78BFA"/>
+            <circle cx="46" cy="91" r="3" fill="#8B5CF6"/>
+            {/* Star at top */}
+            <circle cx="40" cy="13" r="4" fill="#C4B5FD"/>
+            <path d="M40 7 L41.5 11 L46 11 L42.5 13.5 L44 17.5 L40 15 L36 17.5 L37.5 13.5 L34 11 L38.5 11 Z" fill="#DDD6FE" opacity="0.9"/>
+            {/* Laurel leaves */}
+            <path d="M22 42 C18 38, 14 42, 18 46 C22 50, 26 46, 22 42Z" fill="#6D28D9" opacity="0.6"/>
+            <path d="M16 48 C12 44, 8 48, 12 52 C16 56, 20 52, 16 48Z" fill="#6D28D9" opacity="0.5"/>
+            <path d="M58 42 C62 38, 66 42, 62 46 C58 50, 54 46, 58 42Z" fill="#6D28D9" opacity="0.6"/>
+            <path d="M64 48 C68 44, 72 48, 68 52 C64 56, 60 52, 64 48Z" fill="#6D28D9" opacity="0.5"/>
+          </svg>
+        </motion.div>
+
+        {/* Title */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-3"
+        >
+          <p className="text-base text-muted-foreground mb-1">Welcome to</p>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+            Mission Distinction
+          </h1>
+        </motion.div>
+
+        {/* Motto Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="w-full max-w-md text-center mb-5 px-2"
+        >
+          {/* Top divider with lotus */}
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-amber-500/60" />
+            <span className="text-amber-400 text-lg">❀</span>
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-500/60" />
+          </div>
+
+          {/* Sanskrit */}
+          <p className="text-amber-400 font-semibold text-sm sm:text-base leading-relaxed mb-1" style={{ fontFamily: "'Noto Sans Devanagari', sans-serif" }}>
+            || ज्ञानेन आरोग्यं, आरोग्येन सेवा, सेवया मानवकल्याणम् ||
+          </p>
+          {/* Transliteration */}
+          <p className="text-amber-300/70 text-xs sm:text-sm italic mb-2">
+            (Jñānena Ārogyaṁ, Ārogyena Sevā, Sevayā Mānava-Kalyāṇam.)
+          </p>
+          {/* English */}
+          <p className="text-muted-foreground text-xs sm:text-sm italic leading-relaxed">
+            Through knowledge comes health,<br/>
+            through health comes service,<br/>
+            and through service comes the welfare of humanity.
+          </p>
+
+          {/* Bottom divider */}
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-amber-500/40" />
+            <span className="text-amber-500/60 text-xs">✦ ❖ ✦</span>
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-500/40" />
+          </div>
+        </motion.div>
+
+        {/* Auth Forms */}
         <div className="w-full max-w-md">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
