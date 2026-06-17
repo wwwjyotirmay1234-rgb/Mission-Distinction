@@ -341,23 +341,28 @@ export default function LandingPage() {
             {/* ── Staff ── */}
             <rect x="97" y="17" width="6" height="170" rx="3" fill="url(#sg)"/>
 
-            {/* ── LEFT WING ── three overlapping filled shapes, all high opacity */}
-            {/* Outermost feather — reaches x≈8 */}
-            <path d="M100 52 C87,42 60,27 10,29 C28,36 64,46 92,56Z" fill="#4C1D95" opacity="0.88"/>
-            {/* Mid feather — reaches x≈18 */}
-            <path d="M100 52 C84,39 54,23 14,25 C34,32 68,44 94,57Z" fill="#6D28D9" opacity="0.92"/>
-            {/* Inner feather — tightest, brightest */}
-            <path d="M100 52 C90,45 68,37 34,39 C54,44 78,50 97,56Z" fill="#7C3AED" opacity="1"/>
-            {/* Feather highlight lines */}
-            <path d="M100 52 C84,41 56,30 16,32" stroke="#A78BFA" strokeWidth="0.8" fill="none" opacity="0.45"/>
-            <path d="M100 52 C82,43 52,34 18,36" stroke="#8B5CF6" strokeWidth="0.8" fill="none" opacity="0.3"/>
+            {/* ── LEFT WING ── horizontal spread, tip near same Y as attachment */}
+            {/* Wing body: arcs up through y≈22 at midpoint, tip at (12,38) */}
+            <path d="M100 50 C74 36, 42 22, 12 38 C28 52, 66 60, 100 62Z" fill="#3B0764"/>
+            <path d="M100 50 C72 34, 40 20, 10 36 C26 50, 64 60, 100 62Z" fill="#4C1D95"/>
+            <path d="M100 50 C72 34, 40 20, 10 36 C26 50, 64 58, 100 61Z" fill="#5B21B6"/>
+            {/* Brighter inner section */}
+            <path d="M100 50 C82 38, 58 28, 26 40 C40 52, 72 58, 100 60Z" fill="#6D28D9"/>
+            <path d="M100 50 C88 42, 68 34, 42 44 C56 52, 80 57, 100 59Z" fill="#7C3AED"/>
+            {/* Feather lines along the upper arc */}
+            <path d="M100 50 C74 36, 44 24, 14 40" stroke="#C4B5FD" strokeWidth="1.2" fill="none" opacity="0.60"/>
+            <path d="M100 50 C72 38, 42 28, 16 44" stroke="#A78BFA" strokeWidth="1" fill="none" opacity="0.42"/>
+            <path d="M100 50 C70 40, 40 32, 18 46" stroke="#8B5CF6" strokeWidth="0.8" fill="none" opacity="0.28"/>
 
-            {/* ── RIGHT WING ── mirror of left */}
-            <path d="M100 52 C113,42 140,27 190,29 C172,36 136,46 108,56Z" fill="#4C1D95" opacity="0.88"/>
-            <path d="M100 52 C116,39 146,23 186,25 C166,32 132,44 106,57Z" fill="#6D28D9" opacity="0.92"/>
-            <path d="M100 52 C110,45 132,37 166,39 C146,44 122,50 103,56Z" fill="#7C3AED" opacity="1"/>
-            <path d="M100 52 C116,41 144,30 184,32" stroke="#A78BFA" strokeWidth="0.8" fill="none" opacity="0.45"/>
-            <path d="M100 52 C118,43 148,34 182,36" stroke="#8B5CF6" strokeWidth="0.8" fill="none" opacity="0.3"/>
+            {/* ── RIGHT WING ── mirror */}
+            <path d="M100 50 C126 36, 158 22, 188 38 C172 52, 134 60, 100 62Z" fill="#3B0764"/>
+            <path d="M100 50 C128 34, 160 20, 190 36 C174 50, 136 60, 100 62Z" fill="#4C1D95"/>
+            <path d="M100 50 C128 34, 160 20, 190 36 C174 50, 136 58, 100 61Z" fill="#5B21B6"/>
+            <path d="M100 50 C118 38, 142 28, 174 40 C160 52, 128 58, 100 60Z" fill="#6D28D9"/>
+            <path d="M100 50 C112 42, 132 34, 158 44 C144 52, 120 57, 100 59Z" fill="#7C3AED"/>
+            <path d="M100 50 C126 36, 156 24, 186 40" stroke="#C4B5FD" strokeWidth="1.2" fill="none" opacity="0.60"/>
+            <path d="M100 50 C128 38, 158 28, 184 44" stroke="#A78BFA" strokeWidth="1" fill="none" opacity="0.42"/>
+            <path d="M100 50 C130 40, 160 32, 182 46" stroke="#8B5CF6" strokeWidth="0.8" fill="none" opacity="0.28"/>
 
             {/* ── LEFT LAUREL BRANCH ── */}
             {/* Main stem */}

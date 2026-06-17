@@ -1,6 +1,6 @@
-const CACHE_NAME = "mission-distinction-v6";
+const CACHE_NAME = "mission-distinction-v7";
 const STATIC_ASSETS = ["/", "/index.html"];
-const API_CACHE_NAME = "mission-distinction-api-v6";
+const API_CACHE_NAME = "mission-distinction-api-v7";
 
 const CACHEABLE_API_PREFIXES = [
   "/api/quizzes",
