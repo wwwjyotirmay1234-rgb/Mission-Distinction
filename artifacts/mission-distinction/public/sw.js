@@ -1,6 +1,6 @@
-const CACHE_NAME = "mission-distinction-v5";
+const CACHE_NAME = "mission-distinction-v6";
 const STATIC_ASSETS = ["/", "/index.html"];
-const API_CACHE_NAME = "mission-distinction-api-v5";
+const API_CACHE_NAME = "mission-distinction-api-v6";
 
 const CACHEABLE_API_PREFIXES = [
   "/api/quizzes",
@@ -29,7 +29,10 @@ self.addEventListener("activate", (event) => {
       )
     ).then(() => self.clients.claim()).then(() =>
       self.clients.matchAll({ type: "window" }).then((clients) => {
-        clients.forEach((client) => client.navigate(client.url));
+        clients.forEach((client) => {
+          client.postMessage({ type: "SW_UPDATED" });
+          try { client.navigate(client.url); } catch (_) {}
+        });
       })
     )
   );
@@ -90,19 +93,24 @@ self.addEventListener("fetch", (event) => {
 
   if (url.pathname.startsWith("/api/")) return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
+  // Navigation requests (HTML shell) — network-first, cache as offline fallback
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
         .then((response) => {
-          if (response.ok && event.request.method === "GET") {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(event.request, clone));
+          if (response.ok) {
+            caches.open(CACHE_NAME).then((c) => c.put(event.request, response.clone()));
           }
           return response;
         })
-        .catch(() => caches.match("/index.html"));
-    })
+        .catch(() => caches.match("/index.html"))
+    );
+    return;
+  }
+
+  // All other assets (JS, CSS, images) — always network, never serve stale cache
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
 
