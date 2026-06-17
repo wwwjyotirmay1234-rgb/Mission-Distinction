@@ -1,0 +1,116 @@
+IMPORTANT: Do not create a new layout. Do not move the login card. Do not change the color scheme. Do not change the page structure. Only refine the existing landing page to match a premium medical-institute style.
+
+Required Layout
+
+Keep this exact order:
+
+1. Mission Distinction logo and Student/Admin toggle in navbar
+2. Medical emblem (Caduceus) centered above heading
+3. Welcome to Mission Distinction heading
+4. Sanskrit motto section
+5. Login/Register card
+6. Feature cards section
+
+Remove Completely
+
+Delete these two lines entirely:
+
+* Smart Learning. Better Results. Bright Future.
+* The definitive medical education platform for 1st year MBBS students.
+
+No replacement text.
+
+Add Premium Motto Section
+
+Place directly below:
+
+Welcome to Mission Distinction
+
+Add a centered decorative divider.
+
+Display the Sanskrit motto in gold:
+
+ज्ञानेन आरोग्यं, आरोग्येन सेवा, सेवया मानवकल्याणम्।
+
+Below it add:
+
+(Jñānena Ārogyaṁ, Ārogyena Sevā, Sevayā Mānava-Kalyāṇam.)
+
+Below it add:
+
+Through knowledge comes health, through health comes service, and through service comes the welfare of humanity.
+
+Styling Requirements
+
+Sanskrit Text
+
+* Gold gradient (#FFD700 → #E6B85C)
+* Font size noticeably larger than English
+* Semi-bold
+* Center aligned
+* Soft glow effect
+* Elegant institutional appearance
+
+Transliteration
+
+* Gold color
+* Italic serif font
+* Smaller than Sanskrit
+
+English Meaning
+
+* Gold/light cream color
+* Elegant serif font
+* Center aligned
+* Maximum width 700px
+* Line height 1.8
+
+Decorative Elements
+
+Above and below the motto add:
+
+* Thin gold horizontal lines
+* Small lotus icon in center
+* Small ornamental separators
+* Subtle glow only
+
+Do NOT use heavy animations.
+
+Background
+
+Keep existing dark navy/purple background.
+
+Keep:
+
+* Arc patterns
+* Stars/particles
+* Medical emblem
+* Purple lighting
+
+Do NOT replace background.
+
+Login Card
+
+Keep existing login card exactly as it is.
+
+Do NOT:
+
+* Move it
+* Resize it significantly
+* Change button styles
+* Change Google login
+
+Only ensure spacing between motto and login card is balanced.
+
+Design Goal
+
+The page should feel like:
+
+* AIIMS
+* Johns Hopkins School of Medicine
+* Harvard Medical School
+* Premium medical institute
+
+Elegant, academic, trustworthy, and professional.
+
+The Sanskrit motto must become the visual centerpiece of the landing page while preserving the current Mission Distinction branding and login experience.

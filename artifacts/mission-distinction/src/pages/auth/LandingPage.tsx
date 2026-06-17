@@ -304,30 +304,35 @@ export default function LandingPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.7 }}
           className="relative w-full flex justify-center items-end"
-          style={{ height: 210 }}
+          style={{ height: 220 }}
         >
-          {/* Dark dome arc — full width radial gradient */}
+          {/* Dark dome fill */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: "radial-gradient(ellipse 95% 95% at 50% 0%, rgba(76,29,149,0.55) 0%, rgba(30,10,70,0.70) 40%, transparent 72%)",
+              background: "radial-gradient(ellipse 90% 90% at 50% 0%, rgba(76,29,149,0.60) 0%, rgba(25,8,60,0.72) 45%, transparent 75%)",
             }}
           />
 
-          {/* Sparkle stars scattered in the arc */}
-          <div className="absolute" style={{top:18,left:"18%",width:4,height:4,borderRadius:"50%",background:"rgba(196,181,253,0.8)"}}/>
-          <div className="absolute" style={{top:10,left:"28%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.6)"}}/>
-          <div className="absolute" style={{top:30,left:"12%",width:2,height:2,borderRadius:"50%",background:"rgba(221,214,254,0.5)"}}/>
-          <div className="absolute" style={{top:14,right:"18%",width:4,height:4,borderRadius:"50%",background:"rgba(196,181,253,0.8)"}}/>
-          <div className="absolute" style={{top:8,right:"30%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.6)"}}/>
-          <div className="absolute" style={{top:35,right:"14%",width:2,height:2,borderRadius:"50%",background:"rgba(221,214,254,0.5)"}}/>
-          <div className="absolute" style={{top:55,left:"8%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
-          <div className="absolute" style={{top:55,right:"8%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
+          {/* Dome arc outline — thin glowing border */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 220" preserveAspectRatio="none">
+            <path d="M 15 220 A 186 210 0 0 1 385 220" fill="none" stroke="rgba(109,40,217,0.28)" strokeWidth="1.5"/>
+          </svg>
 
-          {/* Caduceus SVG — fills naturally within the arc */}
+          {/* Sparkle stars */}
+          <div className="absolute" style={{top:20,left:"17%",width:5,height:5,borderRadius:"50%",background:"rgba(196,181,253,0.85)",boxShadow:"0 0 6px rgba(196,181,253,0.6)"}}/>
+          <div className="absolute" style={{top:11,left:"29%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.65)"}}/>
+          <div className="absolute" style={{top:38,left:"11%",width:2,height:2,borderRadius:"50%",background:"rgba(221,214,254,0.5)"}}/>
+          <div className="absolute" style={{top:16,right:"17%",width:5,height:5,borderRadius:"50%",background:"rgba(196,181,253,0.85)",boxShadow:"0 0 6px rgba(196,181,253,0.6)"}}/>
+          <div className="absolute" style={{top:9,right:"30%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.65)"}}/>
+          <div className="absolute" style={{top:42,right:"12%",width:2,height:2,borderRadius:"50%",background:"rgba(221,214,254,0.5)"}}/>
+          <div className="absolute" style={{top:62,left:"7%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.35)"}}/>
+          <div className="absolute" style={{top:62,right:"7%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.35)"}}/>
+
+          {/* Caduceus SVG */}
           <svg
-            width="180" height="200"
-            viewBox="0 0 180 200"
+            width="220" height="210"
+            viewBox="0 0 220 210"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             className="relative z-10"
@@ -337,59 +342,75 @@ export default function LandingPage() {
                 <stop offset="0%" stopColor="#EDE9FE"/>
                 <stop offset="100%" stopColor="#5B21B6"/>
               </linearGradient>
+              <linearGradient id="wg" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#3730A3" stopOpacity="0.2"/>
+                <stop offset="45%" stopColor="#6D28D9" stopOpacity="0.95"/>
+                <stop offset="55%" stopColor="#6D28D9" stopOpacity="0.95"/>
+                <stop offset="100%" stopColor="#3730A3" stopOpacity="0.2"/>
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
             </defs>
 
             {/* ── Top orb / star ── */}
-            <circle cx="90" cy="15" r="8" fill="#C4B5FD" opacity="0.95"/>
-            <path d="M90 5L92 11L99 11L93.5 15L95.5 21L90 17.5L84.5 21L86.5 15L81 11L88 11Z" fill="white" opacity="0.9"/>
+            <circle cx="110" cy="14" r="9" fill="#C4B5FD" opacity="0.95" filter="url(#glow)"/>
+            <path d="M110 4L112.4 10.4L119.5 10.4L113.7 14.5L116 21L110 17L104 21L106.3 14.5L100.5 10.4L107.6 10.4Z" fill="white" opacity="0.95"/>
 
             {/* ── Staff ── */}
-            <rect x="87" y="19" width="6" height="163" rx="3" fill="url(#sg)"/>
+            <rect x="107" y="18" width="6" height="176" rx="3" fill="url(#sg)"/>
 
-            {/* ── Left wings (3 layers) ── */}
-            <path d="M90 56 C76,46 48,34 10,37 C32,42 64,49 84,58Z" fill="#4C1D95" opacity="0.55"/>
-            <path d="M90 56 C73,43 42,28 4,30 C28,36 62,45 86,57Z" fill="#6D28D9" opacity="0.75"/>
-            <path d="M90 56 C80,48 58,39 30,41 C50,45 72,51 88,59Z" fill="#7C3AED" opacity="0.95"/>
+            {/* ── Left wings — outermost layer (farthest reach, dark) ── */}
+            <path d="M110 58 C93,46 60,30 8,33 C33,40 72,50 100,61Z" fill="#3730A3" opacity="0.45"/>
+            {/* ── Left wings — mid layer ── */}
+            <path d="M110 58 C90,44 54,25 5,27 C32,34 70,46 102,60Z" fill="#5B21B6" opacity="0.70"/>
+            {/* ── Left wings — inner layer (most visible) ── */}
+            <path d="M110 58 C96,49 70,40 38,42 C60,47 84,53 104,62Z" fill="#7C3AED" opacity="1"/>
 
-            {/* ── Right wings (3 layers) ── */}
-            <path d="M90 56 C104,46 132,34 170,37 C148,42 116,49 96,58Z" fill="#4C1D95" opacity="0.55"/>
-            <path d="M90 56 C107,43 138,28 176,30 C152,36 118,45 94,57Z" fill="#6D28D9" opacity="0.75"/>
-            <path d="M90 56 C100,48 122,39 150,41 C130,45 108,51 92,59Z" fill="#7C3AED" opacity="0.95"/>
+            {/* ── Right wings — outermost layer ── */}
+            <path d="M110 58 C127,46 160,30 212,33 C187,40 148,50 120,61Z" fill="#3730A3" opacity="0.45"/>
+            {/* ── Right wings — mid layer ── */}
+            <path d="M110 58 C130,44 166,25 215,27 C188,34 150,46 118,60Z" fill="#5B21B6" opacity="0.70"/>
+            {/* ── Right wings — inner layer ── */}
+            <path d="M110 58 C124,49 150,40 182,42 C160,47 136,53 116,62Z" fill="#7C3AED" opacity="1"/>
 
-            {/* ── Left laurel branch ── */}
-            <path d="M90 90 C80,94 68,100 52,112" stroke="#6D28D9" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-            <ellipse cx="66" cy="99" rx="9" ry="4" fill="#6D28D9" opacity="0.8" transform="rotate(-28 66 99)"/>
-            <ellipse cx="53" cy="110" rx="8" ry="3.5" fill="#6D28D9" opacity="0.65" transform="rotate(-32 53 110)"/>
+            {/* ── Left laurel branch stems ── */}
+            <path d="M110 94 C97,99 82,107 62,120" stroke="#6D28D9" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+            <path d="M110 114 C95,120 78,129 55,144" stroke="#6D28D9" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+            <path d="M110 134 C93,141 74,152 50,168" stroke="#5B21B6" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
 
-            <path d="M90 108 C78,113 64,120 46,133" stroke="#6D28D9" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-            <ellipse cx="64" cy="118" rx="9" ry="4" fill="#6D28D9" opacity="0.7" transform="rotate(-36 64 118)"/>
-            <ellipse cx="48" cy="131" rx="8" ry="3.5" fill="#5B21B6" opacity="0.6" transform="rotate(-40 48 131)"/>
+            {/* ── Left leaves ── */}
+            <ellipse cx="80" cy="105" rx="11" ry="4.5" fill="#6D28D9" opacity="0.85" transform="rotate(-28 80 105)"/>
+            <ellipse cx="63" cy="118" rx="10" ry="4" fill="#6D28D9" opacity="0.70" transform="rotate(-34 63 118)"/>
+            <ellipse cx="75" cy="127" rx="11" ry="4.5" fill="#6D28D9" opacity="0.75" transform="rotate(-30 75 127)"/>
+            <ellipse cx="56" cy="141" rx="10" ry="4" fill="#5B21B6" opacity="0.65" transform="rotate(-38 56 141)"/>
+            <ellipse cx="68" cy="151" rx="10" ry="4" fill="#5B21B6" opacity="0.65" transform="rotate(-32 68 151)"/>
+            <ellipse cx="52" cy="166" rx="10" ry="3.5" fill="#4C1D95" opacity="0.6" transform="rotate(-42 52 166)"/>
 
-            <path d="M90 126 C76,132 60,141 40,156" stroke="#5B21B6" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-            <ellipse cx="61" cy="139" rx="9" ry="3.5" fill="#5B21B6" opacity="0.6" transform="rotate(-42 61 139)"/>
+            {/* ── Right laurel branch stems ── */}
+            <path d="M110 94 C123,99 138,107 158,120" stroke="#6D28D9" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+            <path d="M110 114 C125,120 142,129 165,144" stroke="#6D28D9" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+            <path d="M110 134 C127,141 146,152 170,168" stroke="#5B21B6" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
 
-            {/* ── Right laurel branch ── */}
-            <path d="M90 90 C100,94 112,100 128,112" stroke="#6D28D9" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-            <ellipse cx="114" cy="99" rx="9" ry="4" fill="#6D28D9" opacity="0.8" transform="rotate(28 114 99)"/>
-            <ellipse cx="127" cy="110" rx="8" ry="3.5" fill="#6D28D9" opacity="0.65" transform="rotate(32 127 110)"/>
-
-            <path d="M90 108 C102,113 116,120 134,133" stroke="#6D28D9" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-            <ellipse cx="116" cy="118" rx="9" ry="4" fill="#6D28D9" opacity="0.7" transform="rotate(36 116 118)"/>
-            <ellipse cx="132" cy="131" rx="8" ry="3.5" fill="#5B21B6" opacity="0.6" transform="rotate(40 132 131)"/>
-
-            <path d="M90 126 C104,132 120,141 140,156" stroke="#5B21B6" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-            <ellipse cx="119" cy="139" rx="9" ry="3.5" fill="#5B21B6" opacity="0.6" transform="rotate(42 119 139)"/>
+            {/* ── Right leaves ── */}
+            <ellipse cx="140" cy="105" rx="11" ry="4.5" fill="#6D28D9" opacity="0.85" transform="rotate(28 140 105)"/>
+            <ellipse cx="157" cy="118" rx="10" ry="4" fill="#6D28D9" opacity="0.70" transform="rotate(34 157 118)"/>
+            <ellipse cx="145" cy="127" rx="11" ry="4.5" fill="#6D28D9" opacity="0.75" transform="rotate(30 145 127)"/>
+            <ellipse cx="164" cy="141" rx="10" ry="4" fill="#5B21B6" opacity="0.65" transform="rotate(38 164 141)"/>
+            <ellipse cx="152" cy="151" rx="10" ry="4" fill="#5B21B6" opacity="0.65" transform="rotate(32 152 151)"/>
+            <ellipse cx="168" cy="166" rx="10" ry="3.5" fill="#4C1D95" opacity="0.6" transform="rotate(42 168 166)"/>
 
             {/* ── Snakes ── */}
-            <path d="M90 30 C72,44 108,62 90,78 C72,94 108,112 90,128 C72,144 108,160 90,174" stroke="#A78BFA" strokeWidth="2.8" fill="none" strokeLinecap="round"/>
-            <path d="M90 30 C108,44 72,62 90,78 C108,94 72,112 90,128 C108,144 72,160 90,174" stroke="#8B5CF6" strokeWidth="2.8" fill="none" strokeLinecap="round"/>
+            <path d="M110 32 C88,48 132,68 110,88 C88,108 132,128 110,148 C88,168 132,186 110,200" stroke="#A78BFA" strokeWidth="3" fill="none" strokeLinecap="round"/>
+            <path d="M110 32 C132,48 88,68 110,88 C132,108 88,128 110,148 C132,168 88,186 110,200" stroke="#7C3AED" strokeWidth="3" fill="none" strokeLinecap="round"/>
 
             {/* Snake heads */}
-            <circle cx="83" cy="176" r="4.5" fill="#A78BFA"/>
-            <circle cx="97" cy="176" r="4.5" fill="#8B5CF6"/>
+            <circle cx="102" cy="202" r="5" fill="#A78BFA"/>
+            <circle cx="118" cy="202" r="5" fill="#7C3AED"/>
             {/* Tongues */}
-            <path d="M81 179L78 182M81 179L79 183" stroke="#DDD6FE" strokeWidth="1.2" strokeLinecap="round"/>
-            <path d="M99 179L102 182M99 179L101 183" stroke="#DDD6FE" strokeWidth="1.2" strokeLinecap="round"/>
+            <path d="M99 206L95 210M99 206L97 211" stroke="#DDD6FE" strokeWidth="1.3" strokeLinecap="round"/>
+            <path d="M121 206L125 210M121 206L123 211" stroke="#DDD6FE" strokeWidth="1.3" strokeLinecap="round"/>
           </svg>
         </motion.div>
 
@@ -398,10 +419,10 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center mt-1 mb-3 px-4"
+          className="text-center mt-2 mb-4 px-4"
         >
-          <p className="text-sm text-foreground/60 mb-1 tracking-wide">Welcome to</p>
-          <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-violet-400 to-secondary">
+          <p className="text-base font-semibold text-white/80 mb-1 tracking-widest uppercase" style={{letterSpacing:"0.15em",fontSize:13}}>Welcome to</p>
+          <h1 className="font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-violet-400 to-secondary" style={{fontSize:"2.6rem",lineHeight:1.1}}>
             Mission Distinction
           </h1>
         </motion.div>
@@ -413,37 +434,54 @@ export default function LandingPage() {
           transition={{ duration: 0.5, delay: 0.15 }}
           className="w-full max-w-md text-center mb-5 px-4"
         >
-          {/* Top ornate divider */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="h-px flex-1" style={{background:"linear-gradient(to right, transparent, #B45309)"}}/>
-            <span style={{color:"#92400E",fontSize:11}}>❧</span>
-            <span style={{color:"#D97706",fontSize:18,lineHeight:1}}>☸</span>
-            <span style={{color:"#92400E",fontSize:11}}>❧</span>
-            <div className="h-px flex-1" style={{background:"linear-gradient(to left, transparent, #B45309)"}}/>
+          {/* Top ornate lotus divider */}
+          <div className="flex items-center gap-1.5 mb-4">
+            <div className="flex-1 h-px" style={{background:"linear-gradient(to right, transparent, #B45309, #D97706)"}}/>
+            <span style={{color:"#B45309",fontSize:10,letterSpacing:2}}>~ ~</span>
+            <span style={{fontSize:20,lineHeight:1,filter:"drop-shadow(0 0 4px rgba(217,119,6,0.5))"}}>🪷</span>
+            <span style={{color:"#B45309",fontSize:10,letterSpacing:2}}>~ ~</span>
+            <div className="flex-1 h-px" style={{background:"linear-gradient(to left, transparent, #B45309, #D97706)"}}/>
           </div>
 
           {/* Sanskrit */}
-          <p className="font-bold leading-relaxed mb-1" style={{color:"#F59E0B",fontSize:15}}>
-            || ज्ञानेन आरोग्यं, आरोग्येन सेवा, सेवया मानवकल्याणम् ||
+          <p className="font-semibold leading-relaxed mb-2" style={{
+            color:"#F59E0B",
+            fontSize:17,
+            textShadow:"0 0 18px rgba(245,158,11,0.35)",
+            background:"linear-gradient(135deg, #FFD700, #E6B85C)",
+            WebkitBackgroundClip:"text",
+            WebkitTextFillColor:"transparent",
+          }}>
+            ॥ ज्ञानेन आरोग्यं, आरोग्येन सेवा, सेवया मानवकल्याणम् ॥
           </p>
+
+          {/* Thin separator line between Sanskrit and transliteration */}
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex-1 h-px" style={{background:"linear-gradient(to right, transparent, rgba(180,83,9,0.4))"}}/>
+            <span style={{color:"#B45309",fontSize:7}}>◆</span>
+            <div className="flex-1 h-px" style={{background:"linear-gradient(to left, transparent, rgba(180,83,9,0.4))"}}/>
+          </div>
+
           {/* Transliteration */}
-          <p className="italic mb-2" style={{color:"#D97706",opacity:0.75,fontSize:13}}>
+          <p className="italic mb-3" style={{color:"#D97706",fontSize:13,opacity:0.9,fontFamily:"Georgia, serif"}}>
             (Jñānena Ārogyaṁ, Ārogyena Sevā, Sevayā Mānava-Kalyāṇam.)
           </p>
           {/* English */}
-          <p className="italic leading-relaxed" style={{color:"rgba(255,255,255,0.5)",fontSize:13}}>
+          <p className="italic leading-relaxed" style={{color:"rgba(255,248,220,0.65)",fontSize:13,fontFamily:"Georgia, serif",lineHeight:1.75}}>
             Through knowledge comes health,<br/>
             through health comes service,<br/>
             and through service comes the welfare of humanity.
           </p>
 
-          {/* Bottom divider */}
-          <div className="flex items-center gap-2 mt-3">
-            <div className="h-px flex-1" style={{background:"linear-gradient(to right, transparent, #78350F)"}}/>
+          {/* Bottom ornamental divider */}
+          <div className="flex items-center gap-2 mt-4">
+            <div className="flex-1 h-px" style={{background:"linear-gradient(to right, transparent, #78350F)"}}/>
+            <span style={{color:"#B45309",fontSize:9}}>⟨</span>
             <span style={{color:"#92400E",fontSize:8}}>◆</span>
-            <span style={{color:"#B45309",fontSize:11}}>✦</span>
+            <span style={{color:"#D97706",fontSize:13}}>✦</span>
             <span style={{color:"#92400E",fontSize:8}}>◆</span>
-            <div className="h-px flex-1" style={{background:"linear-gradient(to left, transparent, #78350F)"}}/>
+            <span style={{color:"#B45309",fontSize:9}}>⟩</span>
+            <div className="flex-1 h-px" style={{background:"linear-gradient(to left, transparent, #78350F)"}}/>
           </div>
         </motion.div>
 
