@@ -68,6 +68,8 @@ export default function StudentCommunity() {
   const [searchResults, setSearchResults] = useState<{ id: number; fullName: string; avatarUrl?: string | null; college?: string | null }[]>([]);
   const [searching, setSearching] = useState(false);
   const [inviting, setInviting] = useState<number | null>(null);
+  const [transferringTo, setTransferringTo] = useState<number | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -116,21 +118,47 @@ export default function StudentCommunity() {
     if (!chatGroupId) return;
     setInviting(userId);
     try {
-      const baseUrl = BASE;
-      const res = await fetch(`${baseUrl}/api/community/groups/${chatGroupId}/invite`, {
+      const data = await customFetch(`/api/community/groups/${chatGroupId}/invite`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success(data.message || `${name} added!`);
-        queryClient.invalidateQueries({ queryKey: getListCommunityGroupsQueryKey() });
-        setSearchResults(prev => prev.filter(u => u.id !== userId));
-      } else {
-        toast.error(data.error || "Failed to invite");
-      }
-    } catch { toast.error("Failed to invite"); } finally { setInviting(null); }
+      toast.success((data as any).message || `${name} added!`);
+      queryClient.invalidateQueries({ queryKey: getListCommunityGroupsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: ["group-members", chatGroupId] });
+      setSearchResults(prev => prev.filter(u => u.id !== userId));
+    } catch (e: any) { toast.error(e?.message || "Failed to invite"); } finally { setInviting(null); }
+  };
+
+  const handleTransferOwner = async (userId: number, name: string) => {
+    if (!chatGroupId) return;
+    if (!window.confirm(`Transfer group ownership to ${name}? You will become a regular member.`)) return;
+    setTransferringTo(userId);
+    try {
+      const data = await customFetch(`/api/community/groups/${chatGroupId}/transfer-owner`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      toast.success((data as any).message || "Ownership transferred");
+      queryClient.invalidateQueries({ queryKey: getListCommunityGroupsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: ["group-members", chatGroupId] });
+      setMembersOpen(false);
+    } catch (e: any) { toast.error(e?.message || "Failed to transfer ownership"); } finally { setTransferringTo(null); }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!chatGroupId || !activeGroup) return;
+    if (!window.confirm(`Permanently delete "${activeGroup.name}"? This removes all messages and members.`)) return;
+    setDeletingGroup(true);
+    try {
+      await customFetch(`/api/community/groups/${chatGroupId}`, { method: "DELETE" });
+      toast.success("Group deleted");
+      queryClient.invalidateQueries({ queryKey: getListCommunityGroupsQueryKey() });
+      setMembersOpen(false);
+      setChatGroupId(null);
+      setLiveMessages([]);
+    } catch (e: any) { toast.error(e?.message || "Failed to delete group"); } finally { setDeletingGroup(false); }
   };
 
   useEffect(() => {
@@ -640,28 +668,48 @@ export default function StudentCommunity() {
               <Users size={16} /> {activeGroup?.name} — Members
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 max-h-72 overflow-y-auto py-1">
+          <div className="space-y-2 max-h-64 overflow-y-auto py-1">
             {groupMembers.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">No members yet.</p>
             ) : groupMembers.map(m => (
-              <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20">
-                <Avatar className="h-8 w-8">
+              <div key={m.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/20">
+                <Avatar className="h-8 w-8 shrink-0">
                   <AvatarImage src={m.avatarUrl || ""} />
                   <AvatarFallback className="bg-primary/20 text-primary text-xs">{m.fullName.substring(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <span className="flex-1 text-sm font-medium truncate">{m.fullName}</span>
-                {m.role === "owner" && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 border-yellow-500/30 text-yellow-400 gap-1">
+                {m.role === "owner" ? (
+                  <Badge variant="outline" className="text-[10px] px-1.5 border-yellow-500/30 text-yellow-400 gap-1 shrink-0">
                     <Crown size={9} /> Owner
                   </Badge>
-                )}
+                ) : isGroupOwner ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 px-2 text-[10px] shrink-0 border-primary/30 text-primary hover:bg-primary/10"
+                    disabled={transferringTo === m.id}
+                    onClick={() => handleTransferOwner(m.id, m.fullName)}
+                  >
+                    {transferringTo === m.id ? <Loader2 size={10} className="animate-spin" /> : "Make Owner"}
+                  </Button>
+                ) : null}
               </div>
             ))}
           </div>
           {isGroupOwner && (
-            <div className="pt-2 border-t border-border/40">
+            <div className="pt-2 border-t border-border/40 space-y-2">
               <Button size="sm" className="w-full gap-2" onClick={() => { setMembersOpen(false); setInviteOpen(true); setMemberSearch(""); setSearchResults([]); }}>
                 <UserPlus size={14} /> Invite More Students
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+                disabled={deletingGroup}
+                onClick={handleDeleteGroup}
+              >
+                {deletingGroup ? <Loader2 size={14} className="animate-spin" /> : <UserMinus size={14} />}
+                Delete Group
               </Button>
             </div>
           )}

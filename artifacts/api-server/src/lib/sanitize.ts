@@ -1,9 +1,11 @@
-const HTML_TAG_RE = /<[^>]*>/g;
-const DANGEROUS_PROTO_RE = /javascript\s*:/gi;
+import xss from "xss";
+
+const xssOptions = {
+  whiteList: {} as Record<string, string[]>,
+  stripIgnoreTag: true,
+  stripIgnoreTagBody: ["script", "style", "iframe", "noscript"],
+};
 
 export function stripHtml(input: string): string {
-  return input
-    .replace(HTML_TAG_RE, "")
-    .replace(DANGEROUS_PROTO_RE, "")
-    .trim();
+  return xss(input, xssOptions).trim();
 }

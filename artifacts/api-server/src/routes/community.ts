@@ -4,7 +4,7 @@ import { communityPostsTable, communityGroupsTable, communityMessagesTable, grou
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
-import { eq, desc, and, or, ilike } from "drizzle-orm";
+import { eq, desc, and, count } from "drizzle-orm";
 import { getIO } from "../lib/socket-server";
 import rateLimit from "express-rate-limit";
 
@@ -15,17 +15,19 @@ const messageLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, message: { erro
 const groupCreateLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, message: { error: "Too many groups created. Wait before making another." }, standardHeaders: true, legacyHeaders: false });
 
 async function isMember(groupId: number, userId: number): Promise<boolean> {
-  const rows = await db.select({ id: groupMembersTable.id })
-    .from(groupMembersTable)
+  const rows = await db.select({ id: groupMembersTable.id }).from(groupMembersTable)
     .where(and(eq(groupMembersTable.groupId, groupId), eq(groupMembersTable.userId, userId)));
   return rows.length > 0;
 }
 
-async function isOwner(groupId: number, userId: number): Promise<boolean> {
-  const rows = await db.select({ role: groupMembersTable.role })
-    .from(groupMembersTable)
+async function getMemberRole(groupId: number, userId: number): Promise<string | null> {
+  const rows = await db.select({ role: groupMembersTable.role }).from(groupMembersTable)
     .where(and(eq(groupMembersTable.groupId, groupId), eq(groupMembersTable.userId, userId)));
-  return rows.length > 0 && rows[0].role === "owner";
+  return rows.length > 0 ? rows[0].role : null;
+}
+
+async function isOwner(groupId: number, userId: number): Promise<boolean> {
+  return (await getMemberRole(groupId, userId)) === "owner";
 }
 
 // ─── Posts ────────────────────────────────────────────────────────────────────
@@ -67,14 +69,22 @@ router.get("/groups", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const allGroups = await db.select().from(communityGroupsTable).orderBy(desc(communityGroupsTable.createdAt));
+
     const memberships = await db.select({ groupId: groupMembersTable.groupId, role: groupMembersTable.role })
       .from(groupMembersTable).where(eq(groupMembersTable.userId, user.id));
     const memberGroupIds = new Set(memberships.map(m => m.groupId));
+
+    const memberCounts = await db
+      .select({ groupId: groupMembersTable.groupId, cnt: count() })
+      .from(groupMembersTable)
+      .groupBy(groupMembersTable.groupId);
+    const countMap = new Map(memberCounts.map(r => [r.groupId, r.cnt]));
 
     const visible = allGroups
       .filter(g => g.isAdminCreated || memberGroupIds.has(g.id))
       .map(g => ({
         ...g,
+        memberCount: countMap.get(g.id) ?? 0,
         isMember: g.isAdminCreated ? true : memberGroupIds.has(g.id),
         memberRole: memberships.find(m => m.groupId === g.id)?.role ?? null,
       }));
@@ -98,6 +108,24 @@ router.post("/groups", authMiddleware, groupCreateLimiter, async (req: Request, 
     const [group] = await db.insert(communityGroupsTable).values({ name: safeName, subject: safeSubject, description: safeDesc, createdBy: user.id, isAdminCreated: user.role === "admin", memberCount: 1 }).returning();
     await db.insert(groupMembersTable).values({ groupId: group.id, userId: user.id, role: "owner" });
     res.status(201).json(group);
+  } catch { res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.delete("/groups/:groupId", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const groupId = parseId(req.params.groupId);
+    if (!groupId) { res.status(400).json({ error: "Invalid group ID" }); return; }
+    const [group] = await db.select().from(communityGroupsTable).where(eq(communityGroupsTable.id, groupId));
+    if (!group) { res.status(404).json({ error: "Group not found" }); return; }
+    if (!(await isOwner(groupId, user.id)) && user.role !== "admin") {
+      res.status(403).json({ error: "Only the group owner can delete this group" }); return;
+    }
+    await db.delete(communityMessagesTable).where(eq(communityMessagesTable.groupId, groupId));
+    await db.delete(groupMembersTable).where(eq(groupMembersTable.groupId, groupId));
+    await db.delete(communityGroupsTable).where(eq(communityGroupsTable.id, groupId));
+    try { getIO().to(`chat:${groupId}`).emit("group-deleted", { groupId }); } catch { }
+    res.json({ message: "Group deleted" });
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -140,8 +168,34 @@ router.post("/groups/:groupId/invite", authMiddleware, async (req: Request, res:
     if (!target) { res.status(404).json({ error: "User not found" }); return; }
     if (await isMember(groupId, targetId)) { res.status(409).json({ error: `${target.fullName} is already in this group` }); return; }
     await db.insert(groupMembersTable).values({ groupId, userId: targetId, role: "member" });
-    await db.update(communityGroupsTable).set({ memberCount: group.memberCount + 1 }).where(eq(communityGroupsTable.id, groupId));
     res.status(201).json({ message: `${target.fullName} added to the group` });
+  } catch { res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.post("/groups/:groupId/transfer-owner", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const groupId = parseId(req.params.groupId);
+    if (!groupId) { res.status(400).json({ error: "Invalid group ID" }); return; }
+    const [group] = await db.select().from(communityGroupsTable).where(eq(communityGroupsTable.id, groupId));
+    if (!group) { res.status(404).json({ error: "Group not found" }); return; }
+    if (!(await isOwner(groupId, user.id)) && user.role !== "admin") {
+      res.status(403).json({ error: "Only the current owner can transfer ownership" }); return;
+    }
+    const { userId: newOwnerIdRaw } = req.body;
+    const newOwnerId = typeof newOwnerIdRaw === "number" ? newOwnerIdRaw : parseInt(newOwnerIdRaw);
+    if (!newOwnerId || isNaN(newOwnerId) || newOwnerId === user.id) {
+      res.status(400).json({ error: "Invalid target user" }); return;
+    }
+    if (!(await isMember(groupId, newOwnerId))) {
+      res.status(400).json({ error: "Target user must be a member of this group" }); return;
+    }
+    const [target] = await db.select({ fullName: usersTable.fullName }).from(usersTable).where(eq(usersTable.id, newOwnerId));
+    await db.update(groupMembersTable).set({ role: "member" })
+      .where(and(eq(groupMembersTable.groupId, groupId), eq(groupMembersTable.userId, user.id)));
+    await db.update(groupMembersTable).set({ role: "owner" })
+      .where(and(eq(groupMembersTable.groupId, groupId), eq(groupMembersTable.userId, newOwnerId)));
+    res.json({ message: `Ownership transferred to ${target?.fullName ?? "new owner"}` });
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -155,11 +209,9 @@ router.delete("/groups/:groupId/members/:userId", authMiddleware, async (req: Re
       res.status(403).json({ error: "Not authorised" }); return;
     }
     if (await isOwner(groupId, targetId) && requester.role !== "admin") {
-      res.status(400).json({ error: "The group owner cannot leave. Transfer ownership or delete the group." }); return;
+      res.status(400).json({ error: "The group owner cannot leave. Transfer ownership first." }); return;
     }
     await db.delete(groupMembersTable).where(and(eq(groupMembersTable.groupId, groupId), eq(groupMembersTable.userId, targetId)));
-    const [group] = await db.select({ memberCount: communityGroupsTable.memberCount }).from(communityGroupsTable).where(eq(communityGroupsTable.id, groupId));
-    if (group) await db.update(communityGroupsTable).set({ memberCount: Math.max(0, group.memberCount - 1) }).where(eq(communityGroupsTable.id, groupId));
     res.json({ message: "Removed from group" });
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });
@@ -200,7 +252,6 @@ router.post("/messages/:groupId", authMiddleware, messageLimiter, async (req: Re
       if (!fileUrl.startsWith("https://res.cloudinary.com/")) { res.status(400).json({ error: "Invalid file URL" }); return; }
     }
     const [message] = await db.insert(communityMessagesTable).values({ groupId, senderId: user.id, senderName: user.fullName, senderAvatarUrl: user.avatarUrl || null, content: safeContent, fileUrl: fileUrl || null, fileType: fileType || null, fileName: fileName || null }).returning();
-    await db.update(communityGroupsTable).set({ lastMessage: safeContent || (fileType === "image" ? "📷 Photo" : fileType === "pdf" ? "📄 PDF" : "📎 File"), lastMessageTime: new Date() }).where(eq(communityGroupsTable.id, groupId));
     try { getIO().to(`chat:${groupId}`).emit("new-message", message); } catch { }
     res.status(201).json(message);
   } catch { res.status(500).json({ error: "Internal server error" }); }

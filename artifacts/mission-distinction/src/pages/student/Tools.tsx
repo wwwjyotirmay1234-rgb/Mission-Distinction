@@ -85,9 +85,7 @@ function Stopwatch() {
     baseRef.current = 0;
   };
 
-  const lap = () => {
-    setLaps(prev => [...prev, elapsed]);
-  };
+  const lap = () => setLaps(prev => [...prev, elapsed]);
 
   useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
 
@@ -138,9 +136,7 @@ function Stopwatch() {
         {laps.length > 0 && (
           <div className="max-h-56 overflow-y-auto space-y-1.5 border border-border/40 rounded-lg p-3">
             <div className="flex justify-between text-xs text-muted-foreground font-medium mb-2 px-1">
-              <span>Lap</span>
-              <span>Split</span>
-              <span>Total</span>
+              <span>Lap</span><span>Split</span><span>Total</span>
             </div>
             {[...laps].reverse().map((total, ri) => {
               const i = laps.length - 1 - ri;
@@ -167,27 +163,55 @@ function Stopwatch() {
 // ─── Alarm ────────────────────────────────────────────────────────────────────
 type Alarm = { id: string; time: string; label: string; active: boolean; fired: boolean };
 
+const ALARM_KEY = "md_study_alarms";
+
+function loadAlarms(): Alarm[] {
+  try {
+    const raw = localStorage.getItem(ALARM_KEY);
+    if (!raw) return [];
+    const parsed: Alarm[] = JSON.parse(raw);
+    return parsed.map(a => ({ ...a, fired: false, active: a.active }));
+  } catch { return []; }
+}
+
+function saveAlarms(alarms: Alarm[]) {
+  try { localStorage.setItem(ALARM_KEY, JSON.stringify(alarms)); } catch {}
+}
+
 function AlarmClock_() {
-  const [alarms, setAlarms] = useState<Alarm[]>([]);
+  const [alarms, setAlarmsState] = useState<Alarm[]>(loadAlarms);
   const [newTime, setNewTime] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [notifGranted, setNotifGranted] = useState(Notification.permission === "granted");
   const checkRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const setAlarms = (updater: Alarm[] | ((prev: Alarm[]) => Alarm[])) => {
+    setAlarmsState(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      saveAlarms(next);
+      return next;
+    });
+  };
+
   useEffect(() => {
     checkRef.current = setInterval(() => {
       const now = new Date();
       const hhmm = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-      setAlarms(prev => prev.map(a => {
-        if (a.active && !a.fired && a.time === hhmm) {
-          playBeep();
-          showNotification("⏰ Alarm!", a.label || `Alarm set for ${a.time}`);
-          toast.success(`⏰ Alarm! ${a.label || a.time}`, { duration: 8000 });
-          return { ...a, fired: true, active: false };
-        }
-        return a;
-      }));
-    }, 10_000);
+      setAlarms(prev => {
+        let changed = false;
+        const next = prev.map(a => {
+          if (a.active && !a.fired && a.time === hhmm) {
+            playBeep();
+            showNotification("⏰ Alarm!", a.label || `Alarm set for ${a.time}`);
+            toast.success(`⏰ Alarm! ${a.label || a.time}`, { duration: 8000 });
+            changed = true;
+            return { ...a, fired: true, active: false };
+          }
+          return a;
+        });
+        return changed ? next : prev;
+      });
+    }, 1_000);
     return () => { if (checkRef.current) clearInterval(checkRef.current); };
   }, []);
 
@@ -266,7 +290,7 @@ function AlarmClock_() {
         )}
 
         <p className="text-[11px] text-muted-foreground text-center">
-          ⚠️ Keep this tab open for alarms to fire. Browser notifications require permission.
+          Alarms are saved across page refreshes. Keep this tab open for alarms to fire.
         </p>
       </CardContent>
     </Card>

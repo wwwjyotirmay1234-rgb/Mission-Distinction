@@ -36,20 +36,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(response.token);
     localStorage.setItem("mission_user", JSON.stringify(response.user));
     localStorage.setItem("mission_token", response.token);
-    if (response.refreshToken) {
-      localStorage.setItem("mission_refresh_token", response.refreshToken);
-    }
+    localStorage.removeItem("mission_refresh_token");
   };
 
   const logout = () => {
-    const refreshToken = localStorage.getItem("mission_refresh_token");
-    if (refreshToken) {
-      fetch("/api/auth/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
-      }).catch(() => {});
-    }
+    fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    }).catch(() => {});
     setUser(null);
     setToken(null);
     localStorage.removeItem("mission_user");
@@ -65,16 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setAuthTokenGetter(() => localStorage.getItem("mission_token"));
     setTokenRefresher(async () => {
-      const refreshToken = localStorage.getItem("mission_refresh_token");
-      if (!refreshToken) {
-        window.dispatchEvent(new Event("auth:logout"));
-        return null;
-      }
       try {
         const res = await fetch("/api/auth/refresh", {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken }),
         });
         if (!res.ok) {
           window.dispatchEvent(new Event("auth:logout"));
@@ -83,9 +73,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await res.json();
         localStorage.setItem("mission_token", data.token);
         localStorage.setItem("mission_user", JSON.stringify(data.user));
-        if (data.refreshToken) {
-          localStorage.setItem("mission_refresh_token", data.refreshToken);
-        }
         window.dispatchEvent(new CustomEvent("auth:tokenRefreshed", { detail: data }));
         return data.token as string;
       } catch {
@@ -109,10 +96,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem("mission_refresh_token");
     };
     const onRefreshed = (e: Event) => {
-      const { token: t, user: u, refreshToken: rt } = (e as CustomEvent<LoginResponse>).detail;
+      const { token: t, user: u } = (e as CustomEvent<LoginResponse>).detail;
       setToken(t);
       setUser(u);
-      if (rt) localStorage.setItem("mission_refresh_token", rt);
     };
     window.addEventListener("auth:logout", onLogout);
     window.addEventListener("auth:tokenRefreshed", onRefreshed as EventListener);

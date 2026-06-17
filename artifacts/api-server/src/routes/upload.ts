@@ -12,39 +12,46 @@ cloudinary.config({
 
 const router = Router();
 
+// ─── Magic-byte type detection ────────────────────────────────────────────────
+async function detectMime(buffer: Buffer): Promise<string | undefined> {
+  try {
+    const { fileTypeFromBuffer } = await import("file-type");
+    const result = await fileTypeFromBuffer(buffer);
+    return result?.mime;
+  } catch {
+    return undefined;
+  }
+}
+
+const ALLOWED_IMAGE_MIMES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const ALLOWED_PDF_MIME = "application/pdf";
+const ALLOWED_NOTE_MIMES = new Set([...ALLOWED_IMAGE_MIMES, ALLOWED_PDF_MIME]);
+
+// ─── Multer configs (initial gating — magic bytes are the final check) ─────────
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowedPdf = ["application/pdf"];
-    const allowedImage = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (allowedPdf.includes(file.mimetype) || allowedImage.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Invalid file type. Only PDF and images are allowed."));
-    }
+    if (ALLOWED_IMAGE_MIMES.has(file.mimetype) || file.mimetype === ALLOWED_PDF_MIME) cb(null, true);
+    else cb(new Error("Invalid file type. Only PDF and images are allowed."));
   },
 });
-
-const NOTE_FILE_MIME: Record<string, string> = {
-  "image/jpeg": "image",
-  "image/png": "image",
-  "image/webp": "image",
-  "image/gif": "image",
-  "application/pdf": "pdf",
-  "application/vnd.ms-powerpoint": "ppt",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "ppt",
-};
 
 const noteFileUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (NOTE_FILE_MIME[file.mimetype]) {
-      cb(null, true);
-    } else {
-      cb(new Error("Invalid file type. Allowed: Photo (JPG/PNG/WebP), PDF, PPT/PPTX."));
-    }
+    if (ALLOWED_NOTE_MIMES.has(file.mimetype)) cb(null, true);
+    else cb(new Error("Invalid file type. Allowed: Photo (JPG/PNG/WebP), PDF."));
+  },
+});
+
+const communityUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_IMAGE_MIMES.has(file.mimetype) || file.mimetype === ALLOWED_PDF_MIME) cb(null, true);
+    else cb(new Error("Only images and PDFs are allowed."));
   },
 });
 
@@ -58,13 +65,12 @@ function uploadToCloudinary(buffer: Buffer, options: Record<string, any>): Promi
   });
 }
 
+// ─── PDF ──────────────────────────────────────────────────────────────────────
 router.post("/pdf", adminMiddleware, upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
-    if (req.file.mimetype !== "application/pdf") {
-      res.status(400).json({ error: "Only PDF files are allowed" }); return;
-    }
-
+    const realMime = await detectMime(req.file.buffer);
+    if (realMime !== ALLOWED_PDF_MIME) { res.status(400).json({ error: "Only PDF files are allowed" }); return; }
     const result = await uploadToCloudinary(req.file.buffer, {
       folder: "mission-distinction/pdfs",
       resource_type: "raw",
@@ -72,7 +78,6 @@ router.post("/pdf", adminMiddleware, upload.single("file"), async (req: Request,
       use_filename: true,
       unique_filename: false,
     });
-
     res.json({ url: result.secure_url, fileName: result.public_id });
   } catch (err: any) {
     console.error("PDF upload error:", err);
@@ -80,16 +85,17 @@ router.post("/pdf", adminMiddleware, upload.single("file"), async (req: Request,
   }
 });
 
+// ─── Book cover ───────────────────────────────────────────────────────────────
 router.post("/book-cover", adminMiddleware, upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
-
+    const realMime = await detectMime(req.file.buffer);
+    if (!realMime || !ALLOWED_IMAGE_MIMES.has(realMime)) { res.status(400).json({ error: "Only image files are allowed for book covers" }); return; }
     const result = await uploadToCloudinary(req.file.buffer, {
       folder: "mission-distinction/covers",
       resource_type: "image",
       transformation: [{ width: 400, height: 560, crop: "fill", quality: "auto", fetch_format: "auto" }],
     });
-
     res.json({ url: result.secure_url, fileName: result.public_id });
   } catch (err: any) {
     console.error("Cover upload error:", err);
@@ -97,16 +103,17 @@ router.post("/book-cover", adminMiddleware, upload.single("file"), async (req: R
   }
 });
 
+// ─── Image ────────────────────────────────────────────────────────────────────
 router.post("/image", adminMiddleware, upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
-
+    const realMime = await detectMime(req.file.buffer);
+    if (!realMime || !ALLOWED_IMAGE_MIMES.has(realMime)) { res.status(400).json({ error: "Only image files are allowed" }); return; }
     const result = await uploadToCloudinary(req.file.buffer, {
       folder: "mission-distinction/images",
       resource_type: "image",
       transformation: [{ quality: "auto", fetch_format: "auto" }],
     });
-
     res.json({ url: result.secure_url, fileName: result.public_id });
   } catch (err: any) {
     console.error("Image upload error:", err);
@@ -114,13 +121,12 @@ router.post("/image", adminMiddleware, upload.single("file"), async (req: Reques
   }
 });
 
+// ─── Avatar ───────────────────────────────────────────────────────────────────
 router.post("/avatar", authMiddleware, upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowedTypes.includes(req.file.mimetype)) {
-      res.status(400).json({ error: "Only JPG, PNG, WebP or GIF images are allowed" }); return;
-    }
+    const realMime = await detectMime(req.file.buffer);
+    if (!realMime || !ALLOWED_IMAGE_MIMES.has(realMime)) { res.status(400).json({ error: "Only JPG, PNG, WebP or GIF images are allowed" }); return; }
     const userId = (req as any).user?.id;
     const result = await uploadToCloudinary(req.file.buffer, {
       folder: "mission-distinction/avatars",
@@ -135,14 +141,16 @@ router.post("/avatar", authMiddleware, upload.single("file"), async (req: Reques
   }
 });
 
+// ─── Note file ────────────────────────────────────────────────────────────────
 router.post("/note-file", adminMiddleware, noteFileUpload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
-    const fileType = NOTE_FILE_MIME[req.file.mimetype];
-    if (!fileType) { res.status(400).json({ error: "Unsupported file type" }); return; }
-
+    const realMime = await detectMime(req.file.buffer);
+    if (!realMime || !ALLOWED_NOTE_MIMES.has(realMime)) { res.status(400).json({ error: "Unsupported file type" }); return; }
+    const isImage = ALLOWED_IMAGE_MIMES.has(realMime);
+    const fileType = isImage ? "image" : "pdf";
     let result;
-    if (fileType === "image") {
+    if (isImage) {
       result = await uploadToCloudinary(req.file.buffer, {
         folder: "mission-distinction/notes",
         resource_type: "image",
@@ -157,7 +165,6 @@ router.post("/note-file", adminMiddleware, noteFileUpload.single("file"), async 
         unique_filename: false,
       });
     }
-
     res.json({ url: result.secure_url, fileType, fileName: result.public_id });
   } catch (err: any) {
     console.error("Note file upload error:", err);
@@ -165,25 +172,15 @@ router.post("/note-file", adminMiddleware, noteFileUpload.single("file"), async 
   }
 });
 
-const communityUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    const allowed = [
-      "image/jpeg", "image/png", "image/webp", "image/gif",
-      "application/pdf",
-    ];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only images and PDFs are allowed."));
-  },
-});
-
+// ─── Community file ───────────────────────────────────────────────────────────
 router.post("/community-file", authMiddleware, communityUpload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
-    const isPdf = req.file.mimetype === "application/pdf";
-    const isImage = req.file.mimetype.startsWith("image/");
-
+    const realMime = await detectMime(req.file.buffer);
+    if (!realMime || (!ALLOWED_IMAGE_MIMES.has(realMime) && realMime !== ALLOWED_PDF_MIME)) {
+      res.status(400).json({ error: "Only images and PDFs are allowed" }); return;
+    }
+    const isImage = ALLOWED_IMAGE_MIMES.has(realMime);
     let result;
     if (isImage) {
       result = await uploadToCloudinary(req.file.buffer, {
@@ -191,7 +188,7 @@ router.post("/community-file", authMiddleware, communityUpload.single("file"), a
         resource_type: "image",
         transformation: [{ quality: "auto", fetch_format: "auto", width: 1200, crop: "limit" }],
       });
-    } else if (isPdf) {
+    } else {
       result = await uploadToCloudinary(req.file.buffer, {
         folder: "mission-distinction/community",
         resource_type: "raw",
@@ -199,15 +196,8 @@ router.post("/community-file", authMiddleware, communityUpload.single("file"), a
         use_filename: true,
         unique_filename: false,
       });
-    } else {
-      res.status(400).json({ error: "Unsupported file type" }); return;
     }
-
-    res.json({
-      url: result.secure_url,
-      fileType: isImage ? "image" : "pdf",
-      fileName: req.file.originalname,
-    });
+    res.json({ url: result.secure_url, fileType: isImage ? "image" : "pdf", fileName: req.file.originalname });
   } catch (err: any) {
     console.error("Community file upload error:", err);
     res.status(500).json({ error: "Upload failed. Please try again." });

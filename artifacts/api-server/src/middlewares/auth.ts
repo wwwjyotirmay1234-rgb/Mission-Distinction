@@ -20,10 +20,8 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   if (parsed.uah) {
     const currentUah = uaHash(req.headers["user-agent"]);
     if (currentUah && parsed.uah !== currentUah) {
-      console.warn(
-        `[Security] JWT user-agent mismatch detected — ` +
-        `Possible token reuse across devices or browser change.`
-      );
+      res.status(401).json({ error: "Session invalid. Please log in again." });
+      return;
     }
   }
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, parsed.userId));

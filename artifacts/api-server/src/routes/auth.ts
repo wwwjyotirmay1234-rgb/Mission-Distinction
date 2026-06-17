@@ -56,6 +56,25 @@ const refreshLimiter = rateLimit({
   message: { error: "Too many token refresh requests. Please try again shortly." },
 });
 
+function setRefreshCookie(res: Response, token: string): void {
+  res.cookie("md_refresh", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    path: "/api/auth",
+  });
+}
+
+function clearRefreshCookie(res: Response): void {
+  res.clearCookie("md_refresh", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/api/auth",
+  });
+}
+
 function validatePasswordStrength(password: string): string | null {
   if (password.length < 8) return "Password must be at least 8 characters";
   if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter";
@@ -113,9 +132,9 @@ router.post("/student/register", registerLimiter, async (req: Request, res: Resp
     const jwtToken = generateToken(user.id, user.role, req.headers["user-agent"] as string | undefined);
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+    setRefreshCookie(res, refreshValue);
     res.status(201).json({
       token: jwtToken,
-      refreshToken: refreshValue,
       user: sanitizeUser(user),
       ...(process.env.NODE_ENV !== "production" && !emailSent && { verifyLink: verifyUrl }),
     });
@@ -147,7 +166,8 @@ router.post("/student/login", loginLimiter, async (req: Request, res: Response) 
     const token = generateToken(user.id, user.role, req.headers["user-agent"] as string | undefined);
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
-    res.json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
+    setRefreshCookie(res, refreshValue);
+    res.json({ token, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -188,7 +208,8 @@ router.post("/admin/register", registerLimiter, async (req: Request, res: Respon
     const token = generateToken(user.id, user.role, req.headers["user-agent"] as string | undefined);
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
-    res.status(201).json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
+    setRefreshCookie(res, refreshValue);
+    res.status(201).json({ token, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -215,7 +236,8 @@ router.post("/admin/login", loginLimiter, async (req: Request, res: Response) =>
     const token = generateToken(user.id, user.role, req.headers["user-agent"] as string | undefined);
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
-    res.json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
+    setRefreshCookie(res, refreshValue);
+    res.json({ token, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -256,7 +278,8 @@ router.post("/google", loginLimiter, async (req: Request, res: Response) => {
     const token = generateToken(user.id, user.role, req.headers["user-agent"] as string | undefined);
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
-    res.json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
+    setRefreshCookie(res, refreshValue);
+    res.json({ token, user: sanitizeUser(user) });
   } catch (err: any) {
     console.error("Google auth error:", err);
     res.status(401).json({ error: "Google sign-in failed. Please try again." });
@@ -415,22 +438,25 @@ router.post("/change-password", authMiddleware, async (req: Request, res: Respon
 // ─── Refresh Token ────────────────────────────────────────────────────────────
 router.post("/refresh", refreshLimiter, async (req: Request, res: Response) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = (req as any).cookies?.md_refresh || req.body?.refreshToken;
     if (!refreshToken) { res.status(400).json({ error: "Missing refresh token" }); return; }
     const [tokenRow] = await db.select().from(refreshTokensTable).where(eq(refreshTokensTable.token, refreshToken));
     if (!tokenRow || tokenRow.expiresAt < new Date()) {
+      clearRefreshCookie(res);
       res.status(401).json({ error: "Refresh token invalid or expired. Please log in again." }); return;
     }
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, tokenRow.userId));
     if (!user || user.bannedAt) {
+      clearRefreshCookie(res);
       res.status(401).json({ error: "Account not found or suspended" }); return;
     }
     await db.delete(refreshTokensTable).where(eq(refreshTokensTable.id, tokenRow.id));
     const newRefreshValue = randomUUID();
     const newExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await db.insert(refreshTokensTable).values({ userId: user.id, token: newRefreshValue, expiresAt: newExpiry });
+    setRefreshCookie(res, newRefreshValue);
     const newAccessToken = generateToken(user.id, user.role, req.headers["user-agent"] as string | undefined);
-    res.json({ token: newAccessToken, refreshToken: newRefreshValue, user: sanitizeUser(user) });
+    res.json({ token: newAccessToken, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -438,10 +464,11 @@ router.post("/refresh", refreshLimiter, async (req: Request, res: Response) => {
 
 // ─── Logout ───────────────────────────────────────────────────────────────────
 router.post("/logout", async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
+  const refreshToken = (req as any).cookies?.md_refresh || req.body?.refreshToken;
   if (refreshToken) {
     await db.delete(refreshTokensTable).where(eq(refreshTokensTable.token, refreshToken)).catch(() => {});
   }
+  clearRefreshCookie(res);
   res.json({ message: "Logged out" });
 });
 
