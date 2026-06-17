@@ -319,85 +319,15 @@ export default function LandingPage() {
           <div className="absolute" style={{top:48,left:"9%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
           <div className="absolute" style={{top:48,right:"9%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
 
-          {/* ── Caduceus SVG ── */}
-          <svg
-            width="200" height="200"
-            viewBox="0 0 200 200"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+          {/* ── Professional Caduceus from game-icons (CC BY 3.0) ── */}
+          <img
+            src="/caduceus.svg"
+            alt="Medical Caduceus"
+            width={190}
+            height={190}
             className="relative z-10"
-          >
-            <defs>
-              <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#DDD6FE"/>
-                <stop offset="100%" stopColor="#5B21B6"/>
-              </linearGradient>
-            </defs>
-
-            {/* ── Top orb / star ── */}
-            <circle cx="100" cy="13" r="8" fill="#C4B5FD"/>
-            <path d="M100 4L102 10L109 10L103.5 14L105.5 20L100 17L94.5 20L96.5 14L91 10L98 10Z" fill="white" opacity="0.95"/>
-
-            {/* ── Staff ── */}
-            <rect x="97" y="17" width="6" height="170" rx="3" fill="url(#sg)"/>
-
-            {/* ── LEFT WING ── horizontal spread, tip near same Y as attachment */}
-            {/* Wing body: arcs up through y≈22 at midpoint, tip at (12,38) */}
-            <path d="M100 50 C74 36, 42 22, 12 38 C28 52, 66 60, 100 62Z" fill="#3B0764"/>
-            <path d="M100 50 C72 34, 40 20, 10 36 C26 50, 64 60, 100 62Z" fill="#4C1D95"/>
-            <path d="M100 50 C72 34, 40 20, 10 36 C26 50, 64 58, 100 61Z" fill="#5B21B6"/>
-            {/* Brighter inner section */}
-            <path d="M100 50 C82 38, 58 28, 26 40 C40 52, 72 58, 100 60Z" fill="#6D28D9"/>
-            <path d="M100 50 C88 42, 68 34, 42 44 C56 52, 80 57, 100 59Z" fill="#7C3AED"/>
-            {/* Feather lines along the upper arc */}
-            <path d="M100 50 C74 36, 44 24, 14 40" stroke="#C4B5FD" strokeWidth="1.2" fill="none" opacity="0.60"/>
-            <path d="M100 50 C72 38, 42 28, 16 44" stroke="#A78BFA" strokeWidth="1" fill="none" opacity="0.42"/>
-            <path d="M100 50 C70 40, 40 32, 18 46" stroke="#8B5CF6" strokeWidth="0.8" fill="none" opacity="0.28"/>
-
-            {/* ── RIGHT WING ── mirror */}
-            <path d="M100 50 C126 36, 158 22, 188 38 C172 52, 134 60, 100 62Z" fill="#3B0764"/>
-            <path d="M100 50 C128 34, 160 20, 190 36 C174 50, 136 60, 100 62Z" fill="#4C1D95"/>
-            <path d="M100 50 C128 34, 160 20, 190 36 C174 50, 136 58, 100 61Z" fill="#5B21B6"/>
-            <path d="M100 50 C118 38, 142 28, 174 40 C160 52, 128 58, 100 60Z" fill="#6D28D9"/>
-            <path d="M100 50 C112 42, 132 34, 158 44 C144 52, 120 57, 100 59Z" fill="#7C3AED"/>
-            <path d="M100 50 C126 36, 156 24, 186 40" stroke="#C4B5FD" strokeWidth="1.2" fill="none" opacity="0.60"/>
-            <path d="M100 50 C128 38, 158 28, 184 44" stroke="#A78BFA" strokeWidth="1" fill="none" opacity="0.42"/>
-            <path d="M100 50 C130 40, 160 32, 182 46" stroke="#8B5CF6" strokeWidth="0.8" fill="none" opacity="0.28"/>
-
-            {/* ── LEFT LAUREL BRANCH ── */}
-            {/* Main stem */}
-            <path d="M100 84 C88,90 74,98 55,112" stroke="#6D28D9" strokeWidth="2" fill="none" strokeLinecap="round"/>
-            <path d="M100 105 C86,112 70,122 48,137" stroke="#6D28D9" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-            <path d="M100 126 C84,134 66,144 42,160" stroke="#5B21B6" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
-            {/* Leaves — paired alternating */}
-            <ellipse cx="78" cy="94" rx="10" ry="4" fill="#6D28D9" opacity="0.9" transform="rotate(-25 78 94)"/>
-            <ellipse cx="62" cy="107" rx="10" ry="4" fill="#6D28D9" opacity="0.80" transform="rotate(-32 62 107)"/>
-            <ellipse cx="73" cy="119" rx="10" ry="4" fill="#6D28D9" opacity="0.80" transform="rotate(-28 73 119)"/>
-            <ellipse cx="55" cy="133" rx="9"  ry="3.5" fill="#5B21B6" opacity="0.70" transform="rotate(-36 55 133)"/>
-            <ellipse cx="65" cy="146" rx="9"  ry="3.5" fill="#5B21B6" opacity="0.65" transform="rotate(-30 65 146)"/>
-            <ellipse cx="45" cy="158" rx="9"  ry="3.5" fill="#4C1D95" opacity="0.60" transform="rotate(-40 45 158)"/>
-
-            {/* ── RIGHT LAUREL BRANCH ── mirror */}
-            <path d="M100 84 C112,90 126,98 145,112" stroke="#6D28D9" strokeWidth="2" fill="none" strokeLinecap="round"/>
-            <path d="M100 105 C114,112 130,122 152,137" stroke="#6D28D9" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-            <path d="M100 126 C116,134 134,144 158,160" stroke="#5B21B6" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
-            <ellipse cx="122" cy="94" rx="10" ry="4" fill="#6D28D9" opacity="0.9" transform="rotate(25 122 94)"/>
-            <ellipse cx="138" cy="107" rx="10" ry="4" fill="#6D28D9" opacity="0.80" transform="rotate(32 138 107)"/>
-            <ellipse cx="127" cy="119" rx="10" ry="4" fill="#6D28D9" opacity="0.80" transform="rotate(28 127 119)"/>
-            <ellipse cx="145" cy="133" rx="9"  ry="3.5" fill="#5B21B6" opacity="0.70" transform="rotate(36 145 133)"/>
-            <ellipse cx="135" cy="146" rx="9"  ry="3.5" fill="#5B21B6" opacity="0.65" transform="rotate(30 135 146)"/>
-            <ellipse cx="155" cy="158" rx="9"  ry="3.5" fill="#4C1D95" opacity="0.60" transform="rotate(40 155 158)"/>
-
-            {/* ── SNAKES ── two S-curves around staff */}
-            <path d="M100 28 C80,44 120,62 100,80 C80,98 120,116 100,134 C80,152 120,168 100,182" stroke="#A78BFA" strokeWidth="2.8" fill="none" strokeLinecap="round"/>
-            <path d="M100 28 C120,44 80,62 100,80 C120,98 80,116 100,134 C120,152 80,168 100,182" stroke="#7C3AED" strokeWidth="2.8" fill="none" strokeLinecap="round"/>
-            {/* Snake heads */}
-            <circle cx="93"  cy="184" r="4.5" fill="#A78BFA"/>
-            <circle cx="107" cy="184" r="4.5" fill="#7C3AED"/>
-            {/* Tongues */}
-            <path d="M91 188L88 191M91 188L89 192" stroke="#DDD6FE" strokeWidth="1.2" strokeLinecap="round"/>
-            <path d="M109 188L112 191M109 188L111 192" stroke="#DDD6FE" strokeWidth="1.2" strokeLinecap="round"/>
-          </svg>
+            style={{ filter: "drop-shadow(0 0 12px rgba(124,58,237,0.55))" }}
+          />
         </motion.div>
 
         {/* ── Title ── */}
