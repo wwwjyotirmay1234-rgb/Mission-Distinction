@@ -48,7 +48,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/student/dashboard" },
     { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
-    { icon: FileText, label: "Notes", href: "/student/notes" },
+    { icon: FileText, label: "Notes & Books", href: "/student/notes" },
     { icon: File, label: "PDF Library", href: "/student/pdfs" },
     { icon: Users, label: "Community", href: "/student/community" },
     {

@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useListNotes, getListNotesQueryKey, customFetch } from "@workspace/api-client-react";
-import { Search, Filter, FileText, Download, BookMarked, X, ChevronLeft } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Search, Filter, FileText, Download, BookMarked, X, ChevronLeft, BookOpen, ExternalLink, BookText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Note = {
@@ -15,6 +16,15 @@ type Note = {
   content: string;
   author?: string | null;
   downloadCount?: number;
+};
+
+type Book = {
+  id: number;
+  title: string;
+  subject: string;
+  author?: string | null;
+  url: string;
+  coverUrl?: string | null;
 };
 
 const SUBJECT_COLORS: Record<string, string> = {
@@ -80,7 +90,59 @@ function trackNoteRead(noteId: number) {
   customFetch(`/api/notes/${noteId}/read`, { method: "POST" }).catch(() => {});
 }
 
+async function fetchBooks(search?: string, subject?: string): Promise<Book[]> {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (subject) params.set("subject", subject);
+  const qs = params.toString();
+  const res = await customFetch(`/api/books${qs ? `?${qs}` : ""}`);
+  if (!res.ok) throw new Error("Failed to load books");
+  return res.json();
+}
+
+function BookCard({ book }: { book: Book }) {
+  const color = SUBJECT_COLORS[book.subject] || DEFAULT_COLOR;
+  return (
+    <Card className="bg-card/40 border-border/40 hover:border-primary/40 transition-all group flex flex-col overflow-hidden">
+      {book.coverUrl ? (
+        <div className="h-40 overflow-hidden bg-muted/30">
+          <img
+            src={book.coverUrl}
+            alt={book.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        </div>
+      ) : (
+        <div className="h-40 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+          <BookText size={48} className="text-primary/30" />
+        </div>
+      )}
+      <CardContent className="p-4 flex-1 flex flex-col">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <Badge variant="outline" className={`text-[10px] uppercase tracking-wider px-2 border shrink-0 ${color}`}>
+            {book.subject}
+          </Badge>
+        </div>
+        <h3 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors flex-1">
+          {book.title}
+        </h3>
+        {book.author && (
+          <p className="text-xs text-muted-foreground mb-3">by {book.author}</p>
+        )}
+        <Button
+          className="w-full text-xs gap-1.5 mt-auto"
+          size="sm"
+          onClick={() => window.open(book.url, "_blank", "noopener,noreferrer")}
+        >
+          <ExternalLink size={12} /> Read Book
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function StudentNotes() {
+  const [activeTab, setActiveTab] = useState<"notes" | "books">("notes");
   const [search, setSearch] = useState("");
   const [activeSubject, setActiveSubject] = useState("All Subjects");
   const [viewingNote, setViewingNote] = useState<Note | null>(null);
@@ -89,10 +151,19 @@ export default function StudentNotes() {
     if (viewingNote) trackNoteRead(viewingNote.id);
   }, [viewingNote?.id]);
 
-  const { data: notesData, isLoading } = useListNotes(
+  const { data: notesData, isLoading: notesLoading } = useListNotes(
     { search: search || undefined, subject: activeSubject === "All Subjects" ? undefined : activeSubject },
     { query: { queryKey: getListNotesQueryKey({ search: search || undefined, subject: activeSubject === "All Subjects" ? undefined : activeSubject }) } }
   );
+
+  const { data: booksData, isLoading: booksLoading } = useQuery<Book[]>({
+    queryKey: ["books", search, activeSubject],
+    queryFn: () => fetchBooks(search || undefined, activeSubject === "All Subjects" ? undefined : activeSubject),
+    enabled: activeTab === "books",
+    staleTime: 30_000,
+  });
+
+  const isLoading = activeTab === "notes" ? notesLoading : booksLoading;
 
   return (
     <div className="space-y-6">
@@ -100,14 +171,14 @@ export default function StudentNotes() {
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Notes Library</h1>
-          <p className="text-muted-foreground">High-yield notes crafted for distinction.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Notes & Books Library</h1>
+          <p className="text-muted-foreground">High-yield notes and textbooks crafted for distinction.</p>
         </div>
         <div className="flex gap-2">
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search notes..."
+              placeholder={activeTab === "notes" ? "Search notes..." : "Search books..."}
               className="pl-9 bg-muted/50 border-border/50"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -117,6 +188,30 @@ export default function StudentNotes() {
             <Filter className="h-4 w-4" />
           </Button>
         </div>
+      </div>
+
+      {/* Tab switcher */}
+      <div className="flex gap-1 bg-muted/40 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab("notes")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === "notes"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <FileText size={15} /> Notes
+        </button>
+        <button
+          onClick={() => setActiveTab("books")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === "books"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <BookOpen size={15} /> Books
+        </button>
       </div>
 
       {/* Subject filter */}
@@ -138,53 +233,70 @@ export default function StudentNotes() {
       </div>
 
       {/* Notes Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {isLoading ? (
-          Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)
-        ) : !notesData?.notes || notesData.notes.length === 0 ? (
-          <div className="col-span-full p-12 text-center border border-dashed rounded-xl text-muted-foreground">
-            No notes found. Try adjusting your search or filter.
-          </div>
-        ) : (
-          notesData.notes.map((note) => {
-            const color = SUBJECT_COLORS[note.subject] || DEFAULT_COLOR;
-            return (
-              <Card
-                key={note.id}
-                className="bg-card/40 border-border/40 hover:border-primary/40 transition-all group flex flex-col cursor-pointer"
-                onClick={() => setViewingNote(note as Note)}
-              >
-                <CardContent className="p-5 flex-1 flex flex-col">
-                  <div className="flex justify-between items-start mb-3">
-                    <Badge variant="outline" className={`text-[10px] uppercase tracking-wider px-2 border ${color}`}>
-                      {note.subject}
-                    </Badge>
-                    <button
-                      className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <BookMarked size={16} />
-                    </button>
-                  </div>
-                  <h3 className="font-semibold text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                    {note.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">
-                    {note.content.substring(0, 120)}...
-                  </p>
-                  <p className="text-xs text-muted-foreground mb-4 flex items-center gap-4">
-                    <span className="flex items-center gap-1"><FileText size={12} /> {Math.ceil(note.content.length / 1000)} pages</span>
-                    <span className="flex items-center gap-1"><Download size={12} /> {note.downloadCount} dl</span>
-                  </p>
-                  <Button className="w-full text-xs" variant="secondary" size="sm">
-                    Read Note
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
-      </div>
+      {activeTab === "notes" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {isLoading ? (
+            Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)
+          ) : !notesData?.notes || notesData.notes.length === 0 ? (
+            <div className="col-span-full p-12 text-center border border-dashed rounded-xl text-muted-foreground">
+              No notes found. Try adjusting your search or filter.
+            </div>
+          ) : (
+            notesData.notes.map((note) => {
+              const color = SUBJECT_COLORS[note.subject] || DEFAULT_COLOR;
+              return (
+                <Card
+                  key={note.id}
+                  className="bg-card/40 border-border/40 hover:border-primary/40 transition-all group flex flex-col cursor-pointer"
+                  onClick={() => setViewingNote(note as Note)}
+                >
+                  <CardContent className="p-5 flex-1 flex flex-col">
+                    <div className="flex justify-between items-start mb-3">
+                      <Badge variant="outline" className={`text-[10px] uppercase tracking-wider px-2 border ${color}`}>
+                        {note.subject}
+                      </Badge>
+                      <button
+                        className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <BookMarked size={16} />
+                      </button>
+                    </div>
+                    <h3 className="font-semibold text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                      {note.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">
+                      {note.content.substring(0, 120)}...
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-4 flex items-center gap-4">
+                      <span className="flex items-center gap-1"><FileText size={12} /> {Math.ceil(note.content.length / 1000)} pages</span>
+                      <span className="flex items-center gap-1"><Download size={12} /> {note.downloadCount} dl</span>
+                    </p>
+                    <Button className="w-full text-xs" variant="secondary" size="sm">
+                      Read Note
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Books Grid */}
+      {activeTab === "books" && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {isLoading ? (
+            Array(10).fill(0).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-xl" />)
+          ) : !booksData || booksData.length === 0 ? (
+            <div className="col-span-full p-12 text-center border border-dashed rounded-xl text-muted-foreground">
+              No books found. {activeSubject !== "All Subjects" || search ? "Try adjusting your search or filter." : "Admin hasn't uploaded any books yet."}
+            </div>
+          ) : (
+            booksData.map((book) => <BookCard key={book.id} book={book} />)
+          )}
+        </div>
+      )}
     </div>
   );
 }
