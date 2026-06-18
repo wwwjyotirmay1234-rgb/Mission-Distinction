@@ -344,7 +344,9 @@ function AlarmClock_() {
   const [newRingtone, setNewRingtone] = useState<RingtoneId>("chime");
   const [newCustomName, setNewCustomName] = useState("");
   const [newCustomBlob, setNewCustomBlob] = useState<Blob | null>(null);
-  const [notifGranted, setNotifGranted] = useState(Notification.permission === "granted");
+  const [notifGranted, setNotifGranted] = useState(() => {
+    try { return typeof Notification !== "undefined" && Notification.permission === "granted"; } catch { return false; }
+  });
   const [previewing, setPreviewing] = useState(false);
   const checkRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);

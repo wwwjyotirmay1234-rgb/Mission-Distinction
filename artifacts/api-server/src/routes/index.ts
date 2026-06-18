@@ -19,6 +19,7 @@ import doubtsRouter from "./doubts";
 import superAdminRouter from "./superAdmin";
 import pushRouter from "./push";
 import youtubeRouter from "./youtube";
+import soundcloudRouter from "./soundcloud";
 
 const router: IRouter = Router();
 
@@ -46,5 +47,6 @@ router.use("/doubts", doubtsRouter);
 router.use("/super-admin", superAdminRouter);
 router.use("/push", pushRouter);
 router.use("/youtube", youtubeRouter);
+router.use("/soundcloud", soundcloudRouter);
 
 export default router;
