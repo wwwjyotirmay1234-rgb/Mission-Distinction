@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { StudentSidebar } from "./StudentSidebar";
 import { Header } from "./Header";
+import { PersistentPlayer } from "./PersistentPlayer";
 import { SidebarProvider } from "@/contexts/SidebarContext";
+import { MusicPlayerProvider } from "@/contexts/MusicPlayerContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { MailWarning, X, CheckCircle, Copy } from "lucide-react";
@@ -92,17 +94,20 @@ function EmailVerificationBanner() {
 
 export function StudentLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
-      <div className="min-h-screen bg-background text-foreground flex">
-        <StudentSidebar />
-        <div className="flex-1 flex flex-col md:ml-64 min-w-0">
-          <Header />
-          <EmailVerificationBanner />
-          <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
-            {children}
-          </main>
+    <MusicPlayerProvider>
+      <SidebarProvider>
+        <div className="min-h-screen bg-background text-foreground flex">
+          <StudentSidebar />
+          <div className="flex-1 flex flex-col md:ml-64 min-w-0">
+            <Header />
+            <EmailVerificationBanner />
+            <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
-    </SidebarProvider>
+        <PersistentPlayer />
+      </SidebarProvider>
+    </MusicPlayerProvider>
   );
 }

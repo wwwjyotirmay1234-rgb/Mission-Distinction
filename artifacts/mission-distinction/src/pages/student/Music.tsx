@@ -4,6 +4,7 @@ import {
   Youtube, Radio, Sparkles, Eye, EyeOff
 } from "lucide-react";
 import { apiFetch } from "@/lib/apiFetch";
+import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 /* ─── Types ──────────────────────────────────────────── */
 type Tab = "youtube" | "soundcloud" | "spotify";
@@ -150,17 +151,33 @@ function AmbientSounds(){
    browsers don't suspend it.
    ─────────────────────────────────────────────────── */
 function YouTubeTab({ externalSearch }: { externalSearch: string }) {
+  const { play: ctxPlay, stop: ctxStop, playing: ctxPlaying } = useMusicPlayer();
   const [query,    setQuery]    = useState("");
   const [results,  setResults]  = useState<YTResult[]>([]);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState("");
-  const [playing,  setPlaying]  = useState<YTResult|null>(null);
   const [audioOnly,setAudioOnly]= useState(false);
   const [searched, setSearched] = useState(false);
 
+  /* Restore from context when returning to this tab/page */
+  const [playing, setPlaying] = useState<YTResult|null>(() =>
+    ctxPlaying?.type === "youtube"
+      ? { videoId: ctxPlaying.videoId, title: ctxPlaying.title, channel: ctxPlaying.channel, thumbnail: ctxPlaying.thumbnail, duration: "", views: "" }
+      : null
+  );
+
+  /* Sync local playing → global context so PersistentPlayer can take over */
+  useEffect(() => {
+    if (playing) {
+      ctxPlay({ type: "youtube", videoId: playing.videoId, title: playing.title, channel: playing.channel, thumbnail: playing.thumbnail });
+    }
+  }, [playing?.videoId]);
+
+  const stopPlaying = () => { setPlaying(null); ctxStop(); };
+
   const search = useCallback(async (q: string) => {
     if (!q.trim()) return;
-    setLoading(true); setError(""); setSearched(true); setPlaying(null);
+    setLoading(true); setError(""); setSearched(true); setPlaying(null); ctxStop();
     try {
       const res = await apiFetch(`/api/youtube/search?q=${encodeURIComponent(q)}`);
       if (!res.ok) {
@@ -205,7 +222,7 @@ function YouTubeTab({ externalSearch }: { externalSearch: string }) {
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button onClick={()=>setAudioOnly(v=>!v)} className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg border transition-all ${audioOnly?"bg-violet-500/20 border-violet-500/30 text-violet-300":"bg-white/5 border-white/10 text-white/40"}`}>{audioOnly?<EyeOff size={10}/>:<Eye size={10}/>}{audioOnly?"Audio Only":"Video"}</button>
-              <button onClick={()=>setPlaying(null)} className="p-1 rounded-lg hover:bg-white/10"><X size={12} className="text-white/40"/></button>
+              <button onClick={stopPlaying} className="p-1 rounded-lg hover:bg-white/10"><X size={12} className="text-white/40"/></button>
             </div>
           </div>
 
@@ -285,16 +302,32 @@ function YouTubeTab({ externalSearch }: { externalSearch: string }) {
    only accepts track/playlist URLs, NOT search-page URLs).
    ─────────────────────────────────────────────────── */
 function SoundCloudTab({ externalSearch }: { externalSearch: string }) {
+  const { play: ctxPlay, stop: ctxStop, playing: ctxPlaying } = useMusicPlayer();
   const [query,   setQuery]   = useState("");
   const [results, setResults] = useState<SCTrack[]>([]);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
-  const [playing, setPlaying] = useState<SCTrack|null>(null);
   const [searched,setSearched]= useState(false);
+
+  /* Restore from context when returning to this tab */
+  const [playing, setPlaying] = useState<SCTrack|null>(() =>
+    ctxPlaying?.type === "soundcloud"
+      ? { id: ctxPlaying.id, title: ctxPlaying.title, artist: ctxPlaying.artist, artwork: ctxPlaying.artwork, duration: 0, plays: 0, permalinkUrl: ctxPlaying.permalinkUrl }
+      : null
+  );
+
+  /* Sync local playing → global context */
+  useEffect(() => {
+    if (playing) {
+      ctxPlay({ type: "soundcloud", id: playing.id, title: playing.title, artist: playing.artist, artwork: playing.artwork, permalinkUrl: playing.permalinkUrl });
+    }
+  }, [playing?.id]);
+
+  const stopPlaying = () => { setPlaying(null); ctxStop(); };
 
   const search = useCallback(async (q: string) => {
     if (!q.trim()) return;
-    setLoading(true); setError(""); setSearched(true); setPlaying(null);
+    setLoading(true); setError(""); setSearched(true); setPlaying(null); ctxStop();
     try {
       const res = await apiFetch(`/api/soundcloud/search?q=${encodeURIComponent(q)}`);
       if (!res.ok) {
@@ -340,7 +373,7 @@ function SoundCloudTab({ externalSearch }: { externalSearch: string }) {
               <div className="flex items-end gap-0.5 h-3.5 shrink-0">{[...Array(4)].map((_,i)=><div key={i} className="w-[3px] rounded-full bg-orange-400" style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}}/>)}</div>
               <p className="text-xs font-semibold text-white/70 truncate">{playing.title}</p>
             </div>
-            <button onClick={()=>setPlaying(null)} className="p-1 rounded-lg hover:bg-white/10 shrink-0 ml-2"><X size={12} className="text-white/40"/></button>
+            <button onClick={stopPlaying} className="p-1 rounded-lg hover:bg-white/10 shrink-0 ml-2"><X size={12} className="text-white/40"/></button>
           </div>
           <iframe key={playing.id} width="100%" height="300" scrolling="no"
             frameBorder="no" allow="autoplay" src={embedUrl}
