@@ -3,6 +3,7 @@ import { adminMiddleware, authMiddleware } from "../middlewares/auth";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { Readable } from "stream";
+import { getFirebaseStorageBucket } from "../lib/firebase-admin";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -121,24 +122,22 @@ router.post("/image", adminMiddleware, upload.single("file"), async (req: Reques
   }
 });
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+// ─── Avatar (Firebase Storage — bypasses Cloudinary signing issues) ───────────
 router.post("/avatar", authMiddleware, upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
     const realMime = await detectMime(req.file.buffer);
     if (!realMime || !ALLOWED_IMAGE_MIMES.has(realMime)) { res.status(400).json({ error: "Only JPG, PNG, WebP or GIF images are allowed" }); return; }
     const userId = (req as any).user?.id;
-    const result = await uploadToCloudinary(req.file.buffer, {
-      folder: "mission-distinction/avatars",
-      resource_type: "image",
-      public_id: `avatar_${userId}_${Date.now()}`,
+    const bucket = getFirebaseStorageBucket();
+    const fileName = `avatars/avatar_${userId}_${Date.now()}`;
+    const fileRef = bucket.file(fileName);
+    await fileRef.save(req.file.buffer, {
+      metadata: { contentType: realMime },
     });
-    // Apply transformations via URL (avoids signature mismatch with transformation param)
-    const transformedUrl = result.secure_url.replace(
-      "/upload/",
-      "/upload/w_400,h_400,c_fill,g_face,q_auto,f_auto/"
-    );
-    res.json({ url: transformedUrl });
+    await fileRef.makePublic();
+    const url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+    res.json({ url });
   } catch (err: any) {
     console.error("Avatar upload error:", err);
     res.status(500).json({ error: "Upload failed. Please try again." });
