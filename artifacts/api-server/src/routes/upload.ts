@@ -3,7 +3,23 @@ import { adminMiddleware, authMiddleware } from "../middlewares/auth";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { Readable } from "stream";
-import { getFirebaseStorageBucket } from "../lib/firebase-admin";
+import { Storage } from "@google-cloud/storage";
+
+const REPLIT_SIDECAR = "http://127.0.0.1:1106";
+const gcsClient = new Storage({
+  credentials: {
+    audience: "replit",
+    subject_token_type: "access_token",
+    token_url: `${REPLIT_SIDECAR}/token`,
+    type: "external_account",
+    credential_source: {
+      url: `${REPLIT_SIDECAR}/credential`,
+      format: { type: "json", subject_token_field_name: "access_token" },
+    },
+    universe_domain: "googleapis.com",
+  },
+  projectId: "",
+});
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -122,21 +138,39 @@ router.post("/image", adminMiddleware, upload.single("file"), async (req: Reques
   }
 });
 
-// ─── Avatar (Firebase Storage — bypasses Cloudinary signing issues) ───────────
+// ─── Avatar serve (streams from GCS — no auth needed to view) ─────────────────
+router.get("/avatar/:fileName", async (req: Request, res: Response) => {
+  try {
+    const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+    if (!bucketId) { res.status(500).end(); return; }
+    const bucket = gcsClient.bucket(bucketId);
+    const fileRef = bucket.file(`avatars/${req.params.fileName}`);
+    const [meta] = await fileRef.getMetadata();
+    res.setHeader("Content-Type", meta.contentType as string);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    fileRef.createReadStream().pipe(res);
+  } catch {
+    res.status(404).end();
+  }
+});
+
+// ─── Avatar upload (Replit Object Storage — GCS sidecar auth) ─────────────────
 router.post("/avatar", authMiddleware, upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
     const realMime = await detectMime(req.file.buffer);
     if (!realMime || !ALLOWED_IMAGE_MIMES.has(realMime)) { res.status(400).json({ error: "Only JPG, PNG, WebP or GIF images are allowed" }); return; }
     const userId = (req as any).user?.id;
-    const bucket = getFirebaseStorageBucket();
-    const fileName = `avatars/avatar_${userId}_${Date.now()}`;
-    const fileRef = bucket.file(fileName);
-    await fileRef.save(req.file.buffer, {
-      metadata: { contentType: realMime },
-    });
-    await fileRef.makePublic();
-    const url = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+    const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+    if (!bucketId) { res.status(500).json({ error: "Storage not configured" }); return; }
+    const bucket = gcsClient.bucket(bucketId);
+    const fileName = `avatar_${userId}_${Date.now()}.jpg`;
+    const fileRef = bucket.file(`avatars/${fileName}`);
+    await fileRef.save(req.file.buffer, { metadata: { contentType: realMime } });
+    // Serve via our own proxy (GCS bucket has public access prevention)
+    const proto = req.get("x-forwarded-proto") || req.protocol;
+    const host = req.get("x-forwarded-host") || req.get("host");
+    const url = `${proto}://${host}/api/upload/avatar/${fileName}`;
     res.json({ url });
   } catch (err: any) {
     console.error("Avatar upload error:", err);
