@@ -102,13 +102,43 @@ function AmbientSounds(){
   const ctxRef=useRef<AudioContext|null>(null),nodesRef=useRef<Map<string,SoundNode>>(new Map());
   const [active,setActive]=useState<Record<string,boolean>>({}), [volumes,setVolumes]=useState<Record<string,number>>(Object.fromEntries(AMBIENT.map(a=>[a.id,60])));
   const getCtx=()=>{if(!ctxRef.current||ctxRef.current.state==="closed")ctxRef.current=new(window.AudioContext||(window as any).webkitAudioContext)();if(ctxRef.current.state==="suspended")ctxRef.current.resume();return ctxRef.current;};
-  const toggle=(sound:typeof AMBIENT[0])=>{const isOn=active[sound.id];if(isOn){const node=nodesRef.current.get(sound.id);if(node){node.gain.gain.setTargetAtTime(0,getCtx().currentTime,0.3);setTimeout(()=>{try{node.source.stop();}catch{}nodesRef.current.delete(sound.id);},400);}setActive(a=>({...a,[sound.id]:false}));}else{const ctx=getCtx(),buf=buildNoiseBuffer(ctx,sound.noise as NoiseType),source=ctx.createBufferSource();source.buffer=buf;source.loop=true;const filter=ctx.createBiquadFilter();filter.type=sound.filter.type;filter.frequency.value=sound.filter.freq;filter.Q.value=sound.filter.q;const gain=ctx.createGain();gain.gain.value=0;source.connect(filter);filter.connect(gain);gain.connect(ctx.destination);source.start();gain.gain.setTargetAtTime((volumes[sound.id]/100)*0.7,ctx.currentTime,0.3);nodesRef.current.set(sound.id,{source,gain});setActive(a=>({...a,[sound.id]:true}));}};
+  const toggle=(sound:typeof AMBIENT[0])=>{
+    const isOn=active[sound.id];
+    if(isOn){
+      /* Always update state — even if audio teardown fails */
+      try {
+        const node=nodesRef.current.get(sound.id);
+        if(node){
+          const t=ctxRef.current?.currentTime??0;
+          node.gain.gain.setTargetAtTime(0,t,0.3);
+          setTimeout(()=>{try{node.source.stop();}catch{}nodesRef.current.delete(sound.id);},400);
+        }
+      } catch {}
+      setActive(a=>({...a,[sound.id]:false}));
+    } else {
+      try {
+        const ctx=getCtx();
+        const buf=buildNoiseBuffer(ctx,sound.noise as NoiseType);
+        const source=ctx.createBufferSource();
+        source.buffer=buf;source.loop=true;
+        const filter=ctx.createBiquadFilter();
+        filter.type=sound.filter.type;filter.frequency.value=sound.filter.freq;filter.Q.value=sound.filter.q;
+        const gain=ctx.createGain();
+        gain.gain.value=0;
+        source.connect(filter);filter.connect(gain);gain.connect(ctx.destination);
+        source.start();
+        gain.gain.setTargetAtTime((volumes[sound.id]/100)*0.7,ctx.currentTime,0.3);
+        nodesRef.current.set(sound.id,{source,gain});
+        setActive(a=>({...a,[sound.id]:true}));
+      } catch { /* Audio API unavailable — don't mark active */ }
+    }
+  };
   const setVol=(id:string,val:number)=>{setVolumes(v=>({...v,[id]:val}));const node=nodesRef.current.get(id);if(node&&ctxRef.current)node.gain.gain.setTargetAtTime((val/100)*0.7,ctxRef.current.currentTime,0.05);};
   useEffect(()=>()=>{nodesRef.current.forEach(n=>{try{n.source.stop();}catch{}});ctxRef.current?.close();},[]);
   return(
     <div className="px-4 py-4">
       <div className="flex items-center gap-2 mb-3"><Volume2 size={13} className="text-violet-400"/><span className="text-xs font-bold text-white/80 tracking-wide uppercase">Ambient Sounds</span><span className="text-[10px] text-white/30 ml-1">Mix simultaneously</span></div>
-      <div className="grid grid-cols-3 gap-2">{AMBIENT.map(s=>{const on=!!active[s.id];return(<div key={s.id} className="rounded-2xl border transition-all duration-300 overflow-hidden" style={{background:on?`${s.color}18`:"rgba(255,255,255,0.04)",borderColor:on?`${s.color}55`:"rgba(255,255,255,0.07)",boxShadow:on?`0 0 16px ${s.color}33`:"none"}}><button className="w-full p-3 flex flex-col items-center gap-1.5" onClick={()=>toggle(s)}><div className="relative text-2xl">{s.icon}{on&&<div className="absolute -inset-1 rounded-full opacity-40 blur-sm pointer-events-none" style={{background:s.color,animation:"gp 1.5s ease-in-out infinite"}}/>}</div><span className="text-[11px] font-semibold text-white/70">{s.label}</span>{on&&<div className="flex items-end gap-0.5 h-3.5">{[...Array(5)].map((_,i)=><div key={i} className="w-[3px] rounded-full" style={{background:s.color,height:"50%",animation:`wf ${.4+i*.12}s ease-in-out ${i*.08}s infinite`}}/>)}</div>}</button>{on&&<div className="px-3 pb-3"><input type="range" min={0} max={100} value={volumes[s.id]} onChange={e=>setVol(s.id,+e.target.value)} className="w-full h-1 rounded-full appearance-none cursor-pointer" style={{accentColor:s.color}}/></div>}</div>);})}</div>
+      <div className="grid grid-cols-3 gap-2">{AMBIENT.map(s=>{const on=!!active[s.id];return(<div key={s.id} className="rounded-2xl border transition-all duration-300 overflow-hidden" style={{background:on?`${s.color}18`:"rgba(255,255,255,0.04)",borderColor:on?`${s.color}55`:"rgba(255,255,255,0.07)",boxShadow:on?`0 0 16px ${s.color}33`:"none"}}><button aria-pressed={on} className="w-full p-3 flex flex-col items-center gap-1.5" onClick={()=>toggle(s)}><div className="relative text-2xl">{s.icon}{on&&<div className="absolute -inset-1 rounded-full opacity-40 blur-sm pointer-events-none" style={{background:s.color,animation:"gp 1.5s ease-in-out infinite"}}/>}</div><span className="text-[11px] font-semibold text-white/70">{s.label}</span>{on&&<div className="flex items-end gap-0.5 h-3.5">{[...Array(5)].map((_,i)=><div key={i} className="w-[3px] rounded-full" style={{background:s.color,height:"50%",animation:`wf ${.4+i*.12}s ease-in-out ${i*.08}s infinite`}}/>)}</div>}</button>{on&&<div className="px-3 pb-3"><input type="range" min={0} max={100} value={volumes[s.id]} onChange={e=>setVol(s.id,+e.target.value)} className="w-full h-1 rounded-full appearance-none cursor-pointer" style={{accentColor:s.color}}/></div>}</div>);})}</div>
     </div>
   );
 }
