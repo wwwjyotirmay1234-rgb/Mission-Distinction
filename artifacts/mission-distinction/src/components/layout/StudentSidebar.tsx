@@ -18,6 +18,7 @@ import {
   Trophy,
   MessageSquare,
   Timer,
+  Music,
 } from "lucide-react";
 
 const LAST_SEEN_KEY = "md_announcements_last_seen";
@@ -63,6 +64,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     { icon: Bookmark, label: "Bookmarks", href: "/student/bookmarks" },
     { icon: CalendarIcon, label: "Calendar", href: "/student/calendar" },
     { icon: Timer, label: "Study Tools", href: "/student/tools" },
+    { icon: Music, label: "Music", href: "/student/music" },
     { icon: Settings, label: "Settings", href: "/student/settings" },
   ];
 

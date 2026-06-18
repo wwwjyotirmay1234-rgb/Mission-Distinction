@@ -62,6 +62,7 @@ import StudentAnnouncements from "@/pages/student/Announcements";
 import StudentLeaderboard from "@/pages/student/Leaderboard";
 import StudentDoubts from "@/pages/student/Doubts";
 import StudentTools from "@/pages/student/Tools";
+import StudentMusic from "@/pages/student/Music";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/Dashboard";
@@ -110,6 +111,7 @@ function Router() {
               <Route path="/student/calendar" component={StudentCalendar} />
               <Route path="/student/settings" component={StudentSettings} />
               <Route path="/student/tools" component={StudentTools} />
+              <Route path="/student/music" component={StudentMusic} />
               <Route component={NotFound} />
             </Switch>
           </StudentLayout>
