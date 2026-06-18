@@ -132,9 +132,13 @@ router.post("/avatar", authMiddleware, upload.single("file"), async (req: Reques
       folder: "mission-distinction/avatars",
       resource_type: "image",
       public_id: `avatar_${userId}_${Date.now()}`,
-      transformation: [{ width: 400, height: 400, crop: "fill", gravity: "face", quality: "auto", fetch_format: "auto" }],
     });
-    res.json({ url: result.secure_url });
+    // Apply transformations via URL (avoids signature mismatch with transformation param)
+    const transformedUrl = result.secure_url.replace(
+      "/upload/",
+      "/upload/w_400,h_400,c_fill,g_face,q_auto,f_auto/"
+    );
+    res.json({ url: transformedUrl });
   } catch (err: any) {
     console.error("Avatar upload error:", err);
     res.status(500).json({ error: "Upload failed. Please try again." });

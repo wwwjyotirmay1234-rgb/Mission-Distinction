@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useEffect } from "react";
 import { X, Music2, Radio, Youtube } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
@@ -22,6 +23,45 @@ export function PersistentPlayer() {
   const { playing, stop } = useMusicPlayer();
   const [location] = useLocation();
   const onMusicPage = location === "/student/music";
+
+  // ── MediaSession API — lock-screen controls ─────────────────────────────────
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return;
+
+    if (!playing) {
+      navigator.mediaSession.metadata = null;
+      navigator.mediaSession.playbackState = "none";
+      return;
+    }
+
+    const title = playing.title;
+    const artist = playing.type === "youtube" ? playing.channel : playing.artist;
+    const artwork = playing.type === "youtube"
+      ? playing.thumbnail
+      : playing.artwork ?? undefined;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title,
+      artist,
+      album: "Mission Distinction",
+      artwork: artwork
+        ? [{ src: artwork, sizes: "512x512", type: "image/jpeg" }]
+        : [],
+    });
+    navigator.mediaSession.playbackState = "playing";
+
+    navigator.mediaSession.setActionHandler("stop", stop);
+    navigator.mediaSession.setActionHandler("pause", stop);
+    // play/nexttrack/previoustrack are not wired (iframe controls the stream)
+    navigator.mediaSession.setActionHandler("play", null);
+    navigator.mediaSession.setActionHandler("nexttrack", null);
+    navigator.mediaSession.setActionHandler("previoustrack", null);
+
+    return () => {
+      navigator.mediaSession.setActionHandler("stop", null);
+      navigator.mediaSession.setActionHandler("pause", null);
+    };
+  }, [playing, stop]);
 
   if (!playing) return null;
 
