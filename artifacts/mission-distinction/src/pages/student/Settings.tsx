@@ -19,6 +19,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { customFetch } from "@workspace/api-client-react";
 import { apiFetch } from "@/lib/apiFetch";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { toast } from "sonner";
 import { Star, MessageSquare, Bell, BellOff, Loader2, Camera, Trash2, ShieldAlert, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -78,17 +80,9 @@ export default function StudentSettings() {
     }
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const uploadRes = await apiFetch("/api/upload/avatar", {
-        method: "POST",
-        body: formData,
-      });
-      if (!uploadRes.ok) {
-        const d = await uploadRes.json();
-        throw new Error(d.error || "Upload failed");
-      }
-      const { url } = await uploadRes.json();
+      const storageRef = ref(storage, `avatars/${user.id}_${Date.now()}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
       const patchRes = await apiFetch(`/api/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
