@@ -11,10 +11,13 @@ function _resolveComponent(
   const fns = Object.values(mod).filter(
     (v) => typeof v === "function",
   ) as ComponentType[];
+  const namedExport = Object.prototype.hasOwnProperty.call(mod, name)
+    ? (mod[name] as ComponentType)
+    : undefined;
   return (
     (mod.default as ComponentType) ||
     (mod.Preview as ComponentType) ||
-    (mod[name] as ComponentType) ||
+    namedExport ||
     fns[fns.length - 1]
   );
 }
