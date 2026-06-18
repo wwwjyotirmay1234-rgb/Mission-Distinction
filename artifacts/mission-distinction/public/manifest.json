@@ -4,12 +4,17 @@
   "description": "Free medical education platform for 1st Year MBBS students in Odisha, India",
   "start_url": "/",
   "scope": "/",
+  "id": "mission-distinction-pwa",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "background_color": "#0d0f1a",
   "theme_color": "#7c3aed",
   "orientation": "portrait-primary",
+  "dir": "ltr",
+  "lang": "en",
   "prefer_related_applications": false,
+  "categories": ["education", "medical"],
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -18,10 +23,10 @@
       "purpose": "any"
     },
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
+      "src": "/icon-384.png",
+      "sizes": "384x384",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
@@ -30,19 +35,26 @@
       "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    },
-    {
-      "src": "/logo.jpeg",
-      "sizes": "96x96",
-      "type": "image/jpeg",
-      "purpose": "any"
     }
   ],
-  "categories": ["education", "medical"],
-  "lang": "en",
-  "id": "mission-distinction-pwa"
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Mission Distinction — Login"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mission Distinction — Mobile"
+    }
+  ]
 }
