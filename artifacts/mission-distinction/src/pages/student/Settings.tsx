@@ -34,6 +34,11 @@ export default function StudentSettings() {
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [profileName, setProfileName] = useState(user?.fullName || "");
+  const [profileYear, setProfileYear] = useState(user?.year || "");
+  const [profileCollege, setProfileCollege] = useState(user?.college || "");
+  const [savingProfile, setSavingProfile] = useState(false);
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -41,11 +46,34 @@ export default function StudentSettings() {
 
   const initials = user?.fullName?.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "MD";
 
+  const handleSaveProfile = async () => {
+    if (!profileName.trim()) { toast.error("Name cannot be empty."); return; }
+    setSavingProfile(true);
+    try {
+      const res = await apiFetch(`/api/users/${user?.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName: profileName.trim(), year: profileYear.trim(), college: profileCollege.trim() }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to save");
+      }
+      const updated = await res.json();
+      updateUser(updated);
+      toast.success("Profile updated!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save profile.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be under 5 MB.");
+    if (file.size > 30 * 1024 * 1024) {
+      toast.error("Image must be under 30 MB.");
       return;
     }
     setUploading(true);
@@ -167,7 +195,7 @@ export default function StudentSettings() {
                 <Camera className="h-4 w-4" aria-hidden="true" />
                 {uploading ? "Uploading…" : "Change Avatar"}
               </Button>
-              <p className="text-xs text-muted-foreground">JPG, PNG or WebP · max 5 MB</p>
+              <p className="text-xs text-muted-foreground">JPG, PNG or WebP · max 30 MB</p>
             </div>
             <input
               ref={fileInputRef}
@@ -182,22 +210,24 @@ export default function StudentSettings() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
-              <Input id="name" defaultValue={user?.fullName || ""} className="bg-background/50" aria-label="Full name" />
+              <Input id="name" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="bg-background/50" aria-label="Full name" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue={user?.email || ""} disabled className="bg-muted/50" aria-label="Email address (read only)" />
+              <Input id="email" type="email" value={user?.email || ""} disabled className="bg-muted/50" aria-label="Email address (read only)" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="year">Academic Year</Label>
-              <Input id="year" defaultValue={user?.year || ""} className="bg-background/50" aria-label="Academic year" />
+              <Input id="year" value={profileYear} onChange={(e) => setProfileYear(e.target.value)} className="bg-background/50" aria-label="Academic year" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="college">College</Label>
-              <Input id="college" defaultValue={user?.college || ""} className="bg-background/50" aria-label="College name" />
+              <Input id="college" value={profileCollege} onChange={(e) => setProfileCollege(e.target.value)} className="bg-background/50" aria-label="College name" />
             </div>
           </div>
-          <Button aria-label="Save profile changes">Save Changes</Button>
+          <Button onClick={handleSaveProfile} disabled={savingProfile} aria-label="Save profile changes">
+            {savingProfile ? "Saving..." : "Save Changes"}
+          </Button>
         </CardContent>
       </Card>
 

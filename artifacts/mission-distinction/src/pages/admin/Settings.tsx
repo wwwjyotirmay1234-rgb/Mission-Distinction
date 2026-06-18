@@ -1,18 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { customFetch } from "@workspace/api-client-react";
+import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "sonner";
-import { Shield, Key, User, Info, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { Shield, Key, User, Info, Eye, EyeOff, CheckCircle2, Camera, Loader2 } from "lucide-react";
 
 export default function AdminSettings() {
-  const { user, login, token } = useAuth();
+  const { user, login, token, updateUser } = useAuth();
 
   const [name, setName] = useState(user?.fullName ?? "");
   const [savingName, setSavingName] = useState(false);
@@ -21,6 +22,10 @@ export default function AdminSettings() {
   const [showPw, setShowPw] = useState(false);
   const [savingPw, setSavingPw] = useState(false);
 
+  const [uploading, setUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || "");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const initials =
     user?.fullName
       ?.split(" ")
@@ -28,6 +33,45 @@ export default function AdminSettings() {
       .join("")
       .substring(0, 2)
       .toUpperCase() ?? "AD";
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 30 * 1024 * 1024) {
+      toast.error("Image must be under 30 MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const uploadRes = await apiFetch("/api/upload/avatar", {
+        method: "POST",
+        body: formData,
+      });
+      if (!uploadRes.ok) {
+        const d = await uploadRes.json();
+        throw new Error(d.error || "Upload failed");
+      }
+      const { url } = await uploadRes.json();
+      const patchRes = await apiFetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarUrl: url }),
+      });
+      if (!patchRes.ok) throw new Error("Failed to save avatar");
+      const updatedUser = await patchRes.json();
+      updateUser(updatedUser);
+      login({ token: token!, user: updatedUser });
+      setAvatarUrl(url);
+      toast.success("Avatar updated!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload avatar.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const handleSaveName = async () => {
     if (!name.trim()) { toast.error("Name cannot be empty."); return; }
@@ -99,18 +143,46 @@ export default function AdminSettings() {
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarFallback className="text-xl bg-secondary/20 text-secondary font-bold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold text-foreground">{user?.fullName}</p>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-              <Badge variant="outline" className="mt-1 text-[10px] uppercase tracking-wider border-secondary/30 text-secondary bg-secondary/5">
-                Administrator
-              </Badge>
+            <div className="relative group">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={avatarUrl || user?.avatarUrl || ""} />
+                <AvatarFallback className="text-xl bg-secondary/20 text-secondary font-bold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              {uploading && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                </div>
+              )}
             </div>
+            <div className="flex flex-col gap-2">
+              <div>
+                <p className="font-semibold text-foreground">{user?.fullName}</p>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+                <Badge variant="outline" className="mt-1 text-[10px] uppercase tracking-wider border-secondary/30 text-secondary bg-secondary/5">
+                  Administrator
+                </Badge>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="gap-2 w-fit"
+              >
+                <Camera className="h-3.5 w-3.5" />
+                {uploading ? "Uploading…" : "Change Avatar"}
+              </Button>
+              <p className="text-xs text-muted-foreground">JPG, PNG or WebP · max 30 MB</p>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
           </div>
 
           <Separator className="border-border/40" />
