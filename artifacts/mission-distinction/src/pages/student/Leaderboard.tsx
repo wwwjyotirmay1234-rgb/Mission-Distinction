@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
@@ -18,7 +17,12 @@ interface LeaderboardEntry {
   avgScore: number;
 }
 
-async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
+interface LeaderboardResponse {
+  topScorers: LeaderboardEntry[];
+  streakLeaders: LeaderboardEntry[];
+}
+
+async function fetchLeaderboard(): Promise<LeaderboardResponse> {
   const res = await apiFetch("/api/leaderboard");
   if (!res.ok) throw new Error("Failed to fetch leaderboard");
   return res.json();
@@ -41,18 +45,18 @@ export default function StudentLeaderboard() {
   const [tab, setTab] = useState<"score" | "streak">("score");
   const { user } = useAuth();
 
-  const { data: entries = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["leaderboard"],
     queryFn: fetchLeaderboard,
     staleTime: 60_000,
   });
 
-  const sorted =
+  const entries: LeaderboardEntry[] =
     tab === "score"
-      ? [...entries].sort((a, b) => b.avgScore - a.avgScore || b.quizzesAttempted - a.quizzesAttempted)
-      : [...entries].sort((a, b) => b.studyStreak - a.studyStreak);
+      ? (data?.topScorers ?? [])
+      : (data?.streakLeaders ?? []);
 
-  const myRank = sorted.findIndex((e) => e.id === user?.id) + 1;
+  const myRank = entries.findIndex((e) => e.id === user?.id) + 1;
 
   return (
     <div className="space-y-6">
@@ -70,7 +74,9 @@ export default function StudentLeaderboard() {
               {user?.fullName?.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold truncate">{user?.fullName} <span className="text-xs text-muted-foreground">(You)</span></p>
+              <p className="font-semibold truncate">
+                {user?.fullName} <span className="text-xs text-muted-foreground">(You)</span>
+              </p>
               <p className="text-xs text-muted-foreground truncate">{user?.college}</p>
             </div>
             <div className="text-right shrink-0">
@@ -81,7 +87,7 @@ export default function StudentLeaderboard() {
         </Card>
       )}
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "score" | "streak")}>
         <TabsList className="bg-muted/50 border border-border/50">
           <TabsTrigger value="score" className="gap-2">
             <Medal size={14} /> Top Scorers
@@ -101,21 +107,25 @@ export default function StudentLeaderboard() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-4 space-y-3">
-              {Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
+              {Array(8).fill(0).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full rounded-xl" />
+              ))}
             </div>
-          ) : sorted.length === 0 ? (
+          ) : entries.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground text-sm">
               No data yet. Be the first to take a quiz!
             </div>
           ) : (
             <div className="divide-y divide-border/40">
-              {sorted.map((entry, idx) => {
+              {entries.map((entry, idx) => {
                 const rank = idx + 1;
                 const isMe = entry.id === user?.id;
                 return (
                   <div
                     key={entry.id}
-                    className={`p-4 flex items-center gap-4 transition-colors ${isMe ? "bg-primary/5" : "hover:bg-muted/20"}`}
+                    className={`p-4 flex items-center gap-4 transition-colors ${
+                      isMe ? "bg-primary/5" : "hover:bg-muted/20"
+                    }`}
                   >
                     <div className="w-10 flex items-center justify-center shrink-0">
                       <RankBadge rank={rank} />
@@ -131,7 +141,8 @@ export default function StudentLeaderboard() {
                         {isMe && <span className="ml-2 text-xs text-primary">(You)</span>}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {entry.college || "Unknown College"}{entry.year ? ` · ${entry.year}` : ""}
+                        {entry.college || "Unknown College"}
+                        {entry.year ? ` · ${entry.year}` : ""}
                       </p>
                     </div>
 

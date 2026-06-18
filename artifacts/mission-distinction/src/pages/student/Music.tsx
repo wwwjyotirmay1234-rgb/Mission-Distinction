@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
-  Search, Music2, Loader2, X, Volume2, Play, Pause,
-  SkipForward, SkipBack, Youtube, Radio, Sparkles, Eye, EyeOff
+  Search, Music2, Loader2, X, Volume2, Play,
+  Youtube, Radio, Sparkles, Eye, EyeOff
 } from "lucide-react";
+import { apiFetch } from "@/lib/apiFetch";
 
 /* ─── Types ──────────────────────────────────────────── */
 type Tab = "youtube" | "soundcloud" | "spotify";
@@ -10,7 +11,7 @@ type NoiseType = "white" | "pink" | "brown";
 interface SoundNode { source: AudioBufferSourceNode; gain: GainNode; }
 interface YTResult {
   videoId: string; title: string; thumbnail: string;
-  channel: string; duration: number; views: number;
+  channel: string; duration: string; views: string;
 }
 
 /* ─── Constants ──────────────────────────────────────── */
@@ -40,17 +41,6 @@ const PARTICLES   = Array.from({length:18},(_,i)=>({
 }));
 
 /* ─── Utils ──────────────────────────────────────────── */
-function fmtDur(s: number) {
-  if (s < 0) return "LIVE";
-  if (!s) return "";
-  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
-  return h > 0 ? `${h}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}` : `${m}:${String(sec).padStart(2,"0")}`;
-}
-function fmtViews(n: number) {
-  if (n >= 1_000_000) return `${(n/1_000_000).toFixed(1)}M views`;
-  if (n >= 1_000) return `${Math.floor(n/1_000)}K views`;
-  return `${n} views`;
-}
 function extractSpotifyEmbed(input: string): string | null {
   const m = input.match(/spotify\.com\/(track|album|playlist|artist)\/([A-Za-z0-9]+)/);
   if (m) return `https://open.spotify.com/embed/${m[1]}/${m[2]}?utm_source=generator&theme=0`;
@@ -188,20 +178,15 @@ function YouTubeTab({ initQuery }: { initQuery: string }) {
     if (!q.trim()) return;
     setLoading(true); setError(""); setSearched(true); setPlaying(null);
     try {
-      const res  = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(q)}&filter=all`);
-      if (!res.ok) throw new Error("API error");
+      const res  = await apiFetch(`/api/youtube/search?q=${encodeURIComponent(q)}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any).error ?? "Search failed");
+      }
       const data = await res.json();
-      const items: YTResult[] = (data.items ?? [])
-        .filter((it: any) => it.type === "stream" && it.url)
-        .slice(0, 20)
-        .map((it: any) => ({
-          videoId: it.url.replace("/watch?v=",""),
-          title: it.title, thumbnail: it.thumbnail,
-          channel: it.uploaderName, duration: it.duration ?? -1, views: it.views ?? 0,
-        }));
-      setResults(items);
-    } catch {
-      setError("Search failed. YouTube search may be temporarily unavailable. Try again.");
+      setResults(data.results ?? []);
+    } catch (e: any) {
+      setError(e?.message ?? "YouTube search failed. Please try again.");
     } finally { setLoading(false); }
   }, []);
 
@@ -315,13 +300,12 @@ function YouTubeTab({ initQuery }: { initQuery: string }) {
                       <Play size={18} className="text-white" fill="white"/>
                     </div>
                   )}
-                  {v.duration >= 0 && <span className="absolute bottom-1 right-1 text-[9px] font-bold text-white bg-black/70 px-1 rounded">{fmtDur(v.duration)}</span>}
-                  {v.duration < 0 && <span className="absolute bottom-1 right-1 text-[9px] font-bold text-red-400 bg-black/70 px-1 rounded">LIVE</span>}
+                  {v.duration && <span className="absolute bottom-1 right-1 text-[9px] font-bold text-white bg-black/70 px-1 rounded">{v.duration}</span>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`text-xs font-semibold leading-snug line-clamp-2 ${isNow?"text-red-300":"text-white/85"}`}>{v.title}</p>
                   <p className="text-[10px] text-white/35 mt-1 truncate">{v.channel}</p>
-                  {v.views > 0 && <p className="text-[9px] text-white/20 mt-0.5">{fmtViews(v.views)}</p>}
+                  {v.views && <p className="text-[9px] text-white/20 mt-0.5">{v.views}</p>}
                 </div>
               </button>
             );

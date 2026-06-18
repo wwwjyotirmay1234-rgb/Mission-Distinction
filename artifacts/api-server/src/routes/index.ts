@@ -18,6 +18,7 @@ import leaderboardRouter from "./leaderboard";
 import doubtsRouter from "./doubts";
 import superAdminRouter from "./superAdmin";
 import pushRouter from "./push";
+import youtubeRouter from "./youtube";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use("/leaderboard", leaderboardRouter);
 router.use("/doubts", doubtsRouter);
 router.use("/super-admin", superAdminRouter);
 router.use("/push", pushRouter);
+router.use("/youtube", youtubeRouter);
 
 export default router;
