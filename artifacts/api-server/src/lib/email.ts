@@ -5,6 +5,10 @@ export function generateEmailToken(): string {
   return crypto.randomBytes(32).toString("hex");
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 export function getAppUrl(): string {
   const domains = process.env.REPLIT_DOMAINS;
   if (domains) {
@@ -74,7 +78,7 @@ export function verifyEmailTemplate(verifyUrl: string, name: string): string {
   return `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0f0f1a;color:#e2e8f0;padding:40px;border-radius:12px;">
       <h2 style="color:#7c3aed;margin-top:0;">Mission Distinction</h2>
-      <h3 style="color:#e2e8f0;">Welcome, ${name}! Verify your email</h3>
+      <h3 style="color:#e2e8f0;">Welcome, ${escapeHtml(name)}! Verify your email</h3>
       <p style="color:#94a3b8;">Click below to verify your email address and unlock full access.</p>
       <a href="${verifyUrl}" style="display:inline-block;background:#7c3aed;color:white;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin:16px 0;">Verify Email</a>
       <p style="color:#64748b;font-size:12px;margin-top:24px;">This link expires in 24 hours.</p>
