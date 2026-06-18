@@ -1,18 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
-  Search, Music2, Loader2, X, Youtube, Plus, Trash2,
+  Search, Music2, Loader2, X, Plus, Trash2,
   ListMusic, CheckCircle2, Heart, Volume2, Play, Pause,
-  SkipForward, SkipBack, ChevronDown, Sparkles
+  SkipForward, SkipBack, Sparkles
 } from "lucide-react";
 
 /* ─── Types ─────────────────────────────────────────── */
 interface Track {
   trackId: number; trackName: string; artistName: string;
-  collectionName: string; artworkUrl100: string; trackTimeMillis: number;
+  collectionName: string; artworkUrl100: string;
+  trackTimeMillis: number; previewUrl: string;
 }
 interface PlaylistItem {
   id: number; trackName: string; artistName: string;
-  artwork: string; addedAt: number;
+  artwork: string; previewUrl: string; addedAt: number;
 }
 type Tab = "search" | "playlist" | "spotify";
 type NoiseType = "white" | "pink" | "brown";
@@ -57,12 +58,16 @@ const PARTICLES   = Array.from({length:18},(_,i)=>({
   id:i, x:5+Math.floor(i*5.4)%90, y:5+Math.floor(i*7.3)%85,
   size:2+Math.floor(i%3)*1.5, delay:+(i*0.22).toFixed(2), dur:3+Math.floor(i%4),
 }));
-const PLAYLIST_KEY = "md_music_playlist_v1";
+const PLAYLIST_KEY = "md_music_playlist_v2";
 const FAVS_KEY = "md_music_favs_v1";
 
 /* ─── Utils ─────────────────────────────────────────── */
-function fmtTime(ms: number) {
-  const s = Math.floor(ms / 1000);
+function fmtTime(s: number) {
+  if (!s || !isFinite(s)) return "0:00";
+  return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
+}
+function fmtMs(ms: number) {
+  const s = Math.floor(ms/1000);
   return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
 }
 function extractSpotifyEmbed(input: string): string | null {
@@ -96,7 +101,7 @@ function buildNoiseBuffer(ctx: AudioContext, type: NoiseType) {
   return buf;
 }
 
-/* ─── Subcomponents ──────────────────────────────────── */
+/* ─── Hero ───────────────────────────────────────────── */
 function HeroSection({ active, query, setQuery, onSearch, loading }: {
   active: boolean; query: string; setQuery:(q:string)=>void;
   onSearch:(q:string)=>void; loading: boolean;
@@ -105,7 +110,6 @@ function HeroSection({ active, query, setQuery, onSearch, loading }: {
     <div className="relative overflow-hidden px-5 pt-7 pb-8"
       style={{ background:"linear-gradient(135deg,#0a0c18 0%,#150a32 35%,#1e0d4a 55%,#0d0f1a 100%)" }}>
 
-      {/* Particles */}
       {PARTICLES.map(p=>(
         <div key={p.id} className="absolute rounded-full pointer-events-none"
           style={{
@@ -124,19 +128,14 @@ function HeroSection({ active, query, setQuery, onSearch, loading }: {
         @keyframes eq-b{from{transform:scaleY(.3)}to{transform:scaleY(1)}}
         @keyframes nf{0%,100%{transform:translateY(0) rotate(-5deg);opacity:.45}50%{transform:translateY(-14px) rotate(8deg);opacity:.15}}
         @keyframes wf{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
-        @keyframes cg{0%,100%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 20px rgba(124,58,237,.25)}}
         @keyframes gp{0%,100%{opacity:.4}50%{opacity:.9}}
       `}</style>
 
-      {/* Glow orbs */}
       <div className="absolute -top-10 right-0 w-64 h-64 rounded-full opacity-25 blur-3xl pointer-events-none"
         style={{background:"radial-gradient(circle,#7c3aed 0%,transparent 70%)"}} />
       <div className="absolute bottom-0 left-1/4 w-40 h-40 rounded-full opacity-15 blur-2xl pointer-events-none"
         style={{background:"radial-gradient(circle,#a78bfa 0%,transparent 70%)"}} />
-      <div className="absolute top-1/3 right-1/4 w-24 h-24 rounded-full opacity-20 blur-xl pointer-events-none"
-        style={{background:"radial-gradient(circle,#818cf8 0%,transparent 70%)"}} />
 
-      {/* Floating notes */}
       {[{t:"♪",r:"15%",top:"12%"},{t:"♫",r:"6%",top:"32%"},{t:"♩",r:"22%",top:"65%"},{t:"♬",r:"2%",top:"55%"}].map((n,i)=>(
         <span key={i} className="absolute text-violet-300 select-none pointer-events-none"
           style={{right:n.r,top:n.top,fontSize:14+i*2,opacity:.35,animation:`nf ${2.5+i*.7}s ease-in-out ${i*.4}s infinite`}}>{n.t}</span>
@@ -152,16 +151,14 @@ function HeroSection({ active, query, setQuery, onSearch, loading }: {
           </div>
           <h1 className="text-[30px] font-black leading-none tracking-tight text-white mt-2">
             Study{" "}
-            <span style={{background:"linear-gradient(90deg,#a78bfa,#7c3aed)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>
-              Music
-            </span>{" "}Hub
+            <span style={{background:"linear-gradient(90deg,#a78bfa,#7c3aed)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Music</span>
+            {" "}Hub
           </h1>
           <p className="text-white/75 text-[13px] font-semibold mt-2">Focus deeper. Study longer. Learn smarter.</p>
           <p className="text-white/40 text-[11px] mt-1.5 leading-relaxed">
-            Curated music and ambient sounds<br />designed for MBBS students.
+            Curated music and ambient sounds<br/>designed for MBBS students.
           </p>
         </div>
-        {/* Equalizer */}
         <div className="shrink-0 pt-2">
           <div className="flex items-end gap-[3px] h-20">
             {BAR_HEIGHTS.map((h,i)=>(
@@ -179,7 +176,6 @@ function HeroSection({ active, query, setQuery, onSearch, loading }: {
         </div>
       </div>
 
-      {/* Search bar */}
       <div className="relative mt-5">
         <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/35 z-10" />
         <input value={query} onChange={e=>setQuery(e.target.value)}
@@ -200,6 +196,7 @@ function HeroSection({ active, query, setQuery, onSearch, loading }: {
   );
 }
 
+/* ─── Ambient Sounds ─────────────────────────────────── */
 function AmbientSounds() {
   const ctxRef   = useRef<AudioContext|null>(null);
   const nodesRef = useRef<Map<string,SoundNode>>(new Map());
@@ -296,55 +293,110 @@ function AmbientSounds() {
   );
 }
 
-function FloatingPlayer({ ytQuery, ytKey, onSkipPrev, onSkipNext, canPrev, canNext, trackName, artistName, artwork, onClose }:{
-  ytQuery:string; ytKey:number; onSkipPrev:()=>void; onSkipNext:()=>void;
-  canPrev:boolean; canNext:boolean; trackName:string; artistName:string;
-  artwork:string; onClose:()=>void;
+/* ─── Floating Audio Player ─────────────────────────── */
+function FloatingPlayer({ previewUrl, trackName, artistName, artwork,
+  onSkipPrev, onSkipNext, canPrev, canNext, onClose }: {
+  previewUrl: string; trackName: string; artistName: string; artwork: string;
+  onSkipPrev:()=>void; onSkipNext:()=>void; canPrev:boolean; canNext:boolean; onClose:()=>void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const audioRef  = useRef<HTMLAudioElement>(null);
+  const [playing,   setPlaying]   = useState(false);
+  const [progress,  setProgress]  = useState(0);
+  const [currentT,  setCurrentT]  = useState(0);
+  const [duration,  setDuration]  = useState(0);
+  const [buffering, setBuffering] = useState(false);
+
+  // Auto-play when src changes
+  useEffect(()=>{
+    if (!audioRef.current || !previewUrl) return;
+    audioRef.current.src = previewUrl;
+    audioRef.current.load();
+    setProgress(0); setCurrentT(0); setDuration(0); setBuffering(true);
+    audioRef.current.play().then(()=>{ setPlaying(true); setBuffering(false); }).catch(()=>setBuffering(false));
+  }, [previewUrl]);
+
+  // Cleanup on unmount
+  useEffect(()=>()=>{ audioRef.current?.pause(); },[]);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (playing) { audioRef.current.pause(); setPlaying(false); }
+    else { audioRef.current.play(); setPlaying(true); }
+  };
+
+  const seek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct  = (e.clientX - rect.left) / rect.width;
+    audioRef.current.currentTime = pct * duration;
+  };
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 transition-all"
+    <div className="fixed bottom-0 left-0 right-0 z-50"
       style={{background:"rgba(13,15,26,0.97)",backdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.08)",boxShadow:"0 -8px 32px rgba(0,0,0,0.6)"}}>
-      {expanded&&(
-        <div className="relative w-full" style={{paddingBottom:"56.25%"}}>
-          <div className="absolute top-2 right-2 z-10">
-            <button onClick={()=>setExpanded(false)} className="p-1.5 rounded-full bg-black/50 text-white/60 hover:text-white transition-colors"><ChevronDown size={16}/></button>
-          </div>
-          <iframe key={ytKey}
-            src={`https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(ytQuery)}&autoplay=1&rel=0`}
-            className="absolute inset-0 w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen" allowFullScreen title="YouTube Music Player" />
-        </div>
-      )}
-      <div className="flex items-center gap-3 px-4 py-2.5">
-        <div className="relative shrink-0 cursor-pointer" onClick={()=>setExpanded(e=>!e)}>
-          <img src={artwork} alt="" className="w-10 h-10 rounded-xl object-cover" style={{boxShadow:"0 0 12px rgba(124,58,237,.45)"}} />
+
+      {/* Hidden audio element */}
+      <audio ref={audioRef}
+        onTimeUpdate={()=>{ if(!audioRef.current) return; const d=audioRef.current.duration||0; const c=audioRef.current.currentTime; setCurrentT(c); setDuration(d); setProgress(d?c/d:0); }}
+        onEnded={()=>{ setPlaying(false); setProgress(1); }}
+        onWaiting={()=>setBuffering(true)}
+        onCanPlay={()=>setBuffering(false)}
+        onError={()=>{ setPlaying(false); setBuffering(false); }}
+        crossOrigin="anonymous" />
+
+      {/* Progress bar */}
+      <div className="w-full h-1 bg-white/10 cursor-pointer" onClick={seek}>
+        <div className="h-full rounded-full transition-none"
+          style={{width:`${progress*100}%`, background:"linear-gradient(90deg,#6d28d9,#a78bfa)"}} />
+      </div>
+
+      {/* Controls */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="relative shrink-0">
+          <img src={artwork} alt="" className="w-10 h-10 rounded-xl object-cover"
+            style={{boxShadow:"0 0 12px rgba(124,58,237,.45)"}} />
           <div className="absolute -inset-0.5 rounded-xl border border-violet-500/35 pointer-events-none" />
+          {playing && (
+            <div className="absolute inset-0 rounded-xl flex items-end justify-center pb-1 gap-0.5 bg-black/40">
+              {[...Array(4)].map((_,i)=>(
+                <div key={i} className="w-[2px] rounded-full bg-violet-400"
+                  style={{height:"55%", animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}} />
+              ))}
+            </div>
+          )}
         </div>
-        <div className="flex-1 min-w-0 cursor-pointer" onClick={()=>setExpanded(e=>!e)}>
+
+        <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold truncate"
             style={{background:"linear-gradient(90deg,#c4b5fd,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>
             {trackName}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-0.5">
             <p className="text-[11px] text-white/40 truncate">{artistName}</p>
-            {/* Animated waveform */}
-            <div className="flex items-end gap-0.5 h-3">
-              {[...Array(4)].map((_,i)=>(
-                <div key={i} className="w-[2px] rounded-full bg-violet-500"
-                  style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}} />
-              ))}
-            </div>
+            <span className="text-[10px] text-white/25 shrink-0">{fmtTime(currentT)} / {fmtTime(duration)}</span>
           </div>
         </div>
+
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={onSkipPrev} disabled={!canPrev} className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-20 transition-colors"><SkipBack size={14} className="text-white/70"/></button>
-          <button onClick={()=>setExpanded(e=>!e)}
+          <button onClick={onSkipPrev} disabled={!canPrev}
+            className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-25 transition-colors">
+            <SkipBack size={14} className="text-white/70"/>
+          </button>
+          <button onClick={togglePlay}
             className="p-2.5 rounded-full text-white transition-all hover:scale-110"
             style={{background:"linear-gradient(135deg,#7c3aed,#6d28d9)",boxShadow:"0 2px 12px #7c3aed66"}}>
-            {expanded?<Pause size={14}/>:<Play size={14}/>}
+            {buffering
+              ? <Loader2 size={14} className="animate-spin"/>
+              : playing ? <Pause size={14}/> : <Play size={14}/>}
           </button>
-          <button onClick={onSkipNext} disabled={!canNext} className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-20 transition-colors"><SkipForward size={14} className="text-white/70"/></button>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors ml-1"><X size={13} className="text-white/40"/></button>
+          <button onClick={onSkipNext} disabled={!canNext}
+            className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-25 transition-colors">
+            <SkipForward size={14} className="text-white/70"/>
+          </button>
+          <button onClick={()=>{ audioRef.current?.pause(); onClose(); }}
+            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors ml-1">
+            <X size={13} className="text-white/40"/>
+          </button>
         </div>
       </div>
     </div>
@@ -355,14 +407,12 @@ function FloatingPlayer({ ytQuery, ytKey, onSkipPrev, onSkipNext, canPrev, canNe
 export default function StudentMusic() {
   const [tab, setTab] = useState<Tab>("search");
 
-  // Search
+  // Search state
   const [query,      setQuery]      = useState("");
   const [results,    setResults]    = useState<Track[]>([]);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState("");
   const [hasSearched,setHasSearched]= useState(false);
-  const [ytQuery,    setYtQuery]    = useState("");
-  const [ytKey,      setYtKey]      = useState(0);
   const [addedIds,   setAddedIds]   = useState<Set<number>>(new Set());
   const [nowPlaying, setNowPlaying] = useState<Track|null>(null);
   const [nowIdx,     setNowIdx]     = useState(-1);
@@ -373,32 +423,23 @@ export default function StudentMusic() {
     setFavIds(prev=>{ const s=new Set(prev); s.has(id)?s.delete(id):s.add(id); localStorage.setItem(FAVS_KEY,JSON.stringify([...s])); return s; });
   };
 
-  const playTrack = (track: Track, idx: number) => {
-    setYtQuery(`${track.trackName} ${track.artistName} full song`);
-    setYtKey(k=>k+1); setNowPlaying(track); setNowIdx(idx);
-  };
+  const playTrack = (track: Track, idx: number) => { setNowPlaying(track); setNowIdx(idx); };
   const skipTrack = (dir: 1|-1) => { const next=results[nowIdx+dir]; if(next) playTrack(next,nowIdx+dir); };
 
-  // Playlist
+  // Playlist state
   const [playlist,    setPlaylist]    = useState<PlaylistItem[]>(()=>loadLS(PLAYLIST_KEY,[]));
-  const [plYtQuery,   setPlYtQuery]   = useState("");
-  const [plYtKey,     setPlYtKey]     = useState(0);
   const [plNowPlaying,setPlNowPlaying]= useState<PlaylistItem|null>(null);
   const [plNowIdx,    setPlNowIdx]    = useState(-1);
 
   const savePlaylist = (items:PlaylistItem[])=>{ setPlaylist(items); localStorage.setItem(PLAYLIST_KEY,JSON.stringify(items)); };
   const addToPlaylist = (track:Track) => {
     if(addedIds.has(track.trackId)) return;
-    const item:PlaylistItem={ id:track.trackId, trackName:track.trackName, artistName:track.artistName, artwork:track.artworkUrl100, addedAt:Date.now() };
+    const item:PlaylistItem={ id:track.trackId, trackName:track.trackName, artistName:track.artistName, artwork:track.artworkUrl100, previewUrl:track.previewUrl, addedAt:Date.now() };
     savePlaylist([item,...playlist.filter(p=>p.id!==track.trackId)]);
     setAddedIds(prev=>new Set(prev).add(track.trackId));
   };
   const removeFromPlaylist = (id:number) => { savePlaylist(playlist.filter(p=>p.id!==id)); setAddedIds(prev=>{const s=new Set(prev);s.delete(id);return s;}); };
-  const playFromPlaylist = (item:PlaylistItem, idx:number) => {
-    setPlYtQuery(`${item.trackName} ${item.artistName} full song`); setPlYtKey(k=>k+1);
-    setPlNowPlaying(item); setPlNowIdx(idx);
-    document.getElementById("pl-player")?.scrollIntoView({behavior:"smooth",block:"start"});
-  };
+  const playFromPlaylist = (item:PlaylistItem, idx:number) => { setPlNowPlaying(item); setPlNowIdx(idx); };
 
   // Spotify
   const [spotifyInput, setSpotifyInput] = useState("");
@@ -416,17 +457,19 @@ export default function StudentMusic() {
     finally { setLoading(false); }
   },[]);
 
-  const eqActive=hasSearched||!!spotifyEmbed||!!plYtQuery;
-  const tabs=[
+  const eqActive = hasSearched || !!spotifyEmbed || !!plNowPlaying;
+  const tabs = [
     {id:"search"   as Tab, label:"Search",     icon:<Search size={12}/>},
     {id:"playlist" as Tab, label:playlist.length?`My Playlist (${playlist.length})`:"My Playlist", icon:<ListMusic size={12}/>},
     {id:"spotify"  as Tab, label:"Spotify",    icon:<Music2 size={12}/>},
   ];
-  const activeFP  = tab==="search"   && !!nowPlaying;
-  const activePlFP= tab==="playlist" && !!plNowPlaying;
+  const activeFP   = tab==="search"   && !!nowPlaying;
+  const activePlFP = tab==="playlist" && !!plNowPlaying;
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)] -mx-4 -mt-4" style={{paddingBottom:(activeFP||activePlFP)?"80px":"16px"}}>
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] -mx-4 -mt-4"
+      style={{paddingBottom:(activeFP||activePlFP)?"84px":"16px"}}>
+
       <HeroSection active={eqActive} query={query} setQuery={setQuery} onSearch={q=>{setTab("search");doSearch(q);}} loading={loading} />
       <AmbientSounds />
 
@@ -473,7 +516,8 @@ export default function StudentMusic() {
               </div>
               <div className="flex flex-col items-center py-8 text-muted-foreground gap-2">
                 <Search size={32} className="text-primary/15"/>
-                <p className="text-sm">Search any song to hear it in full</p>
+                <p className="text-sm">Search any song to hear a preview</p>
+                <p className="text-xs text-muted-foreground/50">30-second previews via iTunes</p>
               </div>
             </>
           )}
@@ -486,16 +530,18 @@ export default function StudentMusic() {
                 </div>
               )}
               {!loading&&results.map((track,i)=>{
-                const added=addedIds.has(track.trackId), faved=favIds.has(track.trackId), isNow=nowPlaying?.trackId===track.trackId;
+                const added=addedIds.has(track.trackId), faved=favIds.has(track.trackId);
+                const isNow=nowPlaying?.trackId===track.trackId;
+                const hasPreview=!!track.previewUrl;
                 return (
                   <div key={track.trackId}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border transition-all duration-200 cursor-pointer group hover:scale-[1.005]"
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl border transition-all duration-200 group hover:scale-[1.005] ${hasPreview?"cursor-pointer":"cursor-default opacity-60"}`}
                     style={{
                       background:isNow?"rgba(124,58,237,0.12)":"rgba(255,255,255,0.02)",
                       borderColor:isNow?"rgba(124,58,237,0.35)":"rgba(255,255,255,0.05)",
                       boxShadow:isNow?"0 0 16px rgba(124,58,237,.12)":"none",
                     }}
-                    onClick={()=>playTrack(track,i)}>
+                    onClick={()=>{ if(hasPreview) playTrack(track,i); }}>
                     <div className="w-5 shrink-0 text-center">
                       {isNow?(
                         <div className="flex items-end gap-0.5 h-4 mx-auto w-fit">
@@ -507,19 +553,20 @@ export default function StudentMusic() {
                       <img src={track.artworkUrl100} alt={track.collectionName} className="w-11 h-11 rounded-xl object-cover"
                         style={{boxShadow:isNow?"0 0 10px rgba(124,58,237,.4)":"none"}} />
                       {isNow&&<div className="absolute inset-0 rounded-xl border border-primary/35"/>}
+                      {!hasPreview&&<div className="absolute inset-0 rounded-xl bg-black/50 flex items-center justify-center"><span className="text-[9px] text-white/50">No preview</span></div>}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-semibold truncate ${isNow?"text-primary":"text-foreground"}`}>{track.trackName}</p>
                       <p className="text-[11px] text-muted-foreground truncate">{track.artistName}</p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-xs text-muted-foreground hidden group-hover:inline">{track.trackTimeMillis?fmtTime(track.trackTimeMillis):""}</span>
-                      <span className="text-xs text-muted-foreground group-hover:hidden">{track.trackTimeMillis?fmtTime(track.trackTimeMillis):"—"}</span>
-                      <button onClick={e=>{e.stopPropagation();toggleFav(track.trackId);}} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                      <span className="text-xs text-muted-foreground">{track.trackTimeMillis?fmtMs(track.trackTimeMillis):"—"}</span>
+                      <button onClick={e=>{e.stopPropagation();toggleFav(track.trackId);}} className="p-1.5 rounded-lg hover:bg-muted transition-colors opacity-0 group-hover:opacity-100">
                         <Heart size={12} fill={faved?"#f472b6":"none"} className={faved?"text-pink-400":"text-muted-foreground"}/>
                       </button>
-                      <button onClick={e=>{e.stopPropagation();addToPlaylist(track);}}
-                        className={`p-1.5 rounded-lg border transition-colors ${added?"bg-primary/15 border-primary/30":"bg-card/40 border-border/40 hover:bg-primary/10 hover:border-primary/20"}`}>
+                      <button onClick={e=>{e.stopPropagation();if(hasPreview)addToPlaylist(track);}}
+                        disabled={!hasPreview}
+                        className={`p-1.5 rounded-lg border transition-colors opacity-0 group-hover:opacity-100 ${added?"bg-primary/15 border-primary/30":"bg-card/40 border-border/40 hover:bg-primary/10 hover:border-primary/20"}`}>
                         {added?<CheckCircle2 size={12} className="text-primary"/>:<Plus size={12} className="text-muted-foreground"/>}
                       </button>
                     </div>
@@ -547,7 +594,7 @@ export default function StudentMusic() {
                 <p className="text-xs text-muted-foreground">{playlist.length} track{playlist.length!==1?"s":""}</p>
                 <button onClick={()=>{savePlaylist([]);setAddedIds(new Set());setPlNowPlaying(null);}} className="text-xs text-destructive/50 hover:text-destructive transition-colors">Clear all</button>
               </div>
-              <div id="pl-player" className="space-y-1.5">
+              <div className="space-y-1.5">
                 {playlist.map((item,i)=>{
                   const isNow=plNowPlaying?.id===item.id;
                   return (
@@ -618,19 +665,23 @@ export default function StudentMusic() {
 
       {/* Floating Players */}
       {activeFP&&nowPlaying&&(
-        <FloatingPlayer ytQuery={ytQuery} ytKey={ytKey}
+        <FloatingPlayer
+          previewUrl={nowPlaying.previewUrl}
+          trackName={nowPlaying.trackName} artistName={nowPlaying.artistName}
+          artwork={nowPlaying.artworkUrl100}
           onSkipPrev={()=>skipTrack(-1)} onSkipNext={()=>skipTrack(1)}
           canPrev={nowIdx>0} canNext={nowIdx<results.length-1}
-          trackName={nowPlaying.trackName} artistName={nowPlaying.artistName}
-          artwork={nowPlaying.artworkUrl100} onClose={()=>setNowPlaying(null)} />
+          onClose={()=>setNowPlaying(null)} />
       )}
       {activePlFP&&plNowPlaying&&(
-        <FloatingPlayer ytQuery={plYtQuery} ytKey={plYtKey}
+        <FloatingPlayer
+          previewUrl={plNowPlaying.previewUrl}
+          trackName={plNowPlaying.trackName} artistName={plNowPlaying.artistName}
+          artwork={plNowPlaying.artwork}
           onSkipPrev={()=>{const item=playlist[plNowIdx-1];if(item)playFromPlaylist(item,plNowIdx-1);}}
           onSkipNext={()=>{const item=playlist[plNowIdx+1];if(item)playFromPlaylist(item,plNowIdx+1);}}
           canPrev={plNowIdx>0} canNext={plNowIdx<playlist.length-1}
-          trackName={plNowPlaying.trackName} artistName={plNowPlaying.artistName}
-          artwork={plNowPlaying.artwork} onClose={()=>setPlNowPlaying(null)} />
+          onClose={()=>setPlNowPlaying(null)} />
       )}
     </div>
   );
