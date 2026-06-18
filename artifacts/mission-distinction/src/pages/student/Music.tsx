@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Search, Music2, Loader2, X, Volume2, Play,
-  Youtube, Radio, Sparkles, Eye, EyeOff
+  Youtube, Radio, Sparkles
 } from "lucide-react";
 import { apiFetch } from "@/lib/apiFetch";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
@@ -156,28 +156,11 @@ function YouTubeTab({ externalSearch }: { externalSearch: string }) {
   const [results,  setResults]  = useState<YTResult[]>([]);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState("");
-  const [audioOnly,setAudioOnly]= useState(false);
   const [searched, setSearched] = useState(false);
-
-  /* Restore from context when returning to this tab/page */
-  const [playing, setPlaying] = useState<YTResult|null>(() =>
-    ctxPlaying?.type === "youtube"
-      ? { videoId: ctxPlaying.videoId, title: ctxPlaying.title, channel: ctxPlaying.channel, thumbnail: ctxPlaying.thumbnail, duration: "", views: "" }
-      : null
-  );
-
-  /* Sync local playing → global context so PersistentPlayer can take over */
-  useEffect(() => {
-    if (playing) {
-      ctxPlay({ type: "youtube", videoId: playing.videoId, title: playing.title, channel: playing.channel, thumbnail: playing.thumbnail });
-    }
-  }, [playing?.videoId]);
-
-  const stopPlaying = () => { setPlaying(null); ctxStop(); };
 
   const search = useCallback(async (q: string) => {
     if (!q.trim()) return;
-    setLoading(true); setError(""); setSearched(true); setPlaying(null); ctxStop();
+    setLoading(true); setError(""); setSearched(true); ctxStop();
     try {
       const res = await apiFetch(`/api/youtube/search?q=${encodeURIComponent(q)}`);
       if (!res.ok) {
@@ -212,53 +195,19 @@ function YouTubeTab({ externalSearch }: { externalSearch: string }) {
 
       {error && <p className="text-xs text-red-400 bg-red-500/10 rounded-xl p-2">{error}</p>}
 
-      {/* Now Playing — single iframe, shrunk to 1×1 in audio-only mode */}
-      {playing && (
-        <div className="rounded-2xl overflow-hidden border border-red-500/20 bg-black">
-          <div className="flex items-center justify-between px-3 py-2 bg-red-500/8">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="flex items-end gap-0.5 h-3.5 shrink-0">{[...Array(4)].map((_,i)=><div key={i} className="w-[3px] rounded-full bg-red-400" style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}}/>)}</div>
-              <p className="text-xs font-semibold text-white/80 truncate">{playing.title}</p>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button onClick={()=>setAudioOnly(v=>!v)} className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg border transition-all ${audioOnly?"bg-violet-500/20 border-violet-500/30 text-violet-300":"bg-white/5 border-white/10 text-white/40"}`}>{audioOnly?<EyeOff size={10}/>:<Eye size={10}/>}{audioOnly?"Audio Only":"Video"}</button>
-              <button onClick={stopPlaying} className="p-1 rounded-lg hover:bg-white/10"><X size={12} className="text-white/40"/></button>
+      {/* Now Playing — no iframe here; PersistentPlayer owns the single iframe */}
+      {ctxPlaying?.type === "youtube" && (
+        <div className="rounded-2xl border border-red-500/25 flex items-center gap-3 px-3 py-2.5" style={{background:"rgba(220,38,38,0.07)"}}>
+          <img src={ctxPlaying.thumbnail} alt="" className="w-14 h-10 rounded-xl object-cover shrink-0"/>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-white/85 truncate">{ctxPlaying.title}</p>
+            <p className="text-[10px] text-white/40 truncate">{ctxPlaying.channel}</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <div className="flex items-end gap-0.5 h-3">{[...Array(4)].map((_,i)=><div key={i} className="w-[2px] rounded-full bg-red-400" style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}}/>)}</div>
+              <p className="text-[10px] text-violet-400">Playing in player below ↓</p>
             </div>
           </div>
-
-          {/* Single iframe — video mode fills container, audio-only shrinks to 1×1 */}
-          {audioOnly ? (
-            <div className="flex items-center gap-3 p-4">
-              <img src={playing.thumbnail} alt="" className="w-16 h-12 rounded-xl object-cover shrink-0"/>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-white/80 truncate">{playing.title}</p>
-                <p className="text-[10px] text-white/40 mt-0.5">{playing.channel}</p>
-                <p className="text-[10px] text-violet-400 mt-1.5">🎵 Audio playing in background</p>
-                <p className="text-[9px] text-white/25 mt-0.5">Keep this page open. On mobile, keep screen on.</p>
-              </div>
-              {/* 1×1 iframe keeps audio alive — NOT zero-size (browsers suspend those) */}
-              <div className="overflow-hidden shrink-0" style={{width:1,height:1}}>
-                <iframe
-                  key={playing.videoId}
-                  src={`https://www.youtube-nocookie.com/embed/${playing.videoId}?autoplay=1&rel=0`}
-                  width="1" height="1"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  title="yt-audio"
-                  style={{border:0}}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="relative" style={{paddingBottom:"56.25%",height:0}}>
-              <iframe
-                key={playing.videoId}
-                src={`https://www.youtube-nocookie.com/embed/${playing.videoId}?autoplay=1&rel=0&modestbranding=1`}
-                className="absolute inset-0 w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen title="YouTube"
-              />
-            </div>
-          )}
+          <button onClick={ctxStop} className="p-1.5 rounded-lg hover:bg-white/10 shrink-0"><X size={12} className="text-white/40"/></button>
         </div>
       )}
 
@@ -273,9 +222,9 @@ function YouTubeTab({ externalSearch }: { externalSearch: string }) {
       {!loading && results.length > 0 && (
         <div className="space-y-1.5">
           {results.map(v=>{
-            const isNow=playing?.videoId===v.videoId;
+            const isNow=ctxPlaying?.type==="youtube"&&ctxPlaying.videoId===v.videoId;
             return(
-              <button key={v.videoId} onClick={()=>setPlaying(v)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border text-left transition-all hover:scale-[1.005] group" style={{background:isNow?"rgba(220,38,38,0.1)":"rgba(255,255,255,0.02)",borderColor:isNow?"rgba(220,38,38,0.35)":"rgba(255,255,255,0.05)",boxShadow:isNow?"0 0 14px rgba(220,38,38,.1)":"none"}}>
+              <button key={v.videoId} onClick={()=>ctxPlay({type:"youtube",videoId:v.videoId,title:v.title,channel:v.channel,thumbnail:v.thumbnail})} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border text-left transition-all hover:scale-[1.005] group" style={{background:isNow?"rgba(220,38,38,0.1)":"rgba(255,255,255,0.02)",borderColor:isNow?"rgba(220,38,38,0.35)":"rgba(255,255,255,0.05)",boxShadow:isNow?"0 0 14px rgba(220,38,38,.1)":"none"}}>
                 <div className="relative shrink-0 w-[72px] h-[54px] rounded-xl overflow-hidden bg-black/40">
                   <img src={v.thumbnail} alt="" className="w-full h-full object-cover"/>
                   {isNow?(<div className="absolute inset-0 bg-red-500/30 flex items-center justify-center"><div className="flex items-end gap-0.5 h-4">{[...Array(4)].map((_,i)=><div key={i} className="w-[3px] rounded-full bg-white" style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}}/>)}</div></div>):(<div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Play size={18} className="text-white" fill="white"/></div>)}
@@ -309,25 +258,9 @@ function SoundCloudTab({ externalSearch }: { externalSearch: string }) {
   const [error,   setError]   = useState("");
   const [searched,setSearched]= useState(false);
 
-  /* Restore from context when returning to this tab */
-  const [playing, setPlaying] = useState<SCTrack|null>(() =>
-    ctxPlaying?.type === "soundcloud"
-      ? { id: ctxPlaying.id, title: ctxPlaying.title, artist: ctxPlaying.artist, artwork: ctxPlaying.artwork, duration: 0, plays: 0, permalinkUrl: ctxPlaying.permalinkUrl }
-      : null
-  );
-
-  /* Sync local playing → global context */
-  useEffect(() => {
-    if (playing) {
-      ctxPlay({ type: "soundcloud", id: playing.id, title: playing.title, artist: playing.artist, artwork: playing.artwork, permalinkUrl: playing.permalinkUrl });
-    }
-  }, [playing?.id]);
-
-  const stopPlaying = () => { setPlaying(null); ctxStop(); };
-
   const search = useCallback(async (q: string) => {
     if (!q.trim()) return;
-    setLoading(true); setError(""); setSearched(true); setPlaying(null); ctxStop();
+    setLoading(true); setError(""); setSearched(true); ctxStop();
     try {
       const res = await apiFetch(`/api/soundcloud/search?q=${encodeURIComponent(q)}`);
       if (!res.ok) {
@@ -345,10 +278,6 @@ function SoundCloudTab({ externalSearch }: { externalSearch: string }) {
     if (externalSearch) { setQuery(externalSearch); search(externalSearch); }
   }, [externalSearch]);
 
-  const embedUrl = playing
-    ? `https://w.soundcloud.com/player/?url=${encodeURIComponent(playing.permalinkUrl)}&color=%237c3aed&auto_play=true&hide_related=false&show_comments=false&show_user=true&show_reposts=false&visual=true`
-    : null;
-
   return (
     <div className="px-4 pt-3 space-y-3">
       <div className="flex gap-2">
@@ -365,19 +294,21 @@ function SoundCloudTab({ externalSearch }: { externalSearch: string }) {
 
       {error && <p className="text-xs text-red-400 bg-red-500/10 rounded-xl p-2">{error}</p>}
 
-      {/* Now playing — embed by individual permalink URL (always valid) */}
-      {embedUrl && playing && (
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="flex items-end gap-0.5 h-3.5 shrink-0">{[...Array(4)].map((_,i)=><div key={i} className="w-[3px] rounded-full bg-orange-400" style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}}/>)}</div>
-              <p className="text-xs font-semibold text-white/70 truncate">{playing.title}</p>
+      {/* Now Playing — no iframe here; PersistentPlayer owns the single iframe */}
+      {ctxPlaying?.type === "soundcloud" && (
+        <div className="rounded-2xl border border-orange-500/25 flex items-center gap-3 px-3 py-2.5" style={{background:"rgba(234,88,12,0.07)"}}>
+          {ctxPlaying.artwork
+            ? <img src={ctxPlaying.artwork} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0"/>
+            : <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0"><Radio size={16} className="text-orange-400/50"/></div>}
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-white/85 truncate">{ctxPlaying.title}</p>
+            <p className="text-[10px] text-white/40 truncate">{ctxPlaying.artist}</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <div className="flex items-end gap-0.5 h-3">{[...Array(4)].map((_,i)=><div key={i} className="w-[2px] rounded-full bg-orange-400" style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}}/>)}</div>
+              <p className="text-[10px] text-violet-400">Playing in player below ↓</p>
             </div>
-            <button onClick={stopPlaying} className="p-1 rounded-lg hover:bg-white/10 shrink-0 ml-2"><X size={12} className="text-white/40"/></button>
           </div>
-          <iframe key={playing.id} width="100%" height="300" scrolling="no"
-            frameBorder="no" allow="autoplay" src={embedUrl}
-            className="rounded-2xl" title="SoundCloud track"/>
+          <button onClick={ctxStop} className="p-1.5 rounded-lg hover:bg-white/10 shrink-0"><X size={12} className="text-white/40"/></button>
         </div>
       )}
 
@@ -392,9 +323,9 @@ function SoundCloudTab({ externalSearch }: { externalSearch: string }) {
       {!loading && results.length > 0 && (
         <div className="space-y-1.5">
           {results.map(t=>{
-            const isNow=playing?.id===t.id;
+            const isNow=ctxPlaying?.type==="soundcloud"&&ctxPlaying.id===t.id;
             return(
-              <button key={t.id} onClick={()=>setPlaying(t)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border text-left transition-all hover:scale-[1.005] group" style={{background:isNow?"rgba(234,88,12,0.1)":"rgba(255,255,255,0.02)",borderColor:isNow?"rgba(234,88,12,0.35)":"rgba(255,255,255,0.05)",boxShadow:isNow?"0 0 14px rgba(234,88,12,.1)":"none"}}>
+              <button key={t.id} onClick={()=>ctxPlay({type:"soundcloud",id:t.id,title:t.title,artist:t.artist,artwork:t.artwork,permalinkUrl:t.permalinkUrl})} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border text-left transition-all hover:scale-[1.005] group" style={{background:isNow?"rgba(234,88,12,0.1)":"rgba(255,255,255,0.02)",borderColor:isNow?"rgba(234,88,12,0.35)":"rgba(255,255,255,0.05)",boxShadow:isNow?"0 0 14px rgba(234,88,12,.1)":"none"}}>
                 <div className="relative shrink-0 w-[54px] h-[54px] rounded-xl overflow-hidden bg-black/40">
                   {t.artwork?<img src={t.artwork} alt="" className="w-full h-full object-cover"/>:<div className="w-full h-full bg-orange-500/10 flex items-center justify-center"><Radio size={18} className="text-orange-400/50"/></div>}
                   {isNow?(<div className="absolute inset-0 bg-orange-500/30 flex items-center justify-center"><div className="flex items-end gap-0.5 h-4">{[...Array(4)].map((_,i)=><div key={i} className="w-[3px] rounded-full bg-white" style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}}/>)}</div></div>):(<div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Play size={16} className="text-white" fill="white"/></div>)}
@@ -434,9 +365,13 @@ function SpotifyTab() {
 
 /* ─── Page ───────────────────────────────────────────── */
 export default function StudentMusic() {
+  const { playing: ctxPlaying } = useMusicPlayer();
   const [tab,  setTab]  = useState<Tab>("youtube");
   const [query, setQuery] = useState("");
   const [pendingSearch, setPendingSearch] = useState("");
+  const bottomPad = ctxPlaying
+    ? (ctxPlaying.type === "youtube" ? 315 : 166) + 48 + 16
+    : 16;
 
   const handleSearch = (q: string) => {
     if (!q.trim()) return;
@@ -453,7 +388,7 @@ export default function StudentMusic() {
   ];
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)] -mx-4 -mt-4 pb-4">
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] -mx-4 -mt-4" style={{paddingBottom:bottomPad}}>
       <HeroSection active={true} query={query} setQuery={setQuery} onSearch={handleSearch} tab={tab}/>
       <AmbientSounds/>
       <div className="mx-4 my-1 h-px" style={{background:"linear-gradient(90deg,transparent,rgba(124,58,237,.25),transparent)"}}/>
