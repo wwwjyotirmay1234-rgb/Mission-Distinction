@@ -133,8 +133,8 @@
   --primary: 262 83% 58%; /* #7c3aed */
   --primary-foreground: 210 40% 98%;
 
-  /* Blue accents */
-  --secondary: 217 91% 60%; 
+  /* Purple accent (complements primary) */
+  --secondary: 271 81% 64%;
   --secondary-foreground: 210 40% 98%;
 
   --muted: 233 45% 15%;
