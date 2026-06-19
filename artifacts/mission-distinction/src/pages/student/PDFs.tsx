@@ -8,7 +8,7 @@ import { useListPdfs, getListPdfsQueryKey } from "@workspace/api-client-react";
 import { Search, Filter, Download, BookOpen, X, ExternalLink, FileText, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const SUBJECTS = ["All", "Anatomy", "Physiology", "Biochemistry", "Pharmacology", "Pathology", "Microbiology", "Forensic Medicine", "Community Medicine"];
+const SUBJECTS = ["All", "Anatomy", "Physiology", "Biochemistry"];
 
 type Pdf = {
   id: number;
@@ -55,7 +55,6 @@ function getDownloadUrl(url: string): string {
 
 function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
   const [embedFailed, setEmbedFailed] = React.useState(false);
-  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
   const embedUrl = getEmbedUrl(pdf.url);
   const openUrl = getOpenUrl(pdf.url);
@@ -74,7 +73,12 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
           <div className="flex items-center gap-2 shrink-0 ml-4">
             <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" asChild>
               <a href={openUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink size={13} /> Open in Browser
+                <ExternalLink size={13} /> Open
+              </a>
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" asChild>
+              <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
+                <Download size={13} /> Download
               </a>
             </Button>
             <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onClose}>
@@ -83,7 +87,7 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
           </div>
         </DialogHeader>
         <div className="flex-1 relative overflow-hidden">
-          {isMobile || embedFailed ? (
+          {embedFailed ? (
             <div className="flex flex-col items-center justify-center h-full gap-5 px-6 text-center">
               <FileText size={48} className="text-primary/50" />
               <div>
@@ -102,9 +106,7 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
                   </a>
                 </Button>
               </div>
-              {embedFailed && (
-                <p className="text-xs text-muted-foreground">In-app preview unavailable — tap "Read PDF" to open in your browser.</p>
-              )}
+              <p className="text-xs text-muted-foreground">Preview unavailable — tap "Read PDF" to open in your browser.</p>
             </div>
           ) : (
             <iframe
