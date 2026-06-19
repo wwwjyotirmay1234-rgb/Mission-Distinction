@@ -46,6 +46,8 @@ export const communityMessagesTable = pgTable("community_messages", {
   fileUrl: text("file_url"),
   fileType: text("file_type"),
   fileName: text("file_name"),
+  messageType: text("message_type").notNull().default("text"),
+  richContent: text("rich_content"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

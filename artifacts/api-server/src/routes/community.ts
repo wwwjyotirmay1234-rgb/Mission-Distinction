@@ -243,15 +243,19 @@ router.post("/messages/:groupId", authMiddleware, messageLimiter, async (req: Re
     if (!group.isAdminCreated && !(await isMember(groupId, user.id))) {
       res.status(403).json({ error: "Join this group to send messages" }); return;
     }
-    const { content, fileUrl, fileType, fileName } = req.body;
-    if (!content?.trim() && !fileUrl) { res.status(400).json({ error: "Message content or file required" }); return; }
+    const { content, fileUrl, fileType, fileName, messageType, richContent } = req.body;
+    const mType: string = messageType && ["text", "image", "pdf", "flashcard", "mnemonic", "video"].includes(messageType) ? messageType : "text";
+    if (!content?.trim() && !fileUrl && !richContent) { res.status(400).json({ error: "Message content or attachment required" }); return; }
     const safeContent = content ? stripHtml(content) : "";
     if (safeContent.length > 2000) { res.status(400).json({ error: "Message too long" }); return; }
     if (fileUrl) {
       try { new URL(fileUrl); } catch { res.status(400).json({ error: "Invalid file URL" }); return; }
       if (!fileUrl.startsWith("https://res.cloudinary.com/")) { res.status(400).json({ error: "Invalid file URL" }); return; }
     }
-    const [message] = await db.insert(communityMessagesTable).values({ groupId, senderId: user.id, senderName: user.fullName, senderAvatarUrl: user.avatarUrl || null, content: safeContent, fileUrl: fileUrl || null, fileType: fileType || null, fileName: fileName || null }).returning();
+    if (richContent) {
+      try { JSON.parse(richContent); } catch { res.status(400).json({ error: "Invalid rich content" }); return; }
+    }
+    const [message] = await db.insert(communityMessagesTable).values({ groupId, senderId: user.id, senderName: user.fullName, senderAvatarUrl: user.avatarUrl || null, content: safeContent, fileUrl: fileUrl || null, fileType: fileType || null, fileName: fileName || null, messageType: mType, richContent: richContent || null }).returning();
     try { getIO().to(`chat:${groupId}`).emit("new-message", message); } catch { }
     res.status(201).json(message);
   } catch { res.status(500).json({ error: "Internal server error" }); }
