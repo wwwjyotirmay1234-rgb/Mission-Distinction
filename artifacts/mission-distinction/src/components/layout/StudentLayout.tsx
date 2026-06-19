@@ -8,6 +8,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { MailWarning, X, CheckCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { PinnedBanner } from "@/components/PinnedBanner";
+import { WarningBanner } from "@/components/WarningBanner";
 
 function EmailVerificationBanner() {
   const { user, token } = useAuth();
@@ -100,7 +102,9 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
           <StudentSidebar />
           <div className="flex-1 flex flex-col md:ml-64 min-w-0">
             <Header />
+            <PinnedBanner />
             <EmailVerificationBanner />
+            <WarningBanner />
             <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
               {children}
             </main>

@@ -28,6 +28,12 @@ import { examsRouter } from "./exams";
 import { confessionsRouter } from "./confessions";
 import { studyRoomsRouter } from "./studyRooms";
 import { aiToolsRouter } from "./aiTools";
+import { activityFeedRouter } from "./activityFeed";
+import { moderationRouter } from "./moderation";
+import { warningsRouter } from "./warningsRoute";
+import { auditLogsRouter } from "./auditLogsRoute";
+import { noticesRouter } from "./notices";
+import { quizIntelligenceRouter } from "./quizIntelligence";
 
 const router: IRouter = Router();
 
@@ -64,5 +70,11 @@ router.use("/exams", examsRouter);
 router.use("/confessions", confessionsRouter);
 router.use("/study-rooms", studyRoomsRouter);
 router.use("/ai", aiToolsRouter);
+router.use("/admin/activity-feed", activityFeedRouter);
+router.use("/admin/moderation", moderationRouter);
+router.use("/admin/warnings", warningsRouter);
+router.use("/admin/audit-logs", auditLogsRouter);
+router.use("/admin/notices", noticesRouter);
+router.use("/admin/quiz-intelligence", quizIntelligenceRouter);
 
 export default router;

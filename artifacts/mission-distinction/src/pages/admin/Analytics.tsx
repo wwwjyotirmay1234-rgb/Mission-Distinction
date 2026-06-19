@@ -10,8 +10,84 @@ import {
 import {
   Users, FileText, BookOpen, Brain, TrendingUp, Award, Activity, BarChart2
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/apiFetch";
+import { format, subDays, eachDayOfInterval } from "date-fns";
 
 const COLORS = ["#6366f1", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
+
+function EngagementHeatmap() {
+  const { data: rawData } = useQuery<{ day: string; count: number }[]>({
+    queryKey: ["engagement-heatmap"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/admin/quiz-intelligence/heatmap");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const end = new Date();
+  const start = subDays(end, 89);
+  const allDays = eachDayOfInterval({ start, end });
+  const countMap = new Map((rawData ?? []).map(r => [r.day?.slice(0, 10), Number(r.count)]));
+
+  const weeks: { date: Date; count: number }[][] = [];
+  let week: { date: Date; count: number }[] = [];
+  allDays.forEach((d, i) => {
+    week.push({ date: d, count: countMap.get(format(d, "yyyy-MM-dd")) ?? 0 });
+    if ((i + 1) % 7 === 0 || i === allDays.length - 1) {
+      weeks.push(week);
+      week = [];
+    }
+  });
+
+  const max = Math.max(1, ...Array.from(countMap.values()));
+
+  function getColor(count: number) {
+    if (count === 0) return "bg-muted/30";
+    const intensity = count / max;
+    if (intensity < 0.25) return "bg-purple-900/60";
+    if (intensity < 0.5) return "bg-purple-700/80";
+    if (intensity < 0.75) return "bg-purple-600";
+    return "bg-purple-400";
+  }
+
+  return (
+    <Card className="bg-card/40 border-border/40">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Activity className="w-4 h-4 text-purple-400" /> Student Engagement Heatmap
+          <span className="text-xs font-normal text-muted-foreground ml-1">— last 90 days</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto pb-2">
+          <div className="flex gap-1 min-w-max">
+            {weeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col gap-1">
+                {week.map(({ date, count }) => (
+                  <div
+                    key={date.toISOString()}
+                    title={`${format(date, "MMM d")}: ${count} events`}
+                    className={`w-3.5 h-3.5 rounded-sm cursor-pointer transition-transform hover:scale-125 ${getColor(count)}`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+          <span>Less</span>
+          {["bg-muted/30", "bg-purple-900/60", "bg-purple-700/80", "bg-purple-600", "bg-purple-400"].map((c, i) => (
+            <div key={i} className={`w-3 h-3 rounded-sm ${c}`} />
+          ))}
+          <span>More</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function AdminAnalytics() {
   const { data: stats, isLoading: statsLoading } = useGetAdminDashboardStats();
@@ -274,6 +350,7 @@ export default function AdminAnalytics() {
           </div>
         </CardContent>
       </Card>
+      <EngagementHeatmap />
     </div>
   );
 }

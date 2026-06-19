@@ -16,6 +16,12 @@ import {
   MessageSquare,
   Settings,
   Crown,
+  Zap,
+  Shield,
+  AlertTriangle,
+  ClipboardList,
+  Brain,
+  Pin,
 } from "lucide-react";
 
 const navItems = [
@@ -35,9 +41,18 @@ const navItems = [
   { icon: Newspaper, label: "News & Discoveries", href: "/admin/news" },
   { icon: Megaphone, label: "Announcements", href: "/admin/announcements" },
   { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
+  { icon: Brain, label: "Quiz Intelligence", href: "/admin/quiz-intelligence" },
   { icon: FileBarChart, label: "Reports", href: "/admin/reports" },
   { icon: MessageSquare, label: "Feedback", href: "/admin/feedback" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },
+];
+
+const premiumNavItems = [
+  { icon: Zap, label: "Live Activity Feed", href: "/admin/activity-feed", color: "text-yellow-400" },
+  { icon: Shield, label: "Moderation Center", href: "/admin/moderation", color: "text-blue-400" },
+  { icon: AlertTriangle, label: "Student Warnings", href: "/admin/warnings", color: "text-amber-400" },
+  { icon: ClipboardList, label: "Audit Log", href: "/admin/audit-log", color: "text-purple-400" },
+  { icon: Pin, label: "Pinned Notices", href: "/admin/notices", color: "text-emerald-400" },
 ];
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -112,6 +127,31 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             </Link>
           );
         })}
+
+        {/* Premium Admin Features */}
+        <div className="my-3 pt-2">
+          <p className="px-3 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground/60 mb-2">
+            Premium Tools
+          </p>
+          {premiumNavItems.map((item) => {
+            const isActive = location === item.href;
+            return (
+              <Link key={item.href} href={item.href} onClick={onNavigate}>
+                <div
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer mb-1",
+                    isActive
+                      ? "bg-primary/10 text-primary shadow-sm"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <item.icon size={18} className={isActive ? "text-primary" : item.color} />
+                  {item.label}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
 
         {isSuperAdmin && (
           <>

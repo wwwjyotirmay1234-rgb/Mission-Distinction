@@ -2,4 +2,5 @@
 - [JWT timing test fix](jwt-timing.md) — JWT iat is second-precision; refresh-rotation test needs ≥1100ms sleep or tokens will be identical within same second
 - [Bundle minification](bundle-minification.md) — adding minify+treeShaking to esbuild cut bundle 4.4MB→2.3MB; sourcemap still 7.9MB (linked, not inline, fine)
 - [Load test baseline](load-test-baseline.md) — localhost: 2032 req/s, 0% errors, p95=20ms, p99=41ms; thresholds: error<1%, p95<2000ms, rps>10
+- [Admin 12-feature schema and routes](admin-features-schema.md) — new tables (audit_logs, student_warnings, content_reports, pinned_notices), route files, quiz schema column gotchas
 - [Mobile PWA lessons](mobile-pwa-lessons.md) — JWT expiry, Google auth, PDF viewer, SW caching, and viewport pitfalls for this app

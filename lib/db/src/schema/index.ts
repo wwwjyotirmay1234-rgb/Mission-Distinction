@@ -19,3 +19,7 @@ export * from "./studySessions";
 export * from "./exams";
 export * from "./confessions";
 export * from "./studyRooms";
+export * from "./auditLogs";
+export * from "./warnings";
+export * from "./contentReports";
+export * from "./pinnedNotices";

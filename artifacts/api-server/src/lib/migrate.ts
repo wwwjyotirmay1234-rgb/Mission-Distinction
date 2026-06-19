@@ -133,6 +133,59 @@ export async function runStartupMigrations() {
 
       CREATE UNIQUE INDEX IF NOT EXISTS study_room_members_unique
         ON study_room_members(room_id, user_id);
+
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id SERIAL PRIMARY KEY,
+        admin_id INTEGER NOT NULL,
+        admin_name TEXT NOT NULL,
+        action TEXT NOT NULL,
+        entity_type TEXT,
+        entity_id INTEGER,
+        details JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS student_warnings (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        issued_by INTEGER NOT NULL,
+        issued_by_name TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        severity TEXT NOT NULL DEFAULT 'warning',
+        seen_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS content_reports (
+        id SERIAL PRIMARY KEY,
+        reporter_id INTEGER NOT NULL,
+        content_type TEXT NOT NULL,
+        content_id INTEGER NOT NULL,
+        content_preview TEXT,
+        reason TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        reviewed_by INTEGER,
+        reviewed_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS content_reports_unique
+        ON content_reports(reporter_id, content_type, content_id);
+
+      CREATE TABLE IF NOT EXISTS pinned_notices (
+        id SERIAL PRIMARY KEY,
+        created_by INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT 'info',
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        expires_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      ALTER TABLE announcements
+        ADD COLUMN IF NOT EXISTS scheduled_for TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS delivered_count INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS target_audience TEXT NOT NULL DEFAULT 'all';
     `);
   } finally {
     client.release();

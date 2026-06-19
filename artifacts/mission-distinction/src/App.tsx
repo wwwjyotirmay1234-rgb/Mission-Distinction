@@ -58,7 +58,6 @@ import StudentProgress from "@/pages/student/Progress";
 import StudentBookmarks from "@/pages/student/Bookmarks";
 import StudentCalendar from "@/pages/student/Calendar";
 import StudentSettings from "@/pages/student/Settings";
-// Student Pages (additional)
 import StudentAnnouncements from "@/pages/student/Announcements";
 import StudentLeaderboard from "@/pages/student/Leaderboard";
 import StudentDoubts from "@/pages/student/Doubts";
@@ -86,6 +85,14 @@ import AdminSettings from "@/pages/admin/Settings";
 import AdminReports from "@/pages/admin/Reports";
 import AdminFeedback from "@/pages/admin/Feedback";
 import SuperAdminPanel from "@/pages/admin/SuperAdmin";
+
+// New Premium Admin Pages
+import ActivityFeed from "@/pages/admin/ActivityFeed";
+import ModerationCenter from "@/pages/admin/ModerationCenter";
+import WarningsPage from "@/pages/admin/WarningsPage";
+import AuditLog from "@/pages/admin/AuditLog";
+import QuizIntelligence from "@/pages/admin/QuizIntelligence";
+import NoticesPage from "@/pages/admin/NoticesPage";
 
 const queryClient = new QueryClient();
 
@@ -146,10 +153,17 @@ function Router() {
               <Route path="/admin/news" component={AdminNews} />
               <Route path="/admin/announcements" component={AdminAnnouncements} />
               <Route path="/admin/analytics" component={AdminAnalytics} />
+              <Route path="/admin/quiz-intelligence" component={QuizIntelligence} />
               <Route path="/admin/reports" component={AdminReports} />
               <Route path="/admin/feedback" component={AdminFeedback} />
               <Route path="/admin/settings" component={AdminSettings} />
               <Route path="/admin/super" component={SuperAdminPanel} />
+              {/* Premium Admin Pages */}
+              <Route path="/admin/activity-feed" component={ActivityFeed} />
+              <Route path="/admin/moderation" component={ModerationCenter} />
+              <Route path="/admin/warnings" component={WarningsPage} />
+              <Route path="/admin/audit-log" component={AuditLog} />
+              <Route path="/admin/notices" component={NoticesPage} />
               <Route component={NotFound} />
             </Switch>
           </AdminLayout>
