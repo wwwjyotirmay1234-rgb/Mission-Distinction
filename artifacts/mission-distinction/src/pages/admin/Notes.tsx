@@ -15,7 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "Medicine", "Surgery"];
+const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"];
 
 type NoteItem = {
   id: number;

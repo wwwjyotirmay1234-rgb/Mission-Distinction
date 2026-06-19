@@ -23,7 +23,7 @@ async function uploadPdfFile(file: File, onProgress: (p: number) => void): Promi
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/upload/pdf");
-    const token = localStorage.getItem("md_token");
+    const token = localStorage.getItem("mission_token");
     if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
     xhr.onload = () => {
