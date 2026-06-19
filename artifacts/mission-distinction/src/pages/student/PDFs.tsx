@@ -34,8 +34,8 @@ function getDriveFileId(url: string): string | null {
 function getEmbedUrl(url: string): string {
   const id = getDriveFileId(url);
   if (id) return `https://drive.google.com/file/d/${id}/preview`;
-  // Direct PDF or Cloudinary — use Google Docs viewer as fallback
-  return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+  // Cloudinary or any direct PDF URL — embed directly (browser renders natively)
+  return url;
 }
 
 /** URL to open in browser — Drive view page or direct URL */
