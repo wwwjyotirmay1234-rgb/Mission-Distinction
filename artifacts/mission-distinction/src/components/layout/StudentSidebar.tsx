@@ -19,6 +19,11 @@ import {
   MessageSquare,
   Timer,
   Music,
+  BookOpen,
+  Lightbulb,
+  CalendarDays,
+  MessageCircleHeart,
+  Bot,
 } from "lucide-react";
 
 const LAST_SEEN_KEY = "md_announcements_last_seen";
@@ -64,6 +69,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     { icon: Bookmark, label: "Bookmarks", href: "/student/bookmarks" },
     { icon: CalendarIcon, label: "Calendar", href: "/student/calendar" },
     { icon: Timer, label: "Study Tools", href: "/student/tools" },
+    { icon: BookOpen, label: "Flashcards", href: "/student/flashcards" },
+    { icon: Lightbulb, label: "Mnemonics", href: "/student/mnemonics" },
+    { icon: CalendarDays, label: "Exam Countdown", href: "/student/exams" },
+    { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
+    { icon: Users, label: "Study Rooms", href: "/student/study-rooms" },
+    { icon: Bot, label: "AI Tools", href: "/student/ai-tools" },
     { icon: Music, label: "Music", href: "/student/music" },
     { icon: Settings, label: "Settings", href: "/student/settings" },
   ];

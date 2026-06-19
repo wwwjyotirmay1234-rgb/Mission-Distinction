@@ -63,6 +63,12 @@ import StudentLeaderboard from "@/pages/student/Leaderboard";
 import StudentDoubts from "@/pages/student/Doubts";
 import StudentTools from "@/pages/student/Tools";
 import StudentMusic from "@/pages/student/Music";
+import StudentFlashcards from "@/pages/student/Flashcards";
+import StudentMnemonics from "@/pages/student/Mnemonics";
+import StudentExams from "@/pages/student/Exams";
+import StudentConfessions from "@/pages/student/Confessions";
+import StudentStudyRooms from "@/pages/student/StudyRooms";
+import StudentAITools from "@/pages/student/AITools";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/Dashboard";
@@ -112,6 +118,12 @@ function Router() {
               <Route path="/student/settings" component={StudentSettings} />
               <Route path="/student/tools" component={StudentTools} />
               <Route path="/student/music" component={StudentMusic} />
+              <Route path="/student/flashcards" component={StudentFlashcards} />
+              <Route path="/student/mnemonics" component={StudentMnemonics} />
+              <Route path="/student/exams" component={StudentExams} />
+              <Route path="/student/confessions" component={StudentConfessions} />
+              <Route path="/student/study-rooms" component={StudentStudyRooms} />
+              <Route path="/student/ai-tools" component={StudentAITools} />
               <Route component={NotFound} />
             </Switch>
           </StudentLayout>

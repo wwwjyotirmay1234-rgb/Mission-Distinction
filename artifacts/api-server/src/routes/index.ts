@@ -21,6 +21,13 @@ import superAdminRouter from "./superAdmin";
 import pushRouter from "./push";
 import youtubeRouter from "./youtube";
 import soundcloudRouter from "./soundcloud";
+import { flashcardsRouter } from "./flashcards";
+import { mnemonicsRouter } from "./mnemonics";
+import { studySessionsRouter } from "./studySessions";
+import { examsRouter } from "./exams";
+import { confessionsRouter } from "./confessions";
+import { studyRoomsRouter } from "./studyRooms";
+import { aiToolsRouter } from "./aiTools";
 
 const router: IRouter = Router();
 
@@ -50,5 +57,12 @@ router.use("/super-admin", superAdminRouter);
 router.use("/push", pushRouter);
 router.use("/youtube", youtubeRouter);
 router.use("/soundcloud", soundcloudRouter);
+router.use("/flashcards", flashcardsRouter);
+router.use("/mnemonics", mnemonicsRouter);
+router.use("/study-sessions", studySessionsRouter);
+router.use("/exams", examsRouter);
+router.use("/confessions", confessionsRouter);
+router.use("/study-rooms", studyRoomsRouter);
+router.use("/ai", aiToolsRouter);
 
 export default router;
