@@ -43,10 +43,11 @@ function getOpenUrl(url: string): string {
   return url;
 }
 
-/** URL for downloading */
+/** URL for downloading — uses drive.usercontent.google.com which returns
+ *  application/octet-stream directly (no redirect, no warning page). */
 function getDownloadUrl(url: string): string {
   const id = getDriveFileId(url);
-  if (id) return `https://drive.google.com/uc?export=download&id=${id}`;
+  if (id) return `https://drive.usercontent.google.com/download?id=${id}&export=download&authuser=0`;
   return url;
 }
 
