@@ -448,7 +448,7 @@ export default function LandingPage() {
                             <FormItem>
                               <FormLabel>Email / Mobile</FormLabel>
                               <FormControl>
-                                <Input placeholder="Enter your email or mobile" {...field} className="bg-background/50" />
+                                <Input placeholder="Enter your email or mobile" autoComplete="username" {...field} className="bg-background/50" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -465,7 +465,7 @@ export default function LandingPage() {
                               </div>
                               <FormControl>
                                 <div className="relative">
-                                  <Input type={showPassword ? "text" : "password"} placeholder="Enter your password" {...field} className="bg-background/50 pr-10" />
+                                  <Input type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Enter your password" {...field} className="bg-background/50 pr-10" />
                                   <button 
                                     type="button" 
                                     onClick={() => setShowPassword(!showPassword)}
@@ -518,7 +518,7 @@ export default function LandingPage() {
                             <FormItem>
                               <FormLabel>Email</FormLabel>
                               <FormControl>
-                                <Input placeholder="john@example.com" {...field} className="bg-background/50" />
+                                <Input placeholder="john@example.com" autoComplete="email" {...field} className="bg-background/50" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -663,7 +663,7 @@ export default function LandingPage() {
                             <FormItem>
                               <FormLabel>Work Email</FormLabel>
                               <FormControl>
-                                <Input placeholder="admin@mission.edu" {...field} className="bg-background/50" />
+                                <Input placeholder="admin@mission.edu" autoComplete="email" {...field} className="bg-background/50" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -680,7 +680,7 @@ export default function LandingPage() {
                               </div>
                               <FormControl>
                                 <div className="relative">
-                                  <Input type={showPassword ? "text" : "password"} placeholder="Enter your password" {...field} className="bg-background/50 pr-10" />
+                                  <Input type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Enter your password" {...field} className="bg-background/50 pr-10" />
                                   <button 
                                     type="button" 
                                     onClick={() => setShowPassword(!showPassword)}
@@ -725,7 +725,7 @@ export default function LandingPage() {
                             <FormItem>
                               <FormLabel>Work Email</FormLabel>
                               <FormControl>
-                                <Input placeholder="admin@mission.edu" {...field} className="bg-background/50" />
+                                <Input placeholder="admin@mission.edu" autoComplete="email" {...field} className="bg-background/50" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
