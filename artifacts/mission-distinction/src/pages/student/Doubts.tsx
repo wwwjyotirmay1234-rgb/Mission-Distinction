@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useRef } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Plus, ChevronLeft, Send, CheckCircle2 } from "lucide-react";
+import { MessageSquare, Plus, ChevronLeft, Send, CheckCircle2, Bot, Sparkles, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -92,12 +92,128 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+function AiAnswerPanel({ doubtId, onClose }: { doubtId: number; onClose: () => void }) {
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
+
+  const ask = async () => {
+    setText("");
+    setDone(false);
+    setError("");
+    setLoading(true);
+    abortRef.current = new AbortController();
+
+    try {
+      const token = localStorage.getItem("mission_token");
+      const res = await fetch(`/api/doubts/${doubtId}/ai-answer`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        signal: abortRef.current.signal,
+      });
+
+      if (!res.ok || !res.body) {
+        setError("AI could not answer this question. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      while (true) {
+        const { value, done: streamDone } = await reader.read();
+        if (streamDone) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const parsed = JSON.parse(line.slice(6));
+            if (parsed.content) setText((t) => t + parsed.content);
+            if (parsed.done) setDone(true);
+            if (parsed.error) setError(parsed.error);
+          } catch {}
+        }
+      }
+    } catch (e: any) {
+      if (e.name !== "AbortError") setError("Connection error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    ask();
+    return () => abortRef.current?.abort();
+  }, []);
+
+  return (
+    <div className="rounded-xl border border-primary/30 bg-primary/5 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-primary/20 bg-primary/10">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+            <Bot size={14} className="text-primary" />
+          </div>
+          <span className="text-sm font-semibold text-primary">AI Tutor</span>
+          {loading && (
+            <span className="flex items-center gap-1 text-xs text-primary/70">
+              <span className="inline-flex gap-0.5">
+                <span className="w-1 h-1 rounded-full bg-primary/60 animate-bounce [animation-delay:0ms]" />
+                <span className="w-1 h-1 rounded-full bg-primary/60 animate-bounce [animation-delay:150ms]" />
+                <span className="w-1 h-1 rounded-full bg-primary/60 animate-bounce [animation-delay:300ms]" />
+              </span>
+              thinking…
+            </span>
+          )}
+          {done && <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-green-500/40 text-green-400">Done</Badge>}
+        </div>
+        <div className="flex items-center gap-1">
+          {!loading && (
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-primary/70 hover:text-primary" onClick={ask} title="Regenerate">
+              <RotateCcw size={13} />
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={onClose} title="Close">
+            <X size={14} />
+          </Button>
+        </div>
+      </div>
+
+      {/* Answer body */}
+      <div className="px-4 py-3 min-h-[60px] max-h-[420px] overflow-y-auto">
+        {error ? (
+          <div className="text-sm text-destructive">{error}</div>
+        ) : text ? (
+          <div className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">{text}</div>
+        ) : loading ? (
+          <div className="space-y-2 pt-1">
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-5/6" />
+            <Skeleton className="h-3 w-4/6" />
+          </div>
+        ) : null}
+      </div>
+      <p className="px-4 pb-2.5 text-[10px] text-muted-foreground/50">AI answers may contain errors. Always verify with your textbooks.</p>
+    </div>
+  );
+}
+
 export default function StudentDoubts() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [filterSubject, setFilterSubject] = useState("All");
   const [showCreate, setShowCreate] = useState(false);
   const [answerText, setAnswerText] = useState("");
   const [form, setForm] = useState({ subject: "Anatomy", title: "", question: "" });
+  const [showAiPanel, setShowAiPanel] = useState(false);
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -147,7 +263,7 @@ export default function StudentDoubts() {
   if (selectedId) {
     return (
       <div className="space-y-4 max-w-3xl mx-auto">
-        <Button variant="ghost" size="sm" className="gap-2 -ml-2" onClick={() => setSelectedId(null)}>
+        <Button variant="ghost" size="sm" className="gap-2 -ml-2" onClick={() => { setSelectedId(null); setShowAiPanel(false); }}>
           <ChevronLeft size={16} /> Back to Doubts
         </Button>
 
@@ -175,9 +291,29 @@ export default function StudentDoubts() {
                 </div>
                 <h2 className="text-lg font-bold mb-2">{doubtDetail.title}</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">{doubtDetail.question}</p>
-                <p className="text-xs text-muted-foreground mt-3">Asked by <strong>{doubtDetail.authorName}</strong></p>
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/30">
+                  <p className="text-xs text-muted-foreground">Asked by <strong>{doubtDetail.authorName}</strong></p>
+                  <Button
+                    size="sm"
+                    variant={showAiPanel ? "default" : "outline"}
+                    className={`h-8 gap-1.5 text-xs ${showAiPanel ? "bg-primary" : "border-primary/40 text-primary hover:bg-primary/10"}`}
+                    onClick={() => setShowAiPanel((v) => !v)}
+                  >
+                    <Sparkles size={13} />
+                    {showAiPanel ? "Hide AI Answer" : "Ask AI"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
+
+            {/* AI Answer Panel */}
+            {showAiPanel && (
+              <AiAnswerPanel
+                key={selectedId}
+                doubtId={selectedId}
+                onClose={() => setShowAiPanel(false)}
+              />
+            )}
 
             <h3 className="text-base font-semibold">
               {doubtDetail.answers.length} Answer{doubtDetail.answers.length !== 1 ? "s" : ""}
@@ -249,7 +385,7 @@ export default function StudentDoubts() {
           <h1 className="text-2xl font-bold tracking-tight mb-2 flex items-center gap-2">
             <MessageSquare size={22} className="text-primary" /> Doubt Board
           </h1>
-          <p className="text-muted-foreground">Ask questions and help your peers.</p>
+          <p className="text-muted-foreground">Ask questions — get answers from AI or your peers.</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="gap-2 shrink-0">
           <Plus size={16} /> Ask Question
@@ -287,7 +423,7 @@ export default function StudentDoubts() {
             <Card
               key={doubt.id}
               className="bg-card/30 border-border/40 hover:bg-card/50 transition-colors cursor-pointer"
-              onClick={() => setSelectedId(doubt.id)}
+              onClick={() => { setSelectedId(doubt.id); setShowAiPanel(false); }}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
