@@ -4,8 +4,17 @@ import { mnemonicsTable, mnemonicUpvotesTable } from "@workspace/db/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
+
+const createMnemonicLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 15,
+  message: { error: "Too many mnemonics posted. Please wait before posting again." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // List mnemonics
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
@@ -25,7 +34,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 });
 
 // Create mnemonic
-router.post("/", authMiddleware, async (req: Request, res: Response) => {
+router.post("/", authMiddleware, createMnemonicLimiter, async (req: Request, res: Response) => {
   try {
     const userId = parseId((req as any).user?.id);
     const authorName = (req as any).user?.name || "Student";

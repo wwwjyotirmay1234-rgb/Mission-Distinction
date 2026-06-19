@@ -4,8 +4,25 @@ import { studyRoomsTable, studyRoomMembersTable } from "@workspace/db/schema";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
+
+const createRoomLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: { error: "Too many rooms created. Please wait before creating another." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const heartbeatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 6,
+  message: { error: "Too many heartbeat requests." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const HEARTBEAT_TIMEOUT = 45 * 1000; // 45s — offline if no heartbeat
 
@@ -36,7 +53,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 });
 
 // Create room
-router.post("/", authMiddleware, async (req: Request, res: Response) => {
+router.post("/", authMiddleware, createRoomLimiter, async (req: Request, res: Response) => {
   try {
     const userId = parseId((req as any).user?.id);
     const userName = (req as any).user?.name || "Anonymous";
@@ -74,7 +91,7 @@ router.post("/:id/join", authMiddleware, async (req: Request, res: Response) => 
 });
 
 // Heartbeat
-router.post("/:id/heartbeat", authMiddleware, async (req: Request, res: Response) => {
+router.post("/:id/heartbeat", authMiddleware, heartbeatLimiter, async (req: Request, res: Response) => {
   try {
     const userId = parseId((req as any).user?.id);
     const roomId = parseId(req.params.id);

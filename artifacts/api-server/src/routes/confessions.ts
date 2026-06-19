@@ -41,8 +41,10 @@ router.post("/", authMiddleware, postLimiter, async (req: Request, res: Response
     const userId = parseId((req as any).user?.id);
     const { content } = req.body;
     if (!content?.trim()) { res.status(400).json({ error: "content required" }); return; }
-    if (content.trim().length > 500) { res.status(400).json({ error: "Max 500 characters" }); return; }
-    const [row] = await db.insert(confessionsTable).values({ userId, content: content.trim() }).returning();
+    const stripped = content.replace(/<[^>]*>/g, "").trim();
+    if (!stripped) { res.status(400).json({ error: "content required" }); return; }
+    if (stripped.length > 500) { res.status(400).json({ error: "Max 500 characters" }); return; }
+    const [row] = await db.insert(confessionsTable).values({ userId, content: stripped }).returning();
     res.json({ id: row.id, content: row.content, likes: row.likes, createdAt: row.createdAt, hasLiked: false });
   } catch { res.status(500).json({ error: "Failed to post confession" }); }
 });

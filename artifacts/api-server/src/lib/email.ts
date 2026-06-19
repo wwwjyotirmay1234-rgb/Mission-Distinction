@@ -64,23 +64,25 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
 }
 
 export function resetPasswordEmail(resetUrl: string): string {
+  const safeUrl = encodeURI(resetUrl);
   return `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0f0f1a;color:#e2e8f0;padding:40px;border-radius:12px;">
       <h2 style="color:#7c3aed;margin-top:0;">Mission Distinction</h2>
       <h3 style="color:#e2e8f0;">Reset Your Password</h3>
       <p style="color:#94a3b8;">Click the button below to reset your password. This link expires in <strong style="color:#e2e8f0;">1 hour</strong>.</p>
-      <a href="${resetUrl}" style="display:inline-block;background:#7c3aed;color:white;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin:16px 0;">Reset Password</a>
+      <a href="${safeUrl}" style="display:inline-block;background:#7c3aed;color:white;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin:16px 0;">Reset Password</a>
       <p style="color:#64748b;font-size:12px;margin-top:24px;">If you didn't request this, you can safely ignore this email. Your password will not change.</p>
     </div>`;
 }
 
 export function verifyEmailTemplate(verifyUrl: string, name: string): string {
+  const safeUrl = encodeURI(verifyUrl);
   return `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0f0f1a;color:#e2e8f0;padding:40px;border-radius:12px;">
       <h2 style="color:#7c3aed;margin-top:0;">Mission Distinction</h2>
       <h3 style="color:#e2e8f0;">Welcome, ${escapeHtml(name)}! Verify your email</h3>
       <p style="color:#94a3b8;">Click below to verify your email address and unlock full access.</p>
-      <a href="${verifyUrl}" style="display:inline-block;background:#7c3aed;color:white;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin:16px 0;">Verify Email</a>
+      <a href="${safeUrl}" style="display:inline-block;background:#7c3aed;color:white;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin:16px 0;">Verify Email</a>
       <p style="color:#64748b;font-size:12px;margin-top:24px;">This link expires in 24 hours.</p>
     </div>`;
 }

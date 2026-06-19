@@ -4,8 +4,17 @@ import { examsTable } from "@workspace/db/schema";
 import { eq, and, or, gte, asc, isNull } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
+
+const createExamLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: { error: "Too many exams created. Please wait before adding another." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // List exams (global + user's own, upcoming only unless ?all=1)
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
@@ -26,7 +35,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 });
 
 // Create personal exam
-router.post("/", authMiddleware, async (req: Request, res: Response) => {
+router.post("/", authMiddleware, createExamLimiter, async (req: Request, res: Response) => {
   try {
     const userId = parseId((req as any).user?.id);
     const { title, subject, examDate, description } = req.body;
