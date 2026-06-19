@@ -95,9 +95,7 @@ async function fetchBooks(search?: string, subject?: string): Promise<Book[]> {
   if (search) params.set("search", search);
   if (subject) params.set("subject", subject);
   const qs = params.toString();
-  const res = await customFetch(`/api/books${qs ? `?${qs}` : ""}`);
-  if (!res.ok) throw new Error("Failed to load books");
-  return res.json();
+  return customFetch<Book[]>(`/api/books${qs ? `?${qs}` : ""}`);
 }
 
 function BookCard({ book }: { book: Book }) {
@@ -237,12 +235,12 @@ export default function StudentNotes() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {isLoading ? (
             Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)
-          ) : !notesData?.notes || notesData.notes.length === 0 ? (
+          ) : !notesData || notesData.length === 0 ? (
             <div className="col-span-full p-12 text-center border border-dashed rounded-xl text-muted-foreground">
               No notes found. Try adjusting your search or filter.
             </div>
           ) : (
-            notesData.notes.map((note) => {
+            notesData.map((note: Note) => {
               const color = SUBJECT_COLORS[note.subject] || DEFAULT_COLOR;
               return (
                 <Card

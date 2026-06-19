@@ -133,7 +133,7 @@ export default function StudentExams() {
                   <div className="text-right">
                     <Countdown target={exam.examDate} />
                   </div>
-                  {(exam.userId === user?.id || user?.isAdmin) && !exam.isGlobal && (
+                  {(exam.userId === user?.id || user?.role === "admin") && !exam.isGlobal && (
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"
                       onClick={() => deleteMutation.mutate(exam.id)}><Trash2 size={13} /></Button>
                   )}
@@ -155,7 +155,7 @@ export default function StudentExams() {
                         <span className="text-xs text-muted-foreground">{new Date(exam.examDate).toLocaleDateString("en-IN", { dateStyle: "medium" })}</span>
                       </div>
                     </div>
-                    {(exam.userId === user?.id || user?.isAdmin) && !exam.isGlobal && (
+                    {(exam.userId === user?.id || user?.role === "admin") && !exam.isGlobal && (
                       <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"
                         onClick={() => deleteMutation.mutate(exam.id)}><Trash2 size={13} /></Button>
                     )}

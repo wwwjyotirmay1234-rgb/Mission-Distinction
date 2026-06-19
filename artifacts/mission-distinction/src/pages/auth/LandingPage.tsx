@@ -220,7 +220,7 @@ export default function LandingPage() {
       onSuccess: (res) => {
         login(res);
         toast.success("Login successful!");
-        setLocation(getRouteByYear(res.user?.year));
+        setLocation(getRouteByYear(res.user?.year ?? undefined));
       },
       onError: (err) => {
         toast.error(getApiError(err, "Login failed. Please check your credentials."));

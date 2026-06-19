@@ -122,11 +122,10 @@ export default function QuizEditor() {
     if (!quizId || !bulkPreview || bulkPreview.length === 0) return;
     setBulkImporting(true);
     try {
-      const res = await customFetch(`/api/quizzes/${quizId}/questions/bulk`, {
+      const data = await customFetch<{ imported?: number }>(`/api/quizzes/${quizId}/questions/bulk`, {
         method: "POST",
         body: JSON.stringify({ questions: bulkPreview }),
       });
-      const data = await res.json?.() ?? res;
       toast.success(`Imported ${data.imported ?? bulkPreview.length} question${(data.imported ?? bulkPreview.length) !== 1 ? "s" : ""}!`);
       queryClient.invalidateQueries({ queryKey: getListQuizzesQueryKey() });
       refetch();

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { customFetch } from "@workspace/api-client-react";
+import { customFetch, type User as ApiUser } from "@workspace/api-client-react";
 import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "sonner";
 import { Shield, Key, User, Info, Eye, EyeOff, CheckCircle2, Camera, Loader2 } from "lucide-react";
@@ -77,13 +77,11 @@ export default function AdminSettings() {
     if (!name.trim()) { toast.error("Name cannot be empty."); return; }
     setSavingName(true);
     try {
-      const res = await customFetch(`/api/users/${user?.id}`, {
+      const updated = await customFetch<ApiUser>(`/api/users/${user?.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName: name }),
       });
-      if (!res.ok) throw new Error();
-      const updated = await res.json();
       login({ token: token!, user: updated });
       toast.success("Name updated successfully.");
     } catch {
@@ -108,15 +106,11 @@ export default function AdminSettings() {
     }
     setSavingPw(true);
     try {
-      const res = await customFetch("/api/auth/change-password", {
+      await customFetch("/api/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.next }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed");
-      }
       toast.success("Password changed successfully.");
       setPwForm({ current: "", next: "", confirm: "" });
     } catch (err: any) {

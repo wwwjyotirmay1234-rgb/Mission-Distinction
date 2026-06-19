@@ -301,7 +301,7 @@ export default function SuperAdminPanel() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <p className="text-sm font-medium truncate">{u.fullName}</p>
-                            {u.isSuperAdmin && <Crown size={12} className="text-yellow-500 shrink-0" title="Super Admin" />}
+                            {u.isSuperAdmin && <Crown size={12} className="text-yellow-500 shrink-0" aria-label="Super Admin" />}
                             {u.bannedAt && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Suspended</Badge>}
                           </div>
                           <p className="text-xs text-muted-foreground truncate">{u.email}</p>

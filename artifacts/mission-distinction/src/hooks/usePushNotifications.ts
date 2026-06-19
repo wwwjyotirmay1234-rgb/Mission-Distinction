@@ -51,7 +51,7 @@ export function usePushNotifications() {
       const { publicKey } = await res.json();
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
+        applicationServerKey: urlBase64ToUint8Array(publicKey).buffer as ArrayBuffer,
       });
       const subJson = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
       const saveRes = await apiFetch("/api/push/subscribe", {

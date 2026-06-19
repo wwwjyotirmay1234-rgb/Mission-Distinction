@@ -41,8 +41,8 @@ export function WarningBanner() {
       return res.json();
     },
     enabled: !!user,
-    onSuccess: (data) => {
-      if (data?.some(w => !w.seenAt)) setOpen(true);
+    onSuccess: (data: Warning[]) => {
+      if (data?.some((w: Warning) => !w.seenAt)) setOpen(true);
     },
   } as any);
 

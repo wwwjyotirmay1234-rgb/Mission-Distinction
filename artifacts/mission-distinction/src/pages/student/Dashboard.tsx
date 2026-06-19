@@ -70,7 +70,7 @@ export default function StudentDashboard() {
     query: { queryKey: getListCommunityGroupsQueryKey() },
   });
 
-  const recentAnnouncements = Array.isArray(announcements) ? (announcements as DashboardAnnouncement[]).slice(0, 3) : [];
+  const recentAnnouncements = Array.isArray(announcements) ? (announcements as unknown as DashboardAnnouncement[]).slice(0, 3) : [];
   const recentGroups = Array.isArray(communityGroups) ? (communityGroups as CommunityGroup[]).slice(0, 3) : [];
 
   return (

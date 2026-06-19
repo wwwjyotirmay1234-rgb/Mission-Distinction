@@ -45,9 +45,7 @@ function timeAgo(dateStr: string) {
 }
 
 async function fetchFeedback(): Promise<FeedbackItem[]> {
-  const res = await customFetch("/api/feedback");
-  if (!res.ok) throw new Error("Failed to fetch feedback");
-  return res.json();
+  return customFetch<FeedbackItem[]>("/api/feedback");
 }
 
 export default function AdminFeedback() {
@@ -61,13 +59,11 @@ export default function AdminFeedback() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      const res = await customFetch(`/api/feedback/${id}/status`, {
+      return customFetch(`/api/feedback/${id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (!res.ok) throw new Error("Failed");
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-feedback"] });
@@ -77,8 +73,7 @@ export default function AdminFeedback() {
 
   const deleteFeedback = useMutation({
     mutationFn: async (id: number) => {
-      const res = await customFetch(`/api/feedback/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed");
+      await customFetch(`/api/feedback/${id}`, { method: "DELETE" });
     },
     onSuccess: () => {
       toast.success("Feedback deleted.");
