@@ -21,9 +21,42 @@ type Pdf = {
   downloadCount?: number;
 };
 
+// ─── Google Drive URL helpers ─────────────────────────────────────────────────
+function getDriveFileId(url: string): string | null {
+  const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+
+/** URL to embed in an iframe — works for both Drive and direct PDF links */
+function getEmbedUrl(url: string): string {
+  const id = getDriveFileId(url);
+  if (id) return `https://drive.google.com/file/d/${id}/preview`;
+  // Direct PDF or Cloudinary — use Google Docs viewer as fallback
+  return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+}
+
+/** URL to open in browser — Drive view page or direct URL */
+function getOpenUrl(url: string): string {
+  const id = getDriveFileId(url);
+  if (id) return `https://drive.google.com/file/d/${id}/view`;
+  return url;
+}
+
+/** URL for downloading */
+function getDownloadUrl(url: string): string {
+  const id = getDriveFileId(url);
+  if (id) return `https://drive.google.com/uc?export=download&id=${id}`;
+  return url;
+}
+
 function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
   const [embedFailed, setEmbedFailed] = React.useState(false);
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+  const embedUrl = getEmbedUrl(pdf.url);
+  const openUrl = getOpenUrl(pdf.url);
+  const downloadUrl = getDownloadUrl(pdf.url);
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -37,7 +70,7 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-4">
             <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" asChild>
-              <a href={pdf.url} target="_blank" rel="noopener noreferrer">
+              <a href={openUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink size={13} /> Open in Browser
               </a>
             </Button>
@@ -56,12 +89,12 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
                 <Button className="flex-1 gap-2" asChild>
-                  <a href={pdf.url} target="_blank" rel="noopener noreferrer">
+                  <a href={openUrl} target="_blank" rel="noopener noreferrer">
                     <BookOpen size={16} /> Read PDF
                   </a>
                 </Button>
                 <Button variant="outline" className="flex-1 gap-2" asChild>
-                  <a href={pdf.url} download rel="noopener noreferrer">
+                  <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
                     <Download size={16} /> Download
                   </a>
                 </Button>
@@ -72,7 +105,7 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
             </div>
           ) : (
             <iframe
-              src={`https://docs.google.com/viewer?url=${encodeURIComponent(pdf.url)}&embedded=true`}
+              src={embedUrl}
               className="w-full h-full border-0"
               title={pdf.title}
               allow="fullscreen"
@@ -158,7 +191,7 @@ export default function StudentPDFs() {
                       size="sm"
                       variant="secondary"
                       className="w-full"
-                      onClick={() => { trackDownload(pdf.id); window.open(pdf.url, "_blank", "noopener,noreferrer"); }}
+                      onClick={() => { trackDownload(pdf.id); window.open(getDownloadUrl(pdf.url), "_blank", "noopener,noreferrer"); }}
                     >
                       <Download className="mr-2 h-4 w-4" /> Download
                     </Button>
