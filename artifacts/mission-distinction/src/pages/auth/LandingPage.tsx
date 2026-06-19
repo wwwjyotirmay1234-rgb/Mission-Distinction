@@ -139,6 +139,8 @@ export default function LandingPage() {
     return () => { active = false; };
   }, []);
 
+  const isMobileDevice = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
   const handleGoogleSignIn = async () => {
     // Google sign-in cannot run inside an iframe (Replit canvas preview).
     // Open the app in a real top-level tab where popups and redirects work normally.
@@ -149,6 +151,20 @@ export default function LandingPage() {
     }
 
     setGoogleLoading(true);
+
+    // On mobile, skip popup entirely — go straight to redirect (faster and more reliable)
+    if (isMobileDevice) {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        // page navigates away — loading state handled on return via useEffect
+        return;
+      } catch (err: any) {
+        setGoogleLoading(false);
+        toast.error("Google sign-in failed. Please try again.");
+        return;
+      }
+    }
+
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();

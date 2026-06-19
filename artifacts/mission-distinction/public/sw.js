@@ -1,13 +1,17 @@
-const CACHE_NAME = "mission-distinction-v8";
+const CACHE_NAME = "mission-distinction-v9";
 const STATIC_ASSETS = ["/", "/index.html"];
-const API_CACHE_NAME = "mission-distinction-api-v8";
+const API_CACHE_NAME = "mission-distinction-api-v9";
+const ASSET_CACHE_NAME = "mission-distinction-assets-v9";
 
 const CACHEABLE_API_PREFIXES = [
   "/api/quizzes",
   "/api/pdfs",
   "/api/notes",
+  "/api/books",
   "/api/announcements",
   "/api/leaderboard",
+  "/api/dashboard",
+  "/api/subjects",
 ];
 
 const API_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -24,17 +28,10 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((k) => k !== CACHE_NAME && k !== API_CACHE_NAME)
+          .filter((k) => k !== CACHE_NAME && k !== API_CACHE_NAME && k !== ASSET_CACHE_NAME)
           .map((k) => caches.delete(k))
       )
-    ).then(() => self.clients.claim()).then(() =>
-      self.clients.matchAll({ type: "window" }).then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({ type: "SW_UPDATED" });
-          try { client.navigate(client.url); } catch (_) {}
-        });
-      })
-    )
+    ).then(() => self.clients.claim())
   );
 });
 
@@ -67,6 +64,7 @@ self.addEventListener("fetch", (event) => {
 
   if (event.request.method !== "GET") return;
 
+  // ── Cacheable API routes (stale-while-revalidate) ──────────────────────────
   if (isCacheableApi(url)) {
     event.respondWith(
       caches.open(API_CACHE_NAME).then(async (cache) => {
@@ -91,9 +89,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // ── Skip non-cacheable API routes ─────────────────────────────────────────
   if (url.pathname.startsWith("/api/")) return;
 
-  // Navigation requests (HTML shell) — network-first, cache as offline fallback
+  // ── Navigation requests (HTML shell) ──────────────────────────────────────
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
@@ -108,7 +107,40 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // All other assets (JS, CSS, images) — always network, never serve stale cache
+  // ── Vite-hashed assets (/assets/*.js, /assets/*.css, /assets/*.woff2 etc.)
+  //    These are immutable (content-hash in filename) → cache-first forever ──
+  if (url.pathname.startsWith("/assets/")) {
+    event.respondWith(
+      caches.open(ASSET_CACHE_NAME).then(async (cache) => {
+        const cached = await cache.match(event.request);
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response.ok) cache.put(event.request, response.clone());
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // ── Static public files (icons, fonts, images) — cache-first ──────────────
+  if (
+    url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf|otf)$/)
+  ) {
+    event.respondWith(
+      caches.open(ASSET_CACHE_NAME).then(async (cache) => {
+        const cached = await cache.match(event.request);
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response.ok) cache.put(event.request, response.clone());
+          return response;
+        }).catch(() => cached || new Response("", { status: 404 }));
+      })
+    );
+    return;
+  }
+
+  // ── Everything else — network, fall back to cache ─────────────────────────
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );

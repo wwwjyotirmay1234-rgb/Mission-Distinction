@@ -22,7 +22,9 @@ type Pdf = {
 };
 
 function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
-  const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(pdf.url)}&embedded=true`;
+  const [embedFailed, setEmbedFailed] = React.useState(false);
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-5xl w-full h-[90vh] flex flex-col bg-card border-border/50 p-0 gap-0">
@@ -36,7 +38,7 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
           <div className="flex items-center gap-2 shrink-0 ml-4">
             <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" asChild>
               <a href={pdf.url} target="_blank" rel="noopener noreferrer">
-                <ExternalLink size={13} /> Open Original
+                <ExternalLink size={13} /> Open in Browser
               </a>
             </Button>
             <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onClose}>
@@ -44,13 +46,39 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
             </Button>
           </div>
         </DialogHeader>
-        <div className="flex-1 relative">
-          <iframe
-            src={viewerUrl}
-            className="w-full h-full border-0"
-            title={pdf.title}
-            allow="fullscreen"
-          />
+        <div className="flex-1 relative overflow-hidden">
+          {isMobile || embedFailed ? (
+            <div className="flex flex-col items-center justify-center h-full gap-5 px-6 text-center">
+              <FileText size={48} className="text-primary/50" />
+              <div>
+                <p className="font-semibold text-lg">{pdf.title}</p>
+                <p className="text-sm text-muted-foreground mt-1">{pdf.subject}{pdf.pages ? ` · ${pdf.pages} pages` : ""}</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                <Button className="flex-1 gap-2" asChild>
+                  <a href={pdf.url} target="_blank" rel="noopener noreferrer">
+                    <BookOpen size={16} /> Read PDF
+                  </a>
+                </Button>
+                <Button variant="outline" className="flex-1 gap-2" asChild>
+                  <a href={pdf.url} download rel="noopener noreferrer">
+                    <Download size={16} /> Download
+                  </a>
+                </Button>
+              </div>
+              {embedFailed && (
+                <p className="text-xs text-muted-foreground">In-app preview unavailable — tap "Read PDF" to open in your browser.</p>
+              )}
+            </div>
+          ) : (
+            <iframe
+              src={`https://docs.google.com/viewer?url=${encodeURIComponent(pdf.url)}&embedded=true`}
+              className="w-full h-full border-0"
+              title={pdf.title}
+              allow="fullscreen"
+              onError={() => setEmbedFailed(true)}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>
