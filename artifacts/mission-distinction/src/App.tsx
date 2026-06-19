@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { Component, type ReactNode, type ErrorInfo } from "react";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -170,6 +171,7 @@ function App() {
               <Router />
             </WouterRouter>
             <Toaster theme="dark" />
+            <OfflineBanner />
             <InstallPrompt />
           </TooltipProvider>
         </AuthProvider>

@@ -1,7 +1,7 @@
-const CACHE_NAME = "mission-distinction-v9";
+const CACHE_NAME = "mission-distinction-v10";
 const STATIC_ASSETS = ["/", "/index.html"];
-const API_CACHE_NAME = "mission-distinction-api-v9";
-const ASSET_CACHE_NAME = "mission-distinction-assets-v9";
+const API_CACHE_NAME = "mission-distinction-api-v10";
+const ASSET_CACHE_NAME = "mission-distinction-assets-v10";
 
 const CACHEABLE_API_PREFIXES = [
   "/api/quizzes",
@@ -12,6 +12,12 @@ const CACHEABLE_API_PREFIXES = [
   "/api/leaderboard",
   "/api/dashboard",
   "/api/subjects",
+  "/api/flashcards",
+  "/api/mnemonics",
+  "/api/exams",
+  "/api/confessions",
+  "/api/study-rooms",
+  "/api/doubts",
 ];
 
 const API_CACHE_TTL_MS = 10 * 60 * 1000;
