@@ -148,7 +148,7 @@ export default function ResetPassword() {
                       <FormItem>
                         <FormLabel>Confirm Password</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Repeat password" className="bg-background/50" {...field} />
+                          <Input type="password" autoComplete="new-password" placeholder="Repeat password" className="bg-background/50" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

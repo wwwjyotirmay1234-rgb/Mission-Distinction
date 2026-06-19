@@ -543,7 +543,7 @@ export default function LandingPage() {
                               <FormItem>
                                 <FormLabel>Password</FormLabel>
                                 <FormControl>
-                                  <Input type="password" {...field} className="bg-background/50" />
+                                  <Input type="password" autoComplete="new-password" {...field} className="bg-background/50" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -556,7 +556,7 @@ export default function LandingPage() {
                               <FormItem>
                                 <FormLabel>Confirm</FormLabel>
                                 <FormControl>
-                                  <Input type="password" {...field} className="bg-background/50" />
+                                  <Input type="password" autoComplete="new-password" {...field} className="bg-background/50" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -750,7 +750,7 @@ export default function LandingPage() {
                               <FormItem>
                                 <FormLabel>Password</FormLabel>
                                 <FormControl>
-                                  <Input type="password" {...field} className="bg-background/50" />
+                                  <Input type="password" autoComplete="new-password" {...field} className="bg-background/50" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -763,7 +763,7 @@ export default function LandingPage() {
                               <FormItem>
                                 <FormLabel>Confirm</FormLabel>
                                 <FormControl>
-                                  <Input type="password" {...field} className="bg-background/50" />
+                                  <Input type="password" autoComplete="new-password" {...field} className="bg-background/50" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>

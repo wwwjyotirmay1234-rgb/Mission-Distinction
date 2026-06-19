@@ -452,6 +452,7 @@ export default function StudentSettings() {
                   <Input
                     id="delete-password"
                     type="password"
+                    autoComplete="current-password"
                     placeholder="Your current password"
                     value={deletePassword}
                     onChange={(e) => setDeletePassword(e.target.value)}
