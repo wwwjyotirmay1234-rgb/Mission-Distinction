@@ -218,39 +218,88 @@ async function playAlarmSound(alarm: Alarm) {
   }
 }
 
+// ─── Stopwatch persistence ─────────────────────────────────────────────────────
+const SW_KEY = "md_stopwatch_v1";
+type SWSnap = { running: boolean; baseMs: number; wallStart: number; laps: number[] };
+
+function readSwSnap(): SWSnap | null {
+  try { return JSON.parse(localStorage.getItem(SW_KEY) ?? "null"); } catch { return null; }
+}
+function writeSwSnap(s: SWSnap) {
+  try { localStorage.setItem(SW_KEY, JSON.stringify(s)); } catch {}
+}
+function clearSwSnap() {
+  try { localStorage.removeItem(SW_KEY); } catch {}
+}
+
 // ─── Stopwatch ────────────────────────────────────────────────────────────────
 function Stopwatch() {
-  const [running, setRunning] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const [laps, setLaps] = useState<number[]>([]);
+  // Restore state from localStorage, accounting for time that passed while away
+  const restored = (() => {
+    const s = readSwSnap();
+    if (!s) return { running: false, baseMs: 0, laps: [] as number[] };
+    const baseMs = s.running ? s.baseMs + (Date.now() - s.wallStart) : s.baseMs;
+    return { running: s.running, baseMs, laps: s.laps };
+  })();
+
+  const [running, setRunning] = useState(restored.running);
+  const [elapsed, setElapsed] = useState(restored.baseMs);
+  const [laps, setLaps] = useState<number[]>(restored.laps);
+
   const startRef = useRef<number>(0);
   const frameRef = useRef<number>(0);
-  const baseRef = useRef<number>(0);
+  const baseRef = useRef<number>(restored.baseMs);
+  const wallStartRef = useRef<number>(Date.now());
+  const lapsRef = useRef<number[]>(restored.laps);
 
   const tick = useCallback(() => {
     setElapsed(baseRef.current + (performance.now() - startRef.current));
     frameRef.current = requestAnimationFrame(tick);
   }, []);
 
+  // On mount: resume the animation loop if the stopwatch was running when we left
+  useEffect(() => {
+    if (restored.running) {
+      startRef.current = performance.now();
+      wallStartRef.current = Date.now();
+      frameRef.current = requestAnimationFrame(tick);
+    }
+    return () => cancelAnimationFrame(frameRef.current);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const start = () => {
     startRef.current = performance.now();
+    wallStartRef.current = Date.now();
+    writeSwSnap({ running: true, baseMs: baseRef.current, wallStart: wallStartRef.current, laps: lapsRef.current });
     setRunning(true);
     frameRef.current = requestAnimationFrame(tick);
   };
 
   const pause = () => {
     cancelAnimationFrame(frameRef.current);
-    baseRef.current += performance.now() - startRef.current;
+    const newBase = baseRef.current + (performance.now() - startRef.current);
+    baseRef.current = newBase;
+    writeSwSnap({ running: false, baseMs: newBase, wallStart: 0, laps: lapsRef.current });
     setRunning(false);
   };
 
   const reset = () => {
     cancelAnimationFrame(frameRef.current);
-    setRunning(false); setElapsed(0); setLaps([]); baseRef.current = 0;
+    baseRef.current = 0;
+    lapsRef.current = [];
+    setRunning(false); setElapsed(0); setLaps([]);
+    clearSwSnap();
   };
 
-  const lap = () => setLaps(prev => [...prev, elapsed]);
-  useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
+  const lap = () => {
+    const currentMs = baseRef.current + (performance.now() - startRef.current);
+    setLaps(prev => {
+      const next = [...prev, currentMs];
+      lapsRef.current = next;
+      writeSwSnap({ running: true, baseMs: baseRef.current, wallStart: wallStartRef.current, laps: next });
+      return next;
+    });
+  };
 
   const lastLap = laps.length > 0 ? laps[laps.length - 1] : 0;
   const lapElapsed = elapsed - lastLap;
