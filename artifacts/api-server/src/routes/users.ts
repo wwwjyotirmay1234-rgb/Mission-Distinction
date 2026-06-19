@@ -6,7 +6,6 @@ import { adminMiddleware, authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import rateLimit from "express-rate-limit";
 
-const CLOUDINARY_URL_RE = /^https:\/\/res\.cloudinary\.com\//;
 
 const searchLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: { error: "Too many searches. Slow down." }, standardHeaders: true, legacyHeaders: false });
 
@@ -88,8 +87,13 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
     }
 
     if (avatarUrl !== undefined && avatarUrl !== null && avatarUrl !== "") {
-      if (!CLOUDINARY_URL_RE.test(avatarUrl)) {
-        res.status(400).json({ error: "avatarUrl must be a valid Cloudinary URL" }); return;
+      try {
+        const u = new URL(avatarUrl);
+        if (u.protocol !== "https:") {
+          res.status(400).json({ error: "avatarUrl must be an HTTPS URL" }); return;
+        }
+      } catch {
+        res.status(400).json({ error: "avatarUrl must be a valid URL" }); return;
       }
     }
 
