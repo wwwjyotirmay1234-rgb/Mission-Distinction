@@ -26,11 +26,13 @@ function nextReviewDate(days: number) {
   return d;
 }
 
-// List decks
+// List decks (own + admin-shared)
 router.get("/decks", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = parseId((req as any).user?.id);
-    const decks = await db.select().from(flashcardDecksTable).where(eq(flashcardDecksTable.userId, userId));
+    const { or } = await import("drizzle-orm");
+    const decks = await db.select().from(flashcardDecksTable)
+      .where(or(eq(flashcardDecksTable.userId, userId), eq(flashcardDecksTable.isAdminShared, true)));
     res.json(decks);
   } catch { res.status(500).json({ error: "Failed to load decks" }); }
 });
@@ -57,12 +59,15 @@ router.delete("/decks/:id", authMiddleware, async (req: Request, res: Response) 
   } catch { res.status(500).json({ error: "Failed to delete deck" }); }
 });
 
-// Get cards in deck
+// Get cards in deck (own or admin-shared)
 router.get("/decks/:id/cards", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = parseId((req as any).user?.id);
     const deckId = parseId(req.params.id);
-    const [deck] = await db.select().from(flashcardDecksTable).where(and(eq(flashcardDecksTable.id, deckId), eq(flashcardDecksTable.userId, userId))).limit(1);
+    const { or } = await import("drizzle-orm");
+    const [deck] = await db.select().from(flashcardDecksTable)
+      .where(and(eq(flashcardDecksTable.id, deckId), or(eq(flashcardDecksTable.userId, userId), eq(flashcardDecksTable.isAdminShared, true))))
+      .limit(1);
     if (!deck) { res.status(404).json({ error: "Deck not found" }); return; }
     const cards = await db.select().from(flashcardsTable).where(eq(flashcardsTable.deckId, deckId));
     res.json({ deck, cards });

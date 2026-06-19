@@ -8,16 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, Plus, ThumbsUp, Trash2 } from "lucide-react";
+import { Lightbulb, Plus, ThumbsUp, Trash2, Sparkles, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "General"];
+const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "NEET PG", "General"];
 
 interface Mnemonic {
   id: number; userId: number; authorName: string; subject: string; topic: string;
-  mnemonic: string; description?: string; upvotes: number; hasUpvoted: boolean; createdAt: string;
+  mnemonic: string; description?: string; upvotes: number; hasUpvoted: boolean;
+  isAdminShared: boolean; createdAt: string;
 }
 
 function timeAgo(d: string) {
@@ -34,6 +35,7 @@ export default function StudentMnemonics() {
   const [filterSubject, setFilterSubject] = useState("All");
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ subject: "Anatomy", topic: "", mnemonic: "", description: "" });
+  const [aiLoading, setAiLoading] = useState(false);
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -62,12 +64,32 @@ export default function StudentMnemonics() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["mnemonics"] }); toast.success("Deleted"); },
   });
 
+  async function generateWithAI() {
+    if (!form.topic.trim()) { toast.error("Enter a topic first"); return; }
+    setAiLoading(true);
+    try {
+      const res = await apiFetch("/api/ai/mnemonic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: form.subject, topic: form.topic }),
+      });
+      if (!res.ok) { toast.error("AI generation failed"); return; }
+      const data = await res.json();
+      setForm(p => ({ ...p, mnemonic: data.mnemonic ?? "", description: data.description ?? "" }));
+      toast.success("AI mnemonic generated!");
+    } catch {
+      toast.error("AI generation failed");
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Lightbulb size={22} className="text-primary" /> Mnemonics</h1>
-          <p className="text-muted-foreground text-sm mt-1">Memory tricks shared by students, for students.</p>
+          <p className="text-muted-foreground text-sm mt-1">Memory tricks shared by students and faculty.</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="gap-2 shrink-0"><Plus size={16} /> Share One</Button>
       </div>
@@ -91,11 +113,16 @@ export default function StudentMnemonics() {
       ) : (
         <div className="space-y-3">
           {mnemonics.map(m => (
-            <Card key={m.id} className="bg-card/30 border-border/40">
+            <Card key={m.id} className={`border-border/40 ${m.isAdminShared ? "bg-primary/5 border-primary/20" : "bg-card/30"}`}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      {m.isAdminShared && (
+                        <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30 gap-1">
+                          <Shield size={9} /> Official
+                        </Badge>
+                      )}
                       <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">{m.subject}</Badge>
                       <span className="text-xs font-semibold text-muted-foreground">{m.topic}</span>
                     </div>
@@ -103,11 +130,13 @@ export default function StudentMnemonics() {
                     {m.description && <p className="text-sm text-muted-foreground leading-relaxed">{m.description}</p>}
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">
-                    <Button variant="ghost" size="sm" className={`h-8 gap-1.5 text-xs ${m.hasUpvoted ? "text-primary" : "text-muted-foreground"}`}
-                      onClick={() => upvoteMutation.mutate(m.id)}>
-                      <ThumbsUp size={13} /> {m.upvotes}
-                    </Button>
-                    {m.userId === user?.id && (
+                    {!m.isAdminShared && (
+                      <Button variant="ghost" size="sm" className={`h-8 gap-1.5 text-xs ${m.hasUpvoted ? "text-primary" : "text-muted-foreground"}`}
+                        onClick={() => upvoteMutation.mutate(m.id)}>
+                        <ThumbsUp size={13} /> {m.upvotes}
+                      </Button>
+                    )}
+                    {m.userId === user?.id && !m.isAdminShared && (
                       <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => deleteMutation.mutate(m.id)}><Trash2 size={13} /></Button>
                     )}
                   </div>
@@ -132,7 +161,15 @@ export default function StudentMnemonics() {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic</label>
-              <Input value={form.topic} onChange={e => setForm(p => ({ ...p, topic: e.target.value }))} placeholder="e.g. Cranial Nerves in order" className="bg-background/50 border-border/50" />
+              <div className="flex gap-2">
+                <Input value={form.topic} onChange={e => setForm(p => ({ ...p, topic: e.target.value }))} placeholder="e.g. Cranial Nerves in order" className="bg-background/50 border-border/50" />
+                <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                  onClick={generateWithAI} disabled={aiLoading || !form.topic.trim()}>
+                  <Sparkles size={13} />
+                  {aiLoading ? "…" : "AI"}
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">Enter a topic then click AI to auto-generate a mnemonic</p>
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">The Mnemonic</label>

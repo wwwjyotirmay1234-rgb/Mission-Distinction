@@ -93,6 +93,8 @@ import WarningsPage from "@/pages/admin/WarningsPage";
 import AuditLog from "@/pages/admin/AuditLog";
 import QuizIntelligence from "@/pages/admin/QuizIntelligence";
 import NoticesPage from "@/pages/admin/NoticesPage";
+import AdminMnemonics from "@/pages/admin/Mnemonics";
+import AdminFlashcards from "@/pages/admin/Flashcards";
 
 const queryClient = new QueryClient();
 
@@ -164,6 +166,8 @@ function Router() {
               <Route path="/admin/warnings" component={WarningsPage} />
               <Route path="/admin/audit-log" component={AuditLog} />
               <Route path="/admin/notices" component={NoticesPage} />
+              <Route path="/admin/study-tools/mnemonics" component={AdminMnemonics} />
+              <Route path="/admin/study-tools/flashcards" component={AdminFlashcards} />
               <Route component={NotFound} />
             </Switch>
           </AdminLayout>

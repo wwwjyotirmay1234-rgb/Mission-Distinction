@@ -8,13 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Plus, ChevronLeft, Trash2, RotateCcw, CheckCircle2, X, Brain } from "lucide-react";
+import { BookOpen, Plus, ChevronLeft, Trash2, RotateCcw, CheckCircle2, X, Brain, Sparkles, Shield, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "General"];
+const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "NEET PG", "General"];
 
-interface Deck { id: number; subject: string; title: string; cardCount: number; createdAt: string; }
+interface Deck { id: number; userId: number; subject: string; title: string; cardCount: number; isAdminShared: boolean; createdAt: string; }
 interface Flashcard { id: number; deckId: number; front: string; back: string; nextReview: string; ease: number; interval: number; repetitions: number; }
 
 function timeAgo(d: string) {
@@ -115,11 +115,58 @@ function ReviewSession({ cards, deckId, onDone }: { cards: Flashcard[]; deckId: 
   );
 }
 
-function DeckView({ deckId, onBack }: { deckId: number; onBack: () => void }) {
+function BrowseSession({ cards, onDone }: { cards: Flashcard[]; onDone: () => void }) {
+  const [idx, setIdx] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+
+  if (cards.length === 0) return (
+    <div className="text-center py-16">
+      <BookOpen size={32} className="mx-auto mb-3 opacity-30" />
+      <p className="text-sm text-muted-foreground">No cards in this deck yet.</p>
+      <Button onClick={onDone} className="mt-4 gap-2"><ChevronLeft size={16} /> Back</Button>
+    </div>
+  );
+
+  const card = cards[idx];
+  return (
+    <div className="max-w-xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">Card {idx + 1} of {cards.length}</p>
+        <div className="h-2 flex-1 mx-4 rounded-full bg-border/40 overflow-hidden">
+          <div className="h-full bg-primary rounded-full" style={{ width: `${((idx + 1) / cards.length) * 100}%` }} />
+        </div>
+        <Button variant="ghost" size="sm" onClick={onDone}><X size={16} /></Button>
+      </div>
+      <div
+        className={`relative min-h-[220px] rounded-2xl border cursor-pointer select-none ${flipped ? "border-primary/40 bg-primary/5" : "border-border/40 bg-card/40"}`}
+        onClick={() => setFlipped(v => !v)}
+      >
+        <div className="p-8 flex flex-col items-center justify-center min-h-[220px] text-center">
+          {!flipped ? (
+            <><p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider">Front</p><p className="text-lg font-semibold">{card.front}</p><p className="text-xs text-muted-foreground mt-4">Tap to reveal</p></>
+          ) : (
+            <><p className="text-xs text-primary mb-3 uppercase tracking-wider">Answer</p><p className="text-base">{card.back}</p></>
+          )}
+        </div>
+      </div>
+      <div className="flex justify-between gap-3">
+        <Button variant="outline" onClick={() => { setIdx(i => Math.max(0, i - 1)); setFlipped(false); }} disabled={idx === 0}>← Prev</Button>
+        <Button variant="outline" onClick={() => { setIdx(i => Math.min(cards.length - 1, i + 1)); setFlipped(false); }} disabled={idx === cards.length - 1}>Next →</Button>
+      </div>
+    </div>
+  );
+}
+
+function DeckView({ deckId, isAdminDeck, onBack }: { deckId: number; isAdminDeck: boolean; onBack: () => void }) {
   const [showAdd, setShowAdd] = useState(false);
+  const [showAiGen, setShowAiGen] = useState(false);
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
+  const [aiTopic, setAiTopic] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiCards, setAiCards] = useState<{ front: string; back: string }[]>([]);
   const [reviewing, setReviewing] = useState(false);
+  const [browsing, setBrowsing] = useState(false);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -136,6 +183,15 @@ function DeckView({ deckId, onBack }: { deckId: number; onBack: () => void }) {
     onError: () => toast.error("Failed to add card"),
   });
 
+  const bulkAddMutation = useMutation({
+    mutationFn: async (cards: { front: string; back: string }[]) => {
+      for (const card of cards) {
+        await apiFetch(`/api/flashcards/decks/${deckId}/cards`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(card) });
+      }
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["deck-cards", deckId] }); queryClient.invalidateQueries({ queryKey: ["flashcard-decks"] }); setShowAiGen(false); setAiCards([]); setAiTopic(""); toast.success(`${aiCards.length} AI cards added!`); },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (cardId: number) => apiFetch(`/api/flashcards/cards/${cardId}`, { method: "DELETE" }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["deck-cards", deckId] }); queryClient.invalidateQueries({ queryKey: ["flashcard-decks"] }); },
@@ -143,7 +199,28 @@ function DeckView({ deckId, onBack }: { deckId: number; onBack: () => void }) {
 
   const dueCards = data?.cards.filter(isDue) ?? [];
 
+  async function generateAiCards() {
+    if (!aiTopic.trim() || !data?.deck) return;
+    setAiLoading(true);
+    try {
+      const res = await apiFetch("/api/ai/flashcards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: data.deck.subject, topic: aiTopic, count: 8 }),
+      });
+      if (!res.ok) { toast.error("AI generation failed"); return; }
+      const result = await res.json();
+      setAiCards(result.cards ?? []);
+      toast.success(`${result.cards?.length ?? 0} flashcards generated!`);
+    } catch {
+      toast.error("AI generation failed");
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   if (reviewing && dueCards.length > 0) return <ReviewSession cards={dueCards} deckId={deckId} onDone={() => { setReviewing(false); queryClient.invalidateQueries({ queryKey: ["deck-cards", deckId] }); }} />;
+  if (browsing) return <BrowseSession cards={data?.cards ?? []} onDone={() => setBrowsing(false)} />;
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
@@ -155,36 +232,47 @@ function DeckView({ deckId, onBack }: { deckId: number; onBack: () => void }) {
         <>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-xl font-bold">{data?.deck.title}</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold">{data?.deck.title}</h2>
+                {isAdminDeck && <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30 gap-1"><Shield size={9} /> Official</Badge>}
+              </div>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">{data?.deck.subject}</Badge>
                 <span className="text-xs text-muted-foreground">{data?.deck.cardCount} cards</span>
-                {dueCards.length > 0 && <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30">{dueCards.length} due</Badge>}
+                {dueCards.length > 0 && !isAdminDeck && <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30">{dueCards.length} due</Badge>}
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShowAdd(true)}><Plus size={14} /> Add Card</Button>
-              {dueCards.length > 0 && <Button size="sm" className="gap-1.5" onClick={() => setReviewing(true)}><Brain size={14} /> Review ({dueCards.length})</Button>}
+            <div className="flex gap-2 flex-wrap justify-end">
+              {isAdminDeck ? (
+                <Button size="sm" className="gap-1.5" onClick={() => setBrowsing(true)}><Brain size={14} /> Study</Button>
+              ) : (
+                <>
+                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShowAiGen(true)}><Sparkles size={14} /> AI Cards</Button>
+                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShowAdd(true)}><Plus size={14} /> Add Card</Button>
+                  {dueCards.length > 0 && <Button size="sm" className="gap-1.5" onClick={() => setReviewing(true)}><Brain size={14} /> Review ({dueCards.length})</Button>}
+                </>
+              )}
             </div>
           </div>
 
           {data?.cards.length === 0 ? (
             <div className="py-12 text-center border border-dashed rounded-xl text-muted-foreground text-sm">
               <BookOpen size={28} className="mx-auto mb-3 opacity-30" />
-              No cards yet. Add your first card to get started.
+              {isAdminDeck ? "No cards added to this deck yet." : "No cards yet. Add your first card or generate with AI."}
             </div>
           ) : (
             <div className="space-y-2">
               {data?.cards.map(card => (
-                <Card key={card.id} className={`border ${isDue(card) ? "border-green-500/20 bg-green-500/5" : "border-border/40 bg-card/30"}`}>
+                <Card key={card.id} className={`border ${!isAdminDeck && isDue(card) ? "border-green-500/20 bg-green-500/5" : "border-border/40 bg-card/30"}`}>
                   <CardContent className="p-4 flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{card.front}</p>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{card.back}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {isDue(card) && <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-400 border-green-500/20">Due</Badge>}
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => deleteMutation.mutate(card.id)}><Trash2 size={13} /></Button>
+                      {!isAdminDeck && isDue(card) && <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-400 border-green-500/20">Due</Badge>}
+                      {!isAdminDeck && <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => deleteMutation.mutate(card.id)}><Trash2 size={13} /></Button>}
+                      {isAdminDeck && <Lock size={13} className="text-muted-foreground/40" />}
                     </div>
                   </CardContent>
                 </Card>
@@ -194,6 +282,7 @@ function DeckView({ deckId, onBack }: { deckId: number; onBack: () => void }) {
         </>
       )}
 
+      {/* Manual Add Card */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent className="bg-card border-border/60">
           <DialogHeader><DialogTitle>Add Flashcard</DialogTitle></DialogHeader>
@@ -204,7 +293,7 @@ function DeckView({ deckId, onBack }: { deckId: number; onBack: () => void }) {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Back (Answer)</label>
-              <Textarea value={back} onChange={e => setBack(e.target.value)} placeholder="e.g. Causes depolarisation of motor end plate by binding to nicotinic receptors" className="bg-background/50 border-border/50 min-h-[80px]" />
+              <Textarea value={back} onChange={e => setBack(e.target.value)} placeholder="e.g. Causes depolarisation of motor end plate" className="bg-background/50 border-border/50 min-h-[80px]" />
             </div>
           </div>
           <DialogFooter>
@@ -213,12 +302,49 @@ function DeckView({ deckId, onBack }: { deckId: number; onBack: () => void }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AI Generate Cards */}
+      <Dialog open={showAiGen} onOpenChange={v => { setShowAiGen(v); if (!v) { setAiCards([]); setAiTopic(""); } }}>
+        <DialogContent className="bg-card border-border/60 sm:max-w-lg">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles size={16} className="text-primary" /> AI Flashcard Generator</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic to generate cards for</label>
+              <div className="flex gap-2">
+                <Input value={aiTopic} onChange={e => setAiTopic(e.target.value)} placeholder="e.g. Brachial Plexus, Krebs Cycle…" className="bg-background/50 border-border/50" />
+                <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                  onClick={generateAiCards} disabled={aiLoading || !aiTopic.trim()}>
+                  <Sparkles size={13} /> {aiLoading ? "…" : "Generate"}
+                </Button>
+              </div>
+            </div>
+            {aiCards.length > 0 && (
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                {aiCards.map((c, i) => (
+                  <div key={i} className="bg-background/40 rounded-lg p-3 text-sm">
+                    <p className="font-medium">{c.front}</p>
+                    <p className="text-muted-foreground text-xs mt-1">{c.back}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowAiGen(false); setAiCards([]); setAiTopic(""); }}>Cancel</Button>
+            {aiCards.length > 0 && (
+              <Button disabled={bulkAddMutation.isPending} onClick={() => bulkAddMutation.mutate(aiCards)}>
+                {bulkAddMutation.isPending ? "Adding…" : `Add ${aiCards.length} Cards`}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 export default function StudentFlashcards() {
-  const [selectedDeckId, setSelectedDeckId] = useState<number | null>(null);
+  const [selectedDeck, setSelectedDeck] = useState<{ id: number; isAdminShared: boolean } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ subject: "Anatomy", title: "" });
   const queryClient = useQueryClient();
@@ -239,7 +365,10 @@ export default function StudentFlashcards() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["flashcard-decks"] }); toast.success("Deck deleted"); },
   });
 
-  if (selectedDeckId) return <DeckView deckId={selectedDeckId} onBack={() => setSelectedDeckId(null)} />;
+  if (selectedDeck) return <DeckView deckId={selectedDeck.id} isAdminDeck={selectedDeck.isAdminShared} onBack={() => { setSelectedDeck(null); queryClient.invalidateQueries({ queryKey: ["flashcard-decks"] }); }} />;
+
+  const adminDecks = decks.filter(d => d.isAdminShared);
+  const myDecks = decks.filter(d => !d.isAdminShared);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -253,32 +382,71 @@ export default function StudentFlashcards() {
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28" />)}</div>
-      ) : decks.length === 0 ? (
-        <div className="py-16 text-center border border-dashed rounded-xl text-muted-foreground">
-          <BookOpen size={32} className="mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No decks yet. Create your first deck to start studying.</p>
-        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {decks.map(deck => (
-            <Card key={deck.id} className="bg-card/30 border-border/40 hover:bg-card/50 transition-colors cursor-pointer group" onClick={() => setSelectedDeckId(deck.id)}>
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold truncate">{deck.title}</p>
-                    <Badge variant="outline" className="text-[10px] mt-1 bg-primary/10 text-primary border-primary/20">{deck.subject}</Badge>
-                  </div>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 shrink-0"
-                    onClick={e => { e.stopPropagation(); deleteMutation.mutate(deck.id); }}><Trash2 size={13} /></Button>
+        <>
+          {adminDecks.length > 0 && (
+            <div>
+              <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground/70 mb-3 flex items-center gap-1.5"><Shield size={12} /> Official Decks from Mission Distinction</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {adminDecks.map(deck => (
+                  <Card key={deck.id} className="bg-primary/5 border-primary/20 hover:bg-primary/10 transition-colors cursor-pointer group" onClick={() => setSelectedDeck({ id: deck.id, isAdminShared: true })}>
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold truncate">{deck.title}</p>
+                          <Badge variant="outline" className="text-[10px] mt-1 bg-primary/10 text-primary border-primary/20">{deck.subject}</Badge>
+                        </div>
+                        <Shield size={14} className="text-primary/50 shrink-0 mt-0.5" />
+                      </div>
+                      <div className="flex items-center justify-between mt-4">
+                        <span className="text-xs text-muted-foreground">{deck.cardCount} card{deck.cardCount !== 1 ? "s" : ""}</span>
+                        <span className="text-xs text-primary/60">Browse only</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {myDecks.length > 0 || adminDecks.length > 0 ? (
+            <div>
+              {adminDecks.length > 0 && <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground/70 mb-3">My Decks</p>}
+              {myDecks.length === 0 ? (
+                <div className="py-10 text-center border border-dashed rounded-xl text-muted-foreground">
+                  <BookOpen size={24} className="mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No personal decks yet. Create one to start studying with spaced repetition.</p>
                 </div>
-                <div className="flex items-center justify-between mt-4">
-                  <span className="text-xs text-muted-foreground">{deck.cardCount} card{deck.cardCount !== 1 ? "s" : ""}</span>
-                  <span className="text-xs text-muted-foreground">{timeAgo(deck.createdAt)}</span>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {myDecks.map(deck => (
+                    <Card key={deck.id} className="bg-card/30 border-border/40 hover:bg-card/50 transition-colors cursor-pointer group" onClick={() => setSelectedDeck({ id: deck.id, isAdminShared: false })}>
+                      <CardContent className="p-5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold truncate">{deck.title}</p>
+                            <Badge variant="outline" className="text-[10px] mt-1 bg-primary/10 text-primary border-primary/20">{deck.subject}</Badge>
+                          </div>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 shrink-0"
+                            onClick={e => { e.stopPropagation(); deleteMutation.mutate(deck.id); }}><Trash2 size={13} /></Button>
+                        </div>
+                        <div className="flex items-center justify-between mt-4">
+                          <span className="text-xs text-muted-foreground">{deck.cardCount} card{deck.cardCount !== 1 ? "s" : ""}</span>
+                          <span className="text-xs text-muted-foreground">{timeAgo(deck.createdAt)}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              )}
+            </div>
+          ) : (
+            <div className="py-16 text-center border border-dashed rounded-xl text-muted-foreground">
+              <BookOpen size={32} className="mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No decks yet. Create your first deck to start studying.</p>
+            </div>
+          )}
+        </>
       )}
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>

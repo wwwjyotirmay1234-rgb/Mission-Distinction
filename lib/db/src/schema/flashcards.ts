@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp, real } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, real, boolean } from "drizzle-orm/pg-core";
 
 export const flashcardDecksTable = pgTable("flashcard_decks", {
   id: serial("id").primaryKey(),
@@ -6,6 +6,7 @@ export const flashcardDecksTable = pgTable("flashcard_decks", {
   subject: text("subject").notNull(),
   title: text("title").notNull(),
   cardCount: integer("card_count").default(0).notNull(),
+  isAdminShared: boolean("is_admin_shared").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

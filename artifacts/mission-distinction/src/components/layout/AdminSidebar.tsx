@@ -22,6 +22,8 @@ import {
   ClipboardList,
   Brain,
   Pin,
+  Lightbulb,
+  BookOpen,
 } from "lucide-react";
 
 const navItems = [
@@ -38,6 +40,15 @@ const navItems = [
     ],
   },
   { icon: FileText, label: "Quizzes", href: "/admin/quizzes" },
+  {
+    icon: Lightbulb,
+    label: "Study Tools",
+    href: "/admin/study-tools",
+    subItems: [
+      { label: "Mnemonics", href: "/admin/study-tools/mnemonics" },
+      { label: "Flashcard Decks", href: "/admin/study-tools/flashcards" },
+    ],
+  },
   { icon: Newspaper, label: "News & Discoveries", href: "/admin/news" },
   { icon: Megaphone, label: "Announcements", href: "/admin/announcements" },
   { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },

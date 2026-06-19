@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, boolean } from "drizzle-orm/pg-core";
 
 export const mnemonicsTable = pgTable("mnemonics", {
   id: serial("id").primaryKey(),
@@ -9,6 +9,7 @@ export const mnemonicsTable = pgTable("mnemonics", {
   mnemonic: text("mnemonic").notNull(),
   description: text("description"),
   upvotes: integer("upvotes").default(0).notNull(),
+  isAdminShared: boolean("is_admin_shared").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -80,4 +80,66 @@ ${text.trim()}` },
   }
 });
 
+// Generate a mnemonic
+router.post("/mnemonic", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
+  try {
+    const { subject, topic } = req.body;
+    if (!subject || !topic?.trim()) { res.status(400).json({ error: "subject and topic required" }); return; }
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are an expert MBBS medical educator who creates memorable mnemonics. Be creative, accurate, and clinically relevant. Return only valid JSON." },
+        { role: "user", content: `Create a mnemonic for a 1st Year MBBS student studying ${subject} — topic: "${topic}".
+Return JSON only:
+{
+  "mnemonic": "the mnemonic phrase (e.g. acronym or rhyme)",
+  "description": "explanation of what each letter/word represents"
+}` },
+      ],
+      temperature: 0.8,
+    });
+
+    const text = completion.choices[0]?.message?.content ?? "{}";
+    const jsonStart = text.indexOf("{");
+    const jsonEnd = text.lastIndexOf("}");
+    if (jsonStart === -1 || jsonEnd === -1) { res.status(500).json({ error: "AI returned invalid format" }); return; }
+    const result = JSON.parse(text.slice(jsonStart, jsonEnd + 1));
+    res.json(result);
+  } catch {
+    res.status(500).json({ error: "Failed to generate mnemonic" });
+  }
+});
+
+// Generate flashcard set
+router.post("/flashcards", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
+  try {
+    const { subject, topic, count = 8 } = req.body;
+    if (!subject || !topic?.trim()) { res.status(400).json({ error: "subject and topic required" }); return; }
+    const n = Math.min(Math.max(parseInt(count) || 8, 3), 15);
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are an expert MBBS medical educator. Generate high-quality flashcards for spaced repetition. Return only valid JSON." },
+        { role: "user", content: `Generate ${n} flashcards for a 1st Year MBBS student studying ${subject} — topic: "${topic}".
+Return JSON array only:
+[
+  { "front": "question or term", "back": "answer or definition" }
+]` },
+      ],
+      temperature: 0.6,
+    });
+
+    const text = completion.choices[0]?.message?.content ?? "[]";
+    const jsonStart = text.indexOf("[");
+    const jsonEnd = text.lastIndexOf("]");
+    if (jsonStart === -1 || jsonEnd === -1) { res.status(500).json({ error: "AI returned invalid format" }); return; }
+    const cards = JSON.parse(text.slice(jsonStart, jsonEnd + 1));
+    res.json({ cards });
+  } catch {
+    res.status(500).json({ error: "Failed to generate flashcards" });
+  }
+});
+
 export { router as aiToolsRouter };

@@ -10,7 +10,7 @@ import { Bot, Sparkles, CheckCircle2, XCircle, RotateCcw, FileText } from "lucid
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "General"];
+const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "NEET PG", "General"];
 
 interface MCQ {
   question: string; options: string[]; answer: string; explanation: string;

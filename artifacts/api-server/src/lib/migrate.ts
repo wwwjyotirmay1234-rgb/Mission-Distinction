@@ -186,6 +186,12 @@ export async function runStartupMigrations() {
         ADD COLUMN IF NOT EXISTS scheduled_for TIMESTAMP,
         ADD COLUMN IF NOT EXISTS delivered_count INTEGER NOT NULL DEFAULT 0,
         ADD COLUMN IF NOT EXISTS target_audience TEXT NOT NULL DEFAULT 'all';
+
+      ALTER TABLE mnemonics
+        ADD COLUMN IF NOT EXISTS is_admin_shared BOOLEAN DEFAULT FALSE;
+
+      ALTER TABLE flashcard_decks
+        ADD COLUMN IF NOT EXISTS is_admin_shared BOOLEAN DEFAULT FALSE;
     `);
   } finally {
     client.release();
