@@ -83,8 +83,8 @@ export default function StudentDashboard() {
           <p className="text-muted-foreground">Ready to conquer your goals today?</p>
         </div>
         <div className="flex gap-2">
-          <Badge variant="outline" className="px-3 py-1 bg-card/50">{user?.year || "1st Year MBBS"}</Badge>
-          <Badge variant="outline" className="px-3 py-1 bg-card/50">{user?.college || "My College"}</Badge>
+          <Badge variant="outline" className="px-3 py-1 bg-card/50 shrink-0">{user?.year || "1st Year MBBS"}</Badge>
+          <Badge variant="outline" className="px-2 py-1 bg-card/50 max-w-[180px] truncate block">{user?.college || "My College"}</Badge>
         </div>
       </div>
 
