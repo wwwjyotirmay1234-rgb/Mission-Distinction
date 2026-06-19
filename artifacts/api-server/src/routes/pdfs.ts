@@ -26,7 +26,6 @@ function isValidHttpsUrl(url: string): boolean {
   } catch { return false; }
 }
 
-const CLOUDINARY_REGEX = /^https:\/\/res\.cloudinary\.com\//;
 
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
@@ -34,7 +33,14 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
     let pdfs = await db.select().from(pdfsTable).limit(500);
     if (subject) pdfs = pdfs.filter(p => p.subject.toLowerCase() === (subject as string).toLowerCase());
     if (professor) pdfs = pdfs.filter(p => p.professor?.toLowerCase().includes((professor as string).toLowerCase()));
-    if (search) pdfs = pdfs.filter(p => p.title.toLowerCase().includes((search as string).toLowerCase()));
+    if (search) {
+      const q = (search as string).toLowerCase();
+      pdfs = pdfs.filter(p =>
+        p.title.toLowerCase().includes(q) ||
+        p.subject.toLowerCase().includes(q) ||
+        (p.professor?.toLowerCase().includes(q) ?? false)
+      );
+    }
     res.json(pdfs);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
@@ -47,8 +53,8 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
     const { title, subject, professor, year, url, thumbnailUrl, pages, size } = req.body;
     if (!title || !subject || !url) { res.status(400).json({ error: "Missing fields" }); return; }
     if (!isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
-    if (thumbnailUrl && !CLOUDINARY_REGEX.test(thumbnailUrl)) {
-      res.status(400).json({ error: "thumbnailUrl must be a Cloudinary URL" }); return;
+    if (thumbnailUrl && !isValidHttpsUrl(thumbnailUrl)) {
+      res.status(400).json({ error: "thumbnailUrl must be a valid HTTPS URL" }); return;
     }
     const safeTitle = stripHtml(String(title));
     const safeSubject = stripHtml(String(subject));
@@ -91,8 +97,8 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     }
     const { title, subject, professor, year, url, thumbnailUrl, pages, size } = req.body;
     if (url && !isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
-    if (thumbnailUrl && !CLOUDINARY_REGEX.test(thumbnailUrl)) {
-      res.status(400).json({ error: "thumbnailUrl must be a Cloudinary URL" }); return;
+    if (thumbnailUrl && !isValidHttpsUrl(thumbnailUrl)) {
+      res.status(400).json({ error: "thumbnailUrl must be a valid HTTPS URL" }); return;
     }
     const safeTitle = title !== undefined ? stripHtml(String(title)) : undefined;
     const safeSubject = subject !== undefined ? stripHtml(String(subject)) : undefined;

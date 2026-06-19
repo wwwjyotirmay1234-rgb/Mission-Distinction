@@ -1,12 +1,14 @@
 import React, { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useListPdfs, getListPdfsQueryKey } from "@workspace/api-client-react";
-import { Search, Filter, Download, BookOpen, X, ExternalLink, FileText } from "lucide-react";
+import { Search, Filter, Download, BookOpen, X, ExternalLink, FileText, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const SUBJECTS = ["All", "Anatomy", "Physiology", "Biochemistry", "Pharmacology", "Pathology", "Microbiology", "Forensic Medicine", "Community Medicine"];
 
 type Pdf = {
   id: number;
@@ -130,11 +132,13 @@ async function trackDownload(pdfId: number) {
 
 export default function StudentPDFs() {
   const [search, setSearch] = useState("");
+  const [subject, setSubject] = useState("All");
   const [viewingPdf, setViewingPdf] = useState<Pdf | null>(null);
 
+  const activeSubject = subject === "All" ? undefined : subject;
   const { data: pdfsData, isLoading } = useListPdfs(
-    { search: search || undefined },
-    { query: { queryKey: getListPdfsQueryKey({ search: search || undefined }) } }
+    { search: search || undefined, subject: activeSubject },
+    { query: { queryKey: getListPdfsQueryKey({ search: search || undefined, subject: activeSubject }) } }
   );
 
   return (
@@ -156,9 +160,26 @@ export default function StudentPDFs() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button variant="outline" size="icon" className="shrink-0 bg-muted/50">
-            <Filter className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant={subject !== "All" ? "default" : "outline"} className="shrink-0 gap-1.5 bg-muted/50 px-3">
+                <Filter className="h-4 w-4" />
+                <span className="hidden sm:inline text-xs">{subject}</span>
+                <ChevronDown className="h-3 w-3 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {SUBJECTS.map(s => (
+                <DropdownMenuItem
+                  key={s}
+                  className={subject === s ? "bg-primary/10 text-primary font-medium" : ""}
+                  onClick={() => setSubject(s)}
+                >
+                  {s}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
