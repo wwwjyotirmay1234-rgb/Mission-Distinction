@@ -454,7 +454,6 @@ export default function StudentCommunity() {
 
   const handleShareFlashcard = async (deck: Deck) => {
     setFlashcardPickerOpen(false);
-    setShareMenuOpen(false);
     await sendMessagePayload({
       content: `📚 Shared a flashcard deck: ${deck.title}`,
       messageType: "flashcard",
@@ -464,7 +463,6 @@ export default function StudentCommunity() {
 
   const handleShareMnemonic = async (m: Mnemonic) => {
     setMnemonicPickerOpen(false);
-    setShareMenuOpen(false);
     await sendMessagePayload({
       content: `💡 Shared a mnemonic: ${m.topic}`,
       messageType: "mnemonic",
@@ -474,7 +472,6 @@ export default function StudentCommunity() {
 
   const handleShareVideo = async (url: string, videoId: string) => {
     setVideoPickerOpen(false);
-    setShareMenuOpen(false);
     await sendMessagePayload({
       content: `🎥 Shared a video`,
       messageType: "video",
