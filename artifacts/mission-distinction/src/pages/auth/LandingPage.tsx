@@ -139,8 +139,6 @@ export default function LandingPage() {
     return () => { active = false; };
   }, []);
 
-  const isMobileDevice = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-
   const handleGoogleSignIn = async () => {
     // Google sign-in cannot run inside an iframe (Replit canvas preview).
     // Open the app in a real top-level tab where popups and redirects work normally.
@@ -152,19 +150,10 @@ export default function LandingPage() {
 
     setGoogleLoading(true);
 
-    // On mobile, skip popup entirely — go straight to redirect (faster and more reliable)
-    if (isMobileDevice) {
-      try {
-        await signInWithRedirect(auth, googleProvider);
-        // page navigates away — loading state handled on return via useEffect
-        return;
-      } catch (err: any) {
-        setGoogleLoading(false);
-        toast.error("Google sign-in failed. Please try again.");
-        return;
-      }
-    }
-
+    // Always use signInWithPopup (works on mobile too — opens a new tab).
+    // signInWithRedirect is unreliable on modern browsers (Chrome 115+, iOS Safari)
+    // because third-party cookies from firebaseapp.com are blocked, causing
+    // getRedirectResult to silently return null after the user authenticates.
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
@@ -172,9 +161,10 @@ export default function LandingPage() {
     } catch (err: any) {
       const code: string = err?.code ?? "";
       if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
+        // Popup was blocked by the browser — last resort: redirect flow
         try {
           await signInWithRedirect(auth, googleProvider);
-          // page navigates away — setGoogleLoading handled on return via useEffect
+          // page navigates away — loading state handled on return via useEffect
           return;
         } catch {
           toast.error("Google sign-in failed. Please allow popups or try a different browser.");
@@ -183,14 +173,13 @@ export default function LandingPage() {
         toast.error(
           `Google sign-in blocked: add "${window.location.hostname}" to Firebase Console → Authentication → Settings → Authorized domains.`
         );
-      } else if (code === "auth/popup-closed-by-user") {
+      } else if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
         // user dismissed — no toast needed
       } else if (err?.message) {
         toast.error(err.message);
       } else {
         toast.error("Google sign-in failed. Please try again.");
       }
-    } finally {
       setGoogleLoading(false);
     }
   };
