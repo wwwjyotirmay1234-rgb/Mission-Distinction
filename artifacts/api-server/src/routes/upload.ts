@@ -22,11 +22,16 @@ const gcsClient = new Storage({
   projectId: "",
 });
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
+const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+
+cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
+
+// Verify credentials at startup
+cloudinary.api.ping()
+  .then(() => console.log("[Cloudinary] ✓ Credentials verified — uploads ready."))
+  .catch((e: any) => console.error("[Cloudinary] ✗ Credential check failed:", e?.message ?? e));
 
 const avatarLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
