@@ -129,12 +129,12 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const id = parseId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
-    const { title, subject, description, difficulty, durationMinutes, isFeatured } = req.body;
+    const { title, subject, description, difficulty, durationMinutes, isFeatured, isProctored } = req.body;
     const safeTitle = title !== undefined ? stripHtml(String(title)) : undefined;
     const safeSubject = subject !== undefined ? stripHtml(String(subject)) : undefined;
     const safeDescription = description !== undefined ? (description ? stripHtml(String(description)) : null) : undefined;
     const [quiz] = await db.update(quizzesTable)
-      .set({ title: safeTitle, subject: safeSubject, description: safeDescription, difficulty, durationMinutes, isFeatured })
+      .set({ title: safeTitle, subject: safeSubject, description: safeDescription, difficulty, durationMinutes, isFeatured, isProctored })
       .where(eq(quizzesTable.id, id))
       .returning();
     if (!quiz) { res.status(404).json({ error: "Not found" }); return; }

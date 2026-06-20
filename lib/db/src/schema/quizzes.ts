@@ -11,6 +11,7 @@ export const quizzesTable = pgTable("quizzes", {
   difficulty: text("difficulty").notNull().default("medium"),
   durationMinutes: integer("duration_minutes"),
   isFeatured: boolean("is_featured").default(false).notNull(),
+  isProctored: boolean("is_proctored").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -37,6 +38,22 @@ export const quizAttemptsTable = pgTable("quiz_attempts", {
   total: integer("total").notNull(),
   percentage: integer("percentage").notNull(),
   hasPending: boolean("has_pending").default(false),
+  violationCount: integer("violation_count").default(0),
+  isFlagged: boolean("is_flagged").default(false),
+  proctoringSessionId: text("proctoring_session_id"),
+  proctoringFlaggedAt: timestamp("proctoring_flagged_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const proctoringLogsTable = pgTable("proctoring_logs", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  userId: integer("user_id").notNull(),
+  quizId: integer("quiz_id").notNull(),
+  attemptId: integer("attempt_id"),
+  eventType: text("event_type").notNull(),
+  details: jsonb("details"),
+  aiAnalysis: text("ai_analysis"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

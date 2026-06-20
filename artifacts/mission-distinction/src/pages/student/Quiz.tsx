@@ -18,8 +18,9 @@ import {
 import {
   Play, Clock, CheckCircle, ChevronLeft, ChevronRight,
   Timer, Trophy, XCircle, AlertCircle, ArrowLeft, Flag,
-  Upload, RefreshCw, ImageIcon, PenLine, FileText,
+  Upload, RefreshCw, ImageIcon, PenLine, FileText, ShieldCheck,
 } from "lucide-react";
+import ProctorOverlay from "@/components/ProctorOverlay";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/apiFetch";
@@ -33,6 +34,7 @@ interface QuizSummary {
   difficulty: "easy" | "medium" | "hard";
   questionCount: number;
   durationMinutes: number;
+  isProctored?: boolean;
 }
 
 interface QuizQuestion {
@@ -428,6 +430,9 @@ export default function StudentQuiz() {
   const [reportOpen, setReportOpen] = useState(false);
   const [reportQuestionId, setReportQuestionId] = useState<number | null>(null);
   const [answerImages, setAnswerImages] = useState<Record<number, string>>({});
+  const [proctoringSessionId, setProctoringSessionId] = useState<string | null>(null);
+  const [showProctoringSetup, setShowProctoringSetup] = useState(false);
+  const [pendingProctoredQuiz, setPendingProctoredQuiz] = useState<QuizSummary | null>(null);
   const submittedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queryClient = useQueryClient();
@@ -456,16 +461,26 @@ export default function StudentQuiz() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [mode, selectedQuizId]);
 
-  const startQuiz = (quiz: QuizSummary) => {
-    if (!quiz.questionCount || quiz.questionCount === 0) { toast.error("This quiz has no questions yet."); return; }
+  const doStartQuiz = (quiz: QuizSummary, sessionId?: string) => {
     setSelectedQuizId(quiz.id);
     setCurrentQ(0);
     setAnswers({});
     setAnswerImages({});
     setResult(null);
     submittedRef.current = false;
+    setProctoringSessionId(sessionId ?? null);
     setTimeLeft((quiz.durationMinutes || 30) * 60);
     setMode("taking");
+  };
+
+  const startQuiz = (quiz: QuizSummary) => {
+    if (!quiz.questionCount || quiz.questionCount === 0) { toast.error("This quiz has no questions yet."); return; }
+    if (quiz.isProctored) {
+      setPendingProctoredQuiz(quiz);
+      setShowProctoringSetup(true);
+      return;
+    }
+    doStartQuiz(quiz);
   };
 
   const doSubmit = async () => {
@@ -497,6 +512,13 @@ export default function StudentQuiz() {
       if (!res.ok) throw new Error("Submission failed");
       const data: QuizResult = await res.json();
       setResult(data);
+      if (proctoringSessionId) {
+        apiFetch("/api/proctoring/link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId: proctoringSessionId, quizId: selectedQuizId }),
+        }).catch(() => {});
+      }
       setMode("results");
       queryClient.invalidateQueries({ queryKey: ["getStudentDashboardStats"] });
       queryClient.invalidateQueries({ queryKey: ["getMyProgress"] });
@@ -740,7 +762,7 @@ export default function StudentQuiz() {
     const currentAnswer = answers[q.id];
     const hasAnswer = (currentAnswer !== undefined && currentAnswer !== "") || !!answerImages[q.id];
 
-    return (
+    const quizScreen = (
       <div className="max-w-3xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground"
@@ -826,6 +848,13 @@ export default function StudentQuiz() {
         />
       </div>
     );
+    return quizDetail?.isProctored && proctoringSessionId
+      ? (
+        <ProctorOverlay sessionId={proctoringSessionId} quizId={selectedQuizId!} onAutoSubmit={doSubmit}>
+          {quizScreen}
+        </ProctorOverlay>
+      )
+      : quizScreen;
   }
 
   // ─── Browse Screen ───────────────────────────────────────────────────────────
@@ -833,6 +862,53 @@ export default function StudentQuiz() {
 
   return (
     <div className="space-y-8">
+      <Dialog open={showProctoringSetup} onOpenChange={setShowProctoringSetup}>
+        <DialogContent className="bg-card border-border/50 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck size={20} className="text-red-400" /> Proctored Exam
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {pendingProctoredQuiz && (
+              <p className="text-sm text-muted-foreground">
+                <strong className="text-foreground">{pendingProctoredQuiz.title}</strong> is a proctored exam. The following monitoring will be active:
+              </p>
+            )}
+            <ul className="space-y-2">
+              {[
+                "📷 Webcam monitoring — AI checks for face presence, multiple faces, phone use",
+                "🖥️ Fullscreen enforcement — you must stay in fullscreen",
+                "🚫 Tab switching detection — leaving the window counts as a violation",
+                "📋 Copy/paste and right-click are disabled",
+                "🔴 Auto-submit after 5 violations or 3 tab/window switches",
+              ].map((item, i) => (
+                <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+              By proceeding, you allow camera access and fullscreen mode for the duration of this exam.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowProctoringSetup(false)}>Cancel</Button>
+            <Button
+              className="gap-2 bg-red-600 hover:bg-red-700 text-white border-0"
+              onClick={() => {
+                if (!pendingProctoredQuiz) return;
+                const sid = crypto.randomUUID();
+                setShowProctoringSetup(false);
+                doStartQuiz(pendingProctoredQuiz, sid);
+              }}
+            >
+              <ShieldCheck size={16} /> Allow & Start Exam
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div>
         <h1 className="text-2xl font-bold tracking-tight mb-2">Quiz Center</h1>
         <p className="text-muted-foreground">Test your knowledge and track your performance.</p>
@@ -880,6 +956,11 @@ export default function StudentQuiz() {
                           quiz.difficulty === "hard" ? "bg-red-500/10 text-red-500 border-red-500/20" :
                           "bg-orange-500/10 text-orange-500 border-orange-500/20"
                         }>{quiz.difficulty}</Badge>
+                        {quiz.isProctored && (
+                          <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20 gap-1 text-[10px]">
+                            <ShieldCheck size={9} /> Proctored
+                          </Badge>
+                        )}
                       </div>
                       <h4 className="font-semibold text-base">{quiz.title}</h4>
                       <div className="flex gap-4 text-xs text-muted-foreground">

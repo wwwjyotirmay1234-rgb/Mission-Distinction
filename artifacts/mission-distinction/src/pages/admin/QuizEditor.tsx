@@ -80,7 +80,7 @@ export default function QuizEditor() {
   const [metaOpen, setMetaOpen] = useState(false);
   const [metaForm, setMetaForm] = useState({
     title: "", subject: "", description: "", difficulty: "medium",
-    durationMinutes: "", isFeatured: false,
+    durationMinutes: "", isFeatured: false, isProctored: false,
   });
   const [savingMeta, setSavingMeta] = useState(false);
 
@@ -185,6 +185,7 @@ export default function QuizEditor() {
       difficulty: quiz.difficulty,
       durationMinutes: quiz.durationMinutes?.toString() || "",
       isFeatured: quiz.isFeatured,
+      isProctored: (quiz as any).isProctored ?? false,
     });
     setMetaOpen(true);
   };
@@ -261,6 +262,7 @@ export default function QuizEditor() {
           difficulty: metaForm.difficulty,
           durationMinutes: metaForm.durationMinutes ? parseInt(metaForm.durationMinutes) : null,
           isFeatured: metaForm.isFeatured,
+          isProctored: metaForm.isProctored,
         }),
       });
       toast.success("Quiz details updated!");
@@ -631,6 +633,13 @@ export default function QuizEditor() {
               <div className="flex items-center gap-3 pt-6">
                 <Switch checked={metaForm.isFeatured} onCheckedChange={(v) => setMetaForm({ ...metaForm, isFeatured: v })} />
                 <Label>Mark as Featured</Label>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-red-500/20 bg-red-500/5">
+              <Switch checked={metaForm.isProctored} onCheckedChange={(v) => setMetaForm({ ...metaForm, isProctored: v })} />
+              <div>
+                <Label className="text-red-300">Proctored Exam</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">AI webcam monitoring, tab detection, fullscreen enforcement, copy/paste blocked</p>
               </div>
             </div>
           </div>

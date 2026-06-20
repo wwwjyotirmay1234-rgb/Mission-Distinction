@@ -222,6 +222,32 @@ export async function runStartupMigrations() {
         ON quiz_submissions(user_id);
       CREATE INDEX IF NOT EXISTS quiz_submissions_status
         ON quiz_submissions(status);
+
+      ALTER TABLE quizzes
+        ADD COLUMN IF NOT EXISTS is_proctored BOOLEAN NOT NULL DEFAULT FALSE;
+
+      ALTER TABLE quiz_attempts
+        ADD COLUMN IF NOT EXISTS violation_count INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS is_flagged BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS proctoring_session_id TEXT,
+        ADD COLUMN IF NOT EXISTS proctoring_flagged_at TIMESTAMP;
+
+      CREATE TABLE IF NOT EXISTS proctoring_logs (
+        id SERIAL PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        user_id INTEGER NOT NULL,
+        quiz_id INTEGER NOT NULL,
+        attempt_id INTEGER,
+        event_type TEXT NOT NULL,
+        details JSONB,
+        ai_analysis TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS proctoring_logs_session_id
+        ON proctoring_logs(session_id);
+      CREATE INDEX IF NOT EXISTS proctoring_logs_attempt_id
+        ON proctoring_logs(attempt_id);
     `);
   } finally {
     client.release();
