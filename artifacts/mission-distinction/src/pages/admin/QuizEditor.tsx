@@ -27,12 +27,22 @@ import {
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "Medicine", "Surgery", "Mixed"];
 const OPTION_LABELS = ["A", "B", "C", "D"];
 
+const QUESTION_TYPES = [
+  { value: "mcq", label: "Multiple Choice (MCQ)" },
+  { value: "true-false", label: "True / False" },
+  { value: "fill-blank", label: "Fill in the Blank" },
+  { value: "name-following", label: "Name the Following" },
+  { value: "one-word", label: "One Word Answer" },
+];
+
 type Question = {
   id: number;
   quizId: number;
   text: string;
-  options: string[];
-  correctOption: number;
+  questionType?: string | null;
+  options?: string[] | null;
+  correctOption?: number | null;
+  correctAnswer?: string | null;
   explanation?: string | null;
 };
 
@@ -49,7 +59,7 @@ type QuizDetail = {
   questions: Question[];
 };
 
-const emptyQForm = { text: "", options: ["", "", "", ""], correctOption: 0, explanation: "" };
+const emptyQForm = { text: "", questionType: "mcq", options: ["", "", "", ""], correctOption: 0, correctAnswer: "", explanation: "" };
 
 export default function QuizEditor() {
   const [, params] = useRoute("/admin/quizzes/:id/edit");
@@ -148,10 +158,13 @@ export default function QuizEditor() {
 
   const openEditQuestion = (q: Question) => {
     setEditQ(q);
+    const opts = q.options ?? ["", "", "", ""];
     setQForm({
       text: q.text,
-      options: q.options.length === 4 ? [...q.options] : [...q.options, ...Array(4 - q.options.length).fill("")],
-      correctOption: q.correctOption,
+      questionType: q.questionType || "mcq",
+      options: opts.length === 4 ? [...opts] : [...opts, ...Array(4 - opts.length).fill("")],
+      correctOption: q.correctOption ?? 0,
+      correctAnswer: q.correctAnswer || "",
       explanation: q.explanation || "",
     });
     setQOpen(true);
@@ -173,31 +186,21 @@ export default function QuizEditor() {
   const handleSaveQuestion = async () => {
     if (!quizId) return;
     if (!qForm.text.trim()) { toast.error("Question text is required."); return; }
-    if (qForm.options.some(o => !o.trim())) { toast.error("All 4 options must be filled in."); return; }
+    const isWriteIn = !["mcq", "true-false"].includes(qForm.questionType);
+    if (isWriteIn && !qForm.correctAnswer.trim()) { toast.error("Correct answer is required for this question type."); return; }
+    if (!isWriteIn && qForm.options.some(o => !o.trim())) { toast.error("All options must be filled in."); return; }
+
+    const payload = isWriteIn
+      ? { text: qForm.text.trim(), questionType: qForm.questionType, correctAnswer: qForm.correctAnswer.trim(), explanation: qForm.explanation.trim() || null }
+      : { text: qForm.text.trim(), questionType: qForm.questionType, options: qForm.options.map(o => o.trim()), correctOption: qForm.correctOption, explanation: qForm.explanation.trim() || null };
 
     setSaving(true);
     try {
       if (editQ) {
-        await customFetch(`/api/quizzes/${quizId}/questions/${editQ.id}`, {
-          method: "PATCH",
-          body: JSON.stringify({
-            text: qForm.text.trim(),
-            options: qForm.options.map(o => o.trim()),
-            correctOption: qForm.correctOption,
-            explanation: qForm.explanation.trim() || null,
-          }),
-        });
+        await customFetch(`/api/quizzes/${quizId}/questions/${editQ.id}`, { method: "PATCH", body: JSON.stringify(payload) });
         toast.success("Question updated!");
       } else {
-        await customFetch(`/api/quizzes/${quizId}/questions`, {
-          method: "POST",
-          body: JSON.stringify({
-            text: qForm.text.trim(),
-            options: qForm.options.map(o => o.trim()),
-            correctOption: qForm.correctOption,
-            explanation: qForm.explanation.trim() || null,
-          }),
-        });
+        await customFetch(`/api/quizzes/${quizId}/questions`, { method: "POST", body: JSON.stringify(payload) });
         toast.success("Question added!");
       }
       queryClient.invalidateQueries({ queryKey: getListQuizzesQueryKey() });
@@ -405,48 +408,100 @@ export default function QuizEditor() {
           </DialogHeader>
           <div className="space-y-5 py-2">
             <div className="space-y-1.5">
+              <Label>Question Type <span className="text-destructive">*</span></Label>
+              <Select value={qForm.questionType} onValueChange={(v) => setQForm({ ...qForm, questionType: v, correctAnswer: "", options: ["", "", "", ""], correctOption: 0 })}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {QUESTION_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
               <Label>Question Text <span className="text-destructive">*</span></Label>
               <Textarea
-                placeholder="e.g. Which nerve is responsible for the sensation of the anterior thigh?"
+                placeholder={
+                  qForm.questionType === "fill-blank" ? "e.g. The main nerve of the posterior compartment of the thigh is ___ nerve."
+                  : qForm.questionType === "true-false" ? "e.g. The femoral nerve arises from L2, L3, L4 nerve roots."
+                  : qForm.questionType === "name-following" ? "e.g. Name the muscle that is attached to the lesser trochanter of the femur."
+                  : qForm.questionType === "one-word" ? "e.g. What is the primary metabolic fuel for the brain?"
+                  : "e.g. Which nerve is responsible for the sensation of the anterior thigh?"
+                }
                 className="bg-background/50 resize-none min-h-[80px]"
                 value={qForm.text}
                 onChange={(e) => setQForm({ ...qForm, text: e.target.value })}
               />
+              {qForm.questionType === "fill-blank" && (
+                <p className="text-xs text-muted-foreground">Use <span className="font-mono text-primary">___</span> (three underscores) to mark the blank in the question.</p>
+              )}
             </div>
 
-            <div className="space-y-3">
-              <Label>Options <span className="text-destructive">*</span> <span className="text-xs text-muted-foreground font-normal">(select the correct one)</span></Label>
-              <RadioGroup
-                value={qForm.correctOption.toString()}
-                onValueChange={(v) => setQForm({ ...qForm, correctOption: parseInt(v) })}
-                className="space-y-2"
-              >
-                {qForm.options.map((opt, i) => (
-                  <div key={i} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                    qForm.correctOption === i
-                      ? "border-green-500/40 bg-green-500/5"
-                      : "border-border/30 bg-background/30"
-                  }`}>
-                    <RadioGroupItem value={i.toString()} id={`opt-${i}`} className="shrink-0" />
-                    <span className="text-xs font-bold text-muted-foreground w-4 shrink-0">{OPTION_LABELS[i]}</span>
-                    <Input
-                      placeholder={`Option ${OPTION_LABELS[i]}`}
-                      className="bg-transparent border-none p-0 h-auto focus-visible:ring-0 text-sm flex-1"
-                      value={opt}
-                      onChange={(e) => {
-                        const opts = [...qForm.options];
-                        opts[i] = e.target.value;
-                        setQForm({ ...qForm, options: opts });
-                      }}
-                    />
-                    {qForm.correctOption === i && (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                    )}
-                  </div>
-                ))}
-              </RadioGroup>
-              <p className="text-xs text-muted-foreground">Click the radio button next to the correct answer.</p>
-            </div>
+            {(qForm.questionType === "mcq" || qForm.questionType === "true-false") && (
+              <div className="space-y-3">
+                <Label>Options <span className="text-destructive">*</span> <span className="text-xs text-muted-foreground font-normal">(select the correct one)</span></Label>
+                {qForm.questionType === "true-false" ? (
+                  <RadioGroup
+                    value={qForm.correctOption.toString()}
+                    onValueChange={(v) => setQForm({ ...qForm, correctOption: parseInt(v), options: ["True", "False"] })}
+                    className="flex gap-4"
+                  >
+                    {["True", "False"].map((opt, i) => (
+                      <div key={i} className={`flex items-center gap-2 px-5 py-3 rounded-lg border flex-1 justify-center cursor-pointer transition-colors ${
+                        qForm.correctOption === i ? "border-green-500/40 bg-green-500/5" : "border-border/30 bg-background/30"
+                      }`} onClick={() => setQForm({ ...qForm, correctOption: i, options: ["True", "False"] })}>
+                        <RadioGroupItem value={i.toString()} id={`tf-${i}`} />
+                        <Label htmlFor={`tf-${i}`} className="cursor-pointer font-medium">{opt}</Label>
+                        {qForm.correctOption === i && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                      </div>
+                    ))}
+                  </RadioGroup>
+                ) : (
+                  <RadioGroup
+                    value={qForm.correctOption.toString()}
+                    onValueChange={(v) => setQForm({ ...qForm, correctOption: parseInt(v) })}
+                    className="space-y-2"
+                  >
+                    {qForm.options.map((opt, i) => (
+                      <div key={i} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                        qForm.correctOption === i ? "border-green-500/40 bg-green-500/5" : "border-border/30 bg-background/30"
+                      }`}>
+                        <RadioGroupItem value={i.toString()} id={`opt-${i}`} className="shrink-0" />
+                        <span className="text-xs font-bold text-muted-foreground w-4 shrink-0">{OPTION_LABELS[i]}</span>
+                        <Input
+                          placeholder={`Option ${OPTION_LABELS[i]}`}
+                          className="bg-transparent border-none p-0 h-auto focus-visible:ring-0 text-sm flex-1"
+                          value={opt}
+                          onChange={(e) => {
+                            const opts = [...qForm.options];
+                            opts[i] = e.target.value;
+                            setQForm({ ...qForm, options: opts });
+                          }}
+                        />
+                        {qForm.correctOption === i && <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />}
+                      </div>
+                    ))}
+                  </RadioGroup>
+                )}
+                <p className="text-xs text-muted-foreground">Click the radio button next to the correct answer.</p>
+              </div>
+            )}
+
+            {!["mcq", "true-false"].includes(qForm.questionType) && (
+              <div className="space-y-1.5">
+                <Label>Correct Answer <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder={
+                    qForm.questionType === "one-word" ? "e.g. Glucose"
+                    : qForm.questionType === "fill-blank" ? "e.g. Sciatic"
+                    : "e.g. Iliopsoas muscle"
+                  }
+                  className="bg-background/50"
+                  value={qForm.correctAnswer}
+                  onChange={(e) => setQForm({ ...qForm, correctAnswer: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">Answers are matched case-insensitively after normalizing punctuation/spaces.</p>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label>Explanation <span className="text-xs font-normal text-muted-foreground">(shown after attempt)</span></Label>

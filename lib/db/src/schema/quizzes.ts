@@ -18,8 +18,10 @@ export const questionsTable = pgTable("questions", {
   id: serial("id").primaryKey(),
   quizId: integer("quiz_id").notNull(),
   text: text("text").notNull(),
-  options: jsonb("options").notNull().$type<string[]>(),
-  correctOption: integer("correct_option").notNull(),
+  questionType: text("question_type").notNull().default("mcq"),
+  options: jsonb("options").$type<string[]>(),
+  correctOption: integer("correct_option"),
+  correctAnswer: text("correct_answer"),
   explanation: text("explanation"),
 });
 
@@ -35,8 +37,20 @@ export const quizAttemptsTable = pgTable("quiz_attempts", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const questionReportsTable = pgTable("question_reports", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  questionId: integer("question_id").notNull(),
+  quizId: integer("quiz_id").notNull(),
+  reason: text("reason").notNull(),
+  details: text("details"),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertQuizSchema = createInsertSchema(quizzesTable).omit({ id: true, createdAt: true, questionCount: true });
 export type InsertQuiz = z.infer<typeof insertQuizSchema>;
 export type Quiz = typeof quizzesTable.$inferSelect;
 export type Question = typeof questionsTable.$inferSelect;
 export type QuizAttempt = typeof quizAttemptsTable.$inferSelect;
+export type QuestionReport = typeof questionReportsTable.$inferSelect;
