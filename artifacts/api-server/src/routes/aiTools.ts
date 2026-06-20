@@ -5,6 +5,12 @@ import rateLimit from "express-rate-limit";
 
 const router = Router();
 
+function sanitizePromptInput(value: unknown, maxLen: number): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim().replace(/[\x00-\x1F\x7F]/g, " ").slice(0, maxLen);
+  return trimmed || null;
+}
+
 const aiLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 20,
@@ -16,8 +22,10 @@ const aiLimiter = rateLimit({
 // Generate MCQs
 router.post("/mcq", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
   try {
-    const { subject, topic, count = 5 } = req.body;
-    if (!subject || !topic?.trim()) { res.status(400).json({ error: "subject and topic required" }); return; }
+    const { count = 5 } = req.body;
+    const subject = sanitizePromptInput(req.body.subject, 100);
+    const topic = sanitizePromptInput(req.body.topic, 200);
+    if (!subject || !topic) { res.status(400).json({ error: "subject and topic required" }); return; }
     const n = Math.min(Math.max(parseInt(count) || 5, 1), 10);
 
     const prompt = `Generate ${n} high-quality MCQ questions for a 1st Year MBBS student studying ${subject} — specifically the topic: "${topic}".
@@ -55,9 +63,9 @@ Format your response as valid JSON array only (no markdown, no explanation):
 // Summarise text / notes
 router.post("/summarise", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
   try {
-    const { text, subject } = req.body;
-    if (!text?.trim()) { res.status(400).json({ error: "text required" }); return; }
-    if (text.trim().length > 8000) { res.status(400).json({ error: "Text too long (max 8000 characters)" }); return; }
+    const text = sanitizePromptInput(req.body.text, 8000);
+    const subject = sanitizePromptInput(req.body.subject, 100);
+    if (!text) { res.status(400).json({ error: "text required" }); return; }
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -83,8 +91,9 @@ ${text.trim()}` },
 // Generate a mnemonic
 router.post("/mnemonic", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
   try {
-    const { subject, topic } = req.body;
-    if (!subject || !topic?.trim()) { res.status(400).json({ error: "subject and topic required" }); return; }
+    const subject = sanitizePromptInput(req.body.subject, 100);
+    const topic = sanitizePromptInput(req.body.topic, 200);
+    if (!subject || !topic) { res.status(400).json({ error: "subject and topic required" }); return; }
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -114,8 +123,10 @@ Return JSON only:
 // Generate flashcard set
 router.post("/flashcards", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
   try {
-    const { subject, topic, count = 8 } = req.body;
-    if (!subject || !topic?.trim()) { res.status(400).json({ error: "subject and topic required" }); return; }
+    const { count = 8 } = req.body;
+    const subject = sanitizePromptInput(req.body.subject, 100);
+    const topic = sanitizePromptInput(req.body.topic, 200);
+    if (!subject || !topic) { res.status(400).json({ error: "subject and topic required" }); return; }
     const n = Math.min(Math.max(parseInt(count) || 8, 3), 15);
 
     const completion = await openai.chat.completions.create({
