@@ -121,7 +121,6 @@ router.post("/book-cover", adminMiddleware, upload.single("file"), async (req: R
     const result = await uploadToCloudinary(req.file.buffer, {
       folder: "mission-distinction/covers",
       resource_type: "image",
-      transformation: [{ width: 400, height: 560, crop: "fill", quality: "auto", fetch_format: "auto" }],
     });
     res.json({ url: result.secure_url, fileName: result.public_id });
   } catch (err: any) {
@@ -139,7 +138,6 @@ router.post("/image", adminMiddleware, upload.single("file"), async (req: Reques
     const result = await uploadToCloudinary(req.file.buffer, {
       folder: "mission-distinction/images",
       resource_type: "image",
-      transformation: [{ quality: "auto", fetch_format: "auto" }],
     });
     res.json({ url: result.secure_url, fileName: result.public_id });
   } catch (err: any) {
