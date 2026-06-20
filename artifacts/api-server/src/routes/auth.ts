@@ -68,9 +68,9 @@ function setRefreshCookie(res: Response, token: string): void {
   res.cookie("md_refresh", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     maxAge: 30 * 24 * 60 * 60 * 1000,
-    path: "/api/auth",
+    path: "/",
   });
 }
 
@@ -78,8 +78,8 @@ function clearRefreshCookie(res: Response): void {
   res.clearCookie("md_refresh", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/api/auth",
+    sameSite: "lax",
+    path: "/",
   });
 }
 
