@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useListPdfs, useCreatePdf, useDeletePdf, getListPdfsQueryKey, customFetch } from "@workspace/api-client-react";
-import { apiFetch } from "@/lib/apiFetch";
 import { Search, Plus, MoreVertical, Trash2, FileIcon, Pencil, ImagePlus, X, Upload, Link, CheckCircle2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -44,16 +43,28 @@ async function uploadPdfFile(file: File, onProgress: (p: number) => void): Promi
 }
 
 async function uploadCoverImage(file: File): Promise<string> {
-  const fd = new FormData();
-  fd.append("file", file);
-  const res = await apiFetch("/api/upload/image", { method: "POST", body: fd });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as any).error || `Upload failed (${res.status})`);
-  }
-  const data = await res.json();
-  if (!data?.url) throw new Error("Upload failed — no URL returned");
-  return data.url;
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/upload/image");
+    const token = localStorage.getItem("mission_token");
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.onload = () => {
+      if (xhr.status === 200 || xhr.status === 201) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data?.url) resolve(data.url);
+          else reject(new Error("Upload failed — no URL returned"));
+        } catch { reject(new Error("Invalid response from server")); }
+      } else {
+        try { reject(new Error(JSON.parse(xhr.responseText).error || `Upload failed (${xhr.status})`)); }
+        catch { reject(new Error(`Upload failed (${xhr.status})`)); }
+      }
+    };
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    const fd = new FormData();
+    fd.append("file", file);
+    xhr.send(fd);
+  });
 }
 
 const EMPTY_FORM = { title: "", subject: "", year: "", url: "", pages: "", thumbnailUrl: "", uploadedFileName: "" };
