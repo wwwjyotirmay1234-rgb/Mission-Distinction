@@ -224,7 +224,7 @@ export default function SnakeAndLadder({ onBack }: { onBack: () => void }) {
   const isHost = gameState?.hostId === myId;
 
   const connect = useCallback(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("mission_token");
     if (!token) { toast.error("Please log in."); return null; }
     const s = io({ path: "/api/socket.io/", auth: { token }, transports: ["websocket", "polling"] });
     s.on("connect_error", err => { toast.error("Connection failed: " + err.message); setConnecting(false); });

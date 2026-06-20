@@ -57,7 +57,7 @@ export default function MultiplayerGame({ onBack }: { onBack: () => void }) {
   };
 
   const connect = useCallback(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("mission_token");
     if (!token) { toast.error("Please log in first."); return null; }
 
     const socket = io({ path: "/api/socket.io/", auth: { token }, transports: ["websocket", "polling"] });
