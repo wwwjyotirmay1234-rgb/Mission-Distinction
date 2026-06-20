@@ -35,6 +35,7 @@ import { auditLogsRouter } from "./auditLogsRoute";
 import { noticesRouter } from "./notices";
 import { quizIntelligenceRouter } from "./quizIntelligence";
 import { adminContentRouter } from "./adminContent";
+import { gamesRouter } from "./games";
 
 const router: IRouter = Router();
 
@@ -78,5 +79,6 @@ router.use("/admin/audit-logs", auditLogsRouter);
 router.use("/admin/notices", noticesRouter);
 router.use("/admin/quiz-intelligence", quizIntelligenceRouter);
 router.use("/admin/content", adminContentRouter);
+router.use("/games", gamesRouter);
 
 export default router;

@@ -69,6 +69,7 @@ import StudentExams from "@/pages/student/Exams";
 import StudentConfessions from "@/pages/student/Confessions";
 import StudentStudyRooms from "@/pages/student/StudyRooms";
 import StudentAITools from "@/pages/student/AITools";
+import StudentGames from "@/pages/student/Games";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/Dashboard";
@@ -134,6 +135,7 @@ function Router() {
               <Route path="/student/confessions" component={StudentConfessions} />
               <Route path="/student/study-rooms" component={StudentStudyRooms} />
               <Route path="/student/ai-tools" component={StudentAITools} />
+              <Route path="/student/games" component={StudentGames} />
               <Route component={NotFound} />
             </Switch>
           </StudentLayout>

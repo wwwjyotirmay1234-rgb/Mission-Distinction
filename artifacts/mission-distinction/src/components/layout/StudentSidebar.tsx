@@ -24,6 +24,7 @@ import {
   CalendarDays,
   MessageCircleHeart,
   Bot,
+  Gamepad2,
 } from "lucide-react";
 
 const LAST_SEEN_KEY = "md_announcements_last_seen";
@@ -75,6 +76,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
     { icon: Users, label: "Study Rooms", href: "/student/study-rooms" },
     { icon: Bot, label: "AI Tools", href: "/student/ai-tools" },
+    { icon: Gamepad2, label: "Medical Games", href: "/student/games" },
     { icon: Music, label: "Music", href: "/student/music" },
     { icon: Settings, label: "Settings", href: "/student/settings" },
   ];
