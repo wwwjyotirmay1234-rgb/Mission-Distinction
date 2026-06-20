@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "-uQRytKbWPb7jpNN55fwi"
@@ -12,3 +11,9 @@ id = "8b24fyAG51DMJvtdyeqH8"
 uri = "file://artifacts/mission-distinction/public/icon-192.png"
 type = "image"
 title = "mission distinction icon 192"
+
+[[outputs]]
+id = "wzvpboiXssrPROTXFvYM-"
+uri = "file://exports/MoU_Mission_Distinction.md"
+type = "text"
+title = "Official MoU — Mission Distinction × Medical College"
