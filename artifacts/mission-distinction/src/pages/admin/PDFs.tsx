@@ -20,25 +20,34 @@ const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"];
 type PdfItem = { id: number; title: string; subject: string; year?: string | null; url: string; thumbnailUrl?: string | null; pages?: number | null; downloadCount?: number; createdAt: string | Date };
 
 async function uploadPdfFile(file: File, onProgress: (p: number) => void): Promise<string> {
+  // Step 1: ask the server for a presigned GCS PUT URL (small JSON request — not blocked by proxy)
+  const token = localStorage.getItem("mission_token");
+  const presignResp = await fetch("/api/upload/pdf/request-upload-url", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ fileName: file.name }),
+  });
+  if (!presignResp.ok) {
+    const data = await presignResp.json().catch(() => ({}));
+    throw new Error((data as any).error || "Failed to get upload URL");
+  }
+  const { signedUrl, serveUrl } = await presignResp.json();
+
+  // Step 2: PUT the file DIRECTLY to GCS — bypasses the Replit proxy entirely (supports up to 5 GB)
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/upload/pdf");
-    const token = localStorage.getItem("mission_token");
-    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.open("PUT", signedUrl);
+    xhr.setRequestHeader("Content-Type", "application/pdf");
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
     xhr.onload = () => {
-      if (xhr.status === 200 || xhr.status === 201) {
-        try { resolve(JSON.parse(xhr.responseText).url); }
-        catch { reject(new Error("Invalid response")); }
-      } else {
-        try { reject(new Error(JSON.parse(xhr.responseText).error || "Upload failed")); }
-        catch { reject(new Error("Upload failed")); }
-      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(serveUrl);
+      else reject(new Error(`Upload failed (${xhr.status})`));
     };
-    xhr.onerror = () => reject(new Error("Upload failed"));
-    const fd = new FormData();
-    fd.append("file", file);
-    xhr.send(fd);
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.send(file);
   });
 }
 

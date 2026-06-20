@@ -97,6 +97,44 @@ function uploadToCloudinary(buffer: Buffer, options: Record<string, any>): Promi
   });
 }
 
+// ─── PDF: request a presigned PUT URL so the browser uploads directly to GCS ──
+// This bypasses the Replit proxy body-size limit — files go browser → GCS directly.
+async function signPdfUploadURL(bucketId: string, fileName: string): Promise<string> {
+  const body = {
+    bucket_name: bucketId,
+    object_name: `pdfs/${fileName}`,
+    method: "PUT",
+    expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+  };
+  const resp = await fetch(`${REPLIT_SIDECAR}/object-storage/signed-object-url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!resp.ok) throw new Error(`Sidecar returned ${resp.status}`);
+  const { signed_url } = await resp.json();
+  return signed_url;
+}
+
+router.post("/pdf/request-upload-url", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const rawName = String(req.body?.fileName ?? "file.pdf");
+    const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+    if (!bucketId) { res.status(500).json({ error: "Storage not configured" }); return; }
+    const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const fileName = `${Date.now()}_${safeName}`;
+    const signedUrl = await signPdfUploadURL(bucketId, fileName);
+    const proto = req.get("x-forwarded-proto") || req.protocol;
+    const host = req.get("x-forwarded-host") || req.get("host");
+    const serveUrl = `${proto}://${host}/api/upload/pdf/serve/${fileName}`;
+    res.json({ signedUrl, serveUrl, fileName });
+  } catch (err: any) {
+    console.error("PDF presign error:", err);
+    res.status(500).json({ error: "Failed to generate upload URL. Please try again." });
+  }
+});
+
 // ─── PDF serve (streams from GCS — any authenticated user can view) ───────────
 router.get("/pdf/serve/:fileName", authMiddleware, async (req: Request, res: Response) => {
   try {
