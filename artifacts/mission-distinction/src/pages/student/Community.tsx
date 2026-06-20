@@ -308,9 +308,7 @@ export default function StudentCommunity() {
     if (q.length < 2) { setSearchResults([]); return; }
     setSearching(true);
     try {
-      const res = await fetch(`${BASE}/api/users/search?q=${encodeURIComponent(q)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiFetch(`/api/users/search?q=${encodeURIComponent(q)}`);
       if (res.ok) setSearchResults(await res.json());
     } catch {} finally { setSearching(false); }
   };
