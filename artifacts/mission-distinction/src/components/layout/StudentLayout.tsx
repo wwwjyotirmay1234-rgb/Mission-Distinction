@@ -5,6 +5,7 @@ import { PersistentPlayer } from "./PersistentPlayer";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { MusicPlayerProvider } from "@/contexts/MusicPlayerContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { apiFetch } from "@/lib/apiFetch";
 import { Button } from "@/components/ui/button";
 import { MailWarning, X, CheckCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
@@ -23,10 +24,8 @@ function EmailVerificationBanner() {
   const handleResend = async () => {
     setResending(true);
     try {
-      const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-      const res = await fetch(`${baseUrl}/api/auth/resend-verification`, {
+      const res = await apiFetch(`/api/auth/resend-verification`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (res.ok) {

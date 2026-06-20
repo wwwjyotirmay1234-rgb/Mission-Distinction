@@ -80,11 +80,15 @@ export default function AdminUsers() {
   async function bulkDelete() {
     const ids = Array.from(selected);
     if (!ids.length) return;
-    let done = 0;
+    let done = 0; let failed = 0;
     for (const id of ids) {
-      try { await apiFetch(`/api/users/${id}`, { method: "DELETE" }); done++; } catch {}
+      try {
+        const res = await apiFetch(`/api/users/${id}`, { method: "DELETE" });
+        if (res.ok) done++; else failed++;
+      } catch { failed++; }
     }
-    toast.success(`Removed ${done} users`);
+    if (done > 0) toast.success(`Removed ${done} user${done !== 1 ? "s" : ""}`);
+    if (failed > 0) toast.error(`Failed to remove ${failed} user${failed !== 1 ? "s" : ""}`);
     queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
     setSelected(new Set());
   }

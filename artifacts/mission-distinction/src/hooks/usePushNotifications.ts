@@ -1,25 +1,12 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-
-const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+import { apiFetch } from "@/lib/apiFetch";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
-}
-
-async function apiFetch(path: string, opts: RequestInit = {}) {
-  const token = localStorage.getItem("mission_token");
-  return fetch(`${BASE}${path}`, {
-    ...opts,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(opts.headers || {}),
-    },
-  });
 }
 
 export function usePushNotifications() {
@@ -47,7 +34,7 @@ export function usePushNotifications() {
     setLoading(true);
     try {
       const reg = await navigator.serviceWorker.ready;
-      const res = await fetch(`${BASE}/api/push/vapid-key`);
+      const res = await fetch(`/api/push/vapid-key`);
       const { publicKey } = await res.json();
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,

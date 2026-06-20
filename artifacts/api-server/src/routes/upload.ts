@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { adminMiddleware, authMiddleware } from "../middlewares/auth";
+import rateLimit from "express-rate-limit";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { Readable } from "stream";
@@ -25,6 +26,15 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const avatarLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => String((req as any).user?.id ?? req.ip),
+  message: { error: "Too many avatar uploads. Please wait before trying again." },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 const router = Router();
@@ -155,7 +165,7 @@ router.get("/avatar/:fileName", async (req: Request, res: Response) => {
 });
 
 // ─── Avatar upload (Replit Object Storage — GCS sidecar auth) ─────────────────
-router.post("/avatar", authMiddleware, upload.single("file"), async (req: Request, res: Response) => {
+router.post("/avatar", authMiddleware, avatarLimiter, upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
     const realMime = await detectMime(req.file.buffer);

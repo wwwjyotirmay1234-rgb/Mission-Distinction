@@ -439,8 +439,8 @@ export default function StudentCommunity() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(`${BASE}/api/upload/community-file`, {
-        method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData,
+      const res = await apiFetch(`/api/upload/community-file`, {
+        method: "POST", body: formData,
       });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || "Upload failed"); }
       const data = await res.json();
@@ -489,9 +489,9 @@ export default function StudentCommunity() {
     if (!groupForm.name.trim() || !groupForm.subject.trim()) { toast.error("Group name and subject are required."); return; }
     setCreatingGroup(true);
     try {
-      const res = await fetch(`${BASE}/api/community/groups`, {
+      const res = await apiFetch(`/api/community/groups`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(groupForm),
       });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || "Failed to create group"); }
