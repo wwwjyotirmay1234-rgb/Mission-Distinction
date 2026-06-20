@@ -24,9 +24,13 @@ export default function AdminMnemonics() {
   const [aiLoading, setAiLoading] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: mnemonics = [], isLoading } = useQuery<Mnemonic[]>({
+  const { data: mnemonics = [], isLoading, isError } = useQuery<Mnemonic[]>({
     queryKey: ["admin-mnemonics"],
-    queryFn: () => apiFetch("/api/admin/content/mnemonics").then(r => r.json()),
+    queryFn: async () => {
+      const res = await apiFetch("/api/admin/content/mnemonics");
+      if (!res.ok) throw new Error("Failed to load mnemonics");
+      return res.json();
+    },
   });
 
   const createMutation = useMutation({
@@ -68,6 +72,11 @@ export default function AdminMnemonics() {
 
       {isLoading ? (
         <div className="space-y-3">{Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}</div>
+      ) : isError ? (
+        <div className="py-14 text-center border border-dashed border-destructive/30 rounded-xl text-muted-foreground text-sm">
+          <Shield size={28} className="mx-auto mb-3 text-destructive/50" />
+          Failed to load mnemonics. Please refresh.
+        </div>
       ) : mnemonics.length === 0 ? (
         <div className="py-14 text-center border border-dashed rounded-xl text-muted-foreground text-sm">
           <Shield size={28} className="mx-auto mb-3 opacity-30" />

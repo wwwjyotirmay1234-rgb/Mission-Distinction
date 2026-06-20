@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/apiFetch";
 import { 
   Activity, UserPlus, Brain, MessageSquare, Users, 
-  BookOpen, RefreshCw, Wifi, WifiOff, Zap
+  BookOpen, RefreshCw, Wifi, WifiOff, Zap, AlertTriangle
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -37,18 +37,20 @@ export default function ActivityFeed() {
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [stats, setStats] = useState<FeedStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [live, setLive] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const fetchFeed = useCallback(async () => {
     try {
       const res = await apiFetch("/api/admin/activity-feed");
-      if (!res.ok) return;
+      if (!res.ok) { setFetchError(true); return; }
       const data = await res.json();
+      setFetchError(false);
       setEvents(data.events ?? []);
       setStats(data.stats ?? null);
       setLastUpdated(new Date());
-    } catch {}
+    } catch { setFetchError(true); }
     finally { setLoading(false); }
   }, []);
 
@@ -128,6 +130,12 @@ export default function ActivityFeed() {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : fetchError ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <AlertTriangle className="w-10 h-10 mx-auto mb-3 text-destructive/50" />
+              <p className="text-sm">Failed to load activity feed.</p>
+              <Button size="sm" variant="outline" className="mt-3" onClick={fetchFeed}>Try again</Button>
             </div>
           ) : events.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">

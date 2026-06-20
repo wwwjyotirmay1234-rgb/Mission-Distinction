@@ -10,17 +10,7 @@ import {
   ArrowLeft, ShieldAlert, ShieldCheck, Camera, Eye, Copy,
   Monitor, AlertTriangle, CheckCircle, Info, Flag,
 } from "lucide-react";
-
-function customFetch(url: string, opts?: RequestInit) {
-  const token = localStorage.getItem("mission_token");
-  return fetch(url, {
-    ...opts,
-    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts?.headers ?? {}) },
-  }).then(async (r) => {
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  });
-}
+import { apiFetch } from "@/lib/apiFetch";
 
 const EVENT_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   session_started: { label: "Session Started", icon: <CheckCircle size={14} />, color: "text-green-400 bg-green-500/10 border-green-500/20" },
@@ -55,16 +45,24 @@ export default function ProctoringReport() {
 
   const { data, isLoading, error } = useQuery<{ attempt: any; logs: any[] }>({
     queryKey: ["proctoring-report", attemptId],
-    queryFn: () => customFetch(`/api/proctoring/attempts/${attemptId}/report`),
+    queryFn: async () => {
+      const res = await apiFetch(`/api/proctoring/attempts/${attemptId}/report`);
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
     enabled: !!attemptId,
   });
 
   const flagMutation = useMutation({
-    mutationFn: (isFlagged: boolean) =>
-      customFetch(`/api/proctoring/attempts/${attemptId}/flag`, {
+    mutationFn: async (isFlagged: boolean) => {
+      const res = await apiFetch(`/api/proctoring/attempts/${attemptId}/flag`, {
         method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isFlagged }),
-      }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["proctoring-report", attemptId] });
       toast.success("Attempt flag updated.");

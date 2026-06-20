@@ -8,10 +8,11 @@ import rateLimit from "express-rate-limit";
 
 
 const searchLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: { error: "Too many searches. Slow down." }, standardHeaders: true, legacyHeaders: false });
+const adminListLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, message: { error: "Too many requests." }, standardHeaders: true, legacyHeaders: false });
 
 const router = Router();
 
-router.get("/", adminMiddleware, async (req: Request, res: Response) => {
+router.get("/", adminMiddleware, adminListLimiter, async (req: Request, res: Response) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));

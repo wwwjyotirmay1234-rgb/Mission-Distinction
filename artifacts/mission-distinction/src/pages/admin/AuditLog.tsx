@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/apiFetch";
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardList, Shield, Trash2, AlertTriangle, Megaphone, User, Filter } from "lucide-react";
+import { ClipboardList, Shield, Trash2, AlertTriangle, Megaphone, User, Filter, RefreshCw } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
 interface AuditEntry {
@@ -38,7 +38,7 @@ const ACTION_CONFIG: Record<string, { icon: React.ElementType; color: string; la
 export default function AuditLog() {
   const [days, setDays] = useState("7");
 
-  const { data: logs, isLoading } = useQuery<AuditEntry[]>({
+  const { data: logs, isLoading, isError } = useQuery<AuditEntry[]>({
     queryKey: ["audit-logs", days],
     queryFn: async () => {
       const res = await apiFetch(`/api/admin/audit-logs?days=${days}`);
@@ -87,6 +87,11 @@ export default function AuditLog() {
                   <Skeleton className="h-3 w-24" />
                 </div>
               ))}
+            </div>
+          ) : isError ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <AlertTriangle className="w-10 h-10 mx-auto mb-3 text-destructive/50" />
+              <p className="text-sm">Failed to load audit log. Please refresh.</p>
             </div>
           ) : !logs?.length ? (
             <div className="text-center py-16 text-muted-foreground">
