@@ -7,7 +7,7 @@ import {
   Radar, ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, Award, FileText, CheckCircle, Flame, Zap, Trophy, BookOpen, Download, Users } from "lucide-react";
+import { Clock, Award, FileText, CheckCircle, Zap, Trophy, BookOpen, Download, MessageSquare, Timer } from "lucide-react";
 import { Progress as ProgressBar } from "@/components/ui/progress";
 import { XPProgressBar } from "@/components/XPProgressBar";
 import { RankBadge } from "@/components/RankBadge";
@@ -64,10 +64,11 @@ export default function StudentProgress() {
   const XP_SOURCES = [
     { icon: Trophy, label: "Quiz completion", xp: "50 XP" },
     { icon: CheckCircle, label: "Correct answer", xp: "5 XP each" },
-    { icon: Flame, label: "Daily login", xp: "30 XP + streak bonus" },
     { icon: BookOpen, label: "Reading notes", xp: "15 XP" },
     { icon: Download, label: "PDF download", xp: "10 XP" },
-    { icon: Users, label: "Community post", xp: "30 XP" },
+    { icon: MessageSquare, label: "Asking a doubt", xp: "20 XP" },
+    { icon: Timer, label: "Stopwatch (5+ min)", xp: "10 XP" },
+    { icon: Clock, label: "Alarm fired", xp: "5 XP" },
   ];
 
   return (

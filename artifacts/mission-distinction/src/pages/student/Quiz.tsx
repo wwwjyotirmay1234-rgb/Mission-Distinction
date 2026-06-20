@@ -919,6 +919,8 @@ export default function StudentQuiz() {
             { type: "true-false", label: "True / False" },
             { type: "name-following", label: "Name the Following" },
             { type: "one-word", label: "One Word" },
+            { type: "short_answer", label: "SAQ" },
+            { type: "long_answer", label: "LAQ" },
           ].map(t => (
             <Badge key={t.type} variant="outline" className={`text-[10px] ${getTypeBadgeColor(t.type)}`}>
               {t.label}
