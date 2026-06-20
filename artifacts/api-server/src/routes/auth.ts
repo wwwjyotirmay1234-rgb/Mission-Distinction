@@ -503,16 +503,20 @@ router.post("/admin/test-email", adminMiddleware, async (req: Request, res: Resp
   }
 
   try {
+    const timestamp = new Date().toISOString();
+    const testHtml =
+      "<!DOCTYPE html><html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px;background:#f4f4f7;\">" +
+      "<h2 style=\"color:#7c3aed;\">Mission Distinction</h2>" +
+      "<h3>Email system is working!</h3>" +
+      "<p>Test email sent via <strong>SendGrid</strong> at <strong>" + timestamp + "</strong></p>" +
+      "<p>All transactional emails (registration verification, password reset) are operational.</p>" +
+      "</body></html>";
+    const testText = "Mission Distinction — Email system test\n\nEmail system is working!\nTest sent at " + timestamp;
     const sent = await sendEmail(
       toEmail,
       "Mission Distinction — Email system test",
-      `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px;background:#f4f4f7;">
-        <h2 style="color:#7c3aed;">Mission Distinction</h2>
-        <h3>Email system is working!</h3>
-        <p>Test email sent via <strong>SendGrid</strong> at <strong>${new Date().toISOString()}</strong></p>
-        <p>All transactional emails (registration verification, password reset) are operational.</p>
-      </body></html>`,
-      `Mission Distinction — Email system test\n\nEmail system is working!\nTest sent at ${new Date().toISOString()}`
+      testHtml,
+      testText,
     );
 
     if (!sent) throw new Error("SendGrid returned false — check API key and sender verification.");

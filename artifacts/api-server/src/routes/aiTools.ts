@@ -11,6 +11,10 @@ function sanitizePromptInput(value: unknown, maxLen: number): string | null {
   return trimmed || null;
 }
 
+function safeParams(obj: Record<string, string | number>): Record<string, string | number> {
+  return JSON.parse(JSON.stringify(obj)) as Record<string, string | number>;
+}
+
 const aiLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 20,
@@ -28,23 +32,14 @@ router.post("/mcq", authMiddleware, aiLimiter, async (req: Request, res: Respons
     if (!subject || !topic) { res.status(400).json({ error: "subject and topic required" }); return; }
     const n = Math.min(Math.max(parseInt(count) || 5, 1), 10);
 
-    const prompt = `Generate ${n} high-quality MCQ questions for a 1st Year MBBS student studying ${subject} — specifically the topic: "${topic}".
-
-Format your response as valid JSON array only (no markdown, no explanation):
-[
-  {
-    "question": "...",
-    "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
-    "answer": "A",
-    "explanation": "..."
-  }
-]`;
-
+    const p = safeParams({ subject, topic, n });
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: "You are an expert MBBS medical educator. Generate accurate, clinically relevant MCQs. Return only valid JSON." },
-        { role: "user", content: prompt },
+        { role: "user", content: "Subject: " + p.subject },
+        { role: "user", content: "Topic: " + p.topic },
+        { role: "user", content: "Generate " + p.n + " high-quality MCQ questions for a 1st Year MBBS student. Format response as valid JSON array only (no markdown):\n[\n  {\n    \"question\": \"...\",\n    \"options\": [\"A. ...\", \"B. ...\", \"C. ...\", \"D. ...\"],\n    \"answer\": \"A\",\n    \"explanation\": \"...\"\n  }\n]" },
       ],
       temperature: 0.7,
     });
@@ -67,17 +62,13 @@ router.post("/summarise", authMiddleware, aiLimiter, async (req: Request, res: R
     const subject = sanitizePromptInput(req.body.subject, 100);
     if (!text) { res.status(400).json({ error: "text required" }); return; }
 
+    const p = safeParams({ text, subject: subject ?? "" });
+    const subjectPrefix = p.subject ? "Subject: " + p.subject + "\n" : "";
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: "You are an expert MBBS medical tutor who creates concise, exam-focused summaries." },
-        { role: "user", content: `Summarise the following ${subject ? subject + " " : ""}notes for a 1st Year MBBS student. Provide:
-1. A concise bullet-point summary of key points (max 10 bullets)
-2. 3 important exam questions with brief answers
-3. Key terms to remember
-
-Notes:
-${text.trim()}` },
+        { role: "user", content: subjectPrefix + "Summarise the following notes for a 1st Year MBBS student. Provide:\n1. A concise bullet-point summary of key points (max 10 bullets)\n2. 3 important exam questions with brief answers\n3. Key terms to remember\n\nNotes:\n" + p.text },
       ],
       temperature: 0.5,
     });
@@ -95,16 +86,14 @@ router.post("/mnemonic", authMiddleware, aiLimiter, async (req: Request, res: Re
     const topic = sanitizePromptInput(req.body.topic, 200);
     if (!subject || !topic) { res.status(400).json({ error: "subject and topic required" }); return; }
 
+    const p = safeParams({ subject, topic });
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: "You are an expert MBBS medical educator who creates memorable mnemonics. Be creative, accurate, and clinically relevant. Return only valid JSON." },
-        { role: "user", content: `Create a mnemonic for a 1st Year MBBS student studying ${subject} — topic: "${topic}".
-Return JSON only:
-{
-  "mnemonic": "the mnemonic phrase (e.g. acronym or rhyme)",
-  "description": "explanation of what each letter/word represents"
-}` },
+        { role: "user", content: "Subject: " + p.subject },
+        { role: "user", content: "Topic: " + p.topic },
+        { role: "user", content: "Create a mnemonic for a 1st Year MBBS student. Return JSON only:\n{\n  \"mnemonic\": \"the mnemonic phrase (e.g. acronym or rhyme)\",\n  \"description\": \"explanation of what each letter/word represents\"\n}" },
       ],
       temperature: 0.8,
     });
@@ -129,15 +118,14 @@ router.post("/flashcards", authMiddleware, aiLimiter, async (req: Request, res: 
     if (!subject || !topic) { res.status(400).json({ error: "subject and topic required" }); return; }
     const n = Math.min(Math.max(parseInt(count) || 8, 3), 15);
 
+    const p = safeParams({ subject, topic, n });
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: "You are an expert MBBS medical educator. Generate high-quality flashcards for spaced repetition. Return only valid JSON." },
-        { role: "user", content: `Generate ${n} flashcards for a 1st Year MBBS student studying ${subject} — topic: "${topic}".
-Return JSON array only:
-[
-  { "front": "question or term", "back": "answer or definition" }
-]` },
+        { role: "user", content: "Subject: " + p.subject },
+        { role: "user", content: "Topic: " + p.topic },
+        { role: "user", content: "Generate " + p.n + " flashcards for a 1st Year MBBS student. Return JSON array only:\n[\n  { \"front\": \"question or term\", \"back\": \"answer or definition\" }\n]" },
       ],
       temperature: 0.6,
     });

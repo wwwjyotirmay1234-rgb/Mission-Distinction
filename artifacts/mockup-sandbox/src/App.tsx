@@ -8,17 +8,16 @@ function _resolveComponent(
   mod: Record<string, unknown>,
   name: string,
 ): ComponentType | undefined {
-  const fns = Object.values(mod).filter(
-    (v) => typeof v === "function",
-  ) as ComponentType[];
-  const namedExport = Object.prototype.hasOwnProperty.call(mod, name)
-    ? (mod[name] as ComponentType)
-    : undefined;
+  const namedExport = Object.entries(mod)
+    .find(([k]) => k === name)?.[1] as ComponentType | undefined;
+  const lastFnExport = Object.values(mod)
+    .filter((v): v is ComponentType => typeof v === "function")
+    .at(-1);
   return (
     (mod.default as ComponentType) ||
     (mod.Preview as ComponentType) ||
     namedExport ||
-    fns[fns.length - 1]
+    lastFnExport
   );
 }
 
@@ -40,7 +39,7 @@ function PreviewRenderer({
 
     async function loadComponent(): Promise<void> {
       const key = `./components/mockups/${componentPath}.tsx`;
-      const loader = modules[key];
+      const loader = Object.entries(modules).find(([k]) => k === key)?.[1];
       if (!loader) {
         setError(`No component found at ${componentPath}.tsx`);
         return;
