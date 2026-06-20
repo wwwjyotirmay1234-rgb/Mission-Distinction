@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Eye, EyeOff, Activity, ShieldCheck, TrendingUp, Award, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { signInWithPopup, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 
 const ODISHA_GOVT_COLLEGES = [
@@ -111,7 +111,15 @@ export default function LandingPage() {
     const data = await res.json();
     login(data);
     toast.success("Signed in with Google!");
-    setLocation(getRouteByYear(data.user?.year));
+    // Google users may not have a year set yet — always route to dashboard
+    // (1st year content) and prompt them to complete their profile in Settings.
+    const year = data.user?.year;
+    if (!year) {
+      toast.info("Welcome! Please set your college & year in Settings.", { duration: 6000 });
+      setLocation("/student/dashboard");
+    } else {
+      setLocation(getRouteByYear(year));
+    }
   };
 
   useEffect(() => {
@@ -160,15 +168,10 @@ export default function LandingPage() {
       await finishGoogleAuth(idToken);
     } catch (err: any) {
       const code: string = err?.code ?? "";
-      if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
-        // Popup was blocked by the browser — last resort: redirect flow
-        try {
-          await signInWithRedirect(auth, googleProvider);
-          // page navigates away — loading state handled on return via useEffect
-          return;
-        } catch {
-          toast.error("Google sign-in failed. Please allow popups or try a different browser.");
-        }
+      if (code === "auth/popup-blocked") {
+        // Redirect flow is unreliable on Chrome 115+ (third-party cookies blocked).
+        // Ask the user to allow popups instead.
+        toast.error("Popup was blocked. Please allow popups for this site in your browser settings, then try again.");
       } else if (code === "auth/unauthorized-domain") {
         toast.error(
           `Google sign-in blocked: add "${window.location.hostname}" to Firebase Console → Authentication → Settings → Authorized domains.`

@@ -56,6 +56,14 @@ const refreshLimiter = rateLimit({
   message: { error: "Too many token refresh requests. Please try again shortly." },
 });
 
+const googleAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "development" ? 500 : 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many Google sign-in attempts. Please try again shortly." },
+});
+
 function setRefreshCookie(res: Response, token: string): void {
   res.cookie("md_refresh", token, {
     httpOnly: true,
@@ -244,7 +252,7 @@ router.post("/admin/login", loginLimiter, async (req: Request, res: Response) =>
 });
 
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
-router.post("/google", loginLimiter, async (req: Request, res: Response) => {
+router.post("/google", googleAuthLimiter, async (req: Request, res: Response) => {
   try {
     const { idToken } = req.body;
     if (!idToken) {
