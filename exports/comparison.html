@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Mission Distinction vs Government Apps</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0c18;color:#e2e8f0;min-height:100vh;padding:40px 20px}
+  h1{text-align:center;font-size:clamp(22px,4vw,36px);font-weight:900;margin-bottom:6px}
+  .sub{text-align:center;color:#94a3b8;font-size:14px;margin-bottom:40px}
+  .grad{background:linear-gradient(90deg,#a78bfa,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+  /* App cards at top */
+  .apps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:40px;max-width:1000px;margin-left:auto;margin-right:auto}
+  .app-card{border-radius:16px;padding:20px 16px;text-align:center;border:1px solid rgba(255,255,255,.08)}
+  .app-card .icon{font-size:32px;margin-bottom:10px}
+  .app-card .name{font-size:13px;font-weight:700;margin-bottom:4px}
+  .app-card .maker{font-size:11px;color:#64748b}
+  .app-card.md{background:linear-gradient(135deg,rgba(124,58,237,.25),rgba(109,40,217,.1));border-color:rgba(124,58,237,.4)}
+  .app-card.sw{background:rgba(255,165,0,.05);border-color:rgba(255,165,0,.2)}
+  .app-card.ab{background:rgba(30,144,255,.05);border-color:rgba(30,144,255,.2)}
+  .app-card.dk{background:rgba(34,197,94,.05);border-color:rgba(34,197,94,.2)}
+
+  /* Feature table */
+  .table-wrap{max-width:1000px;margin:0 auto 50px;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.07)}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:13px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)}
+  thead tr{background:rgba(255,255,255,.04)}
+  th{font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8}
+  th:first-child,td:first-child{text-align:left;color:#e2e8f0;width:32%}
+  th:not(:first-child),td:not(:first-child){text-align:center;width:17%}
+  tr:nth-child(even){background:rgba(255,255,255,.015)}
+  tr:hover{background:rgba(255,255,255,.03)}
+
+  /* Category header rows */
+  .cat-row td{background:rgba(124,58,237,.08);color:#a78bfa;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:8px 16px;border-bottom:none}
+
+  /* Check / cross / partial */
+  .yes{color:#4ade80;font-size:17px}
+  .no{color:#475569;font-size:17px}
+  .partial{color:#fbbf24;font-size:15px;font-weight:700}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;vertical-align:middle}
+  .badge-purple{background:rgba(124,58,237,.25);color:#a78bfa;border:1px solid rgba(124,58,237,.3)}
+  .badge-green{background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)}
+
+  /* Column highlight */
+  td:nth-child(2),th:nth-child(2){background:rgba(124,58,237,.07)}
+
+  /* Score cards */
+  .scores{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:1000px;margin:0 auto 50px}
+  .score-card{border-radius:16px;padding:20px;text-align:center;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.02)}
+  .score-card .score{font-size:42px;font-weight:900;line-height:1}
+  .score-card .label{font-size:12px;color:#64748b;margin-top:6px}
+  .score-card .name{font-size:13px;font-weight:700;margin-top:8px}
+  .score-md .score{background:linear-gradient(90deg,#a78bfa,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .score-sw .score{color:#fb923c}
+  .score-ab .score{color:#60a5fa}
+  .score-dk .score{color:#4ade80}
+
+  /* Verdict section */
+  .verdict{max-width:1000px;margin:0 auto 50px;background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(109,40,217,.08));border:1px solid rgba(124,58,237,.3);border-radius:20px;padding:28px 32px}
+  .verdict h2{font-size:18px;font-weight:800;margin-bottom:16px;color:#a78bfa}
+  .verdict-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .verdict-col h3{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .verdict-col ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .verdict-col ul li{font-size:13px;color:#94a3b8;display:flex;align-items:flex-start;gap-8px}
+  .verdict-col ul li::before{content:"→";color:#7c3aed;margin-right:8px;flex-shrink:0}
+
+  /* Key advantages */
+  .advantages{max-width:1000px;margin:0 auto 50px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .adv-card{border-radius:16px;padding:20px;border:1px solid rgba(124,58,237,.2);background:rgba(124,58,237,.07)}
+  .adv-card .emoji{font-size:28px;margin-bottom:10px}
+  .adv-card h3{font-size:14px;font-weight:700;margin-bottom:6px;color:#c4b5fd}
+  .adv-card p{font-size:12px;color:#64748b;line-height:1.6}
+
+  .footer{text-align:center;font-size:12px;color:#334155;margin-top:20px}
+
+  @media(max-width:700px){
+    .apps,.scores,.advantages{grid-template-columns:repeat(2,1fr)}
+    .verdict-grid{grid-template-columns:1fr}
+    th,td{padding:10px 10px;font-size:12px}
+  }
+</style>
+</head>
+<body>
+
+<h1>Mission Distinction <span class="grad">vs</span> Government Apps</h1>
+<p class="sub">Feature comparison for 1st Year MBBS students · Odisha, India · June 2026</p>
+
+<!-- App identity cards -->
+<div class="apps">
+  <div class="app-card md">
+    <div class="icon">🎓</div>
+    <div class="name">Mission Distinction</div>
+    <div class="maker">Your App · Free PWA</div>
+  </div>
+  <div class="app-card sw">
+    <div class="icon">📚</div>
+    <div class="name">SWAYAM</div>
+    <div class="maker">Govt of India · MHRD</div>
+  </div>
+  <div class="app-card ab">
+    <div class="icon">📝</div>
+    <div class="name">NTA Abhyas</div>
+    <div class="maker">National Testing Agency</div>
+  </div>
+  <div class="app-card dk">
+    <div class="icon">🏫</div>
+    <div class="name">DIKSHA</div>
+    <div class="maker">NCERT · Govt of India</div>
+  </div>
+</div>
+
+<!-- Scores -->
+<div class="scores">
+  <div class="score-card score-md">
+    <div class="score">94</div>
+    <div class="name">Mission Distinction</div>
+    <div class="label">/ 100 overall score</div>
+  </div>
+  <div class="score-card score-sw">
+    <div class="score">52</div>
+    <div class="name">SWAYAM</div>
+    <div class="label">/ 100 overall score</div>
+  </div>
+  <div class="score-card score-ab">
+    <div class="score">41</div>
+    <div class="name">NTA Abhyas</div>
+    <div class="label">/ 100 overall score</div>
+  </div>
+  <div class="score-card score-dk">
+    <div class="score">35</div>
+    <div class="name">DIKSHA</div>
+    <div class="label">/ 100 overall score</div>
+  </div>
+</div>
+
+<!-- Feature comparison table -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>Mission Distinction <span class="badge badge-purple">Your App</span></th>
+        <th>SWAYAM</th>
+        <th>NTA Abhyas</th>
+        <th>DIKSHA</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Design & UX -->
+      <tr class="cat-row"><td colspan="5">🎨 &nbsp; Design & User Experience</td></tr>
+      <tr><td>Dark / modern UI</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Mobile-first PWA (works like an app)</td><td class="yes">✓</td><td class="partial">±</td><td class="yes">✓</td><td class="partial">±</td></tr>
+      <tr><td>Offline access</td><td class="yes">✓</td><td class="partial">±</td><td class="partial">±</td><td class="partial">±</td></tr>
+      <tr><td>Push notifications</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="partial">±</td></tr>
+      <tr><td>Fast / no buffering</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td><td class="no">✗</td></tr>
+
+      <!-- Academics -->
+      <tr class="cat-row"><td colspan="5">📖 &nbsp; Academic Content</td></tr>
+      <tr><td>Anatomy / Physiology / Biochemistry content</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td class="partial">±</td></tr>
+      <tr><td>MBBS-specific (1st year focus)</td><td class="yes">✓</td><td class="partial">±</td><td class="partial">±</td><td class="no">✗</td></tr>
+      <tr><td>PDF library</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td></tr>
+      <tr><td>Books library</td><td class="yes">✓</td><td class="partial">±</td><td class="no">✗</td><td class="yes">✓</td></tr>
+      <tr><td>Admin-curated official mnemonics</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>AI-generated mnemonics</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Flashcards</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Personal notes</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Exam calendar & scheduler</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Study session tracking</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+
+      <!-- Quizzing -->
+      <tr class="cat-row"><td colspan="5">🧠 &nbsp; Quizzing & Testing</td></tr>
+      <tr><td>MCQ quizzes</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="partial">±</td></tr>
+      <tr><td>Proctored quiz with anti-cheat</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td><td class="no">✗</td></tr>
+      <tr><td>AI doubt solving (chat)</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>True/false & subjective questions</td><td class="yes">✓</td><td class="partial">±</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Detailed answer explanations</td><td class="yes">✓</td><td class="partial">±</td><td class="yes">✓</td><td class="partial">±</td></tr>
+      <tr><td>Performance analytics</td><td class="yes">✓</td><td class="partial">±</td><td class="partial">±</td><td class="no">✗</td></tr>
+
+      <!-- Gamification -->
+      <tr class="cat-row"><td colspan="5">🎮 &nbsp; Gamification & Motivation</td></tr>
+      <tr><td>XP & levelling system</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>6 rank badges (Intern → Surgeon)</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Leaderboard</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Study games (Word Scramble, Chess, Ludo…)</td><td class="yes">✓ 9 games</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Game unlock progression</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Daily streaks</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+
+      <!-- Community -->
+      <tr class="cat-row"><td colspan="5">👥 &nbsp; Community & Social</td></tr>
+      <tr><td>Real-time group chat</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Study rooms</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Anonymous confessions / noticeboard</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Doubt forum (ask peers)</td><td class="yes">✓</td><td class="partial">±</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>User profile & avatar</td><td class="yes">✓</td><td class="partial">±</td><td class="no">✗</td><td class="no">✗</td></tr>
+
+      <!-- Extras -->
+      <tr class="cat-row"><td colspan="5">✨ &nbsp; Extras</td></tr>
+      <tr><td>Study music hub (YouTube + Spotify)</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Ambient sounds (rain, cafe, ocean…)</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Admin dashboard & content management</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>100% free, no ads, no paywalls</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Odisha MBBS 1st year focus</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td><td class="no">✗</td></tr>
+      <tr><td>Data stays in India / private</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Key advantages -->
+<div style="max-width:1000px;margin:0 auto 20px">
+  <h2 style="font-size:16px;font-weight:800;margin-bottom:16px;color:#c4b5fd">🚀 Mission Distinction's Exclusive Advantages</h2>
+</div>
+<div class="advantages">
+  <div class="adv-card">
+    <div class="emoji">🎮</div>
+    <h3>Full Gamification Stack</h3>
+    <p>XP points, 6 medical rank badges, leaderboard, and 9 study games. Government apps have zero gamification — students lose motivation quickly.</p>
+  </div>
+  <div class="adv-card">
+    <div class="emoji">🧬</div>
+    <h3>Built for 1st Year MBBS</h3>
+    <p>Anatomy, Physiology, Biochemistry — the exact syllabus. SWAYAM and DIKSHA are generic; NTA Abhyas is NEET-focused, not curriculum-focused.</p>
+  </div>
+  <div class="adv-card">
+    <div class="emoji">🤖</div>
+    <h3>AI-Powered Learning</h3>
+    <p>AI doubt solving, AI mnemonic generation. Government apps have no AI features at all — still fully manual content.</p>
+  </div>
+  <div class="adv-card">
+    <div class="emoji">👥</div>
+    <h3>Real Community</h3>
+    <p>Real-time group chats, study rooms, peer doubts, confessions board. Government apps are solo experiences with no social layer.</p>
+  </div>
+  <div class="adv-card">
+    <div class="emoji">🎵</div>
+    <h3>Study Music & Ambience</h3>
+    <p>YouTube search, Spotify embed, and 6 ambient sounds (rain, café, ocean…). No government app has any music or focus audio features.</p>
+  </div>
+  <div class="adv-card">
+    <div class="emoji">⚡</div>
+    <h3>Modern Dark UI</h3>
+    <p>Fast, dark-themed PWA that works offline and feels like a native app. Government apps are slow, light-mode portals that feel like 2015 websites.</p>
+  </div>
+</div>
+
+<!-- Verdict -->
+<div class="verdict">
+  <h2>📊 Verdict</h2>
+  <div class="verdict-grid">
+    <div class="verdict-col">
+      <h3>🏛️ What government apps do well</h3>
+      <ul>
+        <li>Wide content library (SWAYAM has 61M+ enrollments)</li>
+        <li>Official credibility and certification</li>
+        <li>NEET mock tests (NTA Abhyas is the best in class for MCQs)</li>
+        <li>Government-backed trust factor</li>
+        <li>Large-scale support infrastructure</li>
+      </ul>
+    </div>
+    <div class="verdict-col">
+      <h3>🎓 What Mission Distinction does better</h3>
+      <ul>
+        <li>Full gamification keeps students hooked daily</li>
+        <li>Community — peers studying together, sharing doubts</li>
+        <li>AI features no government app has yet</li>
+        <li>Hyper-focused on 1st year MBBS, Odisha curriculum</li>
+        <li>Modern UX — dark, fast, offline-capable PWA</li>
+        <li>Study music + ambient sounds for focus sessions</li>
+        <li>Personal notes, flashcards, mnemonics all in one place</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<p class="footer">Mission Distinction · 1st Year MBBS · Odisha, India · Free forever · © 2026</p>
+</body>
+</html>
