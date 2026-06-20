@@ -6,6 +6,7 @@ import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
 import { updateStreak } from "../lib/streak";
+import { awardXp, XP_VALUES } from "../lib/xp";
 
 const router = Router();
 
@@ -119,6 +120,7 @@ router.post("/:id/read", authMiddleware, async (req: Request, res: Response) => 
       description: `Read note: ${note.title}`,
     });
     await updateStreak(user.id);
+    awardXp(user.id, XP_VALUES.NOTE_READ, "note_read", `Read note: ${note.title}`).catch(() => {});
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });

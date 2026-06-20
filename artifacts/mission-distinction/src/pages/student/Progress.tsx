@@ -7,8 +7,12 @@ import {
   Radar, ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, Award, FileText, CheckCircle, Flame } from "lucide-react";
+import { Clock, Award, FileText, CheckCircle, Flame, Zap, Trophy, BookOpen, Download, Users, Lock } from "lucide-react";
 import { Progress as ProgressBar } from "@/components/ui/progress";
+import { XPProgressBar } from "@/components/XPProgressBar";
+import { RankBadge } from "@/components/RankBadge";
+import { useXPStats } from "@/hooks/useXPStats";
+import { RANKS } from "@/lib/ranks";
 
 interface QuizAttempt {
   id: number;
@@ -53,12 +57,124 @@ export default function StudentProgress() {
   const COLORS = ["hsl(var(--primary))", "hsl(var(--muted))"];
   const overallPct = avgScore;
 
+  const { data: xpStats, isLoading: xpLoading } = useXPStats();
+  const xp = xpStats?.totalXp ?? 0;
+  const rankLevel = xpStats?.currentRankLevel ?? 1;
+
+  const XP_SOURCES = [
+    { icon: Trophy, label: "Quiz completion", xp: "50 XP" },
+    { icon: CheckCircle, label: "Correct answer", xp: "5 XP each" },
+    { icon: Flame, label: "Daily login", xp: "30 XP + streak bonus" },
+    { icon: BookOpen, label: "Reading notes", xp: "15 XP" },
+    { icon: Download, label: "PDF download", xp: "10 XP" },
+    { icon: Users, label: "Community post", xp: "30 XP" },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight mb-2">My Progress</h1>
         <p className="text-muted-foreground">Track your learning journey and subject mastery.</p>
       </div>
+
+      {/* ── XP & Rank Card ── */}
+      <Card className="bg-card/40 border-border/40 overflow-hidden relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-amber-500/5 pointer-events-none" />
+        <CardContent className="p-6 relative">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-base flex items-center gap-2">
+              <Zap size={18} className="text-amber-400" /> XP & Rank
+            </h3>
+            <RankBadge level={rankLevel} showName size="md" />
+          </div>
+          {xpLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
+            </div>
+          ) : (
+            <XPProgressBar xp={xp} />
+          )}
+
+          <div className="mt-5 pt-4 border-t border-border/30">
+            <p className="text-xs font-semibold text-muted-foreground mb-3">How to earn XP</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {XP_SOURCES.map(({ icon: Icon, label, xp: xpVal }) => (
+                <div key={label} className="flex items-center gap-2 rounded-lg bg-muted/20 px-2.5 py-1.5">
+                  <Icon size={13} className="text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground truncate">{label}</p>
+                    <p className="text-xs font-bold text-amber-400">{xpVal}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Rank Progression ── */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground mb-3">Rank Progression</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          {RANKS.map(rank => {
+            const unlocked = rankLevel >= rank.level;
+            return (
+              <div
+                key={rank.level}
+                className={`rounded-xl border p-3 text-center transition-all ${
+                  unlocked
+                    ? `${rank.bgClass} ${rank.borderClass}`
+                    : "border-border/30 bg-muted/10 opacity-50"
+                }`}
+              >
+                <div className="text-2xl mb-1">{unlocked ? rank.emoji : "🔒"}</div>
+                <p className={`text-[10px] font-bold ${unlocked ? rank.textClass : "text-muted-foreground"}`}>
+                  {rank.name}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {rank.min === 0 ? "Start" : rank.min.toLocaleString() + " XP"}
+                </p>
+                {unlocked && (
+                  <span className={`inline-block mt-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${rank.bgClass} ${rank.textClass}`}>
+                    ✓ Unlocked
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Recent XP History ── */}
+      {xpStats?.recentHistory && xpStats.recentHistory.length > 0 && (
+        <Card className="bg-card/40 border-border/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Zap size={14} className="text-amber-400" /> Recent XP Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border/40">
+              {xpStats.recentHistory.slice(0, 8).map(tx => (
+                <div key={tx.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="w-7 h-7 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+                    <Zap size={12} className="text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">{tx.description}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {new Date(tx.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-amber-400 shrink-0">+{tx.amount}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-card/40 border-border/40">

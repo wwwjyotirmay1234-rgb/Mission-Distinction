@@ -6,6 +6,7 @@ import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { updateStreak } from "../lib/streak";
 import { stripHtml } from "../lib/sanitize";
+import { awardXp, XP_VALUES } from "../lib/xp";
 import rateLimit from "express-rate-limit";
 
 const router = Router();
@@ -134,6 +135,7 @@ router.post("/:id/download", authMiddleware, downloadCountLimiter, async (req: R
       description: `Downloaded PDF: ${pdf.title}`,
     });
     await updateStreak(user.id);
+    awardXp(user.id, XP_VALUES.PDF_DOWNLOAD, "pdf_download", `Downloaded PDF: ${pdf.title}`).catch(() => {});
     res.json({ downloadCount: pdf.downloadCount });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });

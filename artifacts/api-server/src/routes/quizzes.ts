@@ -6,6 +6,7 @@ import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { updateStreak } from "../lib/streak";
 import { stripHtml } from "../lib/sanitize";
+import { awardXp, XP_VALUES } from "../lib/xp";
 import rateLimit from "express-rate-limit";
 
 const SUBJECTIVE_TYPES = ["short_answer", "long_answer"];
@@ -374,6 +375,7 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
     });
 
     await updateStreak(user.id);
+    awardXp(user.id, XP_VALUES.QUIZ_COMPLETE + score * XP_VALUES.CORRECT_ANSWER, "quiz_complete", `Completed quiz: ${quiz.title} (${score}/${total})`).catch(() => {});
 
     const pendingSubmissions = subjectiveQuestions.map(q => ({
       questionId: q.id,

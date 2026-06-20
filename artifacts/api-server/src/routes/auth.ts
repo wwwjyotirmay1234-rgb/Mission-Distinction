@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { usersTable, emailTokensTable, refreshTokensTable, bookmarksTable, activityTable, feedbackTable } from "@workspace/db";
 import { eq, and, or } from "drizzle-orm";
 import { hashPassword, verifyPassword, generateToken } from "../lib/auth";
+import { awardXp, XP_VALUES } from "../lib/xp";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import {
   generateEmailToken,
@@ -175,6 +176,11 @@ router.post("/student/login", loginLimiter, async (req: Request, res: Response) 
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     setRefreshCookie(res, refreshValue);
+    const today = new Date().toISOString().split("T")[0];
+    if (user.lastStreakDate !== today) {
+      const streakBonus = Math.min(user.studyStreak ?? 0, 10) * XP_VALUES.STREAK_BONUS_PER_DAY;
+      awardXp(user.id, XP_VALUES.DAILY_LOGIN + streakBonus, "daily_login", `Daily login (${user.studyStreak ?? 0}-day streak)`).catch(() => {});
+    }
     res.json({ token, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });

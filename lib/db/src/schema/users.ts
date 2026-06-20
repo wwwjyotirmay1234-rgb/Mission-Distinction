@@ -15,6 +15,8 @@ export const usersTable = pgTable("users", {
   avatarUrl: text("avatar_url"),
   studyStreak: integer("study_streak").default(0),
   lastStreakDate: text("last_streak_date"),
+  totalXp: integer("total_xp").default(0).notNull(),
+  currentRank: integer("current_rank").default(1).notNull(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   bannedAt: timestamp("banned_at"),
   banReason: text("ban_reason"),

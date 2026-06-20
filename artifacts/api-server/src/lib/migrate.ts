@@ -248,6 +248,34 @@ export async function runStartupMigrations() {
         ON proctoring_logs(session_id);
       CREATE INDEX IF NOT EXISTS proctoring_logs_attempt_id
         ON proctoring_logs(attempt_id);
+
+      ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS total_xp INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS current_rank INTEGER NOT NULL DEFAULT 1;
+
+      CREATE TABLE IF NOT EXISTS xp_transactions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        amount INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS xp_transactions_user_id
+        ON xp_transactions(user_id);
+
+      CREATE TABLE IF NOT EXISTS rank_unlocks (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        rank_name TEXT NOT NULL,
+        level INTEGER NOT NULL,
+        xp_at_unlock INTEGER NOT NULL,
+        unlocked_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS rank_unlocks_user_level
+        ON rank_unlocks(user_id, level);
     `);
   } finally {
     client.release();

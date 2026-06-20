@@ -14,7 +14,6 @@ import {
   Bookmark,
   Calendar as CalendarIcon,
   Settings,
-  Activity,
   Trophy,
   MessageSquare,
   Timer,
@@ -25,7 +24,12 @@ import {
   MessageCircleHeart,
   Bot,
   Gamepad2,
+  Lock,
+  Zap,
 } from "lucide-react";
+import { useXPStats } from "@/hooks/useXPStats";
+import { getRankForXp, RANK_FEATURE_GATES } from "@/lib/ranks";
+import { XPProgressBar } from "@/components/XPProgressBar";
 
 const LAST_SEEN_KEY = "md_announcements_last_seen";
 
@@ -39,8 +43,21 @@ function markAnnouncementsSeen() {
   localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString());
 }
 
+interface NavItem {
+  icon: React.ElementType;
+  label: string;
+  href: string;
+  badge?: number;
+  requiredLevel?: number;
+}
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
+  const { data: xpStats } = useXPStats();
+
+  const xp = xpStats?.totalXp ?? 0;
+  const rankLevel = xpStats?.currentRankLevel ?? 1;
+  const rank = getRankForXp(xp);
 
   const { data: announcements } = useListAnnouncements(
     {},
@@ -52,7 +69,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     return getUnseenCount(list);
   }, [announcements]);
 
-  const navItems = [
+  const navItems: NavItem[] = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/student/dashboard" },
     { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
     { icon: FileText, label: "Notes & Books", href: "/student/notes" },
@@ -70,19 +87,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     { icon: Bookmark, label: "Bookmarks", href: "/student/bookmarks" },
     { icon: CalendarIcon, label: "Calendar", href: "/student/calendar" },
     { icon: Timer, label: "Study Tools", href: "/student/tools" },
-    { icon: BookOpen, label: "Flashcards", href: "/student/flashcards" },
-    { icon: Lightbulb, label: "Mnemonics", href: "/student/mnemonics" },
     { icon: CalendarDays, label: "Exam Countdown", href: "/student/exams" },
-    { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
-    { icon: Users, label: "Study Rooms", href: "/student/study-rooms" },
-    { icon: Bot, label: "AI Tools", href: "/student/ai-tools" },
-    { icon: Gamepad2, label: "Medical Games", href: "/student/games" },
+    { icon: Lightbulb, label: "Mnemonics", href: "/student/mnemonics", requiredLevel: 2 },
+    { icon: BookOpen, label: "Flashcards", href: "/student/flashcards", requiredLevel: 3 },
+    { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions", requiredLevel: 4 },
+    { icon: Users, label: "Study Rooms", href: "/student/study-rooms", requiredLevel: 4 },
+    { icon: Bot, label: "AI Tools", href: "/student/ai-tools", requiredLevel: 5 },
+    { icon: Gamepad2, label: "Medical Games", href: "/student/games", requiredLevel: 5 },
     { icon: Music, label: "Music", href: "/student/music" },
     { icon: Settings, label: "Settings", href: "/student/settings" },
   ];
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <div className="p-6 flex items-center gap-3 shrink-0">
         <img src="/logo.jpeg" alt="Mission Distinction" className="h-8 w-8 object-contain rounded-lg" />
         <span className="font-bold text-lg text-foreground tracking-tight">
@@ -93,6 +110,28 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="flex-1 px-4 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = location === item.href || location.startsWith(item.href + "/");
+          const required = item.requiredLevel ?? 1;
+          const isLocked = required > rankLevel;
+
+          if (isLocked) {
+            return (
+              <Link
+                key={item.href}
+                href="/student/progress"
+                onClick={() => onNavigate?.()}
+              >
+                <div
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer text-muted-foreground/50 hover:bg-muted/50 hover:text-muted-foreground"
+                  title={`Unlock at Level ${required}`}
+                >
+                  <item.icon size={18} className="text-muted-foreground/40" />
+                  <span className="flex-1 truncate">{item.label}</span>
+                  <Lock size={12} className="text-muted-foreground/40 shrink-0" />
+                </div>
+              </Link>
+            );
+          }
+
           return (
             <Link
               key={item.href}
@@ -115,9 +154,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   className={isActive ? "text-primary-foreground" : "text-muted-foreground"}
                 />
                 <span className="flex-1 truncate">{item.label}</span>
-                {(item as any).badge && (
+                {item.badge !== undefined && (
                   <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white px-1">
-                    {(item as any).badge > 9 ? "9+" : (item as any).badge}
+                    {item.badge > 9 ? "9+" : item.badge}
                   </span>
                 )}
               </div>
@@ -126,7 +165,17 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
 
-    </>
+      {/* XP compact bar at bottom */}
+      {xpStats && (
+        <div className="p-4 border-t border-sidebar-border shrink-0">
+          <Link href="/student/progress" onClick={() => onNavigate?.()}>
+            <div className="group cursor-pointer rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors p-3">
+              <XPProgressBar xp={xp} compact />
+            </div>
+          </Link>
+        </div>
+      )}
+    </div>
   );
 }
 
