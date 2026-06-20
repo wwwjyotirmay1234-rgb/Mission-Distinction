@@ -65,7 +65,7 @@ function roomPlayers(room: GameRoom) {
 
 async function generateGameQuestions(subject: string): Promise<GameQuestion[]> {
   const response = await openai.chat.completions.create({
-    model: "gpt-5-mini",
+    model: "gpt-4o-mini",
     max_completion_tokens: 2000,
     messages: [
       {
@@ -227,6 +227,7 @@ export function initSocketServer(httpServer: HttpServer) {
 
       const q = room.questions[room.currentQuestion];
       if (!q) return;
+      if (typeof answerIndex !== "number" || answerIndex < 0 || answerIndex > 3) return;
 
       player.answered = true;
       player.answerTime = Date.now();

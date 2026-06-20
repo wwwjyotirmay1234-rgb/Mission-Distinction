@@ -204,6 +204,7 @@ export function registerLudoHandlers(io: Server, socket: Socket, user: { id: num
     if (!room || room.status !== "playing") return;
     const currentPlayer = room.players[room.currentPlayerIdx];
     if (currentPlayer.id !== user.id) return;
+    if (typeof tokenIdx !== "number" || tokenIdx < 0 || tokenIdx > 3) return;
     if (!room.diceRolled || !room.validTokens.includes(tokenIdx)) return;
 
     const colorIdx = currentPlayer.colorIdx;

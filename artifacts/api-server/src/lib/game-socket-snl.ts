@@ -99,7 +99,7 @@ export function registerSNLHandlers(io: Server, socket: Socket, user: { id: numb
   });
 
   socket.on("snl:start", ({ code }: { code: string }) => {
-    const room = rooms.get(code);
+    const room = rooms.get((code || "").toUpperCase().trim());
     if (!room || room.hostId !== user.id || room.status !== "waiting") return;
     if (room.players.length < 2) { socket.emit("snl:error", { message: "Need at least 2 players." }); return; }
     room.status = "playing";
@@ -107,7 +107,7 @@ export function registerSNLHandlers(io: Server, socket: Socket, user: { id: numb
   });
 
   socket.on("snl:roll", ({ code }: { code: string }) => {
-    const room = rooms.get(code);
+    const room = rooms.get((code || "").toUpperCase().trim());
     if (!room || room.status !== "playing") return;
     const currentPlayer = room.players[room.currentPlayerIdx];
     if (currentPlayer.id !== user.id || room.diceRolled) return;
@@ -145,19 +145,25 @@ export function registerSNLHandlers(io: Server, socket: Socket, user: { id: numb
       room.lastEvent = "snake";
       io.to(`snl:${code}`).emit("snl:state", serialize(room));
       setTimeout(() => {
-        if (!rooms.has(code)) return;
-        currentPlayer.position = SNAKES[newPos];
+        const r = rooms.get(code);
+        if (!r) return;
+        const p = r.players.find(pl => pl.id === user.id);
+        if (!p) return;
+        p.position = SNAKES[newPos];
         io.to(`snl:${code}`).emit("snl:event", { type: "snake", player: user.fullName, from: newPos, to: SNAKES[newPos] });
-        nextTurn(io, room, code, false); // Snakes don't give extra turn
+        nextTurn(io, r, code, false);
       }, 1500);
     } else if (LADDERS[newPos] !== undefined) {
       room.lastEvent = "ladder";
       io.to(`snl:${code}`).emit("snl:state", serialize(room));
       setTimeout(() => {
-        if (!rooms.has(code)) return;
-        currentPlayer.position = LADDERS[newPos];
+        const r = rooms.get(code);
+        if (!r) return;
+        const p = r.players.find(pl => pl.id === user.id);
+        if (!p) return;
+        p.position = LADDERS[newPos];
         io.to(`snl:${code}`).emit("snl:event", { type: "ladder", player: user.fullName, from: newPos, to: LADDERS[newPos] });
-        nextTurn(io, room, code, false); // Ladders don't give extra turn (only dice=6)
+        nextTurn(io, r, code, false);
       }, 1500);
     } else {
       nextTurn(io, room, code, extraTurn);
@@ -165,7 +171,7 @@ export function registerSNLHandlers(io: Server, socket: Socket, user: { id: numb
   });
 
   socket.on("snl:leave", ({ code }: { code: string }) => {
-    const room = rooms.get(code);
+    const room = rooms.get((code || "").toUpperCase().trim());
     if (!room) return;
     socket.leave(`snl:${code}`);
     room.players = room.players.filter(p => p.id !== user.id);

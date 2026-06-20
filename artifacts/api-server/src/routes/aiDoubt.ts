@@ -31,7 +31,7 @@ router.post("/:id/ai-answer", authMiddleware, async (req: Request, res: Response
     res.flushHeaders();
 
     const stream = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       max_completion_tokens: 8192,
       stream: true,
       messages: [

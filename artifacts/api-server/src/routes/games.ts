@@ -36,7 +36,7 @@ router.post("/word-scramble", authMiddleware, gameLimiter, async (req: Request, 
     if (!SUBJECTS.includes(subject)) { res.status(400).json({ error: "Invalid subject" }); return; }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       max_completion_tokens: 256,
       messages: [
         { role: "system", content: "You are a medical education expert for 1st Year MBBS. Return only valid JSON, no markdown." },
@@ -79,7 +79,7 @@ router.post("/memory-match", authMiddleware, gameLimiter, async (req: Request, r
     if (!SUBJECTS.includes(subject)) { res.status(400).json({ error: "Invalid subject" }); return; }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       max_completion_tokens: 800,
       messages: [
         { role: "system", content: "You are a medical education expert for 1st Year MBBS. Return only valid JSON, no markdown." },
@@ -106,7 +106,7 @@ router.post("/diagnosis", authMiddleware, gameLimiter, async (req: Request, res:
     if (!SUBJECTS.includes(subject)) { res.status(400).json({ error: "Invalid subject" }); return; }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       max_completion_tokens: 600,
       messages: [
         { role: "system", content: "You are a medical education expert for 1st Year MBBS. Return only valid JSON, no markdown." },
@@ -137,7 +137,7 @@ router.post("/spelling-bee", authMiddleware, gameLimiter, async (req: Request, r
     if (!SUBJECTS.includes(subject)) { res.status(400).json({ error: "Invalid subject" }); return; }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       max_completion_tokens: 800,
       messages: [
         { role: "system", content: "You are a medical education expert for 1st Year MBBS. Return only valid JSON, no markdown." },
@@ -169,7 +169,7 @@ router.post("/crossword", authMiddleware, gameLimiter, async (req: Request, res:
     if (!SUBJECTS.includes(subject)) { res.status(400).json({ error: "Invalid subject" }); return; }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       max_completion_tokens: 1500,
       messages: [
         { role: "system", content: "You are a medical crossword puzzle designer for 1st Year MBBS. Return only valid JSON." },
