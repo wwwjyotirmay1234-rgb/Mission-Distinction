@@ -1,12 +1,14 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
-import { quizzesTable, questionsTable, quizAttemptsTable, activityTable, questionReportsTable } from "@workspace/db";
+import { quizzesTable, questionsTable, quizAttemptsTable, activityTable, questionReportsTable, quizSubmissionsTable } from "@workspace/db";
 import { eq, sql, desc } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { updateStreak } from "../lib/streak";
 import { stripHtml } from "../lib/sanitize";
 import rateLimit from "express-rate-limit";
+
+const SUBJECTIVE_TYPES = ["short_answer", "long_answer"];
 
 const router = Router();
 
@@ -205,8 +207,15 @@ router.post("/:id/questions", adminMiddleware, async (req: Request, res: Respons
     if (!safeText) { res.status(400).json({ error: "Invalid question text" }); return; }
     const safeExplanation = explanation ? stripHtml(String(explanation)) : null;
 
+    const { maxMarks, modelAnswer } = req.body;
     let question;
-    if (questionType === "mcq" || questionType === "true-false") {
+    if (SUBJECTIVE_TYPES.includes(questionType)) {
+      const safeModelAnswer = modelAnswer ? stripHtml(String(modelAnswer)).slice(0, 2000) : null;
+      const marks = maxMarks ? Math.max(1, Math.min(20, parseInt(maxMarks))) : 5;
+      [question] = await db.insert(questionsTable)
+        .values({ quizId, text: safeText, questionType, options: null, correctOption: null, correctAnswer: null, explanation: safeExplanation, maxMarks: marks, modelAnswer: safeModelAnswer })
+        .returning();
+    } else if (questionType === "mcq" || questionType === "true-false") {
       if (!options || !Array.isArray(options) || options.length < 2 || correctOption === undefined) {
         res.status(400).json({ error: "options (array) and correctOption are required for MCQ/True-False" }); return;
       }
@@ -235,13 +244,23 @@ router.patch("/:id/questions/:qid", adminMiddleware, async (req: Request, res: R
     const quizId = parseId(req.params.id);
     const qid = parseId(req.params.qid);
     if (!quizId || !qid) { res.status(400).json({ error: "Invalid ID" }); return; }
-    const { text, questionType, options, correctOption, correctAnswer, explanation } = req.body;
+    const { text, questionType, options, correctOption, correctAnswer, explanation, maxMarks, modelAnswer } = req.body;
     const safeText = text !== undefined ? stripHtml(String(text)) : undefined;
     const safeOptions = Array.isArray(options) ? options.map((o: any) => stripHtml(String(o))) : undefined;
     const safeAnswer = correctAnswer !== undefined ? (correctAnswer ? stripHtml(String(correctAnswer)) : null) : undefined;
     const safeExplanation = explanation !== undefined ? (explanation ? stripHtml(String(explanation)) : null) : undefined;
+    const safeModelAnswer = modelAnswer !== undefined ? (modelAnswer ? stripHtml(String(modelAnswer)).slice(0, 2000) : null) : undefined;
+    const safeMaxMarks = maxMarks !== undefined ? Math.max(1, Math.min(20, parseInt(maxMarks))) : undefined;
     const [question] = await db.update(questionsTable)
-      .set({ text: safeText, questionType, options: safeOptions, correctOption, correctAnswer: safeAnswer, explanation: safeExplanation })
+      .set({
+        text: safeText, questionType,
+        options: SUBJECTIVE_TYPES.includes(questionType) ? null : safeOptions,
+        correctOption: SUBJECTIVE_TYPES.includes(questionType) ? null : correctOption,
+        correctAnswer: SUBJECTIVE_TYPES.includes(questionType) ? null : safeAnswer,
+        explanation: safeExplanation,
+        maxMarks: safeMaxMarks,
+        modelAnswer: safeModelAnswer,
+      })
       .where(eq(questionsTable.id, qid))
       .returning();
     if (!question) { res.status(404).json({ error: "Not found" }); return; }
@@ -298,12 +317,15 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
     if (!quiz) { res.status(404).json({ error: "Quiz not found" }); return; }
     const questions = await db.select().from(questionsTable).where(eq(questionsTable.quizId, quizId));
 
+    const subjectiveQuestions = questions.filter(q => SUBJECTIVE_TYPES.includes(q.questionType));
+    const gradedQuestions = questions.filter(q => !SUBJECTIVE_TYPES.includes(q.questionType));
+
     let score = 0;
-    const correctAnswers = questions.map(q => {
+    const correctAnswers = gradedQuestions.map(q => {
       const answer = answers.find((a: any) => a.questionId === q.id);
       let correct = false;
-      let correctOption = q.correctOption;
-      let correctAnswerText = q.correctAnswer;
+      const correctOption = q.correctOption;
+      const correctAnswerText = q.correctAnswer;
 
       if (q.questionType === "mcq" || q.questionType === "true-false") {
         correct = answer?.selectedOption !== undefined && answer.selectedOption === q.correctOption;
@@ -316,24 +338,58 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
       return { questionId: q.id, correct, correctOption, correctAnswerText, explanation: q.explanation, questionType: q.questionType };
     });
 
-    const total = questions.length;
+    const total = gradedQuestions.length;
     const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+    const hasPending = subjectiveQuestions.length > 0;
 
-    await db.insert(quizAttemptsTable).values({
+    const [attempt] = await db.insert(quizAttemptsTable).values({
       userId: user.id, quizId, quizTitle: quiz.title, subject: quiz.subject,
-      score, total, percentage,
-    });
+      score, total, percentage, hasPending,
+    }).returning();
+
+    if (hasPending && attempt) {
+      const submissionValues = subjectiveQuestions.map(q => {
+        const answer = answers.find((a: any) => a.questionId === q.id);
+        return {
+          userId: user.id,
+          quizId,
+          attemptId: attempt.id,
+          questionId: q.id,
+          answerText: answer?.answerText ? String(answer.answerText).slice(0, 5000) : null,
+          answerImageUrl: answer?.answerImageUrl ? String(answer.answerImageUrl) : null,
+          maxMarks: q.maxMarks ?? 5,
+          status: "pending" as const,
+        };
+      });
+      await db.insert(quizSubmissionsTable).values(submissionValues);
+    }
 
     await db.insert(activityTable).values({
       userId: user.id,
       type: "quiz",
       description: `Completed quiz: ${quiz.title}`,
-      score: `${score}/${total} (${percentage}%)`,
+      score: hasPending
+        ? `${score}/${total} MCQ + ${subjectiveQuestions.length} subjective pending`
+        : `${score}/${total} (${percentage}%)`,
     });
 
     await updateStreak(user.id);
 
-    res.json({ score, total, percentage, passed: percentage >= 60, correctAnswers });
+    const pendingSubmissions = subjectiveQuestions.map(q => ({
+      questionId: q.id,
+      questionText: q.text,
+      maxMarks: q.maxMarks ?? 5,
+      questionType: q.questionType,
+    }));
+
+    res.json({
+      score, total, percentage,
+      passed: total > 0 ? percentage >= 60 : false,
+      correctAnswers,
+      hasPending,
+      pendingCount: subjectiveQuestions.length,
+      pendingSubmissions,
+    });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }

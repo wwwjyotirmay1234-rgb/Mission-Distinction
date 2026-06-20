@@ -192,6 +192,36 @@ export async function runStartupMigrations() {
 
       ALTER TABLE flashcard_decks
         ADD COLUMN IF NOT EXISTS is_admin_shared BOOLEAN DEFAULT FALSE;
+
+      ALTER TABLE questions
+        ADD COLUMN IF NOT EXISTS max_marks INTEGER DEFAULT 5,
+        ADD COLUMN IF NOT EXISTS model_answer TEXT;
+
+      ALTER TABLE quiz_attempts
+        ADD COLUMN IF NOT EXISTS has_pending BOOLEAN DEFAULT FALSE;
+
+      CREATE TABLE IF NOT EXISTS quiz_submissions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        quiz_id INTEGER NOT NULL,
+        attempt_id INTEGER NOT NULL,
+        question_id INTEGER NOT NULL,
+        answer_text TEXT,
+        answer_image_url TEXT,
+        max_marks INTEGER NOT NULL DEFAULT 5,
+        ai_marks INTEGER,
+        ai_feedback TEXT,
+        admin_marks INTEGER,
+        admin_feedback TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        graded_at TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS quiz_submissions_user_id
+        ON quiz_submissions(user_id);
+      CREATE INDEX IF NOT EXISTS quiz_submissions_status
+        ON quiz_submissions(status);
     `);
   } finally {
     client.release();

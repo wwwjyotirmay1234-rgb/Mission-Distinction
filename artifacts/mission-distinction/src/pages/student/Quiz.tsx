@@ -18,6 +18,7 @@ import {
 import {
   Play, Clock, CheckCircle, ChevronLeft, ChevronRight,
   Timer, Trophy, XCircle, AlertCircle, ArrowLeft, Flag,
+  Upload, RefreshCw, ImageIcon, PenLine, FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -39,6 +40,7 @@ interface QuizQuestion {
   text: string;
   questionType: string;
   options?: string[] | null;
+  maxMarks?: number | null;
 }
 
 interface QuizDetail extends QuizSummary {
@@ -56,6 +58,14 @@ interface QuizResult {
     correctOption: number | null;
     correctAnswerText: string | null;
     explanation: string | null;
+    questionType: string;
+  }>;
+  hasPending?: boolean;
+  pendingCount?: number;
+  pendingSubmissions?: Array<{
+    questionId: number;
+    questionText: string;
+    maxMarks: number;
     questionType: string;
   }>;
 }
@@ -83,6 +93,8 @@ function getTypeLabel(type: string) {
     case "true-false": return "True / False";
     case "name-following": return "Name the Following";
     case "one-word": return "One Word Answer";
+    case "short_answer": return "Short Answer (SAQ)";
+    case "long_answer": return "Long Answer (LAQ)";
     default: return "MCQ";
   }
 }
@@ -93,9 +105,13 @@ function getTypeBadgeColor(type: string) {
     case "true-false": return "bg-green-500/10 text-green-400 border-green-500/20";
     case "name-following": return "bg-amber-500/10 text-amber-400 border-amber-500/20";
     case "one-word": return "bg-rose-500/10 text-rose-400 border-rose-500/20";
+    case "short_answer": return "bg-purple-500/10 text-purple-400 border-purple-500/20";
+    case "long_answer": return "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
     default: return "bg-primary/10 text-primary border-primary/20";
   }
 }
+
+const SUBJECTIVE_TYPES = ["short_answer", "long_answer"];
 
 function WriteInInput({
   value, onChange, placeholder, maxLength, multiLine,
@@ -125,9 +141,37 @@ function WriteInInput({
 }
 
 function QuestionRenderer({
-  q, answer, onAnswer,
-}: { q: QuizQuestion; answer: number | string | undefined; onAnswer: (v: number | string) => void }) {
+  q, answer, onAnswer, imageUrl, onImageUpload,
+}: {
+  q: QuizQuestion;
+  answer: number | string | undefined;
+  onAnswer: (v: number | string) => void;
+  imageUrl?: string;
+  onImageUpload?: (url: string) => void;
+}) {
   const type = q.questionType || "mcq";
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await apiFetch("/api/upload/quiz-answer", { method: "POST", body: form });
+      if (!res.ok) throw new Error("Upload failed");
+      const { url } = await res.json();
+      onImageUpload?.(url);
+      toast.success("Image uploaded!");
+    } catch {
+      toast.error("Image upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   if (type === "mcq") {
     return (
@@ -225,6 +269,77 @@ function QuestionRenderer({
     );
   }
 
+  if (type === "short_answer" || type === "long_answer") {
+    const maxMarks = q.maxMarks ?? 5;
+    const maxLength = type === "short_answer" ? 1000 : 4000;
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 p-3 rounded-xl bg-purple-500/5 border border-purple-500/20">
+          <PenLine size={16} className="text-purple-400 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm text-purple-300 font-medium mb-0.5">
+              {type === "short_answer" ? "Short Answer" : "Long Answer"} — {maxMarks} mark{maxMarks !== 1 ? "s" : ""}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {type === "short_answer"
+                ? "Write a concise answer (2–5 sentences). Type below or upload a photo of your handwritten answer."
+                : "Write a detailed answer. Type below or upload a photo of your handwritten answer."}
+            </p>
+          </div>
+        </div>
+
+        <WriteInInput
+          value={typeof answer === "string" ? answer : ""}
+          onChange={onAnswer}
+          placeholder={
+            type === "short_answer"
+              ? "Write your short answer here (2–5 sentences)…"
+              : "Write your detailed answer here…"
+          }
+          maxLength={maxLength}
+          multiLine={true}
+        />
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            {uploading
+              ? <RefreshCw size={13} className="animate-spin" />
+              : <ImageIcon size={13} />}
+            {uploading ? "Uploading…" : imageUrl ? "Replace image" : "Upload handwritten answer"}
+          </button>
+          {imageUrl && (
+            <span className="flex items-center gap-1.5 text-xs text-green-400">
+              <CheckCircle size={12} /> Image uploaded
+            </span>
+          )}
+        </div>
+
+        {imageUrl && (
+          <div className="rounded-xl border border-border/30 overflow-hidden bg-black/20">
+            <img
+              src={imageUrl}
+              alt="Your handwritten answer"
+              className="max-h-52 w-full object-contain"
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return null;
 }
 
@@ -312,6 +427,7 @@ export default function StudentQuiz() {
   const [submitting, setSubmitting] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportQuestionId, setReportQuestionId] = useState<number | null>(null);
+  const [answerImages, setAnswerImages] = useState<Record<number, string>>({});
   const submittedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queryClient = useQueryClient();
@@ -345,6 +461,7 @@ export default function StudentQuiz() {
     setSelectedQuizId(quiz.id);
     setCurrentQ(0);
     setAnswers({});
+    setAnswerImages({});
     setResult(null);
     submittedRef.current = false;
     setTimeLeft((quiz.durationMinutes || 30) * 60);
@@ -357,18 +474,24 @@ export default function StudentQuiz() {
     if (timerRef.current) clearInterval(timerRef.current);
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
       const answerList = questions.map((q) => {
         const ans = answers[q.id];
         const type = q.questionType || "mcq";
         if (type === "mcq" || type === "true-false") {
           return { questionId: q.id, selectedOption: typeof ans === "number" ? ans : -1 };
         }
+        if (SUBJECTIVE_TYPES.includes(type)) {
+          return {
+            questionId: q.id,
+            answerText: typeof ans === "string" ? ans : "",
+            answerImageUrl: answerImages[q.id] || undefined,
+          };
+        }
         return { questionId: q.id, writtenAnswer: typeof ans === "string" ? ans : "" };
       });
-      const res = await fetch(`/api/quizzes/${selectedQuizId}/attempt`, {
+      const res = await apiFetch(`/api/quizzes/${selectedQuizId}/attempt`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers: answerList }),
       });
       if (!res.ok) throw new Error("Submission failed");
@@ -390,38 +513,120 @@ export default function StudentQuiz() {
 
   // ─── Results Screen ──────────────────────────────────────────────────────────
   if (mode === "results" && result) {
+    const pendingIds = new Set((result.pendingSubmissions ?? []).map(p => p.questionId));
+
     return (
       <div className="space-y-6 max-w-3xl mx-auto">
         <Button variant="ghost" size="sm" onClick={() => setMode("browse")} className="gap-2 -ml-2">
           <ArrowLeft size={16} /> Back to Quizzes
         </Button>
 
-        <Card className={`border-2 ${result.passed ? "border-green-500/40 bg-green-500/5" : "border-red-500/40 bg-red-500/5"}`}>
+        {result.hasPending && (
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+            <FileText size={18} className="text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-300">
+                {result.pendingCount} subjective answer{result.pendingCount !== 1 ? "s" : ""} submitted for review
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Your SAQ/LAQ answers will be reviewed by our team or graded by AI. Check back for your results.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <Card className={`border-2 ${result.passed ? "border-green-500/40 bg-green-500/5" : result.total === 0 ? "border-amber-500/40 bg-amber-500/5" : "border-red-500/40 bg-red-500/5"}`}>
           <CardContent className="p-8 text-center">
-            <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-4 ${result.passed ? "bg-green-500/20" : "bg-red-500/20"}`}>
-              {result.passed ? <Trophy className="w-10 h-10 text-green-500" /> : <AlertCircle className="w-10 h-10 text-red-500" />}
+            <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-4 ${result.passed ? "bg-green-500/20" : result.total === 0 ? "bg-amber-500/20" : "bg-red-500/20"}`}>
+              {result.total === 0
+                ? <FileText className="w-10 h-10 text-amber-400" />
+                : result.passed
+                ? <Trophy className="w-10 h-10 text-green-500" />
+                : <AlertCircle className="w-10 h-10 text-red-500" />}
             </div>
-            <div className={`text-5xl font-black mb-2 ${result.passed ? "text-green-500" : "text-red-500"}`}>
-              {result.percentage}%
-            </div>
-            <Badge variant="outline" className={`text-sm px-3 py-1 ${result.passed ? "bg-green-500/10 text-green-500 border-green-500/30" : "bg-red-500/10 text-red-500 border-red-500/30"}`}>
-              {result.passed ? "🎉 Passed!" : "Not Passed — Try Again"}
+            {result.total > 0 && (
+              <div className={`text-5xl font-black mb-2 ${result.passed ? "text-green-500" : "text-red-500"}`}>
+                {result.percentage}%
+              </div>
+            )}
+            <Badge variant="outline" className={`text-sm px-3 py-1 ${
+              result.total === 0
+                ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                : result.passed
+                ? "bg-green-500/10 text-green-500 border-green-500/30"
+                : "bg-red-500/10 text-red-500 border-red-500/30"
+            }`}>
+              {result.total === 0 ? "⏳ Awaiting Review" : result.passed ? "🎉 Passed!" : "Not Passed — Try Again"}
             </Badge>
-            <p className="text-muted-foreground mt-3 text-sm">
-              You scored <strong>{result.score}</strong> out of <strong>{result.total}</strong> questions correctly.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">Passing score: 60%</p>
+            {result.total > 0 && (
+              <p className="text-muted-foreground mt-3 text-sm">
+                You scored <strong>{result.score}</strong> out of <strong>{result.total}</strong> questions correctly.
+              </p>
+            )}
+            {result.hasPending && (
+              <p className="text-muted-foreground mt-2 text-sm">
+                + <strong>{result.pendingCount}</strong> subjective answer{result.pendingCount !== 1 ? "s" : ""} pending review
+              </p>
+            )}
+            {result.total > 0 && <p className="text-xs text-muted-foreground mt-1">Passing score: 60%</p>}
           </CardContent>
         </Card>
 
         <h2 className="text-lg font-semibold">Answer Review</h2>
         <div className="space-y-3">
           {questions.map((q, idx: number) => {
+            const isPending = pendingIds.has(q.id);
             const ca = result.correctAnswers.find((c) => c.questionId === q.id);
             const isCorrect = ca?.correct;
             const selected = answers[q.id];
             const type = q.questionType || "mcq";
             const isWriteIn = !["mcq", "true-false"].includes(type);
+            const submittedImage = answerImages[q.id];
+
+            if (isPending) {
+              return (
+                <Card key={q.id} className="border border-amber-500/30 bg-amber-500/5">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5 bg-amber-500/20 text-amber-400">
+                        <Clock size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <Badge variant="outline" className={`text-[10px] ${getTypeBadgeColor(type)}`}>
+                            {getTypeLabel(type)}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-400 border-amber-500/20">
+                            ⏳ Pending Review
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">Q{idx + 1}</span>
+                        </div>
+                        <p className="text-sm font-medium mb-2">{q.text}</p>
+                        <div className="space-y-1.5">
+                          {(typeof selected === "string" && selected) ? (
+                            <div className="text-xs px-3 py-2 rounded-lg bg-muted/30 text-muted-foreground">
+                              <span className="font-medium text-foreground">Your answer: </span>
+                              <span>{selected.slice(0, 200)}{selected.length > 200 ? "…" : ""}</span>
+                            </div>
+                          ) : submittedImage ? (
+                            <div className="text-xs px-3 py-2 rounded-lg bg-muted/30 text-muted-foreground">
+                              <span className="font-medium text-foreground">Submitted: </span>handwritten image
+                            </div>
+                          ) : (
+                            <div className="text-xs px-3 py-2 rounded-lg bg-muted/30 text-muted-foreground italic">
+                              No answer provided
+                            </div>
+                          )}
+                          <p className="text-xs text-amber-400/80">
+                            Your answer will be reviewed and marks will be updated shortly.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            }
 
             return (
               <Card key={q.id} className={`border ${isCorrect ? "border-green-500/30 bg-green-500/5" : "border-red-500/30 bg-red-500/5"}`}>
@@ -526,13 +731,14 @@ export default function StudentQuiz() {
     const quiz = quizDetail!;
     const q = questions[currentQ];
     const type = q.questionType || "mcq";
-    const isWriteIn = !["mcq", "true-false"].includes(type);
-    const answered = Object.keys(answers).length;
+    const isWriteIn = !["mcq", "true-false", ...SUBJECTIVE_TYPES].includes(type);
+    const isSubjective = SUBJECTIVE_TYPES.includes(type);
+    const answered = Object.keys(answers).length + Object.keys(answerImages).length;
     const progressPct = ((currentQ + 1) / questions.length) * 100;
     const isLastQ = currentQ === questions.length - 1;
     const isLowTime = timeLeft < 60 && timeLeft > 0;
     const currentAnswer = answers[q.id];
-    const hasAnswer = currentAnswer !== undefined && currentAnswer !== "";
+    const hasAnswer = (currentAnswer !== undefined && currentAnswer !== "") || !!answerImages[q.id];
 
     return (
       <div className="max-w-3xl mx-auto space-y-4">
@@ -582,6 +788,8 @@ export default function StudentQuiz() {
               q={q}
               answer={currentAnswer}
               onAnswer={(v) => setAnswers(prev => ({ ...prev, [q.id]: v }))}
+              imageUrl={answerImages[q.id]}
+              onImageUpload={(url) => setAnswerImages(prev => ({ ...prev, [q.id]: url }))}
             />
             <button
               onClick={() => openReport(q.id)}

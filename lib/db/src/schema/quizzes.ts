@@ -23,6 +23,8 @@ export const questionsTable = pgTable("questions", {
   correctOption: integer("correct_option"),
   correctAnswer: text("correct_answer"),
   explanation: text("explanation"),
+  maxMarks: integer("max_marks").default(5),
+  modelAnswer: text("model_answer"),
 });
 
 export const quizAttemptsTable = pgTable("quiz_attempts", {
@@ -34,6 +36,7 @@ export const quizAttemptsTable = pgTable("quiz_attempts", {
   score: integer("score").notNull(),
   total: integer("total").notNull(),
   percentage: integer("percentage").notNull(),
+  hasPending: boolean("has_pending").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -48,9 +51,28 @@ export const questionReportsTable = pgTable("question_reports", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const quizSubmissionsTable = pgTable("quiz_submissions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  quizId: integer("quiz_id").notNull(),
+  attemptId: integer("attempt_id").notNull(),
+  questionId: integer("question_id").notNull(),
+  answerText: text("answer_text"),
+  answerImageUrl: text("answer_image_url"),
+  maxMarks: integer("max_marks").notNull().default(5),
+  aiMarks: integer("ai_marks"),
+  aiFeedback: text("ai_feedback"),
+  adminMarks: integer("admin_marks"),
+  adminFeedback: text("admin_feedback"),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  gradedAt: timestamp("graded_at"),
+});
+
 export const insertQuizSchema = createInsertSchema(quizzesTable).omit({ id: true, createdAt: true, questionCount: true });
 export type InsertQuiz = z.infer<typeof insertQuizSchema>;
 export type Quiz = typeof quizzesTable.$inferSelect;
 export type Question = typeof questionsTable.$inferSelect;
 export type QuizAttempt = typeof quizAttemptsTable.$inferSelect;
 export type QuestionReport = typeof questionReportsTable.$inferSelect;
+export type QuizSubmission = typeof quizSubmissionsTable.$inferSelect;

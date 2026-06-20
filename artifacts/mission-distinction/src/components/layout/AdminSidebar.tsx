@@ -24,6 +24,7 @@ import {
   Pin,
   Lightbulb,
   BookOpen,
+  ClipboardCheck,
 } from "lucide-react";
 
 const navItems = [
@@ -39,7 +40,15 @@ const navItems = [
       { label: "Books Library", href: "/admin/content/books" },
     ],
   },
-  { icon: FileText, label: "Quizzes", href: "/admin/quizzes" },
+  {
+    icon: FileText,
+    label: "Quizzes",
+    href: "/admin/quizzes",
+    subItems: [
+      { label: "Manage Quizzes", href: "/admin/quizzes" },
+      { label: "Student Submissions", href: "/admin/quiz-submissions" },
+    ],
+  },
   {
     icon: Lightbulb,
     label: "Study Tools",

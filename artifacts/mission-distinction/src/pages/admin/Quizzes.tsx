@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useListQuizzes, useCreateQuiz, useDeleteQuiz, getListQuizzesQueryKey } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
-import { Search, Plus, MoreVertical, Trash2, CheckCircle, Pencil } from "lucide-react";
+import { Search, Plus, MoreVertical, Trash2, CheckCircle, Pencil, ClipboardCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -87,6 +87,9 @@ export default function AdminQuizzes() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input placeholder="Search quizzes..." className="pl-9 bg-card/50 border-border/50" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
+          <Button variant="outline" onClick={() => navigate("/admin/quiz-submissions")} className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10">
+            <ClipboardCheck className="mr-2 h-4 w-4" /> Submissions
+          </Button>
           <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" /> Create Quiz</Button>
         </div>
       </div>

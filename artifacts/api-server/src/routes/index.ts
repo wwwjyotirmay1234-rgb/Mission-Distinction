@@ -36,6 +36,7 @@ import { noticesRouter } from "./notices";
 import { quizIntelligenceRouter } from "./quizIntelligence";
 import { adminContentRouter } from "./adminContent";
 import { gamesRouter } from "./games";
+import { quizSubmissionsRouter } from "./quizSubmissions";
 
 const router: IRouter = Router();
 
@@ -80,5 +81,7 @@ router.use("/admin/notices", noticesRouter);
 router.use("/admin/quiz-intelligence", quizIntelligenceRouter);
 router.use("/admin/content", adminContentRouter);
 router.use("/games", gamesRouter);
+router.use("/quiz-submissions", quizSubmissionsRouter);
+router.use("/admin/quiz-submissions", quizSubmissionsRouter);
 
 export default router;

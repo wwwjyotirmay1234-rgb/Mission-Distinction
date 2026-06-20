@@ -241,4 +241,24 @@ router.post("/community-file", authMiddleware, communityUpload.single("file"), a
   }
 });
 
+// ─── Quiz answer image (student-accessible) ───────────────────────────────────
+router.post("/quiz-answer", authMiddleware, upload.single("file"), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
+    const realMime = await detectMime(req.file.buffer);
+    if (!realMime || !ALLOWED_IMAGE_MIMES.has(realMime)) {
+      res.status(400).json({ error: "Only JPG, PNG, WebP or GIF images are allowed" }); return;
+    }
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "mission-distinction/quiz-answers",
+      resource_type: "image",
+      transformation: [{ quality: "auto", fetch_format: "auto", width: 2000, crop: "limit" }],
+    });
+    res.json({ url: result.secure_url });
+  } catch (err: any) {
+    console.error("Quiz answer upload error:", err);
+    res.status(500).json({ error: "Upload failed. Please try again." });
+  }
+});
+
 export default router;

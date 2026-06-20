@@ -96,6 +96,7 @@ import QuizIntelligence from "@/pages/admin/QuizIntelligence";
 import NoticesPage from "@/pages/admin/NoticesPage";
 import AdminMnemonics from "@/pages/admin/Mnemonics";
 import AdminFlashcards from "@/pages/admin/Flashcards";
+import QuizSubmissions from "@/pages/admin/QuizSubmissions";
 
 const queryClient = new QueryClient();
 
@@ -170,6 +171,7 @@ function Router() {
               <Route path="/admin/notices" component={NoticesPage} />
               <Route path="/admin/study-tools/mnemonics" component={AdminMnemonics} />
               <Route path="/admin/study-tools/flashcards" component={AdminFlashcards} />
+              <Route path="/admin/quiz-submissions" component={QuizSubmissions} />
               <Route component={NotFound} />
             </Switch>
           </AdminLayout>

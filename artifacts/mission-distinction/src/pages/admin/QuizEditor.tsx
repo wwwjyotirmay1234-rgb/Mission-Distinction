@@ -33,7 +33,11 @@ const QUESTION_TYPES = [
   { value: "fill-blank", label: "Fill in the Blank" },
   { value: "name-following", label: "Name the Following" },
   { value: "one-word", label: "One Word Answer" },
+  { value: "short_answer", label: "Short Answer (SAQ)" },
+  { value: "long_answer", label: "Long Answer (LAQ)" },
 ];
+
+const SUBJECTIVE_TYPES = ["short_answer", "long_answer"];
 
 type Question = {
   id: number;
@@ -59,7 +63,7 @@ type QuizDetail = {
   questions: Question[];
 };
 
-const emptyQForm = { text: "", questionType: "mcq", options: ["", "", "", ""], correctOption: 0, correctAnswer: "", explanation: "" };
+const emptyQForm = { text: "", questionType: "mcq", options: ["", "", "", ""], correctOption: 0, correctAnswer: "", explanation: "", maxMarks: 5, modelAnswer: "" };
 
 export default function QuizEditor() {
   const [, params] = useRoute("/admin/quizzes/:id/edit");
@@ -166,6 +170,8 @@ export default function QuizEditor() {
       correctOption: q.correctOption ?? 0,
       correctAnswer: q.correctAnswer || "",
       explanation: q.explanation || "",
+      maxMarks: (q as any).maxMarks ?? 5,
+      modelAnswer: (q as any).modelAnswer || "",
     });
     setQOpen(true);
   };
@@ -186,13 +192,25 @@ export default function QuizEditor() {
   const handleSaveQuestion = async () => {
     if (!quizId) return;
     if (!qForm.text.trim()) { toast.error("Question text is required."); return; }
-    const isWriteIn = !["mcq", "true-false"].includes(qForm.questionType);
+    const isSubjective = SUBJECTIVE_TYPES.includes(qForm.questionType);
+    const isWriteIn = !["mcq", "true-false"].includes(qForm.questionType) && !isSubjective;
     if (isWriteIn && !qForm.correctAnswer.trim()) { toast.error("Correct answer is required for this question type."); return; }
-    if (!isWriteIn && qForm.options.some(o => !o.trim())) { toast.error("All options must be filled in."); return; }
+    if (!isWriteIn && !isSubjective && qForm.options.some(o => !o.trim())) { toast.error("All options must be filled in."); return; }
 
-    const payload = isWriteIn
-      ? { text: qForm.text.trim(), questionType: qForm.questionType, correctAnswer: qForm.correctAnswer.trim(), explanation: qForm.explanation.trim() || null }
-      : { text: qForm.text.trim(), questionType: qForm.questionType, options: qForm.options.map(o => o.trim()), correctOption: qForm.correctOption, explanation: qForm.explanation.trim() || null };
+    let payload: Record<string, any>;
+    if (isSubjective) {
+      payload = {
+        text: qForm.text.trim(),
+        questionType: qForm.questionType,
+        explanation: qForm.explanation.trim() || null,
+        maxMarks: qForm.maxMarks,
+        modelAnswer: qForm.modelAnswer.trim() || null,
+      };
+    } else if (isWriteIn) {
+      payload = { text: qForm.text.trim(), questionType: qForm.questionType, correctAnswer: qForm.correctAnswer.trim(), explanation: qForm.explanation.trim() || null };
+    } else {
+      payload = { text: qForm.text.trim(), questionType: qForm.questionType, options: qForm.options.map(o => o.trim()), correctOption: qForm.correctOption, explanation: qForm.explanation.trim() || null };
+    }
 
     setSaving(true);
     try {
@@ -374,8 +392,19 @@ export default function QuizEditor() {
                 </div>
               </CardHeader>
               <CardContent className="px-4 pb-4 pt-0 pl-14">
+                {SUBJECTIVE_TYPES.includes(q.questionType || "mcq") && (
+                  <div className="flex items-center gap-3 mb-3 text-xs text-muted-foreground">
+                    <span className="px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                      {q.questionType === "short_answer" ? "SAQ" : "LAQ"} — {(q as any).maxMarks ?? 5} marks
+                    </span>
+                    {(q as any).modelAnswer && (
+                      <span className="text-green-400">✓ Model answer set</span>
+                    )}
+                  </div>
+                )}
+                {!SUBJECTIVE_TYPES.includes(q.questionType || "mcq") && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                  {q.options.map((opt, i) => (
+                  {(q.options || []).map((opt, i) => (
                     <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors ${
                       i === q.correctOption
                         ? "bg-green-500/10 border-green-500/30 text-green-400"
@@ -389,6 +418,7 @@ export default function QuizEditor() {
                     </div>
                   ))}
                 </div>
+                )}
                 {q.explanation && (
                   <div className="flex gap-2 p-2.5 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs text-blue-300">
                     <span className="font-semibold shrink-0">Explanation:</span>
@@ -409,7 +439,7 @@ export default function QuizEditor() {
           <div className="space-y-5 py-2">
             <div className="space-y-1.5">
               <Label>Question Type <span className="text-destructive">*</span></Label>
-              <Select value={qForm.questionType} onValueChange={(v) => setQForm({ ...qForm, questionType: v, correctAnswer: "", options: ["", "", "", ""], correctOption: 0 })}>
+              <Select value={qForm.questionType} onValueChange={(v) => setQForm({ ...qForm, questionType: v, correctAnswer: "", options: ["", "", "", ""], correctOption: 0, maxMarks: 5, modelAnswer: "" })}>
                 <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {QUESTION_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -486,7 +516,7 @@ export default function QuizEditor() {
               </div>
             )}
 
-            {!["mcq", "true-false"].includes(qForm.questionType) && (
+            {!["mcq", "true-false"].includes(qForm.questionType) && !SUBJECTIVE_TYPES.includes(qForm.questionType) && (
               <div className="space-y-1.5">
                 <Label>Correct Answer <span className="text-destructive">*</span></Label>
                 <Input
@@ -500,6 +530,40 @@ export default function QuizEditor() {
                   onChange={(e) => setQForm({ ...qForm, correctAnswer: e.target.value })}
                 />
                 <p className="text-xs text-muted-foreground">Answers are matched case-insensitively after normalizing punctuation/spaces.</p>
+              </div>
+            )}
+
+            {SUBJECTIVE_TYPES.includes(qForm.questionType) && (
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Maximum Marks <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={qForm.maxMarks}
+                    onChange={(e) => setQForm({ ...qForm, maxMarks: Math.max(1, Math.min(20, parseInt(e.target.value) || 5)) })}
+                    className="bg-background/50 w-28"
+                    placeholder="e.g. 5"
+                  />
+                  <p className="text-xs text-muted-foreground">How many marks is this question worth? (1–20)</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>
+                    Model Answer <span className="text-xs font-normal text-muted-foreground">(used for AI grading — not shown to students)</span>
+                  </Label>
+                  <Textarea
+                    placeholder={
+                      qForm.questionType === "short_answer"
+                        ? "e.g. The femoral nerve (L2-L4) supplies the quadriceps femoris, sartorius, and pectineus muscles..."
+                        : "Write the ideal answer with all key points that should be covered..."
+                    }
+                    className="bg-background/50 resize-none"
+                    rows={4}
+                    value={qForm.modelAnswer}
+                    onChange={(e) => setQForm({ ...qForm, modelAnswer: e.target.value })}
+                  />
+                </div>
               </div>
             )}
 
