@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { registerChessHandlers } from "./game-socket-chess";
 import { registerLudoHandlers } from "./game-socket-ludo";
+import { registerSNLHandlers } from "./game-socket-snl";
 
 let io: Server;
 
@@ -251,9 +252,10 @@ export function initSocketServer(httpServer: HttpServer) {
       }
     });
 
-    // ── Chess & Ludo ────────────────────────────────────────────────────────────
+    // ── Chess, Ludo & Snake and Ladder ─────────────────────────────────────────
     registerChessHandlers(io, socket, user);
     registerLudoHandlers(io, socket, user);
+    registerSNLHandlers(io, socket, user);
 
     socket.on("game:leave", ({ code }: { code: string }) => {
       const room = gameRooms.get(code);

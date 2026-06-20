@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Shuffle, Brain, Stethoscope, Zap, Grid3x3, ArrowLeft, Users, Castle, Dices } from "lucide-react";
+import { Shuffle, Brain, Stethoscope, Zap, Grid3x3, ArrowLeft, Users, Castle, Dices, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WordScramble from "./games/WordScramble";
 import MemoryMatch from "./games/MemoryMatch";
@@ -10,6 +10,7 @@ import Crossword from "./games/Crossword";
 import MultiplayerGame from "./games/MultiplayerGame";
 import ChessGame from "./games/ChessGame";
 import LudoGame from "./games/LudoGame";
+import SnakeAndLadder from "./games/SnakeAndLadder";
 
 const SOLO_GAMES = [
   {
@@ -92,6 +93,17 @@ const MULTIPLAYER_GAMES = [
     badge: "2-4P",
     badgeClass: "bg-orange-500/20 text-orange-300 border-orange-500/30",
     detail: "Online multiplayer · 2–4 players · Classic rules",
+  },
+  {
+    id: "snl",
+    title: "Snake & Ladder",
+    description: "Classic Snake and Ladder for 2–4 players. Roll the dice, climb ladders, and avoid snakes!",
+    icon: Gamepad2,
+    color: "from-teal-500 to-emerald-600",
+    bg: "bg-teal-500/10 border-teal-500/30",
+    badge: "2-4P",
+    badgeClass: "bg-teal-500/20 text-teal-300 border-teal-500/30",
+    detail: "Online multiplayer · 2–4 players · 🐍 Snakes & 🪜 Ladders",
   },
 ] as const;
 
@@ -197,6 +209,7 @@ const GAME_META: Record<string, { title: string; subtitle: string; icon: React.E
   multiplayer: { title: "Quiz Battle", subtitle: "Live Multiplayer · 1st Year MBBS", icon: Users, color: "from-indigo-500 to-blue-600", bg: "bg-indigo-500/10 border-indigo-500/30" },
   chess: { title: "Chess", subtitle: "Online 1v1 · White vs Black", icon: Castle, color: "from-slate-500 to-gray-600", bg: "bg-slate-500/10 border-slate-500/30" },
   ludo: { title: "Ludo", subtitle: "Online 2–4 Players", icon: Dices, color: "from-orange-500 to-red-600", bg: "bg-orange-500/10 border-orange-500/30" },
+  snl: { title: "Snake & Ladder", subtitle: "Online 2–4 Players · 🐍🪜", icon: Gamepad2, color: "from-teal-500 to-emerald-600", bg: "bg-teal-500/10 border-teal-500/30" },
 };
 
 function GameShell({ gameId, onBack }: { gameId: GameId; onBack: () => void }) {
@@ -250,6 +263,17 @@ function GameShell({ gameId, onBack }: { gameId: GameId; onBack: () => void }) {
         {header}
         <div className={`rounded-2xl border p-5 ${bg} overflow-x-auto`}>
           <LudoGame onBack={onBack} />
+        </div>
+      </div>
+    );
+  }
+
+  if (gameId === "snl") {
+    return (
+      <div className="space-y-5">
+        {header}
+        <div className={`rounded-2xl border p-5 ${bg} overflow-x-auto`}>
+          <SnakeAndLadder onBack={onBack} />
         </div>
       </div>
     );
