@@ -20,17 +20,22 @@ export function getAppUrl(): string {
   return "http://localhost:5173";
 }
 
-export async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+export async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  text: string
+): Promise<boolean> {
   const apiKey = process.env.SENDGRID_API_KEY;
   const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.SMTP_EMAIL;
 
   if (!apiKey) {
-    console.warn(`[Email] SENDGRID_API_KEY not set — email skipped. Set SENDGRID_API_KEY and SENDGRID_FROM_EMAIL in Replit Secrets.`);
+    console.warn(`[Email] SENDGRID_API_KEY not set — email skipped.`);
     return false;
   }
 
   if (!fromEmail) {
-    console.warn(`[Email] SENDGRID_FROM_EMAIL not set — email skipped. Set a verified SendGrid sender address in SENDGRID_FROM_EMAIL.`);
+    console.warn(`[Email] SENDGRID_FROM_EMAIL not set — email skipped.`);
     return false;
   }
 
@@ -39,8 +44,10 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
     await sgMail.send({
       to,
       from: { name: "Mission Distinction", email: fromEmail },
+      replyTo: fromEmail,
       subject,
       html,
+      text,
     });
     console.info(`[Email] Sent | Subject: ${subject}`);
     return true;
@@ -49,13 +56,12 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
     const body = err?.response?.body;
     if (status === 403) {
       console.error(
-        `[Email] SendGrid 403 Forbidden — sender "${fromEmail}" is not verified. ` +
-        `Go to app.sendgrid.com → Settings → Sender Authentication and verify this address or domain. ` +
-        `Then ensure SENDGRID_FROM_EMAIL in Replit Secrets matches a verified sender.`,
+        `[Email] SendGrid 403 — sender "${fromEmail}" not verified. ` +
+        `Go to app.sendgrid.com → Settings → Sender Authentication.`,
         body
       );
     } else if (status === 401) {
-      console.error(`[Email] SendGrid 401 Unauthorized — SENDGRID_API_KEY may be invalid or revoked.`, body);
+      console.error(`[Email] SendGrid 401 — SENDGRID_API_KEY may be invalid.`, body);
     } else {
       console.error(`[Email] SendGrid error (status ${status ?? "unknown"}):`, body ?? err?.message ?? err);
     }
@@ -63,26 +69,118 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   }
 }
 
-export function resetPasswordEmail(resetUrl: string): string {
-  const safeUrl = encodeURI(resetUrl);
-  return `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0f0f1a;color:#e2e8f0;padding:40px;border-radius:12px;">
-      <h2 style="color:#7c3aed;margin-top:0;">Mission Distinction</h2>
-      <h3 style="color:#e2e8f0;">Reset Your Password</h3>
-      <p style="color:#94a3b8;">Click the button below to reset your password. This link expires in <strong style="color:#e2e8f0;">1 hour</strong>.</p>
-      <a href="${safeUrl}" style="display:inline-block;background:#7c3aed;color:white;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin:16px 0;">Reset Password</a>
-      <p style="color:#64748b;font-size:12px;margin-top:24px;">If you didn't request this, you can safely ignore this email. Your password will not change.</p>
-    </div>`;
+function baseHtml(content: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mission Distinction</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f7;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="100%" style="max-width:580px;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e0e0e5;">
+          <!-- Header -->
+          <tr>
+            <td style="background:#7c3aed;padding:28px 40px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.3px;">Mission Distinction</h1>
+              <p style="margin:4px 0 0;color:#ddd6fe;font-size:13px;">Medical Education Platform</p>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 40px;color:#1e1e2e;">
+              ${content}
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f9f9fb;padding:20px 40px;border-top:1px solid #e9e9ef;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">
+                Mission Distinction &mdash; Free MBBS Education for Odisha Students<br />
+                If you did not request this email, you can safely ignore it.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
-export function verifyEmailTemplate(verifyUrl: string, name: string): string {
+export function verifyEmailTemplate(verifyUrl: string, name: string): { html: string; text: string } {
   const safeUrl = encodeURI(verifyUrl);
-  return `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0f0f1a;color:#e2e8f0;padding:40px;border-radius:12px;">
-      <h2 style="color:#7c3aed;margin-top:0;">Mission Distinction</h2>
-      <h3 style="color:#e2e8f0;">Welcome, ${escapeHtml(name)}! Verify your email</h3>
-      <p style="color:#94a3b8;">Click below to verify your email address and unlock full access.</p>
-      <a href="${safeUrl}" style="display:inline-block;background:#7c3aed;color:white;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin:16px 0;">Verify Email</a>
-      <p style="color:#64748b;font-size:12px;margin-top:24px;">This link expires in 24 hours.</p>
-    </div>`;
+  const safeName = escapeHtml(name);
+
+  const html = baseHtml(`
+    <h2 style="margin:0 0 8px;font-size:20px;color:#1e1e2e;">Welcome, ${safeName}!</h2>
+    <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+      Thank you for registering on Mission Distinction. Please verify your email address to activate your account and access all study resources.
+    </p>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${safeUrl}"
+         style="display:inline-block;background:#7c3aed;color:#ffffff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:0.2px;">
+        ✅ Verify My Email
+      </a>
+    </div>
+    <p style="margin:24px 0 0;font-size:13px;color:#6b7280;line-height:1.6;">
+      This link expires in <strong>24 hours</strong>. If the button above doesn't work, copy and paste this URL into your browser:
+    </p>
+    <p style="margin:8px 0 0;font-size:12px;color:#9ca3af;word-break:break-all;">${safeUrl}</p>
+  `);
+
+  const text = `Welcome to Mission Distinction, ${name}!
+
+Please verify your email address by visiting the link below:
+
+${verifyUrl}
+
+This link expires in 24 hours.
+
+If you did not register on Mission Distinction, you can safely ignore this email.
+
+— Mission Distinction Team`;
+
+  return { html, text };
+}
+
+export function resetPasswordEmail(resetUrl: string): { html: string; text: string } {
+  const safeUrl = encodeURI(resetUrl);
+
+  const html = baseHtml(`
+    <h2 style="margin:0 0 8px;font-size:20px;color:#1e1e2e;">Reset Your Password</h2>
+    <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+      We received a request to reset your Mission Distinction password. Click the button below to set a new password. This link expires in <strong>1 hour</strong>.
+    </p>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${safeUrl}"
+         style="display:inline-block;background:#7c3aed;color:#ffffff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:0.2px;">
+        🔐 Reset Password
+      </a>
+    </div>
+    <p style="margin:24px 0 0;font-size:13px;color:#6b7280;line-height:1.6;">
+      If the button doesn't work, copy and paste this URL into your browser:
+    </p>
+    <p style="margin:8px 0 0;font-size:12px;color:#9ca3af;word-break:break-all;">${safeUrl}</p>
+    <hr style="border:none;border-top:1px solid #e9e9ef;margin:24px 0;" />
+    <p style="margin:0;font-size:13px;color:#9ca3af;">
+      If you didn't request a password reset, no action is needed. Your password won't change.
+    </p>
+  `);
+
+  const text = `Reset Your Mission Distinction Password
+
+Click the link below to reset your password (expires in 1 hour):
+
+${resetUrl}
+
+If you didn't request this, you can safely ignore this email.
+
+— Mission Distinction Team`;
+
+  return { html, text };
 }

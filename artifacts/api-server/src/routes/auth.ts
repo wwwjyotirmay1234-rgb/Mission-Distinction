@@ -132,7 +132,8 @@ router.post("/student/register", registerLimiter, async (req: Request, res: Resp
     const verifyUrl = `${getAppUrl()}/verify-email?token=${verifyToken}`;
     let emailSent = false;
     try {
-      emailSent = await sendEmail(user.email, "Verify your email — Mission Distinction", verifyEmailTemplate(verifyUrl, user.fullName));
+      const { html: verifyHtml, text: verifyText } = verifyEmailTemplate(verifyUrl, user.fullName);
+      emailSent = await sendEmail(user.email, "Verify your Mission Distinction account", verifyHtml, verifyText);
     } catch (emailErr) {
       console.warn("[register] email send failed (non-fatal):", (emailErr as any)?.message);
     }
@@ -320,7 +321,8 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req: Request, res:
     });
 
     const resetUrl = `${getAppUrl()}/reset-password?token=${token}`;
-    const emailSent = await sendEmail(user.email, "Reset your password — Mission Distinction", resetPasswordEmail(resetUrl));
+    const { html: resetHtml, text: resetText } = resetPasswordEmail(resetUrl);
+    const emailSent = await sendEmail(user.email, "Reset your Mission Distinction password", resetHtml, resetText);
 
     res.json({
       message: "If that email is registered, a reset link has been sent.",
@@ -401,7 +403,8 @@ router.post("/resend-verification", authMiddleware, async (req: Request, res: Re
     });
 
     const verifyUrl = `${getAppUrl()}/verify-email?token=${token}`;
-    const emailSent = await sendEmail(user.email, "Verify your email — Mission Distinction", verifyEmailTemplate(verifyUrl, user.fullName));
+    const { html: rv2Html, text: rv2Text } = verifyEmailTemplate(verifyUrl, user.fullName);
+    const emailSent = await sendEmail(user.email, "Verify your Mission Distinction account", rv2Html, rv2Text);
 
     res.json({
       message: emailSent ? "Verification email sent." : "Could not send email — use the link below to verify.",
@@ -502,13 +505,14 @@ router.post("/admin/test-email", adminMiddleware, async (req: Request, res: Resp
   try {
     const sent = await sendEmail(
       toEmail,
-      "✅ Mission Distinction — Email system test",
-      `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0f0f1a;color:#e2e8f0;padding:40px;border-radius:12px;">
-        <h2 style="color:#7c3aed;margin-top:0;">Mission Distinction</h2>
-        <h3>✅ Email system is working!</h3>
-        <p style="color:#94a3b8;">Test email sent via <strong>SendGrid</strong> at <strong>${new Date().toISOString()}</strong></p>
-        <p style="color:#94a3b8;">All transactional emails (registration verification, password reset) are operational.</p>
-      </div>`
+      "Mission Distinction — Email system test",
+      `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:40px;background:#f4f4f7;">
+        <h2 style="color:#7c3aed;">Mission Distinction</h2>
+        <h3>Email system is working!</h3>
+        <p>Test email sent via <strong>SendGrid</strong> at <strong>${new Date().toISOString()}</strong></p>
+        <p>All transactional emails (registration verification, password reset) are operational.</p>
+      </body></html>`,
+      `Mission Distinction — Email system test\n\nEmail system is working!\nTest sent at ${new Date().toISOString()}`
     );
 
     if (!sent) throw new Error("SendGrid returned false — check API key and sender verification.");
