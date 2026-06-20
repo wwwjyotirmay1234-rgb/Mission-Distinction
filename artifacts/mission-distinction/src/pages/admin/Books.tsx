@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { useListBooks, useCreateBook, useDeleteBook, getListBooksQueryKey } from "@workspace/api-client-react";
-import { customFetch } from "@workspace/api-client-react";
+import { useListBooks, useCreateBook, useDeleteBook, getListBooksQueryKey, customFetch } from "@workspace/api-client-react";
+import { apiFetch } from "@/lib/apiFetch";
 import { Search, Plus, MoreVertical, Trash2, BookOpen, Pencil, ImagePlus, X, Upload, CheckCircle2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -23,8 +23,13 @@ type BookItem = { id: number; title: string; subject: string; author?: string | 
 async function uploadBookCover(file: File): Promise<string> {
   const fd = new FormData();
   fd.append("file", file);
-  const data = await customFetch<{ url: string }>("/api/upload/book-cover", { method: "POST", body: fd });
-  if (!data?.url) throw new Error("Upload failed");
+  const res = await apiFetch("/api/upload/book-cover", { method: "POST", body: fd });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error || `Upload failed (${res.status})`);
+  }
+  const data = await res.json();
+  if (!data?.url) throw new Error("Upload failed — no URL returned");
   return data.url;
 }
 

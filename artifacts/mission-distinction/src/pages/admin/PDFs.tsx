@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useListPdfs, useCreatePdf, useDeletePdf, getListPdfsQueryKey, customFetch } from "@workspace/api-client-react";
+import { apiFetch } from "@/lib/apiFetch";
 import { Search, Plus, MoreVertical, Trash2, FileIcon, Pencil, ImagePlus, X, Upload, Link, CheckCircle2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -45,8 +46,13 @@ async function uploadPdfFile(file: File, onProgress: (p: number) => void): Promi
 async function uploadCoverImage(file: File): Promise<string> {
   const fd = new FormData();
   fd.append("file", file);
-  const data = await customFetch<{ url: string }>("/api/upload/image", { method: "POST", body: fd });
-  if (!data?.url) throw new Error("Upload failed");
+  const res = await apiFetch("/api/upload/image", { method: "POST", body: fd });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error || `Upload failed (${res.status})`);
+  }
+  const data = await res.json();
+  if (!data?.url) throw new Error("Upload failed — no URL returned");
   return data.url;
 }
 
@@ -102,7 +108,7 @@ export default function AdminPDFs() {
       if (mode === "add") setForm(f => ({ ...f, thumbnailUrl: url }));
       else setEditForm(f => ({ ...f, thumbnailUrl: url }));
       toast.success("Cover uploaded!");
-    } catch { toast.error("Cover upload failed."); }
+    } catch (e: any) { toast.error(e?.message || "Cover upload failed."); }
     finally { set(false); }
   };
 
