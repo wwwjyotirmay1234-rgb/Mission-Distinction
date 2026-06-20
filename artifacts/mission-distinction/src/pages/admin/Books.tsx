@@ -103,8 +103,9 @@ export default function AdminBooks() {
       if (mode === "add") setForm(f => ({ ...f, coverUrl: url }));
       else setEditForm(f => ({ ...f, coverUrl: url }));
       toast.success("Cover uploaded!");
-    } catch {
-      toast.error("Cover upload failed.");
+    } catch (e: any) {
+      const msg = e?.body?.error || e?.message || "Cover upload failed.";
+      toast.error(msg);
     } finally {
       set(false);
     }

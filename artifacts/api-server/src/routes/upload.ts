@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { adminMiddleware, authMiddleware } from "../middlewares/auth";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
@@ -259,6 +259,27 @@ router.post("/quiz-answer", authMiddleware, upload.single("file"), async (req: R
     console.error("Quiz answer upload error:", err);
     res.status(500).json({ error: "Upload failed. Please try again." });
   }
+});
+
+// ─── Multer & general error handler ──────────────────────────────────────────
+// Must have 4 params so Express recognises it as an error-handling middleware.
+// Multer validation errors (file type / size) end up here instead of the
+// try-catch inside each route handler because multer calls next(err) before
+// the handler body runs.
+router.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  if (err?.code === "LIMIT_FILE_SIZE") {
+    res.status(400).json({ error: "File is too large. Maximum size is 50 MB." });
+    return;
+  }
+  if (err instanceof multer.MulterError) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+  if (err?.message) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+  res.status(500).json({ error: "Upload failed. Please try again." });
 });
 
 export default router;
