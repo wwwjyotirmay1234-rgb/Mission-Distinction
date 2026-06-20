@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Shuffle, Brain, Stethoscope, Zap, Grid3x3, ArrowLeft, Users, Castle, Dices, Gamepad2 } from "lucide-react";
+import { Shuffle, Brain, Stethoscope, Zap, Grid3x3, ArrowLeft, Users, Castle, Dices, Gamepad2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useXPStats } from "@/hooks/useXPStats";
+import { RANKS } from "@/lib/ranks";
 import WordScramble from "./games/WordScramble";
 import MemoryMatch from "./games/MemoryMatch";
 import DiagnosisChallenge from "./games/DiagnosisChallenge";
@@ -111,6 +113,18 @@ type SoloId = typeof SOLO_GAMES[number]["id"];
 type MultiId = typeof MULTIPLAYER_GAMES[number]["id"];
 type GameId = SoloId | MultiId;
 
+const GAME_REQUIRED_LEVELS: Record<string, number> = {
+  "word-scramble": 1,
+  "memory-match": 2,
+  "spelling-bee": 2,
+  "diagnosis": 3,
+  "crossword": 4,
+  "multiplayer": 2,
+  "chess": 3,
+  "ludo": 4,
+  "snl": 5,
+};
+
 function GameIcon({ icon: Icon, color }: { icon: React.ElementType; color: string }) {
   return (
     <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg shrink-0`}>
@@ -119,7 +133,20 @@ function GameIcon({ icon: Icon, color }: { icon: React.ElementType; color: strin
   );
 }
 
-function Hub({ onSelect }: { onSelect: (id: GameId) => void }) {
+function LockOverlay({ requiredLevel }: { requiredLevel: number }) {
+  const rank = RANKS.find(r => r.level === requiredLevel) ?? RANKS[requiredLevel - 1];
+  return (
+    <div className="absolute inset-0 rounded-2xl bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-10">
+      <Lock size={22} className="text-muted-foreground" />
+      <p className="text-xs font-semibold text-muted-foreground text-center leading-tight px-2">
+        {rank.emoji} {rank.name}<br />
+        <span className="font-normal opacity-70">{rank.min.toLocaleString()} XP required</span>
+      </p>
+    </div>
+  );
+}
+
+function Hub({ onSelect, rankLevel }: { onSelect: (id: GameId) => void; rankLevel: number }) {
   return (
     <div className="space-y-6">
       <div>
@@ -133,28 +160,32 @@ function Hub({ onSelect }: { onSelect: (id: GameId) => void }) {
       <div>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">🎮 Multiplayer</p>
         <div className="space-y-3">
-          {MULTIPLAYER_GAMES.map((g, i) => (
-            <motion.div key={g.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
-              <button
-                onClick={() => onSelect(g.id)}
-                className={`w-full text-left p-5 rounded-2xl border transition-all duration-200 hover:scale-[1.01] hover:shadow-lg ${g.bg}`}
-              >
-                <div className="flex items-start gap-4">
-                  <GameIcon icon={g.icon} color={g.color} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h3 className="font-bold text-foreground text-base">{g.title}</h3>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${g.badgeClass}`}>
-                        {g.badge}
-                      </span>
+          {MULTIPLAYER_GAMES.map((g, i) => {
+            const reqLevel = GAME_REQUIRED_LEVELS[g.id] ?? 1;
+            const isLocked = rankLevel < reqLevel;
+            return (
+              <motion.div key={g.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
+                <div className={`relative w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:scale-[1.01] hover:shadow-lg"}`}
+                  onClick={() => !isLocked && onSelect(g.id)}
+                >
+                  {isLocked && <LockOverlay requiredLevel={reqLevel} />}
+                  <div className={`flex items-start gap-4 ${isLocked ? "opacity-40" : ""}`}>
+                    <GameIcon icon={g.icon} color={g.color} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="font-bold text-foreground text-base">{g.title}</h3>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${g.badgeClass}`}>
+                          {g.badge}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{g.description}</p>
+                      <p className="text-xs text-primary/70 mt-1.5 font-medium">✨ {g.detail}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{g.description}</p>
-                    <p className="text-xs text-primary/70 mt-1.5 font-medium">✨ {g.detail}</p>
                   </div>
                 </div>
-              </button>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
@@ -162,36 +193,43 @@ function Hub({ onSelect }: { onSelect: (id: GameId) => void }) {
       <div>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">🧠 Single Player (AI-Powered)</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {SOLO_GAMES.map((g, i) => (
-            <motion.div key={g.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
-              <button
-                onClick={() => onSelect(g.id)}
-                className={`w-full text-left p-5 rounded-2xl border transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${g.bg}`}
-              >
-                <div className="flex items-start gap-4">
-                  <GameIcon icon={g.icon} color={g.color} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-bold text-foreground text-base">{g.title}</h3>
-                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-foreground/10 text-muted-foreground">
-                        {g.tag}
-                      </span>
+          {SOLO_GAMES.map((g, i) => {
+            const reqLevel = GAME_REQUIRED_LEVELS[g.id] ?? 1;
+            const isLocked = rankLevel < reqLevel;
+            return (
+              <motion.div key={g.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
+                <div
+                  className={`relative w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:scale-[1.02] hover:shadow-lg"}`}
+                  onClick={() => !isLocked && onSelect(g.id)}
+                >
+                  {isLocked && <LockOverlay requiredLevel={reqLevel} />}
+                  <div className={`flex items-start gap-4 ${isLocked ? "opacity-40" : ""}`}>
+                    <GameIcon icon={g.icon} color={g.color} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-foreground text-base">{g.title}</h3>
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-foreground/10 text-muted-foreground">
+                          {g.tag}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{g.description}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{g.description}</p>
                   </div>
+                  {!isLocked && (
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      <span className="text-primary font-medium">AI-powered</span> · Infinite rounds
+                    </div>
+                  )}
                 </div>
-                <div className="mt-3 text-xs text-muted-foreground">
-                  <span className="text-primary font-medium">AI-powered</span> · Infinite rounds
-                </div>
-              </button>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
       <div className="bg-card/30 border border-border/40 rounded-xl p-4 text-xs text-muted-foreground">
         <span className="text-primary font-semibold">💡 Tip: </span>
-        Each AI game round generates fresh questions across Anatomy, Physiology, and Biochemistry.
+        Each AI game round generates fresh questions across Anatomy, Physiology, and Biochemistry. Earn XP to unlock more games!
       </div>
     </div>
   );
@@ -294,13 +332,15 @@ function GameShell({ gameId, onBack }: { gameId: GameId; onBack: () => void }) {
 
 export default function Games() {
   const [activeGame, setActiveGame] = useState<GameId | null>(null);
+  const { data: xpStats } = useXPStats();
+  const rankLevel = xpStats?.currentRankLevel ?? 1;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       {activeGame ? (
         <GameShell gameId={activeGame} onBack={() => setActiveGame(null)} />
       ) : (
-        <Hub onSelect={setActiveGame} />
+        <Hub onSelect={setActiveGame} rankLevel={rankLevel} />
       )}
     </div>
   );

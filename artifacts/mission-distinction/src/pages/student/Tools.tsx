@@ -4,6 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Timer, AlarmClock, Play, Pause, RotateCcw, Flag, Bell, BellOff, Plus, Trash2, Music, Upload, Volume2 } from "lucide-react";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/apiFetch";
+
+const MIN_STOPWATCH_XP_MS = 5 * 60 * 1000;
+
+function awardActivityXP(type: string) {
+  apiFetch("/api/xp/activity", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type }),
+  }).catch(() => {});
+}
 
 function pad(n: number, digits = 2) {
   return String(n).padStart(digits, "0");
@@ -281,6 +292,9 @@ function Stopwatch() {
     baseRef.current = newBase;
     writeSwSnap({ running: false, baseMs: newBase, wallStart: 0, laps: lapsRef.current });
     setRunning(false);
+    if (newBase >= MIN_STOPWATCH_XP_MS) {
+      awardActivityXP("stopwatch_session");
+    }
   };
 
   const reset = () => {
@@ -419,6 +433,7 @@ function AlarmClock_() {
             playAlarmSound(a);
             showNotification("⏰ Alarm!", a.label || `Alarm set for ${a.time}`);
             toast.success(`⏰ ${a.label || `Alarm at ${a.time}`}`, { duration: 10000 });
+            awardActivityXP("alarm_used");
             changed = true;
             return { ...a, fired: true, active: false };
           }

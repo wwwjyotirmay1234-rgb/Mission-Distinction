@@ -19,8 +19,9 @@ export const XP_VALUES = {
   STREAK_BONUS_MAX: 30,
   NOTE_READ: 15,
   PDF_DOWNLOAD: 10,
-  COMMUNITY_POST: 30,
-  COMMUNITY_MESSAGE: 15,
+  DOUBT_ASKED: 20,
+  STOPWATCH_SESSION: 10,
+  ALARM_USED: 5,
 } as const;
 
 export function getRankForXp(xp: number) {

@@ -93,14 +93,7 @@ export const RANKS: Rank[] = [
   },
 ];
 
-export const RANK_FEATURE_GATES: Record<string, number> = {
-  "/student/mnemonics": 2,
-  "/student/flashcards": 3,
-  "/student/confessions": 4,
-  "/student/study-rooms": 4,
-  "/student/ai-tools": 5,
-  "/student/games": 5,
-};
+export const RANK_FEATURE_GATES: Record<string, number> = {};
 
 export function getRankForXp(xp: number): Rank {
   let rank = RANKS[0];

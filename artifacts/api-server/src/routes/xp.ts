@@ -93,4 +93,21 @@ router.get("/ranks", authMiddleware, async (_req: Request, res: Response) => {
   res.json(XP_RANKS);
 });
 
+router.post("/activity", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    const { type } = req.body;
+    const ALLOWED: Record<string, { amount: number; description: string }> = {
+      stopwatch_session: { amount: XP_VALUES.STOPWATCH_SESSION, description: "Completed a stopwatch session (5+ min)" },
+      alarm_used: { amount: XP_VALUES.ALARM_USED, description: "Used the study alarm" },
+    };
+    const entry = ALLOWED[type];
+    if (!entry) { res.status(400).json({ error: "Invalid activity type" }); return; }
+    const result = await awardXp(userId, entry.amount, type, entry.description);
+    res.json(result);
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export { router as xpRouter };

@@ -6,6 +6,7 @@ import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
 import rateLimit from "express-rate-limit";
+import { awardXp, XP_VALUES } from "../lib/xp";
 
 const router = Router();
 
@@ -72,6 +73,7 @@ router.post("/", authMiddleware, doubtPostLimiter, async (req: Request, res: Res
       title: safeTitle,
       question: safeQuestion,
     }).returning();
+    awardXp(user.id, XP_VALUES.DOUBT_ASKED, "doubt_asked", `Asked a doubt: ${safeTitle.slice(0, 60)}`).catch(() => {});
     res.status(201).json(doubt);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
