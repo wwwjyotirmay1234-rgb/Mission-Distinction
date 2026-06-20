@@ -270,14 +270,8 @@ router.post("/google", googleAuthLimiter, async (req: Request, res: Response) =>
     const email = rawGoogleEmail.trim().toLowerCase();
     let [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
     if (!user) {
-      [user] = await db.insert(usersTable).values({
-        fullName: name || email.split("@")[0],
-        email,
-        passwordHash: await hashPassword(uid),
-        role: "student",
-        studyStreak: 0,
-        emailVerified: true, // Google already verified the email
-      }).returning();
+      res.status(404).json({ error: "No account found for this Google email. Please register first with your details." });
+      return;
     } else if (!user.emailVerified) {
       // Mark existing users as verified if they sign in via Google
       await db.update(usersTable).set({ emailVerified: true }).where(eq(usersTable.id, user.id));
