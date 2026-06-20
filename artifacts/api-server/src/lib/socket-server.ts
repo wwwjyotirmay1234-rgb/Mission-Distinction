@@ -5,6 +5,8 @@ import { db } from "@workspace/db";
 import { usersTable, communityGroupsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { registerChessHandlers } from "./game-socket-chess";
+import { registerLudoHandlers } from "./game-socket-ludo";
 
 let io: Server;
 
@@ -248,6 +250,10 @@ export function initSocketServer(httpServer: HttpServer) {
         setTimeout(() => advanceQuestion(room, code), 3000);
       }
     });
+
+    // ── Chess & Ludo ────────────────────────────────────────────────────────────
+    registerChessHandlers(io, socket, user);
+    registerLudoHandlers(io, socket, user);
 
     socket.on("game:leave", ({ code }: { code: string }) => {
       const room = gameRooms.get(code);
