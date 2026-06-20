@@ -103,6 +103,12 @@ router.post("/pdf", adminMiddleware, upload.single("file"), async (req: Request,
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
     const realMime = await detectMime(req.file.buffer);
     if (realMime !== ALLOWED_PDF_MIME) { res.status(400).json({ error: "Only PDF files are allowed" }); return; }
+    const sizeMB = Math.round(req.file.size / 1024 / 1024);
+    if (req.file.size > 9.5 * 1024 * 1024) {
+      res.status(400).json({
+        error: `This PDF is ${sizeMB}MB — direct upload supports up to 9MB. For larger files, click "Paste URL instead" and use a Google Drive link.`,
+      }); return;
+    }
     const result = await uploadToCloudinary(req.file.buffer, {
       folder: "mission-distinction/pdfs",
       resource_type: "raw",
@@ -113,7 +119,10 @@ router.post("/pdf", adminMiddleware, upload.single("file"), async (req: Request,
     res.json({ url: result.secure_url, fileName: result.public_id });
   } catch (err: any) {
     console.error("PDF upload error:", err);
-    res.status(500).json({ error: "Upload failed. Please try again." });
+    const msg = err?.message?.includes("File size too large")
+      ? `PDF too large for direct upload. Use "Paste URL instead" with a Google Drive link.`
+      : "Upload failed. Please try again.";
+    res.status(500).json({ error: msg });
   }
 });
 
