@@ -1,27 +1,21 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Search, Music2, Loader2, X, Volume2, Play,
-  Youtube, Radio, Sparkles
+  Youtube, Sparkles
 } from "lucide-react";
 import { apiFetch } from "@/lib/apiFetch";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 /* ─── Types ──────────────────────────────────────────── */
-type Tab = "youtube" | "soundcloud" | "spotify";
+type Tab = "youtube" | "spotify";
 type NoiseType = "white" | "pink" | "brown";
 interface SoundNode { source: AudioBufferSourceNode; gain: GainNode; }
 interface YTResult {
   videoId: string; title: string; thumbnail: string;
   channel: string; duration: string; views: string;
 }
-interface SCTrack {
-  id: number; title: string; artist: string;
-  artwork: string | null; duration: number; plays: number; permalinkUrl: string;
-}
-
 /* ─── Constants ──────────────────────────────────────── */
 const YT_CHIPS = ["Lofi hip hop study","Classical piano focus","Alpha waves study","Rain jazz café","Hans Zimmer ambient","Peaceful piano","Deep focus beats","Nature sounds study"];
-const SC_CHIPS = ["lofi hip hop","classical study music","ambient chill","focus instrumental","rain coffee music","piano relaxing"];
 const SPOTIFY_SUGGESTIONS = [
   { label:"Lo-fi Hip Hop",      url:"https://open.spotify.com/playlist/0vvXsWCC9xrXsKd4euo806" },
   { label:"Deep Focus",         url:"https://open.spotify.com/playlist/37i9dQZF1DWZeKCadgRdKQ" },
@@ -43,16 +37,6 @@ const BAR_DELAYS=[0,.2,.4,.1,.5,.3,.15,.45,.25,.35,.05,.5,.2,.4,.1];
 const PARTICLES=Array.from({length:18},(_,i)=>({id:i,x:5+Math.floor(i*5.4)%90,y:5+Math.floor(i*7.3)%85,size:2+Math.floor(i%3)*1.5,delay:+(i*0.22).toFixed(2),dur:3+Math.floor(i%4)}));
 
 /* ─── Utils ──────────────────────────────────────────── */
-function fmtSecs(s: number) {
-  if (!s) return "";
-  const m = Math.floor(s/60), sec = s%60;
-  return `${m}:${String(sec).padStart(2,"0")}`;
-}
-function fmtPlays(n: number) {
-  if (n>=1_000_000) return `${(n/1_000_000).toFixed(1)}M plays`;
-  if (n>=1_000) return `${Math.floor(n/1_000)}K plays`;
-  return `${n} plays`;
-}
 function extractSpotifyEmbed(input: string): string | null {
   const m = input.match(/spotify\.com\/(track|album|playlist|artist)\/([A-Za-z0-9]+)/);
   if (m) return `https://open.spotify.com/embed/${m[1]}/${m[2]}?utm_source=generator&theme=0`;
@@ -70,7 +54,7 @@ function buildNoiseBuffer(ctx: AudioContext, type: NoiseType) {
 
 /* ─── Hero ───────────────────────────────────────────── */
 function HeroSection({active,query,setQuery,onSearch,tab}:{active:boolean;query:string;setQuery:(q:string)=>void;onSearch:(q:string)=>void;tab:Tab;}){
-  const placeholder=tab==="soundcloud"?"Search SoundCloud…":tab==="spotify"?"Paste Spotify link…":"Search YouTube…";
+  const placeholder=tab==="spotify"?"Paste Spotify link…":"Search YouTube…";
   return(
     <div className="relative overflow-hidden px-5 pt-7 pb-8" style={{background:"linear-gradient(135deg,#0a0c18 0%,#150a32 35%,#1e0d4a 55%,#0d0f1a 100%)"}}>
       {PARTICLES.map(p=><div key={p.id} className="absolute rounded-full pointer-events-none" style={{left:`${p.x}%`,top:`${p.y}%`,width:p.size,height:p.size,background:"rgba(167,139,250,0.2)",boxShadow:`0 0 ${p.size*2}px rgba(124,58,237,0.35)`,animation:`pf-${p.id%5} ${p.dur}s ease-in-out ${p.delay}s infinite alternate`}}/>)}
@@ -82,7 +66,7 @@ function HeroSection({active,query,setQuery,onSearch,tab}:{active:boolean;query:
           <div className="flex items-center gap-2 mb-1"><div className="w-7 h-7 rounded-lg bg-violet-500/20 border border-violet-500/30 flex items-center justify-center"><Music2 size={14} className="text-violet-400"/></div><span className="text-[10px] font-semibold text-violet-400/70 tracking-widest uppercase">Study Music Hub</span></div>
           <h1 className="text-[30px] font-black leading-none tracking-tight text-white mt-2">Study <span style={{background:"linear-gradient(90deg,#a78bfa,#7c3aed)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Music</span> Hub</h1>
           <p className="text-white/75 text-[13px] font-semibold mt-2">Focus deeper. Study longer. Learn smarter.</p>
-          <p className="text-white/40 text-[11px] mt-1.5 leading-relaxed">Search YouTube & SoundCloud for full songs<br/>designed for MBBS students.</p>
+          <p className="text-white/40 text-[11px] mt-1.5 leading-relaxed">Search YouTube for study music and focus playlists<br/>designed for MBBS students.</p>
         </div>
         <div className="shrink-0 pt-2"><div className="flex items-end gap-[3px] h-20">{BAR_HEIGHTS.map((h,i)=><div key={i} className="w-[5px] rounded-t-full" style={{height:`${h}%`,background:"linear-gradient(to top,#6d28d9,#a78bfa,#c4b5fd)",animation:active?`eq-b ${.7+(i%3)*.2}s ease-in-out ${BAR_DELAYS[i]}s infinite alternate`:"none",transform:active?undefined:"scaleY(0.3)",transformOrigin:"bottom"}}/>)}</div></div>
       </div>
@@ -245,109 +229,6 @@ function YouTubeTab({ externalSearch }: { externalSearch: string }) {
   );
 }
 
-/* ─── SoundCloud Tab ──────────────────────────────────
-   Fixed: uses backend search → individual track cards →
-   embeds each selected track by permalink URL (widget
-   only accepts track/playlist URLs, NOT search-page URLs).
-   ─────────────────────────────────────────────────── */
-function SoundCloudTab({ externalSearch }: { externalSearch: string }) {
-  const { play: ctxPlay, stop: ctxStop, playing: ctxPlaying } = useMusicPlayer();
-  const [query,   setQuery]   = useState("");
-  const [results, setResults] = useState<SCTrack[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState("");
-  const [searched,setSearched]= useState(false);
-
-  const search = useCallback(async (q: string) => {
-    if (!q.trim()) return;
-    setLoading(true); setError(""); setSearched(true); ctxStop();
-    try {
-      const res = await apiFetch(`/api/soundcloud/search?q=${encodeURIComponent(q)}`);
-      if (!res.ok) {
-        const err = await res.json().catch(()=>({}));
-        throw new Error((err as any).error ?? "Search failed");
-      }
-      const data = await res.json();
-      setResults(data.tracks ?? []);
-    } catch (e: any) {
-      setError(e?.message ?? "SoundCloud search failed. Please try again.");
-    } finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => {
-    if (externalSearch) { setQuery(externalSearch); search(externalSearch); }
-  }, [externalSearch]);
-
-  return (
-    <div className="px-4 pt-3 space-y-3">
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"/>
-          <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")search(query);}} placeholder="Search SoundCloud…" className="w-full h-10 pl-9 pr-3 rounded-xl text-xs text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-orange-500/40" style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)"}}/>
-        </div>
-        <button onClick={()=>search(query)} disabled={loading||!query.trim()} className="h-10 px-4 rounded-xl text-white text-xs font-bold shrink-0 disabled:opacity-40 transition-all hover:scale-105" style={{background:"linear-gradient(135deg,#ea580c,#c2410c)",boxShadow:"0 2px 10px #ea580c44"}}>{loading?<Loader2 size={14} className="animate-spin"/>:<Radio size={14}/>}</button>
-      </div>
-
-      <div className="flex flex-wrap gap-1.5">
-        {SC_CHIPS.map(c=><button key={c} onClick={()=>{setQuery(c);search(c);}} className="text-[11px] px-2.5 py-1 rounded-full border border-orange-500/20 bg-orange-500/8 text-orange-300 hover:bg-orange-500/15 transition-colors whitespace-nowrap">{c}</button>)}
-      </div>
-
-      {error && <p className="text-xs text-red-400 bg-red-500/10 rounded-xl p-2">{error}</p>}
-
-      {/* Now Playing — no iframe here; PersistentPlayer owns the single iframe */}
-      {ctxPlaying?.type === "soundcloud" && (
-        <div className="rounded-2xl border border-orange-500/25 flex items-center gap-3 px-3 py-2.5" style={{background:"rgba(234,88,12,0.07)"}}>
-          {ctxPlaying.artwork
-            ? <img src={ctxPlaying.artwork} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0"/>
-            : <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0"><Radio size={16} className="text-orange-400/50"/></div>}
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white/85 truncate">{ctxPlaying.title}</p>
-            <p className="text-[10px] text-white/40 truncate">{ctxPlaying.artist}</p>
-            <div className="flex items-center gap-1.5 mt-1">
-              <div className="flex items-end gap-0.5 h-3">{[...Array(4)].map((_,i)=><div key={i} className="w-[2px] rounded-full bg-orange-400" style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}}/>)}</div>
-              <p className="text-[10px] text-violet-400">Playing in player below ↓</p>
-            </div>
-          </div>
-          <button onClick={ctxStop} className="p-1.5 rounded-lg hover:bg-white/10 shrink-0"><X size={12} className="text-white/40"/></button>
-        </div>
-      )}
-
-      {loading && <div className="flex items-center justify-center py-10 gap-2 text-white/30"><Loader2 size={18} className="animate-spin text-orange-400"/><span className="text-sm">Searching SoundCloud…</span></div>}
-      {!loading && !searched && (
-        <div className="flex flex-col items-center py-10 gap-2 text-white/20">
-          <Radio size={36} className="text-orange-500/20"/>
-          <p className="text-sm">Search or tap a chip above</p>
-          <p className="text-xs opacity-60">Full songs · Free · No login</p>
-        </div>
-      )}
-      {!loading && results.length > 0 && (
-        <div className="space-y-1.5">
-          {results.map(t=>{
-            const isNow=ctxPlaying?.type==="soundcloud"&&ctxPlaying.id===t.id;
-            return(
-              <button key={t.id} onClick={()=>ctxPlay({type:"soundcloud",id:t.id,title:t.title,artist:t.artist,artwork:t.artwork,permalinkUrl:t.permalinkUrl})} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border text-left transition-all hover:scale-[1.005] group" style={{background:isNow?"rgba(234,88,12,0.1)":"rgba(255,255,255,0.02)",borderColor:isNow?"rgba(234,88,12,0.35)":"rgba(255,255,255,0.05)",boxShadow:isNow?"0 0 14px rgba(234,88,12,.1)":"none"}}>
-                <div className="relative shrink-0 w-[54px] h-[54px] rounded-xl overflow-hidden bg-black/40">
-                  {t.artwork?<img src={t.artwork} alt="" className="w-full h-full object-cover"/>:<div className="w-full h-full bg-orange-500/10 flex items-center justify-center"><Radio size={18} className="text-orange-400/50"/></div>}
-                  {isNow?(<div className="absolute inset-0 bg-orange-500/30 flex items-center justify-center"><div className="flex items-end gap-0.5 h-4">{[...Array(4)].map((_,i)=><div key={i} className="w-[3px] rounded-full bg-white" style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}}/>)}</div></div>):(<div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Play size={16} className="text-white" fill="white"/></div>)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-semibold leading-snug line-clamp-2 ${isNow?"text-orange-300":"text-white/85"}`}>{t.title}</p>
-                  <p className="text-[10px] text-white/40 mt-1 truncate">{t.artist}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {t.duration>0&&<span className="text-[9px] text-white/20">{fmtSecs(t.duration)}</span>}
-                    {t.plays>0&&<span className="text-[9px] text-white/20">{fmtPlays(t.plays)}</span>}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
-      {!loading&&searched&&results.length===0&&<p className="text-center py-6 text-white/30 text-sm">No results. Try a different search.</p>}
-    </div>
-  );
-}
-
 /* ─── Spotify Tab ────────────────────────────────────── */
 function SpotifyTab() {
   const [input,setInput]=useState(""),[embed,setEmbed]=useState<string|null>(null),[error,setError]=useState("");
@@ -369,9 +250,7 @@ export default function StudentMusic() {
   const [tab,  setTab]  = useState<Tab>("youtube");
   const [query, setQuery] = useState("");
   const [pendingSearch, setPendingSearch] = useState("");
-  const bottomPad = ctxPlaying
-    ? (ctxPlaying.type === "youtube" ? 315 : 166) + 48 + 16
-    : 16;
+  const bottomPad = ctxPlaying ? 315 + 48 + 16 : 16;
 
   const handleSearch = (q: string) => {
     if (!q.trim()) return;
@@ -382,9 +261,8 @@ export default function StudentMusic() {
   };
 
   const tabs: { id: Tab; label: string; color: string }[] = [
-    { id:"youtube",    label:"YouTube",    color:"#dc2626" },
-    { id:"soundcloud", label:"SoundCloud", color:"#ea580c" },
-    { id:"spotify",    label:"Spotify",    color:"#16a34a" },
+    { id:"youtube", label:"YouTube", color:"#dc2626" },
+    { id:"spotify", label:"Spotify", color:"#16a34a" },
   ];
 
   return (
@@ -405,9 +283,8 @@ export default function StudentMusic() {
 
       {/* NO key prop — tabs never remount on search, so playing video/track
           continues even when the user searches again from the hero bar */}
-      {tab==="youtube"    && <YouTubeTab    externalSearch={tab==="youtube"    ? pendingSearch : ""} />}
-      {tab==="soundcloud" && <SoundCloudTab externalSearch={tab==="soundcloud" ? pendingSearch : ""} />}
-      {tab==="spotify"    && <SpotifyTab/>}
+      {tab==="youtube" && <YouTubeTab externalSearch={tab==="youtube" ? pendingSearch : ""} />}
+      {tab==="spotify" && <SpotifyTab/>}
     </div>
   );
 }
