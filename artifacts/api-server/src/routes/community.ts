@@ -7,7 +7,6 @@ import { stripHtml } from "../lib/sanitize";
 import { eq, desc, and, count } from "drizzle-orm";
 import { getIO } from "../lib/socket-server";
 import rateLimit from "express-rate-limit";
-import { awardXp, XP_VALUES } from "../lib/xp";
 
 const router = Router();
 

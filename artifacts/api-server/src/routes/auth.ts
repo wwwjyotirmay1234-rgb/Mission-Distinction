@@ -293,6 +293,11 @@ router.post("/google", googleAuthLimiter, async (req: Request, res: Response) =>
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     setRefreshCookie(res, refreshValue);
+    const todayGoogle = new Date().toISOString().split("T")[0];
+    if (user.lastStreakDate !== todayGoogle) {
+      const streakBonus = Math.min(user.studyStreak ?? 0, 10) * XP_VALUES.STREAK_BONUS_PER_DAY;
+      awardXp(user.id, XP_VALUES.DAILY_LOGIN + streakBonus, "daily_login", `Daily login (${user.studyStreak ?? 0}-day streak)`).catch(() => {});
+    }
     res.json({ token, user: sanitizeUser(user) });
   } catch (err: any) {
     console.error("Google auth error:", err);

@@ -25,10 +25,8 @@ import {
   Bot,
   Gamepad2,
   Lock,
-  Zap,
 } from "lucide-react";
 import { useXPStats } from "@/hooks/useXPStats";
-import { getRankForXp, RANK_FEATURE_GATES } from "@/lib/ranks";
 import { XPProgressBar } from "@/components/XPProgressBar";
 
 const LAST_SEEN_KEY = "md_announcements_last_seen";
@@ -57,7 +55,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   const xp = xpStats?.totalXp ?? 0;
   const rankLevel = xpStats?.currentRankLevel ?? 1;
-  const rank = getRankForXp(xp);
 
   const { data: announcements } = useListAnnouncements(
     {},

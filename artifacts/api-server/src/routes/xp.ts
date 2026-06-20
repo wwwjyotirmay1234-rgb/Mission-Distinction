@@ -1,9 +1,24 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { xpTransactionsTable, rankUnlocksTable, usersTable } from "@workspace/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, count, gte } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
-import { XP_RANKS, getRankForXp, getNextRank } from "../lib/xp";
+import { XP_RANKS, XP_VALUES, awardXp, getRankForXp, getNextRank } from "../lib/xp";
+import rateLimit from "express-rate-limit";
+
+const activityLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 40,
+  keyGenerator: (req) => String((req as any).user?.id ?? req.ip),
+  message: { error: "Too many XP activity requests. Slow down." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const ACTIVITY_DAILY_LIMITS: Record<string, number> = {
+  stopwatch_session: 6,
+  alarm_used: 4,
+};
 
 const router = Router();
 
@@ -93,7 +108,7 @@ router.get("/ranks", authMiddleware, async (_req: Request, res: Response) => {
   res.json(XP_RANKS);
 });
 
-router.post("/activity", authMiddleware, async (req: Request, res: Response) => {
+router.post("/activity", authMiddleware, activityLimiter, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
     const { type } = req.body;
@@ -103,6 +118,25 @@ router.post("/activity", authMiddleware, async (req: Request, res: Response) => 
     };
     const entry = ALLOWED[type];
     if (!entry) { res.status(400).json({ error: "Invalid activity type" }); return; }
+
+    const dailyLimit = ACTIVITY_DAILY_LIMITS[type] ?? 0;
+    if (dailyLimit > 0) {
+      const dayStart = new Date();
+      dayStart.setHours(0, 0, 0, 0);
+      const [{ total }] = await db
+        .select({ total: count() })
+        .from(xpTransactionsTable)
+        .where(and(
+          eq(xpTransactionsTable.userId, userId),
+          eq(xpTransactionsTable.type, type),
+          gte(xpTransactionsTable.createdAt, dayStart),
+        ));
+      if ((total ?? 0) >= dailyLimit) {
+        res.json({ rankUp: false, newRankName: null, newXp: 0, limitReached: true });
+        return;
+      }
+    }
+
     const result = await awardXp(userId, entry.amount, type, entry.description);
     res.json(result);
   } catch {

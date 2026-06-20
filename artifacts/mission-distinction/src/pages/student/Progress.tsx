@@ -7,7 +7,7 @@ import {
   Radar, ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, Award, FileText, CheckCircle, Flame, Zap, Trophy, BookOpen, Download, Users, Lock } from "lucide-react";
+import { Clock, Award, FileText, CheckCircle, Flame, Zap, Trophy, BookOpen, Download, Users } from "lucide-react";
 import { Progress as ProgressBar } from "@/components/ui/progress";
 import { XPProgressBar } from "@/components/XPProgressBar";
 import { RankBadge } from "@/components/RankBadge";
