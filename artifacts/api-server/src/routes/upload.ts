@@ -97,32 +97,42 @@ function uploadToCloudinary(buffer: Buffer, options: Record<string, any>): Promi
   });
 }
 
-// ─── PDF ──────────────────────────────────────────────────────────────────────
+// ─── PDF serve (streams from GCS — any authenticated user can view) ───────────
+router.get("/pdf/serve/:fileName", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+    if (!bucketId) { res.status(500).end(); return; }
+    const bucket = gcsClient.bucket(bucketId);
+    const fileRef = bucket.file(`pdfs/${req.params.fileName}`);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="${req.params.fileName}"`);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    fileRef.createReadStream().pipe(res);
+  } catch {
+    res.status(404).end();
+  }
+});
+
+// ─── PDF upload (Replit Object Storage / GCS — up to 50 MB) ───────────────────
 router.post("/pdf", adminMiddleware, upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
     const realMime = await detectMime(req.file.buffer);
     if (realMime !== ALLOWED_PDF_MIME) { res.status(400).json({ error: "Only PDF files are allowed" }); return; }
-    const sizeMB = Math.round(req.file.size / 1024 / 1024);
-    if (req.file.size > 9.5 * 1024 * 1024) {
-      res.status(400).json({
-        error: `This PDF is ${sizeMB}MB — direct upload supports up to 9MB. For larger files, click "Paste URL instead" and use a Google Drive link.`,
-      }); return;
-    }
-    const result = await uploadToCloudinary(req.file.buffer, {
-      folder: "mission-distinction/pdfs",
-      resource_type: "raw",
-      public_id: `${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")}`,
-      use_filename: true,
-      unique_filename: false,
-    });
-    res.json({ url: result.secure_url, fileName: result.public_id });
+    const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+    if (!bucketId) { res.status(500).json({ error: "Storage not configured" }); return; }
+    const bucket = gcsClient.bucket(bucketId);
+    const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const fileName = `${Date.now()}_${safeName}`;
+    const fileRef = bucket.file(`pdfs/${fileName}`);
+    await fileRef.save(req.file.buffer, { metadata: { contentType: "application/pdf" } });
+    const proto = req.get("x-forwarded-proto") || req.protocol;
+    const host = req.get("x-forwarded-host") || req.get("host");
+    const url = `${proto}://${host}/api/upload/pdf/serve/${fileName}`;
+    res.json({ url, fileName });
   } catch (err: any) {
     console.error("PDF upload error:", err);
-    const msg = err?.message?.includes("File size too large")
-      ? `PDF too large for direct upload. Use "Paste URL instead" with a Google Drive link.`
-      : "Upload failed. Please try again.";
-    res.status(500).json({ error: msg });
+    res.status(500).json({ error: "Upload failed. Please try again." });
   }
 });
 
@@ -216,13 +226,17 @@ router.post("/note-file", adminMiddleware, noteFileUpload.single("file"), async 
         transformation: [{ quality: "auto", fetch_format: "auto" }],
       });
     } else {
-      result = await uploadToCloudinary(req.file.buffer, {
-        folder: "mission-distinction/notes",
-        resource_type: "raw",
-        public_id: `${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")}`,
-        use_filename: true,
-        unique_filename: false,
-      });
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+      if (!bucketId) { res.status(500).json({ error: "Storage not configured" }); return; }
+      const bucket = gcsClient.bucket(bucketId);
+      const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const fileName = `${Date.now()}_${safeName}`;
+      const fileRef = bucket.file(`pdfs/${fileName}`);
+      await fileRef.save(req.file.buffer, { metadata: { contentType: "application/pdf" } });
+      const proto = req.get("x-forwarded-proto") || req.protocol;
+      const host = req.get("x-forwarded-host") || req.get("host");
+      const url = `${proto}://${host}/api/upload/pdf/serve/${fileName}`;
+      result = { secure_url: url, public_id: fileName };
     }
     res.json({ url: result.secure_url, fileType, fileName: result.public_id });
   } catch (err: any) {
