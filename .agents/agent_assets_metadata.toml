@@ -12,6 +12,30 @@ uri = "file://artifacts/mission-distinction/public/icon-192.png"
 type = "image"
 title = "mission distinction icon 192"
 
+[[generated]]
+id = "28iCfdq-0ivZLz0TPDEf-"
+uri = "file://artifacts/release-trailer/public/assets/dna.png"
+type = "image"
+title = "Abstract glowing purple DNA"
+
+[[generated]]
+id = "U5NbRXPrrmDSnF1qKAmmp"
+uri = "file://artifacts/release-trailer/public/assets/studying.png"
+type = "image"
+title = "Medical student studying late"
+
+[[generated]]
+id = "7vvn-IA4CHct3oc86sXtI"
+uri = "file://artifacts/release-trailer/public/assets/network.png"
+type = "image"
+title = "Abstract neural network purple"
+
+[[generated]]
+id = "gXnMs6W4pILepWMMOnIGc"
+uri = "file://artifacts/release-trailer/public/assets/trophy.png"
+type = "image"
+title = "Trophy glowing purple"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
