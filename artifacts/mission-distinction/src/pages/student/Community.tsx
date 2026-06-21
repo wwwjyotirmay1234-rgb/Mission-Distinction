@@ -109,7 +109,7 @@ function MnemonicCard({ data, isMe }: { data: RichMnemonic; isMe: boolean }) {
 }
 
 function VideoCard({ data, isMe }: { data: RichVideo; isMe: boolean }) {
-  const thumb = `https://img.youtube.com/vi/${data.videoId}/mqdefault.jpg`;
+  const thumb = `https://i.ytimg.com/vi/${data.videoId}/mqdefault.jpg`;
   return (
     <a href={data.url} target="_blank" rel="noopener noreferrer" className="block no-underline mt-1">
       <div className={`rounded-xl border overflow-hidden min-w-[220px] max-w-[280px] transition-colors ${isMe ? "border-primary-foreground/20 hover:border-primary-foreground/40" : "border-border/40 hover:border-border"}`}>
@@ -227,7 +227,7 @@ function VideoPicker({ open, onClose, onShare }: {
           </div>
           {videoId && (
             <div className="rounded-xl overflow-hidden border border-border/40">
-              <img src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`} alt="Preview" className="w-full aspect-video object-cover" />
+              <img src={`https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`} alt="Preview" className="w-full aspect-video object-cover" />
             </div>
           )}
           {url.trim() && !videoId && <p className="text-xs text-destructive">Not a valid YouTube URL</p>}

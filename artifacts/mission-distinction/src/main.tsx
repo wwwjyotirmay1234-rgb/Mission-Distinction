@@ -6,6 +6,14 @@ import { initAnalytics } from "./lib/analytics";
 
 initAnalytics();
 
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`)
+      .catch(() => {});
+  });
+}
+
 setAuthTokenGetter(async () => {
   const token = localStorage.getItem("mission_token");
   if (!token) return null;

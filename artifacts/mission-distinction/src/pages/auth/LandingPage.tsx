@@ -178,6 +178,11 @@ export default function LandingPage() {
         );
       } else if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
         // user dismissed — no toast needed
+      } else if (code === "auth/network-request-failed") {
+        toast.error(
+          "Google sign-in was blocked — this is usually caused by Brave Shields or an ad-blocker. " +
+          "Try disabling Shields for this site (lion icon → toggle off), then retry."
+        );
       } else if (err?.message) {
         toast.error(err.message);
       } else {
