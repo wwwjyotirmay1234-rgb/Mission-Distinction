@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiFetch } from "@/lib/apiFetch";
+import { toast } from "sonner";
 import {
   useGetStudentDashboardStats,
   useGetRecentActivity,
@@ -50,8 +53,40 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(d / 7)}w ago`;
 }
 
+const YEAR_OPTIONS = [
+  "1st Year",
+  "2nd Year",
+  "3rd Year",
+  "4th Year",
+  "5th Year",
+];
+
 export default function StudentDashboard() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const [savingYear, setSavingYear] = useState(false);
+
+  const handleYearChange = async (newYear: string) => {
+    if (!user || newYear === user.year) return;
+    setSavingYear(true);
+    try {
+      const res = await apiFetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year: newYear }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to update year");
+      }
+      const updated = await res.json();
+      updateUser(updated);
+      toast.success(`Year updated to ${newYear}`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update year");
+    } finally {
+      setSavingYear(false);
+    }
+  };
 
   const { data: stats, isLoading: statsLoading } = useGetStudentDashboardStats({
     query: { queryKey: getGetStudentDashboardStatsQueryKey() },
@@ -82,8 +117,21 @@ export default function StudentDashboard() {
           </h1>
           <p className="text-muted-foreground">Ready to conquer your goals today?</p>
         </div>
-        <div className="flex gap-2">
-          <Badge variant="outline" className="px-3 py-1 bg-card/50 shrink-0">{user?.year || "1st Year MBBS"}</Badge>
+        <div className="flex gap-2 items-center">
+          <Select
+            value={user?.year || ""}
+            onValueChange={handleYearChange}
+            disabled={savingYear}
+          >
+            <SelectTrigger className="h-7 px-3 py-1 text-xs bg-card/50 border-border/60 rounded-full w-auto gap-1.5 focus:ring-1 focus:ring-primary/50">
+              <SelectValue placeholder="Select year" />
+            </SelectTrigger>
+            <SelectContent>
+              {YEAR_OPTIONS.map((y) => (
+                <SelectItem key={y} value={y} className="text-xs">{y} MBBS</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Badge variant="outline" className="px-2 py-1 bg-card/50 max-w-[180px] truncate block">{user?.college || "My College"}</Badge>
         </div>
       </div>
