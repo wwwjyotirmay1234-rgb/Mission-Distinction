@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import {
   useGetStudentDashboardStats,
   useGetRecentActivity,
@@ -61,9 +63,15 @@ const YEAR_OPTIONS = [
   "5th Year",
 ];
 
+function is1stYear(year: string | undefined | null) {
+  return !year || year.toLowerCase().startsWith("1st");
+}
+
 export default function StudentDashboard() {
   const { user, updateUser } = useAuth();
   const [savingYear, setSavingYear] = useState(false);
+  const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   const handleYearChange = async (newYear: string) => {
     if (!user || newYear === user.year) return;
@@ -80,7 +88,13 @@ export default function StudentDashboard() {
       }
       const updated = await res.json();
       updateUser(updated);
-      toast.success(`Year updated to ${newYear}`);
+      // Invalidate all cached content so every page re-fetches for the new year
+      await queryClient.invalidateQueries();
+      toast.success(`Switched to ${newYear} MBBS`);
+      // Redirect to Coming Soon for years that don't have content yet
+      if (!is1stYear(newYear)) {
+        setLocation("/coming-soon");
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to update year");
     } finally {

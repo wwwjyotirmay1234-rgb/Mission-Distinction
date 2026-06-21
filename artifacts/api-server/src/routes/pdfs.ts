@@ -28,10 +28,24 @@ function isValidHttpsUrl(url: string): boolean {
 }
 
 
+/** Normalize "1st Year" / "1st Year MBBS" → "1st", "2nd Year" → "2nd" etc. */
+function normalizeYear(y: string | null | undefined): string {
+  if (!y) return "";
+  return y.trim().toLowerCase().replace(/\s+year(\s+mbbs)?$/i, "").trim();
+}
+
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { subject, professor, search } = req.query;
+    const userYear = normalizeYear((req as any).user?.year);
+
     let pdfs = await db.select().from(pdfsTable).limit(500);
+
+    // Year filter: show PDFs with no year set (available to all) OR matching user's year
+    if (userYear) {
+      pdfs = pdfs.filter(p => !p.year || normalizeYear(p.year) === userYear);
+    }
+
     if (subject) pdfs = pdfs.filter(p => p.subject.toLowerCase() === (subject as string).toLowerCase());
     if (professor) pdfs = pdfs.filter(p => p.professor?.toLowerCase().includes((professor as string).toLowerCase()));
     if (search) {

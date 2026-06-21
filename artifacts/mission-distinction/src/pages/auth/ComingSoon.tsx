@@ -1,17 +1,44 @@
-import React from "react";
+import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Activity, Clock, Rocket, LogOut, BookOpen, Star } from "lucide-react";
+import { Activity, Clock, Rocket, LogOut, BookOpen, Star, ArrowLeft, Loader2 } from "lucide-react";
+import { apiFetch } from "@/lib/apiFetch";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ComingSoon() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [, setLocation] = useLocation();
+  const [switching, setSwitching] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleLogout = () => {
     logout();
     setLocation("/");
+  };
+
+  const handleSwitchTo1stYear = async () => {
+    if (!user) return;
+    setSwitching(true);
+    try {
+      const res = await apiFetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year: "1st Year" }),
+      });
+      if (!res.ok) throw new Error("Failed to switch year");
+      const updated = await res.json();
+      updateUser(updated);
+      await queryClient.invalidateQueries();
+      toast.success("Switched to 1st Year MBBS");
+      setLocation("/student/dashboard");
+    } catch {
+      toast.error("Failed to switch year. Please try again.");
+    } finally {
+      setSwitching(false);
+    }
   };
 
   return (
@@ -92,10 +119,24 @@ export default function ComingSoon() {
             </p>
           </div>
 
-          <Button onClick={handleLogout} variant="outline" className="gap-2">
-            <LogOut size={14} />
-            Log out and go back
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              onClick={handleSwitchTo1stYear}
+              disabled={switching}
+              className="gap-2"
+            >
+              {switching ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <ArrowLeft size={14} />
+              )}
+              {switching ? "Switching…" : "Switch to 1st Year MBBS"}
+            </Button>
+            <Button onClick={handleLogout} variant="outline" className="gap-2">
+              <LogOut size={14} />
+              Log out
+            </Button>
+          </div>
         </motion.div>
       </main>
     </div>
