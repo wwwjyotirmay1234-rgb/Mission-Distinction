@@ -1,20 +1,10 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
-import { Scene1Problem } from './video_scenes/Scene1Problem';
-import { Scene2Solution } from './video_scenes/Scene2Solution';
-import { Scene3Reveal } from './video_scenes/Scene3Reveal';
-import { Scene4Library } from './video_scenes/Scene4Library';
-import { Scene5Quizzes } from './video_scenes/Scene5Quizzes';
-import { Scene6Community } from './video_scenes/Scene6Community';
-import { Scene7Notes } from './video_scenes/Scene7Notes';
-import { Scene8Leaderboard } from './video_scenes/Scene8Leaderboard';
-import { Scene9Mission } from './video_scenes/Scene9Mission';
-import { Scene10Outro } from './video_scenes/Scene10Outro';
 import { PhoneMockup } from './PhoneMockup';
 
 export const SCENE_DURATIONS = {
-  problem: 8000,
+  problem: 7000,
   solution: 8000,
   reveal: 8000,
   library: 8000,
@@ -22,22 +12,29 @@ export const SCENE_DURATIONS = {
   community: 8000,
   notes: 8000,
   leaderboard: 8000,
-  mission: 8000,
-  outro: 10000
+  mission: 7000,
+  outro: 9000,
 };
 
-const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
-  problem: Scene1Problem,
-  solution: Scene2Solution,
-  reveal: Scene3Reveal,
-  library: Scene4Library,
-  quizzes: Scene5Quizzes,
-  community: Scene6Community,
-  notes: Scene7Notes,
-  leaderboard: Scene8Leaderboard,
-  mission: Scene9Mission,
-  outro: Scene10Outro,
+const SCENE_TEXT: Record<string, { label: string; title: string }> = {
+  problem:     { label: '1st Year MBBS',       title: 'The hardest year of your life.' },
+  solution:    { label: 'Mission Distinction',  title: 'Your edge. Your weapon.' },
+  reveal:      { label: 'Dashboard',            title: 'Everything you need. One app.' },
+  library:     { label: 'PDF Library',          title: '50+ textbooks, instantly.' },
+  quizzes:     { label: 'Daily Quizzes',        title: 'Test yourself. Every day.' },
+  community:   { label: 'Community',            title: 'Study together. Grow together.' },
+  notes:       { label: 'Smart Notes',          title: 'Capture knowledge. Own it.' },
+  leaderboard: { label: 'Leaderboard',          title: 'Compete. Rise. Dominate.' },
+  mission:     { label: 'Our Mission',          title: 'Free. Forever. For every student.' },
+  outro:       { label: 'Available Now',        title: 'Study Smarter. Score Higher.' },
 };
+
+const BOKEH = [
+  { w: 600, h: 600, x: '-5%', y: '-10%', color: '#7c3aed', opacity: 0.12, blur: 140, dur: 18 },
+  { w: 500, h: 500, x: '55%', y: '30%',  color: '#4f46e5', opacity: 0.09, blur: 120, dur: 22 },
+  { w: 400, h: 400, x: '20%', y: '55%',  color: '#7c3aed', opacity: 0.07, blur: 130, dur: 15 },
+  { w: 350, h: 350, x: '70%', y: '-5%',  color: '#0d9488', opacity: 0.06, blur: 110, dur: 25 },
+];
 
 export default function VideoTemplate({
   durations = SCENE_DURATIONS,
@@ -54,56 +51,79 @@ export default function VideoTemplate({
     onSceneChange?.(currentSceneKey);
   }, [currentSceneKey, onSceneChange]);
 
-  const baseSceneKey = currentSceneKey.replace(/_r[12]$/, '') as keyof typeof SCENE_DURATIONS;
-  const sceneIndex = Object.keys(SCENE_DURATIONS).indexOf(baseSceneKey);
-  const SceneComponent = SCENE_COMPONENTS[baseSceneKey];
+  const sceneKey = currentSceneKey.replace(/_r[12]$/, '') as keyof typeof SCENE_DURATIONS;
+  const sceneIndex = Object.keys(SCENE_DURATIONS).indexOf(sceneKey);
+  const text = SCENE_TEXT[sceneKey] ?? { label: '', title: '' };
 
   return (
-    <div className="w-full h-screen overflow-hidden relative" style={{ backgroundColor: 'var(--color-bg-dark)' }}>
-      {/* Persistent Background Layer */}
-      <div className="absolute inset-0 pointer-events-none z-0">
+    <div
+      className="w-full h-screen overflow-hidden relative flex flex-col items-center justify-center"
+      style={{ background: '#080810' }}
+    >
+      {/* Bokeh background */}
+      {BOKEH.map((b, i) => (
         <motion.div
-          className="absolute w-[800px] h-[800px] rounded-full blur-[120px] opacity-30 mix-blend-screen"
-          style={{ background: 'radial-gradient(circle, var(--color-primary), transparent)' }}
-          animate={{
-            x: ['-20%', '40%', '-10%'],
-            y: ['0%', '30%', '-20%'],
-            scale: [1, 1.2, 0.9],
-            opacity: [0.2, 0.4, 0.2]
+          key={i}
+          className="absolute rounded-full pointer-events-none"
+          style={{
+            width: b.w,
+            height: b.h,
+            left: b.x,
+            top: b.y,
+            background: b.color,
+            opacity: b.opacity,
+            filter: `blur(${b.blur}px)`,
           }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute w-[600px] h-[600px] rounded-full blur-[100px] opacity-20 right-0 bottom-0 mix-blend-screen"
-          style={{ background: 'radial-gradient(circle, var(--color-accent), transparent)' }}
           animate={{
-            x: ['10%', '-30%', '20%'],
-            y: ['10%', '-20%', '10%'],
-            scale: [0.8, 1.3, 1]
+            x: [0, 40, -20, 0],
+            y: [0, -30, 20, 0],
+            scale: [1, 1.15, 0.92, 1],
           }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: b.dur, repeat: Infinity, ease: 'easeInOut', delay: i * 3 }}
         />
-      </div>
+      ))}
 
+      {/* Subtle grid noise */}
       <div
-        className="absolute inset-0 pointer-events-none z-0 opacity-[0.03]"
+        className="absolute inset-0 pointer-events-none opacity-[0.018]"
         style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)`,
-          backgroundSize: '40px 40px'
+          backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+          backgroundSize: '50px 50px',
         }}
       />
 
-      {/* Persistent Phone Layer */}
-      <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-end px-[15vw]">
-        <PhoneMockup currentSceneKey={baseSceneKey} />
+      {/* Phone — centered hero */}
+      <div
+        className="relative flex items-center justify-center"
+        style={{ perspective: '1400px', perspectiveOrigin: '50% 45%' }}
+      >
+        <PhoneMockup currentSceneKey={sceneKey} />
       </div>
 
-      {/* Text Scenes */}
-      <div className="absolute inset-0 z-20 pointer-events-none">
-        <AnimatePresence mode="popLayout">
-          {SceneComponent && <SceneComponent key={currentSceneKey} />}
-        </AnimatePresence>
-      </div>
+      {/* Minimal text overlay — below phone */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={sceneKey + '_text'}
+          className="absolute bottom-[7%] left-0 right-0 flex flex-col items-center gap-2 pointer-events-none px-6"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+        >
+          <span
+            className="text-[11px] font-bold tracking-[0.25em] uppercase"
+            style={{ color: '#a78bfa' }}
+          >
+            {text.label}
+          </span>
+          <p
+            className="text-center font-bold leading-tight max-w-[380px]"
+            style={{ fontSize: 'clamp(15px, 2.2vw, 22px)', color: 'rgba(255,255,255,0.88)' }}
+          >
+            {text.title}
+          </p>
+        </motion.div>
+      </AnimatePresence>
 
       <span data-scene-index={sceneIndex} style={{ display: 'none' }} />
     </div>
