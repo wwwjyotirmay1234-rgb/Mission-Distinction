@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { adminMiddleware, authMiddleware } from "../middlewares/auth";
+import { adminMiddleware, authMiddleware, pdfAuthMiddleware } from "../middlewares/auth";
 import rateLimit from "express-rate-limit";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
@@ -136,7 +136,7 @@ router.post("/pdf/request-upload-url", adminMiddleware, async (req: Request, res
 });
 
 // ─── PDF serve (streams from GCS — any authenticated user can view) ───────────
-router.get("/pdf/serve/:fileName", authMiddleware, async (req: Request, res: Response) => {
+router.get("/pdf/serve/:fileName", pdfAuthMiddleware, async (req: Request, res: Response) => {
   try {
     const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
     if (!bucketId) { res.status(500).end(); return; }

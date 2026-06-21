@@ -29,12 +29,28 @@ function getDriveFileId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+/** True when the URL is served by our own API (needs ?token= for iframe auth) */
+function isApiServeUrl(url: string): boolean {
+  return url.includes("/api/upload/pdf/serve/");
+}
 
-/** URL to embed in an iframe — works for both Drive and direct PDF links */
+/**
+ * Append the JWT token as a query param so our /pdf/serve/:fileName endpoint
+ * can authenticate iframe requests (which can't set Authorization headers).
+ */
+function withAuthToken(url: string): string {
+  const token = localStorage.getItem("mission_token");
+  if (!token) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}token=${encodeURIComponent(token)}`;
+}
+
+/** URL to embed in an iframe — works for Drive, Cloudinary, and GCS serve URLs */
 function getEmbedUrl(url: string): string {
   const id = getDriveFileId(url);
   if (id) return `https://drive.google.com/file/d/${id}/preview`;
-  // Cloudinary or any direct PDF URL — embed directly (browser renders natively)
+  if (isApiServeUrl(url)) return withAuthToken(url);
+  // Cloudinary or any other direct PDF URL — embed directly
   return url;
 }
 
@@ -42,6 +58,7 @@ function getEmbedUrl(url: string): string {
 function getOpenUrl(url: string): string {
   const id = getDriveFileId(url);
   if (id) return `https://drive.google.com/file/d/${id}/view`;
+  if (isApiServeUrl(url)) return withAuthToken(url);
   return url;
 }
 
@@ -50,6 +67,7 @@ function getOpenUrl(url: string): string {
 function getDownloadUrl(url: string): string {
   const id = getDriveFileId(url);
   if (id) return `https://drive.usercontent.google.com/download?id=${id}&export=download&authuser=0`;
+  if (isApiServeUrl(url)) return withAuthToken(url);
   return url;
 }
 

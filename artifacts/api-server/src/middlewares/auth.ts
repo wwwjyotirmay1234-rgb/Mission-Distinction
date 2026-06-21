@@ -11,6 +11,26 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     return;
   }
   const token = authHeader.slice(7);
+  return _verifyToken(token, req, res, next);
+}
+
+/**
+ * pdfAuthMiddleware — same as authMiddleware but also accepts ?token= query
+ * param so PDF serve URLs can be embedded in <iframe> tags (which cannot set
+ * custom headers). Only use on read-only, non-sensitive media endpoints.
+ */
+export async function pdfAuthMiddleware(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  const queryToken = typeof req.query.token === "string" ? req.query.token : null;
+  const rawToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : queryToken;
+  if (!rawToken) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  return _verifyToken(rawToken, req, res, next);
+}
+
+async function _verifyToken(token: string, req: Request, res: Response, next: NextFunction) {
   const parsed = parseToken(token);
   if (!parsed) {
     res.status(401).json({ error: "Invalid token" });
