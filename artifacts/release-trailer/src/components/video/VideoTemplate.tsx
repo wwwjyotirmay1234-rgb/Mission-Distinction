@@ -14,16 +14,16 @@ import { Scene10Outro } from './video_scenes/Scene10Outro';
 import { PhoneMockup } from './PhoneMockup';
 
 export const SCENE_DURATIONS = {
-  problem: 12000,
-  solution: 12000,
-  reveal: 12000,
-  library: 12000,
-  quizzes: 12000,
-  community: 12000,
-  notes: 12000,
-  leaderboard: 12000,
-  mission: 12000,
-  outro: 12000
+  problem: 8000,
+  solution: 8000,
+  reveal: 8000,
+  library: 8000,
+  quizzes: 8000,
+  community: 8000,
+  notes: 8000,
+  leaderboard: 8000,
+  mission: 8000,
+  outro: 10000
 };
 
 const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
