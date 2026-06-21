@@ -229,7 +229,7 @@ function QuizzesUI() {
 
 const MESSAGES = [
   { user: 'Priya S.', text: 'Can someone explain the brachial plexus roots?', time: '2m', mine: false },
-  { user: 'Rahul M.', text: 'C5-T1 roots, here's a diagram I made 📎', time: '1m', mine: false },
+  { user: 'Rahul M.', text: "C5-T1 roots, here's a diagram I made 📎", time: '1m', mine: false },
   { user: 'You', text: 'Thanks! That really helped 🙌', time: 'now', mine: true },
 ];
 
