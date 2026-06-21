@@ -1,59 +1,39 @@
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 export function Scene2Solution() {
-  const [phase, setPhase] = useState(0);
-
-  useEffect(() => {
-    const timers = [
-      setTimeout(() => setPhase(1), 300),
-      setTimeout(() => setPhase(2), 1500),
-      setTimeout(() => setPhase(3), 2800)
-    ];
-    return () => timers.forEach(t => clearTimeout(t));
-  }, []);
-
   return (
-    <motion.div 
-      className="absolute inset-0 flex items-center justify-center z-10"
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, x: '-10%', filter: 'blur(10px)' }}
-      transition={{ duration: 0.8 }}
-    >
-      <motion.div 
-        className="absolute inset-0 opacity-50 z-0"
-        initial={{ scale: 1.1, opacity: 0 }}
-        animate={{ scale: 1, opacity: 0.4 }}
-        transition={{ duration: 4, ease: 'easeOut' }}
+    <motion.div className="absolute inset-0 flex flex-col items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 0.9, transition: { duration: 1.5 } }}
+      transition={{ duration: 1 }}>
+      
+      <motion.img 
+        src={`${import.meta.env.BASE_URL}images/logo.jpeg`}
+        alt="Logo"
+        className="w-[20vw] h-[20vw] rounded-3xl shadow-[0_0_80px_rgba(124,58,237,0.5)] object-cover"
+        initial={{ scale: 0, rotate: -15, opacity: 0 }}
+        animate={{ scale: 1, rotate: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.5 }}
+      />
+      
+      <motion.h1 
+        className="text-[5vw] font-bold text-white mt-12"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 2, duration: 1 }}
       >
-        <img 
-          src={`${import.meta.env.BASE_URL}assets/network.png`} 
-          alt="Neural Network" 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-[#0f0a1e]/60" />
-      </motion.div>
+        Mission Distinction
+      </motion.h1>
 
-      <div className="relative z-10 text-center flex flex-col items-center">
-        <motion.div
-          className="w-24 h-24 rounded-full border border-primary/30 flex items-center justify-center mb-8"
-          initial={{ opacity: 0, scale: 0 }}
-          animate={phase >= 1 ? { opacity: 1, scale: 1, rotate: 180 } : { opacity: 0, scale: 0 }}
-          transition={{ duration: 1, type: "spring", bounce: 0.4 }}
-        >
-          <div className="w-12 h-12 rounded-full bg-primary/20 blur-md" />
-        </motion.div>
-
-        <motion.h2 
-          className="text-[5vw] font-bold text-white tracking-tight"
-          initial={{ opacity: 0, y: 40 }}
-          animate={phase >= 2 ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        >
-          You need an <span className="text-primary-light">edge</span>.
-        </motion.h2>
-      </div>
+      <motion.p 
+        className="text-[2vw] text-[var(--color-accent)] mt-4 tracking-widest uppercase"
+        initial={{ opacity: 0, letterSpacing: '0em' }}
+        animate={{ opacity: 1, letterSpacing: '0.1em' }}
+        transition={{ delay: 4.5, duration: 2 }}
+      >
+        Your edge. Your weapon.
+      </motion.p>
     </motion.div>
   );
 }
