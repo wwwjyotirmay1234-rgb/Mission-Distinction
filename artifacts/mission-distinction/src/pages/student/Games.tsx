@@ -349,43 +349,64 @@ function Hub({ onSelect, rankLevel, currentXp }: { onSelect: (id: GameId) => voi
       {/* Solo section */}
       <div>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">🧠 Single Player (AI-Powered)</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {SOLO_GAMES.map((g, i) => {
             const reqLevel = GAME_REQUIRED_LEVELS[g.id] ?? 1;
             const isLocked = rankLevel < reqLevel;
+            const poster = GAME_POSTERS[g.id];
             return (
               <motion.div key={g.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
                 <div
-                  className={`relative overflow-hidden w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} cursor-pointer ${!isLocked && "hover:scale-[1.02] hover:shadow-lg"}`}
+                  className={`relative overflow-hidden w-full text-left rounded-2xl border transition-all duration-200 ${g.bg} cursor-pointer ${!isLocked && "hover:scale-[1.02] hover:shadow-lg"}`}
                   onClick={() => isLocked
-                    ? setPeekGame({ title: g.title, description: g.description, icon: g.icon, color: g.color, tag: g.tag, requiredLevel: reqLevel, posterImage: GAME_POSTERS[g.id], tagline: GAME_TAGLINES[g.id] })
+                    ? setPeekGame({ title: g.title, description: g.description, icon: g.icon, color: g.color, tag: g.tag, requiredLevel: reqLevel, posterImage: poster, tagline: GAME_TAGLINES[g.id] })
                     : onSelect(g.id)
                   }
                 >
-                  {GAME_POSTERS[g.id] && (
-                    <div className="absolute inset-0 z-0">
-                      <img src={GAME_POSTERS[g.id]} alt="" className="w-full h-full object-cover object-center" />
-                      <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background/90" />
-                    </div>
-                  )}
-                  {isLocked && <LockOverlay requiredLevel={reqLevel} />}
-                  <div className={`relative z-10 flex items-start gap-4 ${isLocked ? "opacity-40" : ""}`}>
-                    <GameIcon icon={g.icon} color={g.color} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-foreground text-base">{g.title}</h3>
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-foreground/10 text-muted-foreground">
-                          {g.tag}
-                        </span>
+                  {/* Poster image hero */}
+                  <div className="relative h-36 sm:h-40 overflow-hidden">
+                    {poster ? (
+                      <img src={poster} alt={g.title} className="w-full h-full object-cover object-center" />
+                    ) : (
+                      <div className={`w-full h-full bg-gradient-to-br ${g.color} flex items-center justify-center`}>
+                        <g.icon size={40} className="text-white/70" />
                       </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{g.description}</p>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    {/* Game name over the poster */}
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <h3 className="font-bold text-white text-sm sm:text-base leading-tight drop-shadow-md">{g.title}</h3>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-white/20 text-white/90 backdrop-blur-sm mt-1 inline-block">
+                        {g.tag}
+                      </span>
                     </div>
+                    {/* Lock overlay on poster */}
+                    {isLocked && (
+                      <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px] flex items-center justify-center">
+                        <Lock size={20} className="text-muted-foreground" />
+                      </div>
+                    )}
                   </div>
-                  {!isLocked && (
-                    <div className="relative z-10 mt-3 text-xs text-muted-foreground">
-                      <span className="text-primary font-medium">AI-powered</span> · Infinite rounds
-                    </div>
-                  )}
+
+                  {/* Card body */}
+                  <div className="p-3">
+                    {isLocked ? (
+                      (() => {
+                        const rank = RANKS.find(r => r.level === reqLevel) ?? RANKS[reqLevel - 1];
+                        return (
+                          <p className="text-[11px] text-muted-foreground font-medium text-center">
+                            {rank.emoji} {rank.name}<br />
+                            <span className="opacity-70 font-normal">{rank.min.toLocaleString()} XP</span>
+                          </p>
+                        );
+                      })()
+                    ) : (
+                      <>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{g.description}</p>
+                        <p className="text-[10px] text-primary/70 font-medium mt-1.5">✨ AI-powered · ∞ rounds</p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             );
