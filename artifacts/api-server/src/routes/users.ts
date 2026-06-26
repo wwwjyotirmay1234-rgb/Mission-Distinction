@@ -19,9 +19,18 @@ router.get("/", adminMiddleware, adminListLimiter, async (req: Request, res: Res
     const role = req.query.role as string | undefined;
 
     const DB_CAP = 10000;
+    const cols = {
+      id: usersTable.id, fullName: usersTable.fullName, email: usersTable.email,
+      mobileNumber: usersTable.mobileNumber, role: usersTable.role,
+      isSuperAdmin: usersTable.isSuperAdmin, year: usersTable.year,
+      college: usersTable.college, avatarUrl: usersTable.avatarUrl,
+      studyStreak: usersTable.studyStreak, totalXp: usersTable.totalXp,
+      emailVerified: usersTable.emailVerified, bannedAt: usersTable.bannedAt,
+      banReason: usersTable.banReason, createdAt: usersTable.createdAt,
+    };
     const allUsers = role
-      ? await db.select().from(usersTable).where(eq(usersTable.role, role)).orderBy(desc(usersTable.createdAt)).limit(DB_CAP)
-      : await db.select().from(usersTable).orderBy(desc(usersTable.createdAt)).limit(DB_CAP);
+      ? await db.select(cols).from(usersTable).where(eq(usersTable.role, role)).orderBy(desc(usersTable.createdAt)).limit(DB_CAP)
+      : await db.select(cols).from(usersTable).orderBy(desc(usersTable.createdAt)).limit(DB_CAP);
 
     const total = allUsers.length;
     const paginated = allUsers.slice((page - 1) * limit, page * limit);

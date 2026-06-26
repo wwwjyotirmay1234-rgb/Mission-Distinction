@@ -12,7 +12,7 @@ import {
 import {
   Shield, ShieldOff, Trash2, Eye, Search, Users, UserCheck, UserX,
   Crown, Flame, Activity, UserPlus, UserMinus, LogOut, Globe, Settings,
-  MessageSquare, Key, Copy, Check, RefreshCw,
+  MessageSquare, Key, Check, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,7 +56,7 @@ interface GroupRow {
 
 interface PlatformSettings {
   stats: { totalUsers: number; totalGroups: number; activeSessions: number; bannedUsers: number };
-  inviteCode: string | null;
+  inviteCodeConfigured: boolean;
 }
 
 interface UserActivity {
@@ -100,8 +100,6 @@ export default function SuperAdminPanel() {
   // ─ Platform tab
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
-  const [codeCopied, setCodeCopied] = useState(false);
-  const [codeVisible, setCodeVisible] = useState(false);
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -169,15 +167,6 @@ export default function SuperAdminPanel() {
       toast.success(data.message);
       setGroups(prev => prev.filter(g => g.id !== group.id));
     } finally { setDeletingGroupId(null); }
-  }
-
-  function copyInviteCode() {
-    if (!settings?.inviteCode) return;
-    navigator.clipboard.writeText(settings.inviteCode).then(() => {
-      setCodeCopied(true);
-      toast.success("Invite code copied");
-      setTimeout(() => setCodeCopied(false), 2000);
-    });
   }
 
   const filteredUsers = users.filter(u => {
@@ -464,17 +453,10 @@ export default function SuperAdminPanel() {
                     <p className="text-sm text-muted-foreground">
                       This code is required when registering a new admin account. Only share it with trusted team members.
                     </p>
-                    {settings.inviteCode ? (
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 font-mono text-sm bg-muted/30 border border-border/40 rounded-lg px-4 py-2.5 tracking-widest select-all">
-                          {codeVisible ? settings.inviteCode : "•".repeat(settings.inviteCode.length)}
-                        </div>
-                        <Button size="sm" variant="outline" className="shrink-0 h-9" onClick={() => setCodeVisible(v => !v)}>
-                          {codeVisible ? "Hide" : "Reveal"}
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-9 w-9 p-0 shrink-0" onClick={copyInviteCode} title="Copy">
-                          {codeCopied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
-                        </Button>
+                    {settings.inviteCodeConfigured ? (
+                      <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-2.5">
+                        <Check size={15} className="text-green-400 shrink-0" />
+                        <span className="text-sm text-green-400">Invite code is set on the server. It is kept secret and never sent to the browser.</span>
                       </div>
                     ) : (
                       <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">

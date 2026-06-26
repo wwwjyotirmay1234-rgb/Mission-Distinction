@@ -254,8 +254,6 @@ router.get("/settings", superAdminMiddleware, async (_req: Request, res: Respons
     const [activeSessions] = await db.select({ cnt: count() }).from(refreshTokensTable);
     const [bannedUsers] = await db.select({ cnt: count() }).from(usersTable).where(sql`${usersTable.bannedAt} IS NOT NULL`);
 
-    const inviteCode = process.env.ADMIN_INVITE_CODE ?? null;
-
     res.json({
       stats: {
         totalUsers: Number(totalUsers?.cnt ?? 0),
@@ -263,7 +261,7 @@ router.get("/settings", superAdminMiddleware, async (_req: Request, res: Respons
         activeSessions: Number(activeSessions?.cnt ?? 0),
         bannedUsers: Number(bannedUsers?.cnt ?? 0),
       },
-      inviteCode,
+      inviteCodeConfigured: !!process.env.ADMIN_INVITE_CODE,
     });
   } catch {
     res.status(500).json({ error: "Internal server error" });
