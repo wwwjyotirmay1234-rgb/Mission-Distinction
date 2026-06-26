@@ -1,7 +1,5 @@
-const CACHE_VERSION = "v11";
+const CACHE_VERSION = "v12"; // bumped — alarm scheduling support added
 
-// Derive the base path from where the SW is installed (e.g. /mission-distinction/)
-// so paths work correctly both in dev (/) and production (/mission-distinction/).
 const BASE = new URL("./", self.location).pathname;
 
 const CACHE_NAME = `mission-distinction-${CACHE_VERSION}`;
@@ -32,27 +30,181 @@ const CACHEABLE_API_PREFIXES = [
 
 const API_CACHE_TTL_MS = 10 * 60 * 1000;
 
-self.addEventListener("install", (event) => {
+// ── Alarm scheduling ──────────────────────────────────────────────────────────
+// alarmTimers: in-memory map alarmId → timeoutId.
+// Alarm records are persisted in IDB so they survive SW restarts.
+const alarmTimers = new Map();
+
+function openAlarmIDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("md_alarm_schedule", 1);
+    req.onupgradeneeded = e => {
+      if (!e.target.result.objectStoreNames.contains("alarms")) {
+        e.target.result.createObjectStore("alarms", { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveAlarmRecord(alarm) {
+  const db = await openAlarmIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("alarms", "readwrite");
+    tx.objectStore("alarms").put(alarm);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function deleteAlarmRecord(id) {
+  const db = await openAlarmIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("alarms", "readwrite");
+    tx.objectStore("alarms").delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function getAllAlarmRecords() {
+  const db = await openAlarmIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("alarms", "readonly");
+    const req = tx.objectStore("alarms").getAll();
+    req.onsuccess = () => resolve(req.result ?? []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function clearAllAlarmRecords() {
+  const db = await openAlarmIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("alarms", "readwrite");
+    tx.objectStore("alarms").clear();
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function scheduleAlarmTimer(alarm) {
+  if (alarmTimers.has(alarm.id)) {
+    clearTimeout(alarmTimers.get(alarm.id));
+    alarmTimers.delete(alarm.id);
+  }
+  if (!alarm.active) return;
+
+  const [h, m] = alarm.time.split(":").map(Number);
+  const now = new Date();
+  const fire = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+  if (fire.getTime() <= Date.now()) fire.setDate(fire.getDate() + 1);
+  const delay = fire.getTime() - Date.now();
+
+  const timerId = setTimeout(async () => {
+    alarmTimers.delete(alarm.id);
+
+    // Show persistent status-bar notification
+    try {
+      await self.registration.showNotification(
+        `⏰ ${alarm.label || `Alarm at ${alarm.time}`}`,
+        {
+          body: alarm.label
+            ? `${alarm.label} · ${alarm.time}`
+            : `Your ${alarm.time} alarm is ringing!`,
+          icon: BASE + "icon-192.png",
+          badge: BASE + "icon-192.png",
+          tag: "alarm-" + alarm.id,
+          requireInteraction: true,
+          vibrate: [500, 300, 500, 300, 500, 300, 500, 300, 500],
+          actions: [{ action: "dismiss", title: "Dismiss" }],
+          data: { alarmId: alarm.id, type: "alarm", url: BASE + "student/tools" },
+        }
+      );
+    } catch {}
+
+    // Remove from persistent IDB (fired)
+    try { await deleteAlarmRecord(alarm.id); } catch {}
+
+    // Tell all open page clients so they can play audio + update UI
+    try {
+      const allClients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const client of allClients) {
+        client.postMessage({ type: "ALARM_FIRED", alarmId: alarm.id });
+      }
+    } catch {}
+  }, delay);
+
+  alarmTimers.set(alarm.id, timerId);
+}
+
+async function rescheduleAllAlarms() {
+  try {
+    const records = await getAllAlarmRecords();
+    for (const alarm of records) {
+      scheduleAlarmTimer(alarm);
+    }
+  } catch {}
+}
+
+// Page sends alarm commands to the SW via postMessage
+self.addEventListener("message", event => {
+  const data = event.data;
+  if (!data || !data.type) return;
+
+  if (data.type === "ALARM_SCHEDULE") {
+    saveAlarmRecord(data.alarm)
+      .then(() => scheduleAlarmTimer(data.alarm))
+      .catch(() => {});
+
+  } else if (data.type === "ALARM_CANCEL") {
+    if (alarmTimers.has(data.alarmId)) {
+      clearTimeout(alarmTimers.get(data.alarmId));
+      alarmTimers.delete(data.alarmId);
+    }
+    deleteAlarmRecord(data.alarmId).catch(() => {});
+
+  } else if (data.type === "ALARM_RESCHEDULE_ALL") {
+    // Full sync: page is the source of truth; SW clears and rebuilds its schedule
+    clearAllAlarmRecords().then(async () => {
+      for (const [, tid] of alarmTimers) clearTimeout(tid);
+      alarmTimers.clear();
+      if (Array.isArray(data.alarms)) {
+        for (const alarm of data.alarms) {
+          if (alarm.active && !alarm.fired) {
+            await saveAlarmRecord(alarm).catch(() => {});
+            scheduleAlarmTimer(alarm);
+          }
+        }
+      }
+    }).catch(() => {});
+  }
+});
+
+// ── Cache lifecycle ────────────────────────────────────────────────────────────
+self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
   );
   self.skipWaiting();
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
+    caches.keys()
+      .then(keys => Promise.all(
         keys
-          .filter((k) => k !== CACHE_NAME && k !== API_CACHE_NAME && k !== ASSET_CACHE_NAME)
-          .map((k) => caches.delete(k))
-      )
-    ).then(() => self.clients.claim())
+          .filter(k => k !== CACHE_NAME && k !== API_CACHE_NAME && k !== ASSET_CACHE_NAME)
+          .map(k => caches.delete(k))
+      ))
+      .then(() => self.clients.claim())
+      .then(() => rescheduleAllAlarms()) // re-arm any alarms that survived SW restart
   );
 });
 
+// ── Fetch handler ─────────────────────────────────────────────────────────────
 function isCacheableApi(url) {
-  return CACHEABLE_API_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));
+  return CACHEABLE_API_PREFIXES.some(prefix => url.pathname.startsWith(prefix));
 }
 
 function isExpired(response) {
@@ -75,24 +227,22 @@ async function cacheApiResponse(request, response) {
   return response;
 }
 
-self.addEventListener("fetch", (event) => {
+self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
-
   if (event.request.method !== "GET") return;
 
-  // ── Cacheable API routes (stale-while-revalidate) ──────────────────────────
   if (isCacheableApi(url)) {
     event.respondWith(
-      caches.open(API_CACHE_NAME).then(async (cache) => {
+      caches.open(API_CACHE_NAME).then(async cache => {
         const cached = await cache.match(event.request);
         if (cached && !isExpired(cached)) {
           fetch(event.request)
-            .then((fresh) => cacheApiResponse(event.request, fresh))
+            .then(fresh => cacheApiResponse(event.request, fresh))
             .catch(() => {});
           return cached;
         }
         return fetch(event.request)
-          .then((response) => cacheApiResponse(event.request, response))
+          .then(response => cacheApiResponse(event.request, response))
           .catch(() => {
             if (cached) return cached;
             return new Response(
@@ -105,24 +255,22 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // ── Skip non-cacheable API routes ─────────────────────────────────────────
   if (url.pathname.startsWith("/api/")) return;
 
-  // ── Navigation requests (HTML shell) ──────────────────────────────────────
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
-        .then((response) => {
+        .then(response => {
           if (response.ok) {
-            caches.open(CACHE_NAME).then((c) => c.put(event.request, response.clone()));
+            caches.open(CACHE_NAME).then(c => c.put(event.request, response.clone()));
           }
           return response;
         })
         .catch(async () => {
-          // Try the exact URL first, then fall back to the index shell
           const cached = await caches.match(event.request);
           if (cached) return cached;
-          const shell = await caches.match(new URL(BASE + "index.html", self.location).href)
+          const shell =
+            await caches.match(new URL(BASE + "index.html", self.location).href)
             || await caches.match(new URL(BASE, self.location).href);
           return shell || new Response("Offline", { status: 503 });
         })
@@ -130,14 +278,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // ── Vite-hashed assets — BASE + assets/*.js/css/woff2 etc.
-  //    Content-hash in filename → cache-first forever ─────────────────────
   if (url.pathname.startsWith(BASE + "assets/")) {
     event.respondWith(
-      caches.open(ASSET_CACHE_NAME).then(async (cache) => {
+      caches.open(ASSET_CACHE_NAME).then(async cache => {
         const cached = await cache.match(event.request);
         if (cached) return cached;
-        return fetch(event.request).then((response) => {
+        return fetch(event.request).then(response => {
           if (response.ok) cache.put(event.request, response.clone());
           return response;
         });
@@ -146,30 +292,29 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // ── Static public files (icons, fonts, images) — cache-first ──────────────
-  if (
-    url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf|otf)$/)
-  ) {
+  if (url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf|otf)$/)) {
     event.respondWith(
-      caches.open(ASSET_CACHE_NAME).then(async (cache) => {
+      caches.open(ASSET_CACHE_NAME).then(async cache => {
         const cached = await cache.match(event.request);
         if (cached) return cached;
-        return fetch(event.request).then((response) => {
-          if (response.ok) cache.put(event.request, response.clone());
-          return response;
-        }).catch(() => cached || new Response("", { status: 404 }));
+        return fetch(event.request)
+          .then(response => {
+            if (response.ok) cache.put(event.request, response.clone());
+            return response;
+          })
+          .catch(() => cached || new Response("", { status: 404 }));
       })
     );
     return;
   }
 
-  // ── Everything else — network, fall back to cache ─────────────────────────
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
 });
 
-self.addEventListener("push", (event) => {
+// ── Push notifications ─────────────────────────────────────────────────────────
+self.addEventListener("push", event => {
   let data = {
     title: "Mission Distinction",
     body: "You have a new notification",
@@ -177,9 +322,7 @@ self.addEventListener("push", (event) => {
     icon: "/logo.jpeg",
   };
   if (event.data) {
-    try {
-      data = { ...data, ...event.data.json() };
-    } catch {}
+    try { data = { ...data, ...event.data.json() }; } catch {}
   }
   event.waitUntil(
     self.registration.showNotification(data.title, {
@@ -192,21 +335,40 @@ self.addEventListener("push", (event) => {
   );
 });
 
-self.addEventListener("notificationclick", (event) => {
+// ── Notification click ────────────────────────────────────────────────────────
+self.addEventListener("notificationclick", event => {
+  const action = event.action;
+  const nData = event.notification.data || {};
+
   event.notification.close();
-  const url = event.notification.data?.url || "/";
-  event.waitUntil(
-    clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clientList) => {
+
+  // Alarm "Dismiss" action — just stop; don't open the app
+  if (action === "dismiss" && nData.type === "alarm") {
+    event.waitUntil(
+      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(clientList => {
         for (const client of clientList) {
-          if (client.url.includes(self.location.origin) && "focus" in client) {
-            client.focus();
-            client.navigate(url);
-            return;
-          }
+          client.postMessage({ type: "ALARM_DISMISS", alarmId: nData.alarmId });
         }
-        if (clients.openWindow) return clients.openWindow(url);
       })
+    );
+    return;
+  }
+
+  // Default — open/focus the app
+  const targetUrl = nData.url || nData.type === "alarm"
+    ? (BASE + "student/tools")
+    : (BASE);
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          client.focus();
+          client.navigate(targetUrl);
+          return;
+        }
+      }
+      if (clients.openWindow) return clients.openWindow(targetUrl);
+    })
   );
 });

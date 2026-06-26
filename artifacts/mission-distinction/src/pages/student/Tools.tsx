@@ -37,8 +37,24 @@ async function requestNotificationPermission(): Promise<boolean> {
   return perm === "granted";
 }
 
-function showNotification(title: string, body: string) {
-  if (Notification.permission === "granted") {
+async function showAlarmNotification(title: string, body: string, alarmId: string) {
+  try {
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(title, {
+        body,
+        icon: "/icon-192.png",
+        badge: "/icon-192.png",
+        requireInteraction: true,
+        vibrate: [500, 300, 500, 300, 500],
+        tag: "alarm-" + alarmId,
+        actions: [{ action: "dismiss", title: "Dismiss" }],
+        data: { alarmId, type: "alarm" },
+      });
+      return;
+    }
+  } catch {}
+  if (typeof Notification !== "undefined" && Notification.permission === "granted") {
     new Notification(title, { body, icon: "/icon-192.png" });
   }
 }
@@ -89,6 +105,18 @@ async function deleteAudioBlob(id: string) {
       tx.onerror = () => reject(tx.error);
     });
   } catch {}
+}
+
+// ─── Active alarm audio tracking ──────────────────────────────────────────────
+// Module-level so any code path can stop the currently ringing alarm.
+let _alarmAudio: { el: HTMLAudioElement; url: string } | null = null;
+
+function stopCurrentAlarmAudio() {
+  if (_alarmAudio) {
+    try { _alarmAudio.el.pause(); _alarmAudio.el.currentTime = 0; } catch {}
+    try { URL.revokeObjectURL(_alarmAudio.url); } catch {}
+    _alarmAudio = null;
+  }
 }
 
 // ─── Built-in soothing tones ──────────────────────────────────────────────────
@@ -188,14 +216,23 @@ function playBirds() {
 }
 
 async function playCustomAudio(id: string): Promise<void> {
+  stopCurrentAlarmAudio(); // always stop whatever was ringing before
   try {
     const blob = await getAudioBlob(id);
     if (!blob) { playBeep(); return; }
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
     audio.volume = 0.8;
+    _alarmAudio = { el: audio, url };
     await audio.play();
-    audio.onended = () => URL.revokeObjectURL(url);
+    // Auto-stop after 60 s — behave like a real alarm, not a music player
+    const autoStop = setTimeout(() => {
+      if (_alarmAudio?.el === audio) stopCurrentAlarmAudio();
+    }, 60_000);
+    audio.onended = () => {
+      clearTimeout(autoStop);
+      if (_alarmAudio?.el === audio) { URL.revokeObjectURL(url); _alarmAudio = null; }
+    };
   } catch { playBeep(); }
 }
 
@@ -227,6 +264,30 @@ async function playAlarmSound(alarm: Alarm) {
   } else {
     previewTone(alarm.ringtone as RingtoneId);
   }
+}
+
+// ─── Service Worker alarm scheduling ─────────────────────────────────────────
+async function getSwActive() {
+  if (!("serviceWorker" in navigator)) return null;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    return reg.active ?? null;
+  } catch { return null; }
+}
+
+async function scheduleAlarmInSW(alarm: Alarm) {
+  const sw = await getSwActive();
+  sw?.postMessage({ type: "ALARM_SCHEDULE", alarm });
+}
+
+async function cancelAlarmInSW(alarmId: string) {
+  const sw = await getSwActive();
+  sw?.postMessage({ type: "ALARM_CANCEL", alarmId });
+}
+
+async function syncAllAlarmsToSW(alarms: Alarm[]) {
+  const sw = await getSwActive();
+  sw?.postMessage({ type: "ALARM_RESCHEDULE_ALL", alarms });
 }
 
 // ─── Stopwatch persistence ─────────────────────────────────────────────────────
@@ -422,6 +483,41 @@ function AlarmClock_() {
     });
   };
 
+  // On mount: sync all alarms to SW so it can fire background notifications
+  useEffect(() => {
+    syncAllAlarmsToSW(loadAlarms());
+  }, []);
+
+  // SW message listener: ALARM_FIRED (fired in background) + ALARM_DISMISS (user tapped Dismiss)
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      const { type, alarmId } = event.data ?? {};
+      if (type === "ALARM_FIRED") {
+        setAlarms(prev => {
+          const target = prev.find(a => a.id === alarmId);
+          if (!target || target.fired) return prev;
+          // Play audio if the page is visible (SW can't play audio directly)
+          if (document.visibilityState === "visible") {
+            playAlarmSound(target);
+          }
+          toast(`⏰ ${target.label || `Alarm at ${target.time}`}`, {
+            duration: 60_000,
+            action: { label: "Dismiss", onClick: () => stopCurrentAlarmAudio() },
+          });
+          return prev.map(a => a.id === alarmId ? { ...a, fired: true, active: false } : a);
+        });
+        awardActivityXP("alarm_used");
+      }
+      if (type === "ALARM_DISMISS") {
+        stopCurrentAlarmAudio();
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", handler);
+    return () => navigator.serviceWorker.removeEventListener("message", handler);
+  }, []);
+
+  // In-app interval check: fires when the app is active (foreground)
   useEffect(() => {
     checkRef.current = setInterval(() => {
       const now = new Date();
@@ -431,8 +527,11 @@ function AlarmClock_() {
         const next = prev.map(a => {
           if (a.active && !a.fired && a.time === hhmm) {
             playAlarmSound(a);
-            showNotification("⏰ Alarm!", a.label || `Alarm set for ${a.time}`);
-            toast.success(`⏰ ${a.label || `Alarm at ${a.time}`}`, { duration: 10000 });
+            showAlarmNotification("⏰ Alarm!", a.label || `Alarm set for ${a.time}`, a.id);
+            toast(`⏰ ${a.label || `Alarm at ${a.time}`}`, {
+              duration: 60_000,
+              action: { label: "Dismiss", onClick: () => stopCurrentAlarmAudio() },
+            });
             awardActivityXP("alarm_used");
             changed = true;
             return { ...a, fired: true, active: false };
@@ -489,13 +588,27 @@ function AlarmClock_() {
       await saveAudioBlob(id, newCustomBlob);
     }
     setAlarms(prev => [...prev, alarm]);
+    scheduleAlarmInSW(alarm);
     setNewTime(""); setNewLabel(""); setNewCustomName(""); setNewCustomBlob(null);
     const tone = newRingtone === "custom" ? `🎶 ${newCustomName || "Custom song"}` : RINGTONES.find(r => r.id === newRingtone)?.label ?? newRingtone;
     toast.success(`Alarm set for ${newTime} · ${tone}`);
   };
 
-  const toggle = (id: string) => setAlarms(prev => prev.map(a => a.id === id ? { ...a, active: !a.active, fired: false } : a));
+  const toggle = (id: string) => {
+    setAlarms(prev => {
+      const next = prev.map(a => a.id === id ? { ...a, active: !a.active, fired: false } : a);
+      const toggled = next.find(a => a.id === id);
+      if (toggled) {
+        if (toggled.active) scheduleAlarmInSW(toggled);
+        else cancelAlarmInSW(id);
+      }
+      return next;
+    });
+  };
+
   const remove = async (id: string) => {
+    stopCurrentAlarmAudio(); // stop music if this alarm was ringing
+    cancelAlarmInSW(id);
     await deleteAudioBlob(id);
     setAlarms(prev => prev.filter(a => a.id !== id));
   };
@@ -630,7 +743,7 @@ function AlarmClock_() {
         )}
 
         <p className="text-[11px] text-muted-foreground text-center">
-          Alarms are saved across page refreshes. Keep this tab open for alarms to fire.
+          Alarms fire even when you switch apps. For best reliability, keep the app in Recent Apps (don't force-close it).
         </p>
       </CardContent>
     </Card>
