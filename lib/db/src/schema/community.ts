@@ -23,6 +23,16 @@ export const groupMembersTable = pgTable("group_members", {
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
 });
 
+export const groupInvitesTable = pgTable("group_invites", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  inviterId: integer("inviter_id").notNull(),
+  inviterName: text("inviter_name").notNull(),
+  inviteeId: integer("invitee_id").notNull(),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const communityPostsTable = pgTable("community_posts", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -48,6 +58,11 @@ export const communityMessagesTable = pgTable("community_messages", {
   fileName: text("file_name"),
   messageType: text("message_type").notNull().default("text"),
   richContent: text("rich_content"),
+  isEdited: boolean("is_edited").default(false),
+  editedAt: timestamp("edited_at"),
+  deletedForEveryone: boolean("deleted_for_everyone").default(false),
+  deletedBy: text("deleted_by").default("[]"),
+  seenBy: text("seen_by").default("[]"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -57,3 +72,4 @@ export type CommunityPost = typeof communityPostsTable.$inferSelect;
 export type CommunityGroup = typeof communityGroupsTable.$inferSelect;
 export type CommunityMessage = typeof communityMessagesTable.$inferSelect;
 export type GroupMember = typeof groupMembersTable.$inferSelect;
+export type GroupInvite = typeof groupInvitesTable.$inferSelect;

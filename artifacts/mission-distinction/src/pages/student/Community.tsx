@@ -17,7 +17,7 @@ import {
   Search, Edit3, Heart, MessageSquare, Share2, Clock, Users, PlusCircle, Send,
   MessageCircle, ArrowLeft, Loader2, Paperclip, ImageIcon, FileText, X, Download,
   UserPlus, Crown, UserMinus, BookOpen, Lightbulb, Youtube, ExternalLink, Plus,
-  Shield, Brain, Play
+  Shield, Brain, Play, Check, CheckCheck, MoreVertical, Trash2, Pencil, Bell
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -41,7 +41,16 @@ type ChatMessage = {
   fileName?: string | null;
   messageType?: string | null;
   richContent?: string | null;
+  isEdited?: boolean | null;
+  editedAt?: string | null;
+  deletedForEveryone?: boolean | null;
+  deletedBy?: string | null;
+  seenBy?: string | null;
   createdAt: string;
+};
+type GroupInvite = {
+  id: number; groupId: number; inviterId: number; inviterName: string;
+  groupName: string; groupSubject: string; status: string; createdAt: string;
 };
 type Group = {
   id: number; name: string; subject: string; description?: string | null;
@@ -271,6 +280,12 @@ export default function StudentCommunity() {
   const [flashcardPickerOpen, setFlashcardPickerOpen] = useState(false);
   const [mnemonicPickerOpen, setMnemonicPickerOpen] = useState(false);
   const [videoPickerOpen, setVideoPickerOpen] = useState(false);
+  // Invite / edit / delete state
+  const [pendingInvites, setPendingInvites] = useState<GroupInvite[]>([]);
+  const [invitedUserIds, setInvitedUserIds] = useState<Set<number>>(new Set());
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+  const [msgCtxMenu, setMsgCtxMenu] = useState<{ msgId: number; isMe: boolean } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -304,6 +319,73 @@ export default function StudentCommunity() {
 
   const isGroupOwner = activeGroup && (activeGroup as any).memberRole === "owner";
 
+  // Helper: parse seenBy JSON array
+  const parseSeenByLocal = (raw: string | null | undefined): number[] => {
+    try { return JSON.parse(raw || "[]") as number[]; } catch { return []; }
+  };
+
+  // Load pending invites on mount and every 30s
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await customFetch("/api/community/invites/my");
+        setPendingInvites(Array.isArray(data) ? (data as GroupInvite[]) : []);
+      } catch {}
+    };
+    load();
+    const t = setInterval(load, 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  const handleAcceptInvite = async (inviteId: number) => {
+    try {
+      const data = await customFetch(`/api/community/invites/${inviteId}/accept`, { method: "POST" });
+      toast.success((data as any).message || "Joined group!");
+      setPendingInvites(prev => prev.filter(i => i.id !== inviteId));
+      queryClient.invalidateQueries({ queryKey: getListCommunityGroupsQueryKey() });
+    } catch (e: any) { toast.error(e?.message || "Failed to accept invite"); }
+  };
+
+  const handleDeclineInvite = async (inviteId: number) => {
+    try {
+      await customFetch(`/api/community/invites/${inviteId}/decline`, { method: "POST" });
+      toast.info("Invite declined");
+      setPendingInvites(prev => prev.filter(i => i.id !== inviteId));
+    } catch (e: any) { toast.error(e?.message || "Failed to decline"); }
+  };
+
+  const handleEditMessage = (msg: ChatMessage) => {
+    setEditingMessageId(msg.id);
+    setEditText(msg.content);
+    setMsgCtxMenu(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMessageId || !editText.trim()) return;
+    try {
+      const updated = await customFetch(`/api/community/messages/${editingMessageId}`, {
+        method: "PATCH", body: JSON.stringify({ content: editText.trim() }),
+      });
+      setLiveMessages(prev => prev.map(m => m.id === editingMessageId ? { ...m, ...(updated as ChatMessage) } : m));
+      setEditingMessageId(null);
+      setEditText("");
+    } catch (e: any) { toast.error(e?.message || "Failed to edit message"); }
+  };
+
+  const handleDeleteMessage = async (msgId: number, forEveryone: boolean) => {
+    setMsgCtxMenu(null);
+    try {
+      await customFetch(`/api/community/messages/${msgId}`, {
+        method: "DELETE", body: JSON.stringify({ forEveryone }),
+      });
+      if (forEveryone) {
+        setLiveMessages(prev => prev.map(m => m.id === msgId ? { ...m, deletedForEveryone: true, content: "" } : m));
+      } else {
+        setLiveMessages(prev => prev.filter(m => m.id !== msgId));
+      }
+    } catch (e: any) { toast.error(e?.message || "Failed to delete"); }
+  };
+
   const searchStudents = async (q: string) => {
     if (q.length < 2) { setSearchResults([]); return; }
     setSearching(true);
@@ -320,10 +402,8 @@ export default function StudentCommunity() {
       const data = await customFetch(`/api/community/groups/${chatGroupId}/invite`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }),
       });
-      toast.success((data as any).message || `${name} added!`);
-      queryClient.invalidateQueries({ queryKey: getListCommunityGroupsQueryKey() });
-      queryClient.invalidateQueries({ queryKey: ["group-members", chatGroupId] });
-      setSearchResults(prev => prev.filter(u => u.id !== userId));
+      toast.success((data as any).message || `Invite request sent to ${name}`);
+      setInvitedUserIds(prev => new Set([...prev, userId]));
     } catch (e: any) { toast.error(e?.message || "Failed to invite"); } finally { setInviting(null); }
   };
 
@@ -390,6 +470,28 @@ export default function StudentCommunity() {
       typingTimerRef.current = setTimeout(() => setTypingUser(null), 2500);
     });
     sock.on("room-count", ({ count }: { count: number }) => setOnlineCount(count));
+    sock.on("message-edited", (updated: ChatMessage) => {
+      setLiveMessages(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
+    });
+    sock.on("message-deleted", ({ messageId, forEveryone }: { messageId: number; forEveryone: boolean }) => {
+      if (forEveryone) {
+        setLiveMessages(prev => prev.map(m => m.id === messageId ? { ...m, deletedForEveryone: true, content: "" } : m));
+      } else {
+        setLiveMessages(prev => prev.filter(m => m.id !== messageId));
+      }
+    });
+    sock.on("group-seen", ({ groupId: seenGroupId, userId: seenUserId }: { groupId: number; userId: number }) => {
+      setLiveMessages(prev => prev.map(m => {
+        if (m.groupId !== seenGroupId) return m;
+        const seen = (() => { try { return JSON.parse(m.seenBy || "[]") as number[]; } catch { return []; } })();
+        if (seen.includes(seenUserId)) return m;
+        return { ...m, seenBy: JSON.stringify([...seen, seenUserId]) };
+      }));
+    });
+    sock.on("new-invite", ({ invite, groupName }: { invite: GroupInvite; groupName: string }) => {
+      setPendingInvites(prev => [{ ...invite, groupName }, ...prev]);
+      toast.info(`${invite.inviterName} invited you to "${groupName}"`, { duration: 5000 });
+    });
     return () => { sock.disconnect(); socketRef.current = null; };
   }, [token]);
 
@@ -400,6 +502,8 @@ export default function StudentCommunity() {
       sock.emit("join-room", chatGroupId);
       setLiveMessages([]);
       setOnlineCount(0);
+      // Mark messages as seen when opening chat
+      apiFetch(`/api/community/groups/${chatGroupId}/mark-seen`, { method: "POST" }).catch(() => {});
     }
     return () => { if (chatGroupId !== null && sock) sock.emit("leave-room", chatGroupId); };
   }, [chatGroupId]);
@@ -563,13 +667,28 @@ export default function StudentCommunity() {
                   <p className="text-sm">No messages yet. Start the conversation!</p>
                 </div>
               ) : (
-                chatMessages.map((msg) => {
-                  const isMe = msg.senderId === (user as any)?.id || msg.senderName === (user as any)?.fullName;
-                  const flashcardData = msg.messageType === "flashcard" ? parseRich<RichFlashcard>(msg.richContent) : null;
-                  const mnemonicData = msg.messageType === "mnemonic" ? parseRich<RichMnemonic>(msg.richContent) : null;
-                  const videoData = msg.messageType === "video" ? parseRich<RichVideo>(msg.richContent) : null;
+                chatMessages
+                  .filter(msg => {
+                    if (msg.deletedForEveryone) return true;
+                    if (msg.deletedBy) {
+                      try {
+                        const deletedBy = JSON.parse(msg.deletedBy) as number[];
+                        if (deletedBy.includes((user as any)?.id)) return false;
+                      } catch {}
+                    }
+                    return true;
+                  })
+                  .map((msg) => {
+                  const isMe = msg.senderId === (user as any)?.id;
+                  const myId = (user as any)?.id;
+                  const isEditing = editingMessageId === msg.id;
+                  const seenByArr = parseSeenByLocal(msg.seenBy);
+                  const seenByOthers = seenByArr.some(id => id !== myId);
+                  const flashcardData = !msg.deletedForEveryone && msg.messageType === "flashcard" ? parseRich<RichFlashcard>(msg.richContent) : null;
+                  const mnemonicData = !msg.deletedForEveryone && msg.messageType === "mnemonic" ? parseRich<RichMnemonic>(msg.richContent) : null;
+                  const videoData = !msg.deletedForEveryone && msg.messageType === "video" ? parseRich<RichVideo>(msg.richContent) : null;
                   return (
-                    <div key={msg.id} className={`flex gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+                    <div key={msg.id} className={`flex gap-2 group ${isMe ? "flex-row-reverse" : "flex-row"}`}>
                       <Avatar className="h-7 w-7 shrink-0 mt-1">
                         <AvatarImage src={msg.senderAvatarUrl || ""} />
                         <AvatarFallback className="bg-primary/20 text-primary text-[10px]">
@@ -578,31 +697,82 @@ export default function StudentCommunity() {
                       </Avatar>
                       <div className={`max-w-[72%] ${isMe ? "items-end" : "items-start"} flex flex-col`}>
                         <span className="text-[10px] text-muted-foreground mb-0.5 px-1">{msg.senderName}</span>
-                        {/* Rich content renders outside the bubble */}
-                        {flashcardData && <FlashcardCard data={flashcardData} isMe={isMe} />}
-                        {mnemonicData && <MnemonicCard data={mnemonicData} isMe={isMe} />}
-                        {videoData && <VideoCard data={videoData} isMe={isMe} />}
-                        {/* Standard bubble for text/image/pdf or caption alongside rich content */}
-                        {((!flashcardData && !mnemonicData && !videoData) || msg.content.trim()) && !flashcardData && !mnemonicData && !videoData && (
-                          <div className={`rounded-2xl px-3 py-2 text-sm ${isMe ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-card border border-border/40 rounded-tl-sm"}`}>
-                            {msg.fileType === "image" && msg.fileUrl && (
-                              <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
-                                <img src={msg.fileUrl} alt={msg.fileName || "Image"} className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1 cursor-pointer hover:opacity-90 transition-opacity" loading="lazy" />
-                              </a>
+
+                        {msg.deletedForEveryone ? (
+                          <div className={`rounded-2xl px-3 py-2 text-sm italic text-muted-foreground border border-border/30 ${isMe ? "bg-muted/20 rounded-tr-sm" : "bg-card rounded-tl-sm"}`}>
+                            🚫 This message was deleted
+                          </div>
+                        ) : isEditing ? (
+                          <div className="flex flex-col gap-1 w-full min-w-[200px]">
+                            <Input value={editText} onChange={e => setEditText(e.target.value)}
+                              onKeyDown={e => { if (e.key === "Enter") handleSaveEdit(); if (e.key === "Escape") setEditingMessageId(null); }}
+                              className="bg-card/80 border-primary/50 text-sm" autoFocus />
+                            <div className="flex gap-1 justify-end">
+                              <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setEditingMessageId(null)}>Cancel</Button>
+                              <Button size="sm" className="h-6 text-xs px-2" onClick={handleSaveEdit}>Save</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className={`flex items-end gap-1 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+                            {isMe && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="icon" variant="ghost"
+                                    className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground mb-0.5">
+                                    <MoreVertical size={12} />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="bg-card border-border/60 w-44" align={isMe ? "end" : "start"}>
+                                  <DropdownMenuItem className="gap-2 cursor-pointer focus:bg-primary/10 text-sm" onClick={() => handleEditMessage(msg)}>
+                                    <Pencil size={13} className="text-primary" /> Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="gap-2 cursor-pointer focus:bg-muted/20 text-sm" onClick={() => handleDeleteMessage(msg.id, false)}>
+                                    <Trash2 size={13} className="text-muted-foreground" /> Delete for me
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="gap-2 cursor-pointer focus:bg-destructive/10 text-sm text-destructive focus:text-destructive" onClick={() => handleDeleteMessage(msg.id, true)}>
+                                    <Trash2 size={13} /> Delete for everyone
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             )}
-                            {msg.fileType === "pdf" && msg.fileUrl && (
-                              <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 text-xs underline mb-1 ${isMe ? "text-primary-foreground/80" : "text-primary"}`}>
-                                <FileText size={14} />
-                                <span className="truncate max-w-[180px]">{msg.fileName || "PDF Document"}</span>
-                                <Download size={12} />
-                              </a>
-                            )}
-                            {msg.content && <span>{msg.content}</span>}
+                            <div className="flex flex-col">
+                              {flashcardData && <FlashcardCard data={flashcardData} isMe={isMe} />}
+                              {mnemonicData && <MnemonicCard data={mnemonicData} isMe={isMe} />}
+                              {videoData && <VideoCard data={videoData} isMe={isMe} />}
+                              {!flashcardData && !mnemonicData && !videoData && (
+                                <div className={`rounded-2xl px-3 py-2 text-sm ${isMe ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-card border border-border/40 rounded-tl-sm"}`}>
+                                  {msg.fileType === "image" && msg.fileUrl && (
+                                    <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
+                                      <img src={msg.fileUrl} alt={msg.fileName || "Image"} className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1 cursor-pointer hover:opacity-90 transition-opacity" loading="lazy" />
+                                    </a>
+                                  )}
+                                  {msg.fileType === "pdf" && msg.fileUrl && (
+                                    <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 text-xs underline mb-1 ${isMe ? "text-primary-foreground/80" : "text-primary"}`}>
+                                      <FileText size={14} />
+                                      <span className="truncate max-w-[180px]">{msg.fileName || "PDF Document"}</span>
+                                      <Download size={12} />
+                                    </a>
+                                  )}
+                                  {msg.content && <span>{msg.content}</span>}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
-                        <span className="text-[10px] text-muted-foreground mt-0.5 px-1">
-                          {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </span>
+
+                        <div className={`flex items-center gap-1 mt-0.5 px-1 ${isMe ? "flex-row-reverse" : ""}`}>
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                          {msg.isEdited && !msg.deletedForEveryone && (
+                            <span className="text-[10px] text-muted-foreground/60">· edited</span>
+                          )}
+                          {isMe && !msg.deletedForEveryone && (
+                            seenByOthers
+                              ? <CheckCheck size={12} className="text-blue-400 shrink-0" />
+                              : <Check size={12} className="text-muted-foreground/50 shrink-0" />
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -778,6 +948,35 @@ export default function StudentCommunity() {
           </CardContent>
         </Card>
 
+        {pendingInvites.length > 0 && (
+          <Card className="bg-card/40 border-border/40 border-primary/30">
+            <CardHeader className="p-4 pb-2 border-b border-border/40">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <UserPlus size={15} className="text-primary" /> Group Invites
+                <Badge className="ml-auto text-[10px] px-1.5 py-0 h-4 bg-primary/20 text-primary border-primary/30">{pendingInvites.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-border/40 max-h-60 overflow-y-auto">
+                {pendingInvites.map(inv => (
+                  <div key={inv.id} className="p-3 flex flex-col gap-1.5">
+                    <p className="text-xs font-medium truncate">{inv.groupName || "Group Invite"}</p>
+                    <p className="text-[11px] text-muted-foreground">from {inv.inviterName}</p>
+                    <div className="flex gap-1.5 mt-0.5">
+                      <Button size="sm" className="h-6 text-xs px-2 flex-1" onClick={() => handleAcceptInvite(inv.id)}>
+                        <Check size={11} className="mr-1" /> Accept
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-6 text-xs px-2 flex-1" onClick={() => handleDeclineInvite(inv.id)}>
+                        Decline
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="bg-card/40 border-border/40">
           <CardHeader className="p-4 pb-2 border-b border-border/40">
             <CardTitle className="text-sm font-semibold flex items-center gap-2"><Share2 size={15} className="text-primary" /> Share in Chat</CardTitle>
@@ -865,8 +1064,11 @@ export default function StudentCommunity() {
                 <div key={u.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20">
                   <Avatar className="h-8 w-8"><AvatarImage src={u.avatarUrl || ""} /><AvatarFallback className="bg-primary/20 text-primary text-xs">{u.fullName.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
                   <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{u.fullName}</p>{u.college && <p className="text-xs text-muted-foreground truncate">{u.college}</p>}</div>
-                  <Button size="sm" className="h-7 px-3 shrink-0" disabled={inviting === u.id} onClick={() => handleInvite(u.id, u.fullName)}>
-                    {inviting === u.id ? <Loader2 size={12} className="animate-spin" /> : "Add"}
+                  <Button size="sm" className="h-7 px-3 shrink-0"
+                    variant={invitedUserIds.has(u.id) ? "outline" : "default"}
+                    disabled={inviting === u.id || invitedUserIds.has(u.id)}
+                    onClick={() => !invitedUserIds.has(u.id) && handleInvite(u.id, u.fullName)}>
+                    {inviting === u.id ? <Loader2 size={12} className="animate-spin" /> : invitedUserIds.has(u.id) ? <><Check size={12} className="mr-1" />Sent</> : "Invite"}
                   </Button>
                 </div>
               ))}

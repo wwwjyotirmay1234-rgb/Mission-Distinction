@@ -141,6 +141,9 @@ export function initSocketServer(httpServer: HttpServer) {
   io.on("connection", (socket: Socket) => {
     const user = (socket as any).user as { id: number; fullName: string };
 
+    // Join personal room for direct notifications (e.g. group invites)
+    socket.join(`user:${user.id}`);
+
     // ── Community Chat ─────────────────────────────────────────────────────────
     socket.on("join-room", async (groupId: number) => {
       if (!groupId || typeof groupId !== "number") return;

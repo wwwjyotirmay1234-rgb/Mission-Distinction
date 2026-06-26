@@ -276,6 +276,27 @@ export async function runStartupMigrations() {
 
       CREATE UNIQUE INDEX IF NOT EXISTS rank_unlocks_user_level
         ON rank_unlocks(user_id, level);
+
+      CREATE TABLE IF NOT EXISTS group_invites (
+        id SERIAL PRIMARY KEY,
+        group_id INTEGER NOT NULL,
+        inviter_id INTEGER NOT NULL,
+        inviter_name TEXT NOT NULL,
+        invitee_id INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS group_invites_pending_unique
+        ON group_invites(group_id, invitee_id)
+        WHERE status = 'pending';
+
+      ALTER TABLE community_messages
+        ADD COLUMN IF NOT EXISTS is_edited BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS edited_at TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS deleted_for_everyone BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS deleted_by TEXT DEFAULT '[]',
+        ADD COLUMN IF NOT EXISTS seen_by TEXT DEFAULT '[]';
     `);
   } finally {
     client.release();
