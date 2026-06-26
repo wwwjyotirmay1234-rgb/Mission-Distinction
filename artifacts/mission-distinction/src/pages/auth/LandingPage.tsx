@@ -175,8 +175,25 @@ export default function LandingPage() {
 
     setGoogleLoading(true);
 
-    // Try popup first — more reliable in Firebase v12 and works on all
-    // desktop browsers. Fall back to redirect only if the popup is blocked.
+    // On mobile or PWA standalone mode, popups are always blocked by the OS/browser.
+    // Skip straight to redirect so it works on the first tap every time.
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
+
+    if (isMobile || isStandalone) {
+      try {
+        sessionStorage.setItem("md_google_redirect", "1");
+        await signInWithRedirect(auth, googleProvider);
+        // Page navigates away — result handled in useEffect via getRedirectResult.
+      } catch {
+        sessionStorage.removeItem("md_google_redirect");
+        toast.error("Could not start Google sign-in. Please try again.");
+        setGoogleLoading(false);
+      }
+      return;
+    }
+
+    // Desktop: popup is reliable and faster (no page reload needed).
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
@@ -184,21 +201,23 @@ export default function LandingPage() {
     } catch (err: any) {
       const code: string = err?.code ?? "";
       if (code === "auth/popup-blocked" || code === "auth/popup-closed-by-user") {
-        // Popup was blocked — fall back to redirect flow
+        // Popup was blocked on desktop — fall back to redirect
         try {
           sessionStorage.setItem("md_google_redirect", "1");
           await signInWithRedirect(auth, googleProvider);
-          // Page navigates away; result is handled in the useEffect above.
         } catch {
           sessionStorage.removeItem("md_google_redirect");
-          toast.error("Could not start Google sign-in. Please allow popups and try again.");
+          toast.error("Popup blocked. Please allow popups for this site and try again.");
           setGoogleLoading(false);
         }
       } else if (code === "auth/unauthorized-domain") {
-        toast.error(`Google sign-in blocked by Firebase. Add "${window.location.hostname}" to Firebase Console → Authentication → Authorized domains.`);
+        toast.error(`Google sign-in blocked. Add "${window.location.hostname}" to Firebase Console → Authentication → Authorized domains.`);
         setGoogleLoading(false);
-      } else if (code && code !== "auth/cancelled-popup-request") {
-        toast.error(`Google sign-in failed: ${code}. Please try again.`);
+      } else if (code === "auth/cancelled-popup-request") {
+        // User clicked the button multiple times — silently reset
+        setGoogleLoading(false);
+      } else if (code) {
+        toast.error(`Google sign-in failed (${code}). Please try again.`);
         setGoogleLoading(false);
       } else {
         setGoogleLoading(false);
