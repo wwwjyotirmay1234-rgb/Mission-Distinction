@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Eye, EyeOff, Activity, ShieldCheck, TrendingUp, Award, Zap } from "lucide-react";
+import { InstallSection } from "@/components/InstallSection";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { signInWithPopup, getRedirectResult } from "firebase/auth";
@@ -806,6 +807,11 @@ export default function LandingPage() {
           </motion.div>
         </div>
       </main>
+
+      {/* Install Section */}
+      <div className="container mx-auto px-4 pb-6 z-10 max-w-md">
+        <InstallSection />
+      </div>
 
       {/* Features Bottom Bar */}
       <div className="container mx-auto px-4 py-8 z-10">
