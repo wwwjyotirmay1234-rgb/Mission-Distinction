@@ -16,7 +16,7 @@ import { Eye, EyeOff, Activity, ShieldCheck, TrendingUp, Award, Zap } from "luci
 import { InstallSection } from "@/components/InstallSection";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 
 
@@ -166,7 +166,7 @@ export default function LandingPage() {
   }, []);
 
   const handleGoogleSignIn = async () => {
-    // Google sign-in cannot run inside an iframe (Replit canvas preview).
+    // Cannot run inside an iframe (Replit canvas preview).
     if (window.self !== window.top) {
       window.open(window.location.href, "_blank");
       toast.info("Opening in a new tab — sign in with Google there.");
@@ -175,16 +175,34 @@ export default function LandingPage() {
 
     setGoogleLoading(true);
 
-    // Use redirect flow for everyone — popup is unreliable on iOS/Android and
-    // can silently fail on desktop Chrome without throwing a catchable error.
+    // Try popup first — more reliable in Firebase v12 and works on all
+    // desktop browsers. Fall back to redirect only if the popup is blocked.
     try {
-      sessionStorage.setItem("md_google_redirect", "1");
-      await signInWithRedirect(auth, googleProvider);
-      // Page navigates away; result handled in useEffect via getRedirectResult.
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+      await finishGoogleAuth(idToken);
     } catch (err: any) {
-      sessionStorage.removeItem("md_google_redirect");
-      toast.error("Could not start Google sign-in. Please try again.");
-      setGoogleLoading(false);
+      const code: string = err?.code ?? "";
+      if (code === "auth/popup-blocked" || code === "auth/popup-closed-by-user") {
+        // Popup was blocked — fall back to redirect flow
+        try {
+          sessionStorage.setItem("md_google_redirect", "1");
+          await signInWithRedirect(auth, googleProvider);
+          // Page navigates away; result is handled in the useEffect above.
+        } catch {
+          sessionStorage.removeItem("md_google_redirect");
+          toast.error("Could not start Google sign-in. Please allow popups and try again.");
+          setGoogleLoading(false);
+        }
+      } else if (code === "auth/unauthorized-domain") {
+        toast.error(`Google sign-in blocked by Firebase. Add "${window.location.hostname}" to Firebase Console → Authentication → Authorized domains.`);
+        setGoogleLoading(false);
+      } else if (code && code !== "auth/cancelled-popup-request") {
+        toast.error(`Google sign-in failed: ${code}. Please try again.`);
+        setGoogleLoading(false);
+      } else {
+        setGoogleLoading(false);
+      }
     }
   };
 
