@@ -156,6 +156,54 @@ router.post("/:id/download", authMiddleware, downloadCountLimiter, async (req: R
   }
 });
 
+/**
+ * GET /api/pdfs/:id/proxy
+ * Server-side fetch of the PDF bytes — avoids browser CORS restrictions on
+ * Google Drive / Cloudinary URLs so the client can store them in IndexedDB
+ * for offline reading.
+ */
+router.get("/:id/proxy", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+    const [pdf] = await db.select({ url: pdfsTable.url, title: pdfsTable.title })
+      .from(pdfsTable).where(eq(pdfsTable.id, id));
+    if (!pdf) { res.status(404).json({ error: "Not found" }); return; }
+    if (!isValidHttpsUrl(pdf.url)) { res.status(422).json({ error: "PDF URL is not fetchable" }); return; }
+
+    const upstream = await fetch(pdf.url, {
+      headers: { "User-Agent": "Mozilla/5.0 Mission-Distinction-Offline-Cache/1.0" },
+    });
+    if (!upstream.ok) {
+      res.status(502).json({ error: `Upstream returned ${upstream.status}` });
+      return;
+    }
+
+    const contentType = upstream.headers.get("content-type") ?? "application/pdf";
+    const contentLength = upstream.headers.get("content-length");
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(pdf.title)}.pdf"`);
+    res.setHeader("Cache-Control", "private, max-age=86400");
+    if (contentLength) res.setHeader("Content-Length", contentLength);
+
+    const reader = upstream.body?.getReader();
+    if (!reader) { res.status(502).json({ error: "No response body" }); return; }
+
+    const pump = async () => {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(value);
+      }
+      res.end();
+    };
+    await pump();
+  } catch (err) {
+    if (!res.headersSent) res.status(500).json({ error: "Failed to proxy PDF" });
+  }
+});
+
 router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const admin = (req as any).user;

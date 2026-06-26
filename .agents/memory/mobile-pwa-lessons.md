@@ -28,6 +28,11 @@ description: Hard-won mobile/PWA fixes for Mission Distinction — auth, PDF vie
 - **`maximum-scale=1`** in the viewport meta tag blocks pinch-to-zoom — an accessibility violation. Remove it.
 - **SW version query param** (`/sw.js?v=N`) must be bumped whenever sw.js changes, or browsers serve the old cached SW.
 
+## PDF offline reading requires IndexedDB + server proxy
+**Rule:** When a user wants to read a PDF offline, the bytes must be stored in IndexedDB (not the download folder). Use a server-side proxy endpoint (`GET /api/pdfs/:id/proxy`) to fetch the PDF bytes server-side (avoids CORS on Google Drive / Cloudinary), then stream the blob to the client and store it via `savePdfBlob(id, blob, title)` in `lib/pdfOfflineCache.ts`.
+**Why:** Google Drive and Cloudinary URLs don't support cross-origin `fetch()` from the browser. `window.open(downloadUrl)` saves to the device file system — completely separate from browser storage. The PDF viewer iframe then can't reach those bytes when offline.
+**How to apply:** In `PdfViewerModal`: on mount call `getPdfBlob(id)` → if found, `URL.createObjectURL(blob)` and use as `iframe.src`. If offline + no blob, show instructional wall. Add "Save Offline" button that calls `/api/pdfs/:id/proxy` with auth header, reads the response as a stream, builds a `Blob`, calls `savePdfBlob`. Show a small `HardDrive` indicator on saved PDF cards.
+
 ## Avatar file input on Android
 **Rule:** Use `accept="image/*"` not specific MIME types like `accept="image/jpeg,image/png"`.
 **Why:** Some Android phones only show the camera/gallery chooser for `image/*`; specific MIME types suppress it.
