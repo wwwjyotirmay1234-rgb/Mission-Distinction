@@ -14,12 +14,12 @@ import { apiFetch } from "@/lib/apiFetch";
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "NEET PG", "General"];
 
 const SUGGESTED = [
-  "Explain the brachial plexus formation and its branches",
-  "What is the role of the SA node in cardiac conduction?",
-  "How does the sodium-potassium pump work?",
-  "Describe the Krebs cycle steps in simple terms",
-  "What are the layers of the epidermis?",
-  "Explain the mechanism of action potential",
+  "Write a short note on Brachial plexus (SAQ)",
+  "Describe the cardiac cycle with diagrams (LAQ)",
+  "What is Krebs cycle? Add its clinical significance",
+  "NEET PG: Which nerve is damaged in Saturday night palsy?",
+  "Write a short note on Blood-brain barrier",
+  "Describe the histology of kidney cortex with diagram",
 ];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -215,13 +215,16 @@ function AiChatTab() {
         {msgs.length === 0 ? (
           /* ── Welcome / empty state ── */
           <div className="flex flex-col items-center justify-center h-full text-center px-4 gap-6">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Bot size={32} className="text-primary" />
+            <div className="relative">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Bot size={32} className="text-primary" />
+              </div>
+              <span className="absolute -bottom-1 -right-1 text-[9px] font-bold bg-primary text-white px-1.5 py-0.5 rounded-full tracking-wide">AI</span>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-foreground">AI Doubt Solver</h2>
+              <h2 className="text-xl font-bold text-foreground">Mission Distinction AI</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Ask any medical question and get an instant, detailed answer
+                Your personal MBBS exam assistant — university exams &amp; NEET PG
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
@@ -294,7 +297,7 @@ function AiChatTab() {
           </button>
         </div>
         <p className="text-center text-[10px] text-muted-foreground/50 mt-1.5">
-          AI may make mistakes — always verify with your textbooks.
+          Mission Distinction AI · Specialised for MBBS university exams &amp; NEET PG · Always cross-verify with standard textbooks.
         </p>
       </div>
     </div>
@@ -705,10 +708,12 @@ export default function StudentDoubts() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Bot size={22} className="text-primary" /> Doubt Solver
+            <Bot size={22} className="text-primary" /> Mission Distinction AI
           </h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            {tab === "ai" ? "Ask anything — get an instant AI answer" : "Questions & answers from your batchmates"}
+            {tab === "ai"
+              ? "Exam-ready answers for university exams & NEET PG"
+              : "Questions & answers from your batchmates"}
           </p>
         </div>
       </div>
