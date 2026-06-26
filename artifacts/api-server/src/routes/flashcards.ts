@@ -4,6 +4,7 @@ import { flashcardDecksTable, flashcardsTable } from "@workspace/db/schema";
 import { eq, and, lte, sql } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
+import { awardXp, XP_VALUES } from "../lib/xp";
 
 const router = Router();
 
@@ -123,6 +124,7 @@ router.post("/cards/:cardId/review", authMiddleware, async (req: Request, res: R
     if (!card) { res.status(404).json({ error: "Card not found" }); return; }
     const { ease, interval, repetitions } = sm2(card.ease, card.interval, card.repetitions, quality);
     const [updated] = await db.update(flashcardsTable).set({ ease, interval, repetitions, nextReview: nextReviewDate(interval) }).where(eq(flashcardsTable.id, cardId)).returning();
+    awardXp(userId!, XP_VALUES.FLASHCARD_SESSION, "flashcard_reviewed", "Reviewed a flashcard").catch(() => {});
     res.json(updated);
   } catch { res.status(500).json({ error: "Failed to review card" }); }
 });

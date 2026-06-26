@@ -127,6 +127,7 @@ router.post("/:id/answers", authMiddleware, answerPostLimiter, async (req: Reque
     });
 
     if (!result) { res.status(404).json({ error: "Doubt not found" }); return; }
+    awardXp(user.id, XP_VALUES.DOUBT_ANSWERED, "doubt_answered", "Answered a doubt").catch(() => {});
     res.status(201).json(result);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });

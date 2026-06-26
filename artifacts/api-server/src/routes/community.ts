@@ -7,6 +7,7 @@ import { stripHtml } from "../lib/sanitize";
 import { eq, desc, and, count } from "drizzle-orm";
 import { getIO } from "../lib/socket-server";
 import rateLimit from "express-rate-limit";
+import { awardXp, XP_VALUES } from "../lib/xp";
 
 const router = Router();
 
@@ -59,6 +60,7 @@ router.post("/posts", authMiddleware, postCreateLimiter, async (req: Request, re
       res.status(403).json({ error: "You must be a member of this group to post" }); return;
     }
     const [post] = await db.insert(communityPostsTable).values({ title: safeTitle, content: safeContent, groupName: validGroup.name, author: user.fullName, authorId: user.id, authorAvatarUrl: user.avatarUrl || null }).returning();
+    awardXp(user.id, XP_VALUES.COMMUNITY_POST, "community_post", `Posted in community: ${safeTitle.slice(0, 60)}`).catch(() => {});
     res.status(201).json(post);
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });
@@ -257,6 +259,7 @@ router.post("/messages/:groupId", authMiddleware, messageLimiter, async (req: Re
     }
     const [message] = await db.insert(communityMessagesTable).values({ groupId, senderId: user.id, senderName: user.fullName, senderAvatarUrl: user.avatarUrl || null, content: safeContent, fileUrl: fileUrl || null, fileType: fileType || null, fileName: fileName || null, messageType: mType, richContent: richContent || null }).returning();
     try { getIO().to(`chat:${groupId}`).emit("new-message", message); } catch { }
+    awardXp(user.id, XP_VALUES.COMMUNITY_MESSAGE, "community_message", "Sent a message in a study group").catch(() => {});
     res.status(201).json(message);
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });

@@ -5,6 +5,7 @@ import { eq, and, gte, desc, sql } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import rateLimit from "express-rate-limit";
+import { awardXp, XP_VALUES } from "../lib/xp";
 
 const router = Router();
 
@@ -85,6 +86,7 @@ router.post("/:id/join", authMiddleware, async (req: Request, res: Response) => 
       const activeCount = await db.select({ c: sql<number>`COUNT(*)` }).from(studyRoomMembersTable)
         .where(and(eq(studyRoomMembersTable.roomId, roomId), gte(studyRoomMembersTable.lastHeartbeat, activeThreshold())));
       await db.update(studyRoomsTable).set({ memberCount: Number(activeCount[0]?.c ?? 1) }).where(eq(studyRoomsTable.id, roomId));
+      awardXp(userId!, XP_VALUES.STUDY_ROOM_JOINED, "study_room_joined", `Joined study room: ${room.name}`).catch(() => {});
     }
     res.json({ ok: true });
   } catch { res.status(500).json({ error: "Failed to join room" }); }

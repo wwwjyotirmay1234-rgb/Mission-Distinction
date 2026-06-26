@@ -22,6 +22,16 @@ export const XP_VALUES = {
   DOUBT_ASKED: 20,
   STOPWATCH_SESSION: 10,
   ALARM_USED: 5,
+  // Feature usage (5-10 XP)
+  BOOKMARK_ADDED: 5,
+  FLASHCARD_SESSION: 5,
+  // Student interactions (5-10 XP)
+  COMMUNITY_POST: 8,
+  COMMUNITY_MESSAGE: 5,
+  DOUBT_ANSWERED: 8,
+  CONFESSION_POSTED: 5,
+  STUDY_ROOM_JOINED: 5,
+  MNEMONIC_UPVOTED: 5,
 } as const;
 
 export function getRankForXp(xp: number) {

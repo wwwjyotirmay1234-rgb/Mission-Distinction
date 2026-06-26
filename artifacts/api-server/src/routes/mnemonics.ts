@@ -5,6 +5,7 @@ import { eq, and, sql, desc } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import rateLimit from "express-rate-limit";
+import { awardXp, XP_VALUES } from "../lib/xp";
 
 const router = Router();
 
@@ -71,6 +72,7 @@ router.post("/:id/upvote", authMiddleware, async (req: Request, res: Response) =
     } else {
       await db.insert(mnemonicUpvotesTable).values({ userId, mnemonicId: id });
       await db.update(mnemonicsTable).set({ upvotes: sql`upvotes + 1` }).where(eq(mnemonicsTable.id, id));
+      awardXp(userId!, XP_VALUES.MNEMONIC_UPVOTED, "mnemonic_upvoted", "Upvoted a mnemonic").catch(() => {});
       res.json({ upvoted: true });
     }
   } catch { res.status(500).json({ error: "Failed to upvote" }); }

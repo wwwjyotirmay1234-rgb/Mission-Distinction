@@ -18,6 +18,7 @@ const activityLimiter = rateLimit({
 const ACTIVITY_DAILY_LIMITS: Record<string, number> = {
   stopwatch_session: 6,
   alarm_used: 4,
+  flashcard_session: 10,
 };
 
 const router = Router();
@@ -115,6 +116,7 @@ router.post("/activity", authMiddleware, activityLimiter, async (req: Request, r
     const ALLOWED: Record<string, { amount: number; description: string }> = {
       stopwatch_session: { amount: XP_VALUES.STOPWATCH_SESSION, description: "Completed a stopwatch session (5+ min)" },
       alarm_used: { amount: XP_VALUES.ALARM_USED, description: "Used the study alarm" },
+      flashcard_session: { amount: XP_VALUES.FLASHCARD_SESSION, description: "Reviewed flashcards" },
     };
     const entry = ALLOWED[type];
     if (!entry) { res.status(400).json({ error: "Invalid activity type" }); return; }

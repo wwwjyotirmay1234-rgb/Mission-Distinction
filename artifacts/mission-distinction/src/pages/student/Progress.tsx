@@ -7,7 +7,7 @@ import {
   Radar, ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, Award, FileText, CheckCircle, Flame, Zap, Trophy, BookOpen, Download, MessageSquare, Timer } from "lucide-react";
+import { Clock, Award, FileText, CheckCircle, Flame, Zap, Trophy, BookOpen, Download, MessageSquare, Timer, Bookmark, Brain, Users, MessageCircle, Lightbulb, Heart } from "lucide-react";
 import { Progress as ProgressBar } from "@/components/ui/progress";
 import { XPProgressBar } from "@/components/XPProgressBar";
 import { RankBadge } from "@/components/RankBadge";
@@ -69,6 +69,15 @@ export default function StudentProgress() {
     { icon: MessageSquare, label: "Asking a doubt", xp: "20 XP" },
     { icon: Timer, label: "Stopwatch (5+ min)", xp: "10 XP" },
     { icon: Clock, label: "Alarm fired", xp: "5 XP" },
+    { icon: MessageCircle, label: "Answering a doubt", xp: "8 XP" },
+    { icon: Users, label: "Community post", xp: "8 XP" },
+    { icon: MessageSquare, label: "Group chat message", xp: "5 XP" },
+    { icon: Brain, label: "Reviewing flashcards", xp: "5 XP each" },
+    { icon: Lightbulb, label: "Upvoting a mnemonic", xp: "5 XP" },
+    { icon: Heart, label: "Liking a confession", xp: "5 XP" },
+    { icon: Bookmark, label: "Saving a bookmark", xp: "5 XP" },
+    { icon: Users, label: "Joining a study room", xp: "5 XP" },
+    { icon: CheckCircle, label: "Posting a confession", xp: "5 XP" },
   ];
 
   return (

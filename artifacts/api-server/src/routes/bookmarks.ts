@@ -5,6 +5,7 @@ import { eq, and, desc, count } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
+import { awardXp, XP_VALUES } from "../lib/xp";
 
 const router = Router();
 
@@ -50,6 +51,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
       resourceTitle: safeTitle,
       subject: safeSubject,
     }).returning();
+    awardXp(user.id, XP_VALUES.BOOKMARK_ADDED, "bookmark_added", `Bookmarked: ${safeTitle.slice(0, 60)}`).catch(() => {});
     res.status(201).json(bookmark);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
