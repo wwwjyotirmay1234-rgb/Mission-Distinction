@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import rateLimit from "express-rate-limit";
 import { authMiddleware } from "../middlewares/auth";
 import { db } from "@workspace/db";
 import { doubtsTable } from "@workspace/db/schema";
@@ -6,6 +7,31 @@ import { eq } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router = Router();
+
+// ── Rate limiters ─────────────────────────────────────────────────────────────
+const aiChatLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: process.env.NODE_ENV === "development" ? 500 : 20,
+  message: { error: "Too many AI requests. Please wait a few minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Stricter: DALL-E 3 costs ~$0.04/image
+const diagramLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: process.env.NODE_ENV === "development" ? 500 : 15,
+  message: { error: "Diagram limit reached. You can generate up to 15 diagrams per hour." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// ── Input sanitiser (mirrors aiTools.ts) ──────────────────────────────────────
+function sanitize(value: unknown, maxLen: number): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim().replace(/[\x00-\x1F\x7F]/g, " ").slice(0, maxLen);
+  return trimmed || null;
+}
 
 const SYSTEM_PROMPT = `You are Mission Distinction AI — an advanced, highly specialised medical education assistant built exclusively for MBBS students in India, with deep expertise in Odisha university exams (Utkal University, Sambalpur University, NHF) and NEET PG / INICET preparation.
 
@@ -109,17 +135,17 @@ Rules for diagrams:
 - The diagram description will be sent to an AI image generator, so describe exactly what should appear in the illustration`;
 
 // ── Generate diagram image via DALL-E 3 ──────────────────────────────────
-router.post("/generate-diagram", authMiddleware, async (req: Request, res: Response) => {
-  const { description } = req.body;
-  if (!description?.trim()) {
-    res.status(400).json({ error: "Description required" });
+router.post("/generate-diagram", authMiddleware, diagramLimiter, async (req: Request, res: Response) => {
+  const description = sanitize(req.body.description, 600);
+  if (!description) {
+    res.status(400).json({ error: "Description required (max 600 characters)" });
     return;
   }
 
   try {
     const response = await openai.images.generate({
       model: "dall-e-3",
-      prompt: `Medical education diagram for MBBS students: ${description.trim()}. Style: clean white background, precise black ink anatomical illustration like Gray's Anatomy textbook, all structures clearly labeled with bold text and leader lines, professional medical illustration quality, no decorative elements, suitable for exam answer paper.`,
+      prompt: `Medical education diagram for MBBS students: ${description}. Style: clean white background, precise black ink anatomical illustration like Gray's Anatomy textbook, all structures clearly labeled with bold text and leader lines, professional medical illustration quality, no decorative elements, suitable for exam answer paper.`,
       n: 1,
       size: "1024x1024",
       quality: "standard",
@@ -138,10 +164,10 @@ router.post("/generate-diagram", authMiddleware, async (req: Request, res: Respo
 });
 
 // ── Instant AI chat (no doubt record needed) ──────────────────────────────
-router.post("/ai-chat", authMiddleware, async (req: Request, res: Response) => {
-  const { question } = req.body;
-  if (!question?.trim()) {
-    res.status(400).json({ error: "Question is required" });
+router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res: Response) => {
+  const question = sanitize(req.body.question, 2000);
+  if (!question) {
+    res.status(400).json({ error: "Question is required (max 2000 characters)" });
     return;
   }
 
@@ -157,7 +183,7 @@ router.post("/ai-chat", authMiddleware, async (req: Request, res: Response) => {
       stream: true,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: question.trim() },
+        { role: "user", content: question },
       ],
     });
 
@@ -182,7 +208,7 @@ router.post("/ai-chat", authMiddleware, async (req: Request, res: Response) => {
 });
 
 // ── AI answer for an existing doubt (legacy) ──────────────────────────────
-router.post("/:id/ai-answer", authMiddleware, async (req: Request, res: Response) => {
+router.post("/:id/ai-answer", authMiddleware, aiChatLimiter, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) { res.status(400).json({ error: "Invalid doubt ID" }); return; }
