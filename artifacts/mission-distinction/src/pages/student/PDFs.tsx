@@ -396,7 +396,8 @@ export default function StudentPDFs() {
                       <HardDrive size={10} />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4">
+                  {/* Desktop hover overlay */}
+                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex flex-col items-center justify-center gap-2 p-4">
                     <Button size="sm" className="w-full" onClick={() => setViewingPdf(pdf as Pdf)}>
                       <BookOpen className="mr-2 h-4 w-4" /> Read
                     </Button>
@@ -416,6 +417,24 @@ export default function StudentPDFs() {
                   <div className="flex items-center gap-2 mt-1.5">
                     <Badge variant="outline" className="text-[9px] px-1 py-0 bg-card">{pdf.subject}</Badge>
                     {pdf.pages && <span className="text-[10px] text-muted-foreground">{pdf.pages} pages</span>}
+                  </div>
+                  {/* Mobile action buttons — always visible, no hover needed */}
+                  <div className="flex gap-2 mt-2 md:hidden">
+                    <Button
+                      size="sm"
+                      className="flex-1 h-8 text-xs gap-1.5"
+                      onClick={() => setViewingPdf(pdf as Pdf)}
+                    >
+                      <BookOpen size={13} /> Read
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="flex-1 h-8 text-xs gap-1.5"
+                      onClick={() => { trackDownload(pdf.id); window.open(getDownloadUrl(pdf.url), "_blank", "noopener,noreferrer"); }}
+                    >
+                      <Download size={13} /> Download
+                    </Button>
                   </div>
                 </div>
               </div>
