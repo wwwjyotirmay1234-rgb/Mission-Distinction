@@ -7,10 +7,16 @@ import { initAnalytics } from "./lib/analytics";
 initAnalytics();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register(`${import.meta.env.BASE_URL}sw.js`)
-      .catch(() => {});
+  window.addEventListener("load", async () => {
+    const swUrl = `${import.meta.env.BASE_URL}sw.js`;
+    try {
+      if (import.meta.env.DEV) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((r) => r.unregister()));
+      }
+      await navigator.serviceWorker.register(swUrl);
+    } catch {
+    }
   });
 }
 
