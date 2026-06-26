@@ -6,6 +6,7 @@ import {
 } from "@workspace/db";
 import { eq, sql, desc } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
+import { updateStreak } from "../lib/streak";
 
 const router = Router();
 
@@ -17,9 +18,10 @@ function changePercent(thisWeek: number, lastWeek: number): number {
 router.get("/student-stats", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const [activity, attempts] = await Promise.all([
+    const [activity, attempts, freshStreak] = await Promise.all([
       db.select().from(activityTable).where(eq(activityTable.userId, user.id)).limit(500),
       db.select().from(quizAttemptsTable).where(eq(quizAttemptsTable.userId, user.id)).limit(500),
+      updateStreak(user.id), // opening the dashboard counts as a study day
     ]);
 
     const now = new Date();
@@ -64,7 +66,7 @@ router.get("/student-stats", authMiddleware, async (req: Request, res: Response)
       pdfsChangePercent: changePercent(pdfsThisWeek, pdfsLastWeek),
       quizzesAttempted: attempts.length,
       quizzesChangePercent: changePercent(attemptsThisWeek, attemptsLastWeek),
-      studyStreak: user.studyStreak || 0,
+      studyStreak: freshStreak,
     });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });

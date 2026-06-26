@@ -3,19 +3,21 @@ import { db } from "@workspace/db";
 import { quizAttemptsTable, activityTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
+import { updateStreak } from "../lib/streak";
 
 const router = Router();
 
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const [attempts, activity] = await Promise.all([
+    const [attempts, activity, freshStreak] = await Promise.all([
       db.select().from(quizAttemptsTable)
         .where(eq(quizAttemptsTable.userId, user.id))
         .limit(500),
       db.select().from(activityTable)
         .where(eq(activityTable.userId, user.id))
         .limit(500),
+      updateStreak(user.id),
     ]);
 
     const quizzesAttempted = attempts.length;
@@ -39,7 +41,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
       notesCompleted: activity.filter(a => a.type === "note").length,
       pdfsDownloaded: activity.filter(a => a.type === "pdf").length,
       quizzesAttempted,
-      studyStreak: user.studyStreak || 0,
+      studyStreak: freshStreak,
       studyHoursWeek: Math.round(activity.length * 0.5 * 10) / 10,
       avgScore,
       subjectProgress,

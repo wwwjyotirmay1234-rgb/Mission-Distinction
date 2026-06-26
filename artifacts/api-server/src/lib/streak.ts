@@ -9,29 +9,38 @@ function istDateString(offsetDays = 0): string {
   return d.toISOString().split("T")[0]; // "YYYY-MM-DD" in IST
 }
 
-export async function updateStreak(userId: number): Promise<void> {
+/**
+ * Updates the study streak for a user and returns the new streak value.
+ * Safe to call on any authenticated action (reading notes, viewing dashboard, etc.)
+ * Returns the current streak (whether or not it was updated today).
+ */
+export async function updateStreak(userId: number): Promise<number> {
   try {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-    if (!user) return;
+    if (!user) return 0;
 
     const today = istDateString(0);
     const yesterday = istDateString(-1);
-    const last = (user as any).lastStreakDate as string | null;
+    const last = user.lastStreakDate as string | null;
 
-    if (last === today) return; // already updated today (IST)
+    // Already updated today — return current streak without touching DB
+    if (last === today) return user.studyStreak ?? 0;
 
     let newStreak: number;
     if (!last || last < yesterday) {
       newStreak = 1; // streak broken or first time
     } else {
-      newStreak = (user.studyStreak || 0) + 1; // last was yesterday
+      newStreak = (user.studyStreak ?? 0) + 1; // last was yesterday — extend streak
     }
 
     await db
       .update(usersTable)
-      .set({ studyStreak: newStreak, lastStreakDate: today } as any)
+      .set({ studyStreak: newStreak, lastStreakDate: today })
       .where(eq(usersTable.id, userId));
+
+    return newStreak;
   } catch (err) {
     console.error("[streak] update error:", err);
+    return 0;
   }
 }
