@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Plus, ChevronLeft, Play, Clock, BookOpen, LogOut } from "lucide-react";
+import { Users, Plus, ChevronLeft, Play, Clock, BookOpen, LogOut, Video, VideoOff, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -28,12 +28,38 @@ function formatMmSs(ms: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+function VideoCallModal({ open, onClose, roomName, title }: { open: boolean; onClose: () => void; roomName: string; title: string }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 bg-card/80 border-b border-border/40 shrink-0">
+        <div className="flex items-center gap-2">
+          <Video size={16} className="text-primary" />
+          <span className="font-semibold text-sm">Video Call — {title}</span>
+          <span className="text-[10px] text-muted-foreground hidden sm:inline">Powered by Jitsi Meet · Allow camera &amp; microphone when prompted</span>
+        </div>
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors">
+          <X size={18} />
+        </button>
+      </div>
+      <iframe
+        src={`https://meet.jit.si/${roomName}`}
+        allow="camera; microphone; fullscreen; display-capture; autoplay"
+        allowFullScreen
+        className="flex-1 w-full border-0"
+        title={`Video call: ${title}`}
+      />
+    </div>
+  );
+}
+
 function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [timerDone, setTimerDone] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
 
   const { data, isLoading } = useQuery<Room & { members: Member[] }>({
     queryKey: ["study-room", roomId],
@@ -97,9 +123,19 @@ function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
                 <span className="text-xs text-muted-foreground">Hosted by {data.hostName}</span>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => leaveMutation.mutate()}>
-              <LogOut size={13} /> Leave
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant={videoOpen ? "default" : "outline"}
+                className={`gap-1.5 text-xs ${videoOpen ? "bg-primary text-primary-foreground" : "border-primary/30 text-primary hover:bg-primary/10"}`}
+                onClick={() => setVideoOpen(v => !v)}
+              >
+                <Video size={13} /> {videoOpen ? "End Call" : "Video Call"}
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => leaveMutation.mutate()}>
+                <LogOut size={13} /> Leave
+              </Button>
+            </div>
           </div>
 
           {/* Timer */}
@@ -152,6 +188,27 @@ function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
           ))}
         </div>
       </div>
+
+      {/* Video call hint when not open */}
+      {!videoOpen && (
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => setVideoOpen(true)}>
+          <Video size={18} className="text-primary shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-primary">Start a Video Call</p>
+            <p className="text-xs text-muted-foreground">Face-to-face study with your room members — powered by Jitsi Meet</p>
+          </div>
+          <Button size="sm" variant="outline" className="ml-auto shrink-0 border-primary/30 text-primary hover:bg-primary/10 text-xs gap-1">
+            <Video size={12} /> Join
+          </Button>
+        </div>
+      )}
+
+      <VideoCallModal
+        open={videoOpen}
+        onClose={() => setVideoOpen(false)}
+        roomName={`MissionDistinction-Study-${roomId}`}
+        title={data.name}
+      />
     </div>
   );
 }

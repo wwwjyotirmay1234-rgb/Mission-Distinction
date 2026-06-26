@@ -17,7 +17,7 @@ import {
   Search, Edit3, Heart, MessageSquare, Share2, Clock, Users, PlusCircle, Send,
   MessageCircle, ArrowLeft, Loader2, Paperclip, ImageIcon, FileText, X, Download,
   UserPlus, Crown, UserMinus, BookOpen, Lightbulb, Youtube, ExternalLink, Plus,
-  Shield, Brain, Play, Check, CheckCheck, MoreVertical, Trash2, Pencil, Bell
+  Shield, Brain, Play, Check, CheckCheck, MoreVertical, Trash2, Pencil, Bell, Video
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -250,6 +250,33 @@ function VideoPicker({ open, onClose, onShare }: {
   );
 }
 
+// ── Video Call Modal ─────────────────────────────────────────────────────────
+
+function VideoCallModal({ open, onClose, roomName, title }: { open: boolean; onClose: () => void; roomName: string; title: string }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 bg-card/80 border-b border-border/40 shrink-0">
+        <div className="flex items-center gap-2">
+          <Video size={16} className="text-primary" />
+          <span className="font-semibold text-sm">Video Call — {title}</span>
+          <span className="text-[10px] text-muted-foreground hidden sm:inline">Powered by Jitsi Meet · Allow camera &amp; microphone when prompted</span>
+        </div>
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors">
+          <X size={18} />
+        </button>
+      </div>
+      <iframe
+        src={`https://meet.jit.si/${roomName}`}
+        allow="camera; microphone; fullscreen; display-capture; autoplay"
+        allowFullScreen
+        className="flex-1 w-full border-0"
+        title={`Video call: ${title}`}
+      />
+    </div>
+  );
+}
+
 // ── Main component ──────────────────────────────────────────────────────────
 
 export default function StudentCommunity() {
@@ -280,6 +307,8 @@ export default function StudentCommunity() {
   const [flashcardPickerOpen, setFlashcardPickerOpen] = useState(false);
   const [mnemonicPickerOpen, setMnemonicPickerOpen] = useState(false);
   const [videoPickerOpen, setVideoPickerOpen] = useState(false);
+  // Video call state
+  const [videoOpen, setVideoOpen] = useState(false);
   // Invite / edit / delete state
   const [pendingInvites, setPendingInvites] = useState<GroupInvite[]>([]);
   const [invitedUserIds, setInvitedUserIds] = useState<Set<number>>(new Set());
@@ -649,6 +678,15 @@ export default function StudentCommunity() {
                     <UserPlus size={12} /> Invite
                   </Button>
                 )}
+                <Button
+                  size="sm"
+                  variant={videoOpen ? "default" : "outline"}
+                  className={`h-7 px-2 text-xs gap-1 ${videoOpen ? "bg-primary text-primary-foreground" : "border-primary/30 text-primary hover:bg-primary/10"}`}
+                  onClick={() => setVideoOpen(v => !v)}
+                  title="Video call with group members"
+                >
+                  <Video size={12} /> {videoOpen ? "End" : "Video"}
+                </Button>
                 <Badge variant="outline" className={`text-xs ${connected ? "border-green-500/30 text-green-400 bg-green-500/5" : "border-yellow-500/30 text-yellow-400 bg-yellow-500/5"}`}>
                   {connected ? `● ${onlineCount > 0 ? onlineCount : ""}` : "○"}
                 </Badge>
@@ -1109,6 +1147,16 @@ export default function StudentCommunity() {
       <FlashcardPicker open={flashcardPickerOpen} onClose={() => setFlashcardPickerOpen(false)} onShare={handleShareFlashcard} />
       <MnemonicPicker open={mnemonicPickerOpen} onClose={() => setMnemonicPickerOpen(false)} onShare={handleShareMnemonic} />
       <VideoPicker open={videoPickerOpen} onClose={() => setVideoPickerOpen(false)} onShare={handleShareVideo} />
+
+      {/* Video Call */}
+      {chatGroupId && activeGroup && (
+        <VideoCallModal
+          open={videoOpen}
+          onClose={() => setVideoOpen(false)}
+          roomName={`MissionDistinction-Group-${chatGroupId}`}
+          title={activeGroup.name}
+        />
+      )}
     </div>
   );
 }
