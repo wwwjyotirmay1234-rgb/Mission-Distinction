@@ -30,7 +30,7 @@ function nextReviewDate(days: number) {
 // List decks (own + admin-shared)
 router.get("/decks", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = (req as any).user.id as number;
     const { or } = await import("drizzle-orm");
     const decks = await db.select().from(flashcardDecksTable)
       .where(or(eq(flashcardDecksTable.userId, userId), eq(flashcardDecksTable.isAdminShared, true)));
@@ -41,7 +41,7 @@ router.get("/decks", authMiddleware, async (req: Request, res: Response) => {
 // Create deck
 router.post("/decks", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = (req as any).user.id as number;
     const { subject, title } = req.body;
     if (!subject || !title?.trim()) { res.status(400).json({ error: "subject and title required" }); return; }
     const [deck] = await db.insert(flashcardDecksTable).values({ userId, subject, title: title.trim() }).returning();
@@ -52,8 +52,9 @@ router.post("/decks", authMiddleware, async (req: Request, res: Response) => {
 // Delete deck
 router.delete("/decks/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = (req as any).user.id as number;
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid deck ID" }); return; }
     await db.delete(flashcardsTable).where(eq(flashcardsTable.deckId, id));
     await db.delete(flashcardDecksTable).where(and(eq(flashcardDecksTable.id, id), eq(flashcardDecksTable.userId, userId)));
     res.json({ ok: true });
@@ -63,8 +64,9 @@ router.delete("/decks/:id", authMiddleware, async (req: Request, res: Response) 
 // Get cards in deck (own or admin-shared)
 router.get("/decks/:id/cards", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = (req as any).user.id as number;
     const deckId = parseId(req.params.id);
+    if (!deckId) { res.status(400).json({ error: "Invalid deck ID" }); return; }
     const { or } = await import("drizzle-orm");
     const [deck] = await db.select().from(flashcardDecksTable)
       .where(and(eq(flashcardDecksTable.id, deckId), or(eq(flashcardDecksTable.userId, userId), eq(flashcardDecksTable.isAdminShared, true))))
@@ -78,8 +80,9 @@ router.get("/decks/:id/cards", authMiddleware, async (req: Request, res: Respons
 // Get cards due for review
 router.get("/decks/:id/review", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = (req as any).user.id as number;
     const deckId = parseId(req.params.id);
+    if (!deckId) { res.status(400).json({ error: "Invalid deck ID" }); return; }
     const now = new Date();
     const cards = await db.select().from(flashcardsTable)
       .where(and(eq(flashcardsTable.deckId, deckId), eq(flashcardsTable.userId, userId), lte(flashcardsTable.nextReview, now)));
@@ -90,8 +93,9 @@ router.get("/decks/:id/review", authMiddleware, async (req: Request, res: Respon
 // Add card to deck
 router.post("/decks/:id/cards", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = (req as any).user.id as number;
     const deckId = parseId(req.params.id);
+    if (!deckId) { res.status(400).json({ error: "Invalid deck ID" }); return; }
     const { front, back } = req.body;
     if (!front?.trim() || !back?.trim()) { res.status(400).json({ error: "front and back required" }); return; }
     const [card] = await db.insert(flashcardsTable).values({ deckId, userId, front: front.trim(), back: back.trim() }).returning();
@@ -103,8 +107,9 @@ router.post("/decks/:id/cards", authMiddleware, async (req: Request, res: Respon
 // Delete card
 router.delete("/cards/:cardId", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = (req as any).user.id as number;
     const cardId = parseId(req.params.cardId);
+    if (!cardId) { res.status(400).json({ error: "Invalid card ID" }); return; }
     const [card] = await db.select().from(flashcardsTable).where(and(eq(flashcardsTable.id, cardId), eq(flashcardsTable.userId, userId))).limit(1);
     if (!card) { res.status(404).json({ error: "Card not found" }); return; }
     await db.delete(flashcardsTable).where(eq(flashcardsTable.id, cardId));
@@ -116,15 +121,16 @@ router.delete("/cards/:cardId", authMiddleware, async (req: Request, res: Respon
 // Review a card (SM-2)
 router.post("/cards/:cardId/review", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = (req as any).user.id as number;
     const cardId = parseId(req.params.cardId);
+    if (!cardId) { res.status(400).json({ error: "Invalid card ID" }); return; }
     const quality = parseInt(req.body.quality); // 0=Again, 1=Hard, 2=Good, 3=Easy
     if (isNaN(quality) || quality < 0 || quality > 3) { res.status(400).json({ error: "quality must be 0-3" }); return; }
     const [card] = await db.select().from(flashcardsTable).where(and(eq(flashcardsTable.id, cardId), eq(flashcardsTable.userId, userId))).limit(1);
     if (!card) { res.status(404).json({ error: "Card not found" }); return; }
     const { ease, interval, repetitions } = sm2(card.ease, card.interval, card.repetitions, quality);
     const [updated] = await db.update(flashcardsTable).set({ ease, interval, repetitions, nextReview: nextReviewDate(interval) }).where(eq(flashcardsTable.id, cardId)).returning();
-    awardXp(userId!, XP_VALUES.FLASHCARD_SESSION, "flashcard_reviewed", "Reviewed a flashcard").catch(() => {});
+    awardXp(userId, XP_VALUES.FLASHCARD_SESSION, "flashcard_reviewed", "Reviewed a flashcard").catch(() => {});
     res.json(updated);
   } catch { res.status(500).json({ error: "Failed to review card" }); }
 });

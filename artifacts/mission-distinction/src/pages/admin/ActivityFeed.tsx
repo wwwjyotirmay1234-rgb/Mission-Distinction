@@ -24,7 +24,7 @@ interface FeedStats {
   todayQuizAttempts: number;
 }
 
-const EVENT_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
+const EVENT_CONFIG: Record<string, { icon: React.ComponentType<{ className?: string; size?: number | string; strokeWidth?: number | string; color?: string }>; color: string; bg: string }> = {
   quiz:       { icon: Brain,          color: "text-purple-400",  bg: "bg-purple-500/10" },
   activity:   { icon: Activity,       color: "text-blue-400",    bg: "bg-blue-500/10" },
   register:   { icon: UserPlus,       color: "text-emerald-400", bg: "bg-emerald-500/10" },

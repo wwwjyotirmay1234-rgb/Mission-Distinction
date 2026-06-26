@@ -20,7 +20,7 @@ interface AuditEntry {
   createdAt: string;
 }
 
-const ACTION_CONFIG: Record<string, { icon: React.ElementType; color: string; label: string }> = {
+const ACTION_CONFIG: Record<string, { icon: React.ComponentType<{ className?: string; size?: number | string; strokeWidth?: number | string; color?: string }>; color: string; label: string }> = {
   dismissed_report:    { icon: Shield,       color: "text-emerald-400", label: "Dismissed Report" },
   removed_confession:  { icon: Trash2,       color: "text-red-400",     label: "Removed Confession" },
   removed_doubt:       { icon: Trash2,       color: "text-red-400",     label: "Removed Doubt" },

@@ -20,7 +20,7 @@ const reportLimiter = rateLimit({
 // Student: report content
 router.post("/report", authMiddleware, reportLimiter, async (req: Request, res: Response) => {
   try {
-    const reporterId = parseId((req as any).user?.id);
+    const reporterId = ((req as any).user.id as number);
     const { contentType, contentId, reason, contentPreview } = req.body;
     if (!contentType || !contentId || !reason?.trim()) {
       res.status(400).json({ error: "contentType, contentId, reason required" }); return;
@@ -31,7 +31,7 @@ router.post("/report", authMiddleware, reportLimiter, async (req: Request, res: 
     await db.insert(contentReportsTable).values({
       reporterId,
       contentType,
-      contentId: parseId(contentId),
+      contentId: parseId(contentId) ?? 0,
       contentPreview: String(contentPreview ?? "").slice(0, 200),
       reason: reason.trim().slice(0, 300),
       status: "pending",
@@ -75,6 +75,7 @@ router.patch("/reports/:id/dismiss", adminMiddleware, async (req: Request, res: 
   try {
     const admin = (req as any).user;
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     await db.update(contentReportsTable).set({ status: "dismissed", reviewedBy: admin.id, reviewedAt: new Date() }).where(eq(contentReportsTable.id, id));
     await logAudit(admin.id, admin.name, "dismissed_report", "content_report", id);
     res.json({ ok: true });
@@ -86,6 +87,7 @@ router.delete("/reports/:id/remove", adminMiddleware, async (req: Request, res: 
   try {
     const admin = (req as any).user;
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const [report] = await db.select().from(contentReportsTable).where(eq(contentReportsTable.id, id)).limit(1);
     if (!report) { res.status(404).json({ error: "Report not found" }); return; }
 

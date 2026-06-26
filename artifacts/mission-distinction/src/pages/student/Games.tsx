@@ -158,7 +158,7 @@ const GAME_TAGLINES: Record<string, string> = {
   "snl": "Roll. Climb. Avoid. Win!",
 };
 
-function GameIcon({ icon: Icon, color }: { icon: React.ElementType; color: string }) {
+function GameIcon({ icon: Icon, color }: { icon: React.ComponentType<{ className?: string; size?: number | string; strokeWidth?: number | string; color?: string }>; color: string }) {
   return (
     <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg shrink-0`}>
       <Icon size={22} className="text-white" />
@@ -182,7 +182,7 @@ function LockOverlay({ requiredLevel }: { requiredLevel: number }) {
 type PeekGame = {
   title: string;
   description: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number | string; strokeWidth?: number | string; color?: string }>;
   color: string;
   tag?: string;
   badge?: string;
@@ -430,7 +430,7 @@ const SOLO_COMPONENTS: Partial<Record<GameId, React.ComponentType>> = {
   "crossword": Crossword,
 };
 
-const GAME_META: Record<string, { title: string; subtitle: string; icon: React.ElementType; color: string; bg: string }> = {
+const GAME_META: Record<string, { title: string; subtitle: string; icon: React.ComponentType<{ className?: string; size?: number | string; strokeWidth?: number | string; color?: string }>; color: string; bg: string }> = {
   multiplayer: { title: "Quiz Battle", subtitle: "Live Multiplayer · 1st Year MBBS", icon: Users, color: "from-indigo-500 to-blue-600", bg: "bg-indigo-500/10 border-indigo-500/30" },
   chess: { title: "Chess", subtitle: "Online 1v1 · White vs Black", icon: Castle, color: "from-slate-500 to-gray-600", bg: "bg-slate-500/10 border-slate-500/30" },
   ludo: { title: "Ludo", subtitle: "Online 2–4 Players", icon: Dices, color: "from-orange-500 to-red-600", bg: "bg-orange-500/10 border-orange-500/30" },

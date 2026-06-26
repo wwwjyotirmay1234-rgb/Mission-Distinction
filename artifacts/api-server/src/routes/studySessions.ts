@@ -10,7 +10,7 @@ const router = Router();
 // Log a session
 router.post("/", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const { subject, durationMinutes, sessionType } = req.body;
     if (!durationMinutes || durationMinutes < 1) { res.status(400).json({ error: "durationMinutes must be >= 1" }); return; }
     const [row] = await db.insert(studySessionsTable).values({
@@ -26,7 +26,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
 // Get stats
 router.get("/stats", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
 
     // Today
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);

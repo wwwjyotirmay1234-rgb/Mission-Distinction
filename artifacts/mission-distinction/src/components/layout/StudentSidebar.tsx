@@ -43,7 +43,7 @@ function markAnnouncementsSeen() {
 }
 
 interface NavItem {
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string; size?: number | string; strokeWidth?: number | string; color?: string }>;
   label: string;
   href: string;
   badge?: number;

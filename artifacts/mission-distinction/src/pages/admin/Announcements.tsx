@@ -77,7 +77,7 @@ export default function AdminAnnouncements() {
     event: "border-green-500/30 text-green-400 bg-green-500/5",
   };
 
-  const typeIcon: Record<string, React.ElementType> = {
+  const typeIcon: Record<string, React.ComponentType<{ className?: string; size?: number | string; strokeWidth?: number | string; color?: string }>> = {
     announcement: Megaphone,
     news: Bell,
     event: Clock,

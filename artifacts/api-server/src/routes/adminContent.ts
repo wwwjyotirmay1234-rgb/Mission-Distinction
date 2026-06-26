@@ -23,7 +23,7 @@ router.get("/mnemonics", async (req: Request, res: Response) => {
 
 router.post("/mnemonics", async (req: Request, res: Response) => {
   try {
-    const adminId = parseId((req as any).user?.id);
+    const adminId = (req as any).user.id as number;
     const adminName = (req as any).user?.name || "Admin";
     const { subject, topic, mnemonic, description } = req.body;
     if (!subject || !topic?.trim() || !mnemonic?.trim()) {
@@ -45,9 +45,10 @@ router.post("/mnemonics", async (req: Request, res: Response) => {
 
 router.delete("/mnemonics/:id", async (req: Request, res: Response) => {
   try {
-    const adminId = parseId((req as any).user?.id);
+    const adminId = (req as any).user.id as number;
     const adminName = (req as any).user?.name || "Admin";
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     await db.delete(mnemonicUpvotesTable).where(eq(mnemonicUpvotesTable.mnemonicId, id));
     await db.delete(mnemonicsTable).where(eq(mnemonicsTable.id, id));
     await logAudit(adminId, adminName, "delete_mnemonic", "mnemonic", id);
@@ -68,7 +69,7 @@ router.get("/flashcard-decks", async (req: Request, res: Response) => {
 
 router.post("/flashcard-decks", async (req: Request, res: Response) => {
   try {
-    const adminId = parseId((req as any).user?.id);
+    const adminId = (req as any).user.id as number;
     const adminName = (req as any).user?.name || "Admin";
     const { subject, title } = req.body;
     if (!subject || !title?.trim()) { res.status(400).json({ error: "subject and title required" }); return; }
@@ -85,9 +86,10 @@ router.post("/flashcard-decks", async (req: Request, res: Response) => {
 
 router.delete("/flashcard-decks/:id", async (req: Request, res: Response) => {
   try {
-    const adminId = parseId((req as any).user?.id);
+    const adminId = (req as any).user.id as number;
     const adminName = (req as any).user?.name || "Admin";
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     await db.delete(flashcardsTable).where(eq(flashcardsTable.deckId, id));
     await db.delete(flashcardDecksTable).where(eq(flashcardDecksTable.id, id));
     await logAudit(adminId, adminName, "delete_admin_flashcard_deck", "flashcard_deck", id);
@@ -98,6 +100,7 @@ router.delete("/flashcard-decks/:id", async (req: Request, res: Response) => {
 router.get("/flashcard-decks/:id/cards", async (req: Request, res: Response) => {
   try {
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const [deck] = await db.select().from(flashcardDecksTable)
       .where(and(eq(flashcardDecksTable.id, id), eq(flashcardDecksTable.isAdminShared, true))).limit(1);
     if (!deck) { res.status(404).json({ error: "Deck not found" }); return; }
@@ -108,8 +111,9 @@ router.get("/flashcard-decks/:id/cards", async (req: Request, res: Response) => 
 
 router.post("/flashcard-decks/:id/cards", async (req: Request, res: Response) => {
   try {
-    const adminId = parseId((req as any).user?.id);
+    const adminId = (req as any).user.id as number;
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const { front, back } = req.body;
     if (!front?.trim() || !back?.trim()) { res.status(400).json({ error: "front and back required" }); return; }
     const [card] = await db.insert(flashcardsTable).values({
@@ -123,6 +127,7 @@ router.post("/flashcard-decks/:id/cards", async (req: Request, res: Response) =>
 router.delete("/flashcard-cards/:cardId", async (req: Request, res: Response) => {
   try {
     const cardId = parseId(req.params.cardId);
+    if (!cardId) { res.status(400).json({ error: "Invalid card ID" }); return; }
     const [card] = await db.select().from(flashcardsTable).where(eq(flashcardsTable.id, cardId)).limit(1);
     if (!card) { res.status(404).json({ error: "Card not found" }); return; }
     await db.delete(flashcardsTable).where(eq(flashcardsTable.id, cardId));

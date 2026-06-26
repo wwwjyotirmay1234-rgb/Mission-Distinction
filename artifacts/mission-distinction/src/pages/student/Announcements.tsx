@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 type FilterType = "all" | "announcement" | "news" | "event";
 
-const TYPE_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
+const TYPE_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string; size?: number | string; strokeWidth?: number | string; color?: string }> }> = {
   announcement: { label: "Announcement", color: "border-primary/40 text-primary bg-primary/10", icon: Megaphone },
   news: { label: "News", color: "border-blue-500/40 text-blue-400 bg-blue-500/10", icon: Newspaper },
   event: { label: "Event", color: "border-green-500/40 text-green-400 bg-green-500/10", icon: CalendarDays },

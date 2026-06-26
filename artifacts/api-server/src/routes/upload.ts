@@ -113,7 +113,7 @@ async function signPdfUploadURL(bucketId: string, fileName: string): Promise<str
     signal: AbortSignal.timeout(10_000),
   });
   if (!resp.ok) throw new Error(`Sidecar returned ${resp.status}`);
-  const { signed_url } = await resp.json();
+  const { signed_url } = await resp.json() as { signed_url: string };
   return signed_url;
 }
 

@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useListUsers, useGetAdminDashboardStats } from "@workspace/api-client-react";
 import { Users, BookOpen, Download, TrendingUp, GraduationCap, Building2, FileBarChart } from "lucide-react";
 
-function StatCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: React.ElementType; color: string }) {
+function StatCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: React.ComponentType<{ className?: string; size?: number | string; strokeWidth?: number | string; color?: string }>; color: string }) {
   return (
     <Card className="bg-card/40 border-border/40">
       <CardContent className="p-5 flex items-center gap-4">

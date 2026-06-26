@@ -59,6 +59,7 @@ router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const admin = (req as any).user;
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     await db.update(pinnedNoticesTable).set({ isActive: false }).where(eq(pinnedNoticesTable.id, id));
     await logAudit(admin.id, admin.name, "cleared_notice", "notice", id);
     res.json({ ok: true });

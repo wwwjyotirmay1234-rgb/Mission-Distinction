@@ -20,7 +20,7 @@ const postLimiter = rateLimit({
 // List confessions — userId is NEVER returned
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const rows = await db.select({
       id: confessionsTable.id,
       content: confessionsTable.content,
@@ -39,7 +39,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 // Post confession
 router.post("/", authMiddleware, postLimiter, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const { content } = req.body;
     if (!content?.trim()) { res.status(400).json({ error: "content required" }); return; }
     const stripped = content.replace(/<[^>]*>/g, "").trim();
@@ -53,8 +53,9 @@ router.post("/", authMiddleware, postLimiter, async (req: Request, res: Response
 // Toggle like
 router.post("/:id/like", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const [existing] = await db.select().from(confessionLikesTable).where(and(eq(confessionLikesTable.userId, userId), eq(confessionLikesTable.confessionId, id))).limit(1);
     if (existing) {
       await db.delete(confessionLikesTable).where(and(eq(confessionLikesTable.userId, userId), eq(confessionLikesTable.confessionId, id)));

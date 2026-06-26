@@ -172,7 +172,7 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
 // ── AI answer for an existing doubt (legacy) ──────────────────────────────
 router.post("/:id/ai-answer", authMiddleware, aiChatLimiter, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     if (isNaN(id)) { res.status(400).json({ error: "Invalid doubt ID" }); return; }
 
     const [doubt] = await db.select().from(doubtsTable).where(eq(doubtsTable.id, id)).limit(1);

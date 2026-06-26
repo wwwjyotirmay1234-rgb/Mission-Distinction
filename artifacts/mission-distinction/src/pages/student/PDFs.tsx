@@ -129,7 +129,7 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
 
       const total = Number(res.headers.get("content-length") ?? 0);
       const reader = res.body!.getReader();
-      const chunks: Uint8Array[] = [];
+      const chunks: BlobPart[] = [];
       let received = 0;
 
       while (true) {

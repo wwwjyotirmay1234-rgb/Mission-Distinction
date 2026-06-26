@@ -13,7 +13,7 @@ interface Notice {
   expiresAt: string | null;
 }
 
-const NOTICE_STYLE: Record<string, { icon: React.ElementType; bg: string; text: string; border: string }> = {
+const NOTICE_STYLE: Record<string, { icon: React.ComponentType<{ className?: string; size?: number | string; strokeWidth?: number | string; color?: string }>; bg: string; text: string; border: string }> = {
   info:    { icon: Info,          bg: "bg-blue-950/80",    text: "text-blue-200",   border: "border-blue-700/40" },
   success: { icon: CheckCircle,   bg: "bg-emerald-950/80", text: "text-emerald-200",border: "border-emerald-700/40" },
   warning: { icon: AlertTriangle, bg: "bg-amber-950/80",   text: "text-amber-200",  border: "border-amber-700/40" },

@@ -22,7 +22,7 @@ interface Notice {
   createdAt: string;
 }
 
-const NOTICE_TYPES: Record<string, { icon: React.ElementType; color: string; bg: string; label: string }> = {
+const NOTICE_TYPES: Record<string, { icon: React.ComponentType<{ className?: string; size?: number | string; strokeWidth?: number | string; color?: string }>; color: string; bg: string; label: string }> = {
   info:    { icon: Info,          color: "text-blue-400",    bg: "bg-blue-500/10 border-blue-500/20",    label: "Info" },
   success: { icon: CheckCircle,   color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", label: "Success" },
   warning: { icon: AlertTriangle, color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/20",  label: "Warning" },

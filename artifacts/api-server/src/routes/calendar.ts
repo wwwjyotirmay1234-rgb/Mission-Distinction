@@ -107,8 +107,8 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
       title: safeTitle,
       description: description !== undefined ? (description ? stripHtml(String(description)) : null) : undefined,
       subject: subject !== undefined ? (subject ? stripHtml(String(subject)) : null) : undefined,
-      startTime: start,
-      endTime: end,
+      startTime: start ?? undefined,
+      endTime: end ?? undefined,
       color: color !== undefined ? (color ? stripHtml(String(color)).slice(0, 20) : null) : undefined,
     }).where(and(eq(calendarEventsTable.id, id), eq(calendarEventsTable.userId, user.id))).returning();
     res.json({ ...event, startTime: event.startTime.toISOString(), endTime: event.endTime.toISOString(), createdAt: event.createdAt.toISOString() });

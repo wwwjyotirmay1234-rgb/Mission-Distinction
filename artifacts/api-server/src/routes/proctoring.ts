@@ -130,7 +130,7 @@ router.post("/link", authMiddleware, async (req: Request, res: Response) => {
 
 router.get("/sessions/:sessionId", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const { sessionId } = req.params;
+    const sessionId = req.params.sessionId as string;
     const logs = await db.select().from(proctoringLogsTable)
       .where(eq(proctoringLogsTable.sessionId, sessionId))
       .orderBy(proctoringLogsTable.createdAt);
@@ -142,7 +142,7 @@ router.get("/sessions/:sessionId", adminMiddleware, async (req: Request, res: Re
 
 router.get("/attempts/:attemptId/report", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const attemptId = parseInt(req.params.attemptId);
+    const attemptId = parseInt(req.params.attemptId as string);
     if (isNaN(attemptId)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
     const [attempt] = await db.select().from(quizAttemptsTable).where(eq(quizAttemptsTable.id, attemptId));
@@ -160,7 +160,7 @@ router.get("/attempts/:attemptId/report", adminMiddleware, async (req: Request, 
 
 router.patch("/attempts/:attemptId/flag", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const attemptId = parseInt(req.params.attemptId);
+    const attemptId = parseInt(req.params.attemptId as string);
     if (isNaN(attemptId)) { res.status(400).json({ error: "Invalid ID" }); return; }
     const { isFlagged } = req.body;
     await db.update(quizAttemptsTable).set({ isFlagged: !!isFlagged }).where(eq(quizAttemptsTable.id, attemptId));

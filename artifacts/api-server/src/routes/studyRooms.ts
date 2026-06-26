@@ -45,6 +45,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid room ID" }); return; }
     const [room] = await db.select().from(studyRoomsTable).where(eq(studyRoomsTable.id, id)).limit(1);
     if (!room) { res.status(404).json({ error: "Room not found" }); return; }
     const members = await db.select().from(studyRoomMembersTable)
@@ -56,7 +57,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 // Create room
 router.post("/", authMiddleware, createRoomLimiter, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const userName = (req as any).user?.name || "Anonymous";
     const { name, subject, timerMinutes } = req.body;
     if (!name?.trim() || !subject) { res.status(400).json({ error: "name and subject required" }); return; }
@@ -70,9 +71,10 @@ router.post("/", authMiddleware, createRoomLimiter, async (req: Request, res: Re
 // Join room
 router.post("/:id/join", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const userName = (req as any).user?.name || "Anonymous";
     const roomId = parseId(req.params.id);
+    if (!roomId) { res.status(400).json({ error: "Invalid room ID" }); return; }
     const [room] = await db.select().from(studyRoomsTable).where(eq(studyRoomsTable.id, roomId)).limit(1);
     if (!room) { res.status(404).json({ error: "Room not found" }); return; }
 
@@ -86,7 +88,7 @@ router.post("/:id/join", authMiddleware, async (req: Request, res: Response) => 
       const activeCount = await db.select({ c: sql<number>`COUNT(*)` }).from(studyRoomMembersTable)
         .where(and(eq(studyRoomMembersTable.roomId, roomId), gte(studyRoomMembersTable.lastHeartbeat, activeThreshold())));
       await db.update(studyRoomsTable).set({ memberCount: Number(activeCount[0]?.c ?? 1) }).where(eq(studyRoomsTable.id, roomId));
-      awardXp(userId!, XP_VALUES.STUDY_ROOM_JOINED, "study_room_joined", `Joined study room: ${room.name}`).catch(() => {});
+      awardXp(userId, XP_VALUES.STUDY_ROOM_JOINED, "study_room_joined", `Joined study room: ${room.name}`).catch(() => {});
     }
     res.json({ ok: true });
   } catch { res.status(500).json({ error: "Failed to join room" }); }
@@ -95,8 +97,9 @@ router.post("/:id/join", authMiddleware, async (req: Request, res: Response) => 
 // Heartbeat
 router.post("/:id/heartbeat", authMiddleware, heartbeatLimiter, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const roomId = parseId(req.params.id);
+    if (!roomId) { res.status(400).json({ error: "Invalid room ID" }); return; }
     await db.update(studyRoomMembersTable).set({ lastHeartbeat: new Date() })
       .where(and(eq(studyRoomMembersTable.roomId, roomId), eq(studyRoomMembersTable.userId, userId)));
     const activeCount = await db.select({ c: sql<number>`COUNT(*)` }).from(studyRoomMembersTable)
@@ -109,8 +112,9 @@ router.post("/:id/heartbeat", authMiddleware, heartbeatLimiter, async (req: Requ
 // Start timer (host only)
 router.patch("/:id/start", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid room ID" }); return; }
     const [room] = await db.select().from(studyRoomsTable).where(eq(studyRoomsTable.id, id)).limit(1);
     if (!room) { res.status(404).json({ error: "Room not found" }); return; }
     if (room.hostId !== userId) { res.status(403).json({ error: "Only host can start" }); return; }
@@ -124,8 +128,9 @@ router.patch("/:id/start", authMiddleware, async (req: Request, res: Response) =
 // Leave room
 router.post("/:id/leave", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const roomId = parseId(req.params.id);
+    if (!roomId) { res.status(400).json({ error: "Invalid room ID" }); return; }
     await db.delete(studyRoomMembersTable)
       .where(and(eq(studyRoomMembersTable.roomId, roomId), eq(studyRoomMembersTable.userId, userId)));
     const activeCount = await db.select({ c: sql<number>`COUNT(*)` }).from(studyRoomMembersTable)

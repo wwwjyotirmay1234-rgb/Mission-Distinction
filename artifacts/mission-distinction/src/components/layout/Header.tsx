@@ -46,7 +46,7 @@ function timeAgo(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
-const TYPE_ICON: Record<string, React.ElementType> = {
+const TYPE_ICON: Record<string, React.ComponentType<{ className?: string; size?: number | string; strokeWidth?: number | string; color?: string }>> = {
   event: CalendarDays,
   news: Newspaper,
   alert: AlertTriangle,

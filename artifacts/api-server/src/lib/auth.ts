@@ -43,7 +43,9 @@ export function parseToken(token: string): { userId: number; role: string; uah?:
 
 export { uaHash };
 
-export function parseId(param: string): number | null {
-  const id = parseInt(param, 10);
+export function parseId(param: string | string[] | undefined | null): number | null {
+  const raw = Array.isArray(param) ? param[0] : param;
+  if (!raw) return null;
+  const id = parseInt(raw, 10);
   return isNaN(id) || id <= 0 ? null : id;
 }

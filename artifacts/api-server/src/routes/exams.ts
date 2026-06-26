@@ -19,7 +19,7 @@ const createExamLimiter = rateLimit({
 // List exams (global + user's own, upcoming only unless ?all=1)
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const showAll = req.query.all === "1";
     const now = new Date();
 
@@ -37,7 +37,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 // Create personal exam
 router.post("/", authMiddleware, createExamLimiter, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const { title, subject, examDate, description } = req.body;
     if (!title?.trim() || !subject || !examDate) { res.status(400).json({ error: "title, subject, examDate required" }); return; }
     const [row] = await db.insert(examsTable).values({
@@ -73,8 +73,9 @@ router.post("/global", authMiddleware, async (req: Request, res: Response) => {
 // Delete exam
 router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid exam ID" }); return; }
     const isAdmin = (req as any).user?.role === "admin";
     const [row] = await db.select().from(examsTable).where(eq(examsTable.id, id)).limit(1);
     if (!row) { res.status(404).json({ error: "Exam not found" }); return; }

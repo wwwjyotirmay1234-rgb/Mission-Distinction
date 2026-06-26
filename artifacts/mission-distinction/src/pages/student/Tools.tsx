@@ -46,10 +46,9 @@ async function showAlarmNotification(title: string, body: string, alarmId: strin
         icon: "/icon-192.png",
         badge: "/icon-192.png",
         requireInteraction: true,
-        vibrate: [500, 300, 500, 300, 500],
         tag: "alarm-" + alarmId,
-        actions: [{ action: "dismiss", title: "Dismiss" }],
         data: { alarmId, type: "alarm" },
+        ...(({ vibrate: [500, 300, 500, 300, 500], actions: [{ action: "dismiss", title: "Dismiss" }] }) as NotificationOptions),
       });
       return;
     }

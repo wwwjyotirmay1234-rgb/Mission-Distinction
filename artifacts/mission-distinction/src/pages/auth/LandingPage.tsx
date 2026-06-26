@@ -100,7 +100,7 @@ export default function LandingPage() {
   // no login screen every time.
   if (isAuthenticated) {
     if (isAdmin) return <Redirect to="/admin/dashboard" />;
-    const year = user?.year;
+    const year = user?.year ?? undefined;
     return <Redirect to={getRouteByYear(year)} />;
   }
 

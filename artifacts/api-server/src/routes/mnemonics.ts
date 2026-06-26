@@ -20,7 +20,7 @@ const createMnemonicLimiter = rateLimit({
 // List mnemonics
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const subject = req.query.subject as string | undefined;
     const rows = subject && subject !== "All"
       ? await db.select().from(mnemonicsTable).where(eq(mnemonicsTable.subject, subject)).orderBy(desc(mnemonicsTable.upvotes), desc(mnemonicsTable.createdAt))
@@ -37,7 +37,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 // Create mnemonic
 router.post("/", authMiddleware, createMnemonicLimiter, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const authorName = (req as any).user?.name || "Student";
     const { subject, topic, mnemonic, description } = req.body;
     if (!subject || !topic?.trim() || !mnemonic?.trim()) { res.status(400).json({ error: "subject, topic, and mnemonic required" }); return; }
@@ -49,8 +49,9 @@ router.post("/", authMiddleware, createMnemonicLimiter, async (req: Request, res
 // Delete mnemonic
 router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const [row] = await db.select().from(mnemonicsTable).where(and(eq(mnemonicsTable.id, id), eq(mnemonicsTable.userId, userId))).limit(1);
     if (!row) { res.status(404).json({ error: "Mnemonic not found or not yours" }); return; }
     await db.delete(mnemonicUpvotesTable).where(eq(mnemonicUpvotesTable.mnemonicId, id));
@@ -62,8 +63,9 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
 // Toggle upvote
 router.post("/:id/upvote", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const [existing] = await db.select().from(mnemonicUpvotesTable).where(and(eq(mnemonicUpvotesTable.userId, userId), eq(mnemonicUpvotesTable.mnemonicId, id))).limit(1);
     if (existing) {
       await db.delete(mnemonicUpvotesTable).where(and(eq(mnemonicUpvotesTable.userId, userId), eq(mnemonicUpvotesTable.mnemonicId, id)));

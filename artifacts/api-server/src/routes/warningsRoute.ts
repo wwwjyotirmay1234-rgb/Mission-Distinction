@@ -11,7 +11,7 @@ const router = Router();
 // Student: get my warnings (unread)
 router.get("/my", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const warnings = await db.select().from(studentWarningsTable)
       .where(eq(studentWarningsTable.userId, userId))
       .orderBy(desc(studentWarningsTable.createdAt));
@@ -22,8 +22,9 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
 // Student: mark warning as seen
 router.patch("/:id/seen", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId((req as any).user?.id);
+    const userId = ((req as any).user.id as number);
     const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     await db.update(studentWarningsTable)
       .set({ seenAt: new Date() })
       .where(eq(studentWarningsTable.id, id));
@@ -37,18 +38,20 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
     const admin = (req as any).user;
     const { userId, reason, severity } = req.body;
     if (!userId || !reason?.trim()) { res.status(400).json({ error: "userId and reason required" }); return; }
+    const targetUserId = parseId(userId);
+    if (!targetUserId) { res.status(400).json({ error: "Invalid userId" }); return; }
     const validSeverities = new Set(["warning", "strike", "final"]);
     const sev = validSeverities.has(severity) ? severity : "warning";
 
     const [warning] = await db.insert(studentWarningsTable).values({
-      userId: parseId(userId),
+      userId: targetUserId,
       issuedBy: admin.id,
       issuedByName: admin.name,
       reason: reason.trim().slice(0, 500),
       severity: sev,
     }).returning();
 
-    await logAudit(admin.id, admin.name, "issued_warning", "user", parseId(userId), { severity: sev, reason: reason.trim().slice(0, 100) });
+    await logAudit(admin.id, admin.name, "issued_warning", "user", targetUserId, { severity: sev, reason: reason.trim().slice(0, 100) });
     res.json(warning);
   } catch { res.status(500).json({ error: "Failed to issue warning" }); }
 });
@@ -57,6 +60,7 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
 router.get("/user/:userId", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = parseId(req.params.userId);
+    if (!userId) { res.status(400).json({ error: "Invalid userId" }); return; }
     const warnings = await db.select().from(studentWarningsTable)
       .where(eq(studentWarningsTable.userId, userId))
       .orderBy(desc(studentWarningsTable.createdAt));
