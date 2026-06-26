@@ -1,10 +1,12 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { booksTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, count } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
+import { awardXp, XP_VALUES } from "../lib/xp";
+import { xpTransactionsTable } from "@workspace/db";
 
 const router = Router();
 
@@ -25,6 +27,38 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
     if (search) books = books.filter(b => b.title.toLowerCase().includes((search as string).toLowerCase()));
     res.json(books);
   } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Track book read — awards XP once per book per day per student
+router.post("/:id/read", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+    const [book] = await db.select().from(booksTable).where(eq(booksTable.id, id));
+    if (!book) { res.status(404).json({ error: "Book not found" }); return; }
+
+    // Only award XP once per book per day
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const type = `book_read_${id}`;
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(xpTransactionsTable)
+      .where(and(
+        eq(xpTransactionsTable.userId, user.id),
+        eq(xpTransactionsTable.type, type),
+        gte(xpTransactionsTable.createdAt, dayStart),
+      ));
+
+    if (Number(total) === 0) {
+      awardXp(user.id, XP_VALUES.BOOK_READ, type, `Read book: ${book.title.slice(0, 60)}`).catch(() => {});
+    }
+
+    res.json({ ok: true });
+  } catch {
     res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -98,6 +98,10 @@ async function fetchBooks(search?: string, subject?: string): Promise<Book[]> {
   return customFetch<Book[]>(`/api/books${qs ? `?${qs}` : ""}`);
 }
 
+function trackBookRead(bookId: number) {
+  customFetch(`/api/books/${bookId}/read`, { method: "POST" }).catch(() => {});
+}
+
 function BookCard({ book }: { book: Book }) {
   const color = SUBJECT_COLORS[book.subject] || DEFAULT_COLOR;
   return (
@@ -130,7 +134,10 @@ function BookCard({ book }: { book: Book }) {
         <Button
           className="w-full text-xs gap-1.5 mt-auto"
           size="sm"
-          onClick={() => window.open(book.url, "_blank", "noopener,noreferrer")}
+          onClick={() => {
+            trackBookRead(book.id);
+            window.open(book.url, "_blank", "noopener,noreferrer");
+          }}
         >
           <ExternalLink size={12} /> Read Book
         </Button>

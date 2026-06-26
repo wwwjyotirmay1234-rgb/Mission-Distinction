@@ -46,7 +46,6 @@ router.post("/", authMiddleware, postLimiter, async (req: Request, res: Response
     if (!stripped) { res.status(400).json({ error: "content required" }); return; }
     if (stripped.length > 500) { res.status(400).json({ error: "Max 500 characters" }); return; }
     const [row] = await db.insert(confessionsTable).values({ userId, content: stripped }).returning();
-    awardXp(userId!, XP_VALUES.CONFESSION_POSTED, "confession_posted", "Posted a confession").catch(() => {});
     res.json({ id: row.id, content: row.content, likes: row.likes, createdAt: row.createdAt, hasLiked: false });
   } catch { res.status(500).json({ error: "Failed to post confession" }); }
 });
@@ -64,7 +63,6 @@ router.post("/:id/like", authMiddleware, async (req: Request, res: Response) => 
     } else {
       await db.insert(confessionLikesTable).values({ userId, confessionId: id });
       await db.update(confessionsTable).set({ likes: sql`likes + 1` }).where(eq(confessionsTable.id, id));
-      awardXp(userId!, XP_VALUES.MNEMONIC_UPVOTED, "confession_liked", "Liked a confession").catch(() => {});
       res.json({ liked: true });
     }
   } catch { res.status(500).json({ error: "Failed to like" }); }

@@ -23,6 +23,7 @@ export const XP_VALUES = {
   STOPWATCH_SESSION: 10,
   ALARM_USED: 5,
   // Feature usage (5-10 XP)
+  BOOK_READ: 10,
   BOOKMARK_ADDED: 5,
   FLASHCARD_SESSION: 5,
   // Student interactions (5-10 XP)
