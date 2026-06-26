@@ -68,6 +68,7 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
   const [isOffline, setIsOffline] = React.useState(!navigator.onLine);
   const [savedBlob, setSavedBlob] = React.useState<Blob | null>(null);
   const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
+  const [cacheChecked, setCacheChecked] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [saveProgress, setSaveProgress] = React.useState(0);
   const [saveError, setSaveError] = React.useState<string | null>(null);
@@ -86,18 +87,24 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
     };
   }, []);
 
-  // Load cached blob from IndexedDB on mount
+  // Check IndexedDB cache BEFORE rendering the iframe so we never start a
+  // network fetch when a local copy already exists.
   React.useEffect(() => {
-    getPdfBlob(pdf.id).then((entry) => {
-      if (entry) {
-        setSavedBlob(entry.blob);
-        setIsSaved(true);
-        const url = URL.createObjectURL(entry.blob);
-        setBlobUrl(url);
-      }
-    }).catch(() => {});
+    let revoke: string | null = null;
+    getPdfBlob(pdf.id)
+      .then((entry) => {
+        if (entry) {
+          setSavedBlob(entry.blob);
+          setIsSaved(true);
+          const url = URL.createObjectURL(entry.blob);
+          revoke = url;
+          setBlobUrl(url);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCacheChecked(true));
     return () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      if (revoke) URL.revokeObjectURL(revoke);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pdf.id]);
@@ -234,7 +241,13 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
         )}
 
         <div className="flex-1 relative overflow-hidden">
-          {showOfflineWall ? (
+          {!cacheChecked ? (
+            /* ── Waiting for IndexedDB check before deciding which URL to use ── */
+            <div className="flex items-center justify-center h-full gap-3 text-muted-foreground">
+              <Loader2 size={24} className="animate-spin text-primary" />
+              <span className="text-sm">Opening…</span>
+            </div>
+          ) : showOfflineWall ? (
             /* ── Offline, no local copy ── */
             <div className="flex flex-col items-center justify-center h-full gap-5 px-6 text-center">
               <div className="rounded-full bg-amber-500/10 p-5">
@@ -289,6 +302,26 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
       </DialogContent>
     </Dialog>
   );
+}
+
+// Silently save a PDF to IndexedDB in the background after a download click.
+// Errors are swallowed — this is best-effort so the download still proceeds.
+async function autoSaveOffline(pdf: Pdf) {
+  try {
+    const existing = await getPdfBlob(pdf.id);
+    if (existing) return; // already cached, nothing to do
+    const token = localStorage.getItem("mission_token") ?? "";
+    const res = await fetch(`/api/pdfs/${pdf.id}/proxy`, {
+      credentials: "include",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) return;
+    const buf = await res.arrayBuffer();
+    const blob = new Blob([buf], { type: "application/pdf" });
+    await savePdfBlob(pdf.id, blob, pdf.title);
+  } catch {
+    // best-effort — ignore errors
+  }
 }
 
 async function trackDownload(pdfId: number) {
@@ -405,7 +438,7 @@ export default function StudentPDFs() {
                       size="sm"
                       variant="secondary"
                       className="w-full"
-                      onClick={() => { trackDownload(pdf.id); window.open(getDownloadUrl(pdf.url), "_blank", "noopener,noreferrer"); }}
+                      onClick={() => { trackDownload(pdf.id); autoSaveOffline(pdf); window.open(getDownloadUrl(pdf.url), "_blank", "noopener,noreferrer"); }}
                     >
                       <Download className="mr-2 h-4 w-4" /> Download
                     </Button>
@@ -431,7 +464,7 @@ export default function StudentPDFs() {
                       size="sm"
                       variant="secondary"
                       className="flex-1 h-8 text-xs gap-1.5"
-                      onClick={() => { trackDownload(pdf.id); window.open(getDownloadUrl(pdf.url), "_blank", "noopener,noreferrer"); }}
+                      onClick={() => { trackDownload(pdf.id); autoSaveOffline(pdf); window.open(getDownloadUrl(pdf.url), "_blank", "noopener,noreferrer"); }}
                     >
                       <Download size={13} /> Download
                     </Button>
