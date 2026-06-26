@@ -313,14 +313,20 @@ function Hub({ onSelect, rankLevel, currentXp }: { onSelect: (id: GameId) => voi
             return (
               <motion.div key={g.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
                 <div
-                  className={`relative w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} cursor-pointer ${!isLocked && "hover:scale-[1.01] hover:shadow-lg"}`}
+                  className={`relative overflow-hidden w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} cursor-pointer ${!isLocked && "hover:scale-[1.01] hover:shadow-lg"}`}
                   onClick={() => isLocked
                     ? setPeekGame({ title: g.title, description: g.description, icon: g.icon, color: g.color, badge: g.badge, detail: g.detail, requiredLevel: reqLevel, posterImage: GAME_POSTERS[g.id], tagline: GAME_TAGLINES[g.id] })
                     : onSelect(g.id)
                   }
                 >
+                  {GAME_POSTERS[g.id] && (
+                    <div className="absolute inset-0 z-0">
+                      <img src={GAME_POSTERS[g.id]} alt="" className="w-full h-full object-cover object-center" />
+                      <div className="absolute inset-0 bg-background/82" />
+                    </div>
+                  )}
                   {isLocked && <LockOverlay requiredLevel={reqLevel} />}
-                  <div className={`flex items-start gap-4 ${isLocked ? "opacity-40" : ""}`}>
+                  <div className={`relative z-10 flex items-start gap-4 ${isLocked ? "opacity-40" : ""}`}>
                     <GameIcon icon={g.icon} color={g.color} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -350,14 +356,20 @@ function Hub({ onSelect, rankLevel, currentXp }: { onSelect: (id: GameId) => voi
             return (
               <motion.div key={g.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
                 <div
-                  className={`relative w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} cursor-pointer ${!isLocked && "hover:scale-[1.02] hover:shadow-lg"}`}
+                  className={`relative overflow-hidden w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} cursor-pointer ${!isLocked && "hover:scale-[1.02] hover:shadow-lg"}`}
                   onClick={() => isLocked
                     ? setPeekGame({ title: g.title, description: g.description, icon: g.icon, color: g.color, tag: g.tag, requiredLevel: reqLevel, posterImage: GAME_POSTERS[g.id], tagline: GAME_TAGLINES[g.id] })
                     : onSelect(g.id)
                   }
                 >
+                  {GAME_POSTERS[g.id] && (
+                    <div className="absolute inset-0 z-0">
+                      <img src={GAME_POSTERS[g.id]} alt="" className="w-full h-full object-cover object-center" />
+                      <div className="absolute inset-0 bg-background/82" />
+                    </div>
+                  )}
                   {isLocked && <LockOverlay requiredLevel={reqLevel} />}
-                  <div className={`flex items-start gap-4 ${isLocked ? "opacity-40" : ""}`}>
+                  <div className={`relative z-10 flex items-start gap-4 ${isLocked ? "opacity-40" : ""}`}>
                     <GameIcon icon={g.icon} color={g.color} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -370,7 +382,7 @@ function Hub({ onSelect, rankLevel, currentXp }: { onSelect: (id: GameId) => voi
                     </div>
                   </div>
                   {!isLocked && (
-                    <div className="mt-3 text-xs text-muted-foreground">
+                    <div className="relative z-10 mt-3 text-xs text-muted-foreground">
                       <span className="text-primary font-medium">AI-powered</span> · Infinite rounds
                     </div>
                   )}
