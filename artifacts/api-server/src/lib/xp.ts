@@ -84,7 +84,9 @@ export async function awardXp(
     }
 
     return { rankUp: false, newRankName: newRank.name, newXp };
-  } catch {
-    return { rankUp: false, newRankName: "Novice Scholar", newXp: 0 };
+  } catch (err) {
+    console.error("[xp] awardXp error:", err);
+    // Return neutral failure — caller should not treat this as a rank/XP state
+    return { rankUp: false, newRankName: "", newXp: -1 };
   }
 }
