@@ -211,7 +211,7 @@ router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const [existing] = await db.select().from(pdfsTable).where(eq(pdfsTable.id, id));
     if (!existing) { res.status(404).json({ error: "Not found" }); return; }
-    if (existing.createdBy !== null && existing.createdBy !== admin.id) {
+    if (!admin.isSuperAdmin && existing.createdBy !== null && existing.createdBy !== admin.id) {
       res.status(403).json({ error: "You can only delete PDFs you uploaded" }); return;
     }
     await db.delete(pdfsTable).where(eq(pdfsTable.id, id));
