@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Shuffle, Brain, Stethoscope, Zap, Grid3x3, ArrowLeft, Users, Castle, Dices, Gamepad2, Lock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Shuffle, Brain, Stethoscope, Zap, Grid3x3, ArrowLeft, Users, Castle, Dices, Gamepad2, Lock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useXPStats } from "@/hooks/useXPStats";
 import { RANKS } from "@/lib/ranks";
@@ -136,7 +136,7 @@ function GameIcon({ icon: Icon, color }: { icon: React.ElementType; color: strin
 function LockOverlay({ requiredLevel }: { requiredLevel: number }) {
   const rank = RANKS.find(r => r.level === requiredLevel) ?? RANKS[requiredLevel - 1];
   return (
-    <div className="absolute inset-0 rounded-2xl bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-10">
+    <div className="absolute inset-0 rounded-2xl bg-background/75 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2 z-10 pointer-events-none">
       <Lock size={22} className="text-muted-foreground" />
       <p className="text-xs font-semibold text-muted-foreground text-center leading-tight px-2">
         {rank.emoji} {rank.name}<br />
@@ -146,9 +146,112 @@ function LockOverlay({ requiredLevel }: { requiredLevel: number }) {
   );
 }
 
-function Hub({ onSelect, rankLevel }: { onSelect: (id: GameId) => void; rankLevel: number }) {
+type PeekGame = {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  color: string;
+  tag?: string;
+  badge?: string;
+  detail?: string;
+  requiredLevel: number;
+};
+
+function GamePeekModal({ game, currentXp, onClose }: { game: PeekGame; currentXp: number; onClose: () => void }) {
+  const rank = RANKS.find(r => r.level === game.requiredLevel) ?? RANKS[game.requiredLevel - 1];
+  const xpNeeded = Math.max(0, rank.min - currentXp);
+  const prevRank = RANKS.find(r => r.level === game.requiredLevel - 1) ?? RANKS[0];
+  const progress = Math.min(100, Math.round(((currentXp - prevRank.min) / (rank.min - prevRank.min)) * 100));
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <motion.div
+          className="relative w-full max-w-sm rounded-3xl overflow-hidden border border-border/50 shadow-2xl"
+          initial={{ opacity: 0, y: 60, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 40, scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 320, damping: 28 }}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Hero banner */}
+          <div className={`relative bg-gradient-to-br ${game.color} h-40 flex flex-col items-center justify-center gap-3`}>
+            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+              <game.icon size={30} className="text-white" />
+            </div>
+            <div className="text-center">
+              <h2 className="text-white font-bold text-lg leading-tight">{game.title}</h2>
+              {(game.tag || game.badge) && (
+                <span className="text-white/70 text-xs font-medium">{game.tag ?? game.badge}</span>
+              )}
+            </div>
+            <button onClick={onClose} className="absolute top-3 right-3 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+              <X size={14} />
+            </button>
+          </div>
+
+          {/* Info */}
+          <div className="bg-card p-5 space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed text-center">{game.description}</p>
+            {game.detail && <p className="text-xs text-primary/80 font-medium text-center">✨ {game.detail}</p>}
+
+            {/* Lock status */}
+            <div className="bg-background/60 border border-border/50 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                  <Lock size={12} /> Locked
+                </span>
+                <span className="font-semibold text-foreground">{rank.emoji} {rank.name}</span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>{currentXp.toLocaleString()} XP</span>
+                  <span>{rank.min.toLocaleString()} XP</span>
+                </div>
+                <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full bg-gradient-to-r ${game.color} rounded-full transition-all`}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+
+              <p className="text-xs text-center text-muted-foreground">
+                {xpNeeded > 0
+                  ? <><span className="text-foreground font-semibold">{xpNeeded.toLocaleString()} XP</span> more to unlock</>
+                  : "Almost there!"}
+              </p>
+            </div>
+
+            <Button className="w-full" onClick={onClose}>
+              Keep Earning XP
+            </Button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function Hub({ onSelect, rankLevel, currentXp }: { onSelect: (id: GameId) => void; rankLevel: number; currentXp: number }) {
+  const [peekGame, setPeekGame] = useState<PeekGame | null>(null);
+
   return (
     <div className="space-y-6">
+      {/* Locked game peek modal */}
+      {peekGame && (
+        <GamePeekModal game={peekGame} currentXp={currentXp} onClose={() => setPeekGame(null)} />
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-foreground">Medical Games</h1>
         <p className="text-muted-foreground text-sm mt-1">
@@ -165,8 +268,12 @@ function Hub({ onSelect, rankLevel }: { onSelect: (id: GameId) => void; rankLeve
             const isLocked = rankLevel < reqLevel;
             return (
               <motion.div key={g.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
-                <div className={`relative w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:scale-[1.01] hover:shadow-lg"}`}
-                  onClick={() => !isLocked && onSelect(g.id)}
+                <div
+                  className={`relative w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} cursor-pointer ${!isLocked && "hover:scale-[1.01] hover:shadow-lg"}`}
+                  onClick={() => isLocked
+                    ? setPeekGame({ title: g.title, description: g.description, icon: g.icon, color: g.color, badge: g.badge, detail: g.detail, requiredLevel: reqLevel })
+                    : onSelect(g.id)
+                  }
                 >
                   {isLocked && <LockOverlay requiredLevel={reqLevel} />}
                   <div className={`flex items-start gap-4 ${isLocked ? "opacity-40" : ""}`}>
@@ -199,8 +306,11 @@ function Hub({ onSelect, rankLevel }: { onSelect: (id: GameId) => void; rankLeve
             return (
               <motion.div key={g.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
                 <div
-                  className={`relative w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} ${isLocked ? "cursor-not-allowed" : "cursor-pointer hover:scale-[1.02] hover:shadow-lg"}`}
-                  onClick={() => !isLocked && onSelect(g.id)}
+                  className={`relative w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} cursor-pointer ${!isLocked && "hover:scale-[1.02] hover:shadow-lg"}`}
+                  onClick={() => isLocked
+                    ? setPeekGame({ title: g.title, description: g.description, icon: g.icon, color: g.color, tag: g.tag, requiredLevel: reqLevel })
+                    : onSelect(g.id)
+                  }
                 >
                   {isLocked && <LockOverlay requiredLevel={reqLevel} />}
                   <div className={`flex items-start gap-4 ${isLocked ? "opacity-40" : ""}`}>
@@ -334,13 +444,14 @@ export default function Games() {
   const [activeGame, setActiveGame] = useState<GameId | null>(null);
   const { data: xpStats } = useXPStats();
   const rankLevel = xpStats?.currentRankLevel ?? 1;
+  const currentXp = xpStats?.totalXp ?? 0;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       {activeGame ? (
         <GameShell gameId={activeGame} onBack={() => setActiveGame(null)} />
       ) : (
-        <Hub onSelect={setActiveGame} rankLevel={rankLevel} />
+        <Hub onSelect={setActiveGame} rankLevel={rankLevel} currentXp={currentXp} />
       )}
     </div>
   );
