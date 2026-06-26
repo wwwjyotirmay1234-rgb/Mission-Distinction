@@ -7,3 +7,4 @@
 - [Refresh token race condition fix](refresh-lock.md) — single-use rotation + parallel 401s = cascade logout; fix with a shared Promise lock in setTokenRefresher
 - [SW base path for production](sw-base-path.md) — derive BASE from self.location so /assets/ and nav fallback work at /mission-distinction/ not just /
 - [SAST taint-breaking patterns](sast-taint-breaking.md) — how to break semgrep taint chains and clear html-in-template-string / unsafe-dynamic-method findings
+- [3D Anatomy Hub architecture](anatomy-hub-arch.md) — R3F + drei for 3D, lazy-loaded, JSX.Element → React.ReactElement to avoid TS namespace errors, procedural geometry per system

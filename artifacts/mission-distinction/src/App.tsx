@@ -49,6 +49,7 @@ import { StudentLayout } from "@/components/layout/StudentLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 
 // Student Pages
+import StudentAnatomyHub from "@/pages/student/AnatomyHub";
 import StudentDashboard from "@/pages/student/Dashboard";
 import StudentQuiz from "@/pages/student/Quiz";
 import StudentNotes from "@/pages/student/Notes";
@@ -117,6 +118,7 @@ function Router() {
         <ProtectedRoute>
           <StudentLayout>
             <Switch>
+              <Route path="/student/anatomy" component={StudentAnatomyHub} />
               <Route path="/student/dashboard" component={StudentDashboard} />
               <Route path="/student/quiz" component={StudentQuiz} />
               <Route path="/student/notes" component={StudentNotes} />

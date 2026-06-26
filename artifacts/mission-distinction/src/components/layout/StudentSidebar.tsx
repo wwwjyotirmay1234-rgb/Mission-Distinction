@@ -25,6 +25,7 @@ import {
   Bot,
   Gamepad2,
   Lock,
+  Microscope,
 } from "lucide-react";
 import { useXPStats } from "@/hooks/useXPStats";
 import { XPProgressBar } from "@/components/XPProgressBar";
@@ -67,6 +68,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   }, [announcements]);
 
   const navItems: NavItem[] = [
+    { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy" },
     { icon: LayoutDashboard, label: "Dashboard", href: "/student/dashboard" },
     { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
     { icon: FileText, label: "Notes & Books", href: "/student/notes" },
