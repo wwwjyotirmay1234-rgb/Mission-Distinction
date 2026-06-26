@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { io, Socket } from "socket.io-client";
 import { apiFetch } from "@/lib/apiFetch";
+import VideoCall from "@/components/VideoCall";
 
 type RichFlashcard = { deckId: number; title: string; subject: string; cardCount: number; isAdminShared?: boolean };
 type RichMnemonic = { id: number; topic: string; subject: string; mnemonic: string; description?: string; isAdminShared?: boolean };
@@ -247,33 +248,6 @@ function VideoPicker({ open, onClose, onShare }: {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-// ── Video Call Modal ─────────────────────────────────────────────────────────
-
-function VideoCallModal({ open, onClose, roomName, title }: { open: boolean; onClose: () => void; roomName: string; title: string }) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 bg-card/80 border-b border-border/40 shrink-0">
-        <div className="flex items-center gap-2">
-          <Video size={16} className="text-primary" />
-          <span className="font-semibold text-sm">Video Call — {title}</span>
-          <span className="text-[10px] text-muted-foreground hidden sm:inline">Powered by Jitsi Meet · Allow camera &amp; microphone when prompted</span>
-        </div>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors">
-          <X size={18} />
-        </button>
-      </div>
-      <iframe
-        src={`https://meet.jit.si/${roomName}`}
-        allow="camera; microphone; fullscreen; display-capture; autoplay"
-        allowFullScreen
-        className="flex-1 w-full border-0"
-        title={`Video call: ${title}`}
-      />
-    </div>
   );
 }
 
@@ -1149,12 +1123,11 @@ export default function StudentCommunity() {
       <VideoPicker open={videoPickerOpen} onClose={() => setVideoPickerOpen(false)} onShare={handleShareVideo} />
 
       {/* Video Call */}
-      {chatGroupId && activeGroup && (
-        <VideoCallModal
-          open={videoOpen}
-          onClose={() => setVideoOpen(false)}
-          roomName={`MissionDistinction-Group-${chatGroupId}`}
+      {videoOpen && chatGroupId && activeGroup && (
+        <VideoCall
+          roomKey={`group-${chatGroupId}`}
           title={activeGroup.name}
+          onClose={() => setVideoOpen(false)}
         />
       )}
     </div>

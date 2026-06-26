@@ -54,6 +54,10 @@ const gameRooms = new Map<string, GameRoom>();
 const QUESTION_TIME_MS = 15000;
 const TOTAL_QUESTIONS = 10;
 
+// ── WebRTC call rooms ──────────────────────────────────────────────────────────
+interface CallParticipant { id: number; name: string; socketId: string; }
+const callRooms = new Map<string, Set<CallParticipant>>();
+
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
@@ -301,12 +305,58 @@ export function initSocketServer(httpServer: HttpServer) {
       }
     });
 
+    // ── WebRTC Call Signaling ───────────────────────────────────────────────────
+    socket.on("call:join", ({ roomKey }: { roomKey: string }) => {
+      socket.join(`call:${roomKey}`);
+      const room = callRooms.get(roomKey) ?? new Set<CallParticipant>();
+      const existing = Array.from(room).filter(p => p.id !== user.id);
+      // Remove stale entry for this user (reconnect case)
+      for (const p of room) { if (p.id === user.id) room.delete(p); }
+      room.add({ id: user.id, name: user.fullName, socketId: socket.id });
+      callRooms.set(roomKey, room);
+      socket.emit("call:participants", { participants: existing });
+      socket.to(`call:${roomKey}`).emit("call:user-joined", {
+        userId: user.id, name: user.fullName, socketId: socket.id,
+      });
+    });
+
+    socket.on("call:offer", ({ to, offer }: { to: string; offer: object }) => {
+      io.to(to).emit("call:offer", { from: socket.id, fromId: user.id, fromName: user.fullName, offer });
+    });
+
+    socket.on("call:answer", ({ to, answer }: { to: string; answer: object }) => {
+      io.to(to).emit("call:answer", { from: socket.id, fromId: user.id, answer });
+    });
+
+    socket.on("call:ice", ({ to, candidate }: { to: string; candidate: object }) => {
+      io.to(to).emit("call:ice", { from: socket.id, candidate });
+    });
+
+    socket.on("call:leave", ({ roomKey }: { roomKey: string }) => {
+      const room = callRooms.get(roomKey);
+      if (room) {
+        for (const p of room) { if (p.id === user.id) room.delete(p); }
+        if (room.size === 0) callRooms.delete(roomKey);
+      }
+      socket.leave(`call:${roomKey}`);
+      socket.to(`call:${roomKey}`).emit("call:user-left", { socketId: socket.id, userId: user.id });
+    });
+
     // ── Disconnect ─────────────────────────────────────────────────────────────
     socket.on("disconnect", async () => {
       for (const room of socket.rooms) {
         if (room.startsWith("chat:")) {
           const sockets = await io.in(room).fetchSockets();
           io.to(room).emit("room-count", { groupId: parseInt(room.replace("chat:", "")), count: sockets.length });
+        }
+        if (room.startsWith("call:")) {
+          const roomKey = room.replace("call:", "");
+          const callRoom = callRooms.get(roomKey);
+          if (callRoom) {
+            for (const p of callRoom) { if (p.socketId === socket.id) callRoom.delete(p); }
+            if (callRoom.size === 0) callRooms.delete(roomKey);
+            else io.to(room).emit("call:user-left", { socketId: socket.id, userId: user.id });
+          }
         }
         if (room.startsWith("game:")) {
           const code = room.replace("game:", "");
