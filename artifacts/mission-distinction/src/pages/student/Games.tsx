@@ -222,7 +222,7 @@ function GamePeekModal({ game, currentXp, onClose }: { game: PeekGame; currentXp
               <img
                 src={game.posterImage}
                 alt={game.title}
-                className="w-full h-full object-cover object-top"
+                className="w-full h-full object-cover object-center"
               />
             ) : (
               <div className={`w-full h-full bg-gradient-to-br ${game.color} flex items-center justify-center`}>
