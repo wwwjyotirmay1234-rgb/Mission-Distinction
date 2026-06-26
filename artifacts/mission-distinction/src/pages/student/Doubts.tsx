@@ -1,19 +1,36 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Plus, ChevronLeft, Send, CheckCircle2, Bot, Sparkles, RotateCcw, X } from "lucide-react";
+import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "NEET PG", "General"];
+
+const SUGGESTED = [
+  "Explain the brachial plexus formation and its branches",
+  "What is the role of the SA node in cardiac conduction?",
+  "How does the sodium-potassium pump work?",
+  "Describe the Krebs cycle steps in simple terms",
+  "What are the layers of the epidermis?",
+  "Explain the mechanism of action potential",
+];
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ChatMsg = {
+  id: string;
+  role: "user" | "ai";
+  content: string;
+  streaming?: boolean;
+  error?: boolean;
+};
 
 interface Doubt {
   id: number;
@@ -41,6 +58,251 @@ interface DoubtDetail extends Doubt {
   answers: DoubtAnswer[];
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function TypingDots() {
+  return (
+    <span className="inline-flex gap-1 items-center px-1">
+      <span className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-bounce [animation-delay:0ms]" />
+      <span className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-bounce [animation-delay:150ms]" />
+      <span className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-bounce [animation-delay:300ms]" />
+    </span>
+  );
+}
+
+// ─── AI Chat Tab ──────────────────────────────────────────────────────────────
+
+function AiChatTab() {
+  const [msgs, setMsgs] = useState<ChatMsg[]>([]);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [msgs]);
+
+  const send = async (question: string) => {
+    const q = question.trim();
+    if (!q || busy) return;
+
+    const userId = `u-${Date.now()}`;
+    const aiId = `a-${Date.now()}`;
+
+    setMsgs(prev => [
+      ...prev,
+      { id: userId, role: "user", content: q },
+      { id: aiId, role: "ai", content: "", streaming: true },
+    ]);
+    setInput("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+    setBusy(true);
+    abortRef.current = new AbortController();
+
+    try {
+      const token = localStorage.getItem("mission_token");
+      const res = await fetch("/api/doubts/ai-chat", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ question: q }),
+        signal: abortRef.current.signal,
+      });
+
+      if (!res.ok || !res.body) {
+        setMsgs(prev => prev.map(m =>
+          m.id === aiId ? { ...m, content: "Sorry, couldn't get an answer. Please try again.", streaming: false, error: true } : m
+        ));
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const parsed = JSON.parse(line.slice(6));
+            if (parsed.content) {
+              setMsgs(prev => prev.map(m =>
+                m.id === aiId ? { ...m, content: m.content + parsed.content } : m
+              ));
+            }
+            if (parsed.done) {
+              setMsgs(prev => prev.map(m =>
+                m.id === aiId ? { ...m, streaming: false } : m
+              ));
+            }
+            if (parsed.error) {
+              setMsgs(prev => prev.map(m =>
+                m.id === aiId ? { ...m, content: parsed.error, streaming: false, error: true } : m
+              ));
+            }
+          } catch {}
+        }
+      }
+    } catch (e: any) {
+      if (e.name !== "AbortError") {
+        setMsgs(prev => prev.map(m =>
+          m.id === aiId ? { ...m, content: "Connection error. Please try again.", streaming: false, error: true } : m
+        ));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const clearChat = () => {
+    abortRef.current?.abort();
+    setMsgs([]);
+    setBusy(false);
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send(input);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    e.target.style.height = "auto";
+    e.target.style.height = Math.min(e.target.scrollHeight, 128) + "px";
+  };
+
+  return (
+    <div className="flex flex-col" style={{ height: "calc(100vh - 220px)", minHeight: "420px" }}>
+      {/* Clear chat button */}
+      {msgs.length > 0 && (
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={clearChat}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted/40 transition-colors"
+          >
+            <Trash2 size={12} /> New Chat
+          </button>
+        </div>
+      )}
+
+      {/* Messages area */}
+      <div className="flex-1 overflow-y-auto space-y-5 pr-1">
+        {msgs.length === 0 ? (
+          /* ── Welcome / empty state ── */
+          <div className="flex flex-col items-center justify-center h-full text-center px-4 gap-6">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Bot size={32} className="text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-foreground">AI Doubt Solver</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Ask any medical question and get an instant, detailed answer
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
+              {SUGGESTED.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => send(q)}
+                  className="text-left text-xs px-3 py-2.5 rounded-xl border border-border/60 bg-card/50 hover:bg-card hover:border-primary/40 transition-all text-muted-foreground hover:text-foreground"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          msgs.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              {msg.role === "ai" && (
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <Bot size={15} className="text-primary" />
+                </div>
+              )}
+              <div
+                className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-primary text-white rounded-tr-sm"
+                    : msg.error
+                    ? "bg-destructive/10 border border-destructive/30 text-destructive rounded-tl-sm"
+                    : "bg-card border border-border/50 text-foreground rounded-tl-sm"
+                }`}
+              >
+                {msg.content ? (
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                ) : msg.streaming ? (
+                  <TypingDots />
+                ) : null}
+                {msg.streaming && msg.content && (
+                  <span className="inline-block w-0.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-text-bottom" />
+                )}
+              </div>
+            </div>
+          ))
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input bar */}
+      <div className="shrink-0 pt-3 border-t border-border/40">
+        <div className="flex gap-2 items-end bg-card border border-border/60 rounded-2xl px-4 py-3 focus-within:border-primary/50 transition-colors">
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask any medical question… (Enter to send, Shift+Enter for newline)"
+            rows={1}
+            disabled={busy}
+            className="flex-1 bg-transparent resize-none outline-none text-sm placeholder:text-muted-foreground disabled:opacity-60"
+            style={{ maxHeight: "128px", overflow: "hidden" }}
+          />
+          <button
+            onClick={() => send(input)}
+            disabled={!input.trim() || busy}
+            className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+          >
+            <Send size={15} className="text-white" />
+          </button>
+        </div>
+        <p className="text-center text-[10px] text-muted-foreground/50 mt-1.5">
+          AI may make mistakes — always verify with your textbooks.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Community Tab ────────────────────────────────────────────────────────────
+
 async function fetchDoubts(subject?: string): Promise<Doubt[]> {
   const url = subject && subject !== "All" ? `/api/doubts?subject=${subject}` : "/api/doubts";
   const res = await apiFetch(url);
@@ -54,166 +316,12 @@ async function fetchDoubt(id: number): Promise<DoubtDetail> {
   return res.json();
 }
 
-async function createDoubt(data: { subject: string; title: string; question: string }) {
-  const res = await apiFetch("/api/doubts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Failed to post question");
-  return res.json();
-}
-
-async function postAnswer(doubtId: number, answer: string) {
-  const res = await apiFetch(`/api/doubts/${doubtId}/answers`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ answer }),
-  });
-  if (!res.ok) throw new Error("Failed to post answer");
-  return res.json();
-}
-
-async function acceptAnswer(doubtId: number, answerId: number) {
-  const res = await apiFetch(`/api/doubts/${doubtId}/answers/${answerId}/accept`, {
-    method: "PATCH",
-  });
-  if (!res.ok) throw new Error("Failed to accept answer");
-  return res.json();
-}
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
-
-function AiAnswerPanel({ doubtId, onClose }: { doubtId: number; onClose: () => void }) {
-  const [text, setText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState("");
-  const abortRef = useRef<AbortController | null>(null);
-
-  const ask = async () => {
-    setText("");
-    setDone(false);
-    setError("");
-    setLoading(true);
-    abortRef.current = new AbortController();
-
-    try {
-      const token = localStorage.getItem("mission_token");
-      const res = await fetch(`/api/doubts/${doubtId}/ai-answer`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        signal: abortRef.current.signal,
-      });
-
-      if (!res.ok || !res.body) {
-        setError("AI could not answer this question. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-
-      while (true) {
-        const { value, done: streamDone } = await reader.read();
-        if (streamDone) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const parsed = JSON.parse(line.slice(6));
-            if (parsed.content) setText((t) => t + parsed.content);
-            if (parsed.done) setDone(true);
-            if (parsed.error) setError(parsed.error);
-          } catch {}
-        }
-      }
-    } catch (e: any) {
-      if (e.name !== "AbortError") setError("Connection error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  React.useEffect(() => {
-    ask();
-    return () => abortRef.current?.abort();
-  }, []);
-
-  return (
-    <div className="rounded-xl border border-primary/30 bg-primary/5 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-primary/20 bg-primary/10">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-            <Bot size={14} className="text-primary" />
-          </div>
-          <span className="text-sm font-semibold text-primary">AI Tutor</span>
-          {loading && (
-            <span className="flex items-center gap-1 text-xs text-primary/70">
-              <span className="inline-flex gap-0.5">
-                <span className="w-1 h-1 rounded-full bg-primary/60 animate-bounce [animation-delay:0ms]" />
-                <span className="w-1 h-1 rounded-full bg-primary/60 animate-bounce [animation-delay:150ms]" />
-                <span className="w-1 h-1 rounded-full bg-primary/60 animate-bounce [animation-delay:300ms]" />
-              </span>
-              thinking…
-            </span>
-          )}
-          {done && <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-green-500/40 text-green-400">Done</Badge>}
-        </div>
-        <div className="flex items-center gap-1">
-          {!loading && (
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-primary/70 hover:text-primary" onClick={ask} title="Regenerate">
-              <RotateCcw size={13} />
-            </Button>
-          )}
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={onClose} title="Close">
-            <X size={14} />
-          </Button>
-        </div>
-      </div>
-
-      {/* Answer body */}
-      <div className="px-4 py-3 min-h-[60px] max-h-[420px] overflow-y-auto">
-        {error ? (
-          <div className="text-sm text-destructive">{error}</div>
-        ) : text ? (
-          <div className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">{text}</div>
-        ) : loading ? (
-          <div className="space-y-2 pt-1">
-            <Skeleton className="h-3 w-full" />
-            <Skeleton className="h-3 w-5/6" />
-            <Skeleton className="h-3 w-4/6" />
-          </div>
-        ) : null}
-      </div>
-      <p className="px-4 pb-2.5 text-[10px] text-muted-foreground/50">AI answers may contain errors. Always verify with your textbooks.</p>
-    </div>
-  );
-}
-
-export default function StudentDoubts() {
+function CommunityTab() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [filterSubject, setFilterSubject] = useState("All");
   const [showCreate, setShowCreate] = useState(false);
+  const [newQ, setNewQ] = useState({ subject: "Anatomy", title: "" });
   const [answerText, setAnswerText] = useState("");
-  const [form, setForm] = useState({ subject: "Anatomy", title: "", question: "" });
   const [showAiPanel, setShowAiPanel] = useState(false);
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -230,18 +338,28 @@ export default function StudentDoubts() {
   });
 
   const createMutation = useMutation({
-    mutationFn: createDoubt,
+    mutationFn: (data: { subject: string; title: string; question: string }) =>
+      apiFetch("/api/doubts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then(r => { if (!r.ok) throw new Error(); return r.json(); }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["doubts"] });
       setShowCreate(false);
-      setForm({ subject: "Anatomy", title: "", question: "" });
-      toast.success("Question posted!");
+      setNewQ({ subject: "Anatomy", title: "" });
+      toast.success("Question posted to community!");
     },
     onError: () => toast.error("Failed to post question"),
   });
 
   const answerMutation = useMutation({
-    mutationFn: ({ id, text }: { id: number; text: string }) => postAnswer(id, text),
+    mutationFn: ({ id, text }: { id: number; text: string }) =>
+      apiFetch(`/api/doubts/${id}/answers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answer: text }),
+      }).then(r => { if (!r.ok) throw new Error(); return r.json(); }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["doubt", selectedId] });
       queryClient.invalidateQueries({ queryKey: ["doubts"] });
@@ -252,24 +370,26 @@ export default function StudentDoubts() {
   });
 
   const acceptMutation = useMutation({
-    mutationFn: ({ doubtId, answerId }: { doubtId: number; answerId: number }) => acceptAnswer(doubtId, answerId),
+    mutationFn: ({ doubtId, answerId }: { doubtId: number; answerId: number }) =>
+      apiFetch(`/api/doubts/${doubtId}/answers/${answerId}/accept`, { method: "PATCH" })
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["doubt", selectedId] });
-      toast.success("Answer marked as accepted!");
+      toast.success("Answer accepted!");
     },
     onError: () => toast.error("Failed to accept answer"),
   });
 
-  // ─── Detail view ──────────────────────────────────────────────────────────
+  // ── Detail view ──
   if (selectedId) {
     return (
-      <div className="space-y-4 max-w-3xl mx-auto">
+      <div className="space-y-4">
         <Button variant="ghost" size="sm" className="gap-2 -ml-2" onClick={() => { setSelectedId(null); setShowAiPanel(false); }}>
-          <ChevronLeft size={16} /> Back to Doubts
+          <ChevronLeft size={16} /> Back
         </Button>
 
         {detailLoading || !doubtDetail ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-20 w-full" />
           </div>
@@ -290,39 +410,34 @@ export default function StudentDoubts() {
                   </div>
                   <span className="text-xs text-muted-foreground shrink-0">{timeAgo(doubtDetail.createdAt)}</span>
                 </div>
-                <h2 className="text-lg font-bold mb-2">{doubtDetail.title}</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">{doubtDetail.question}</p>
+                <h2 className="text-base font-bold mb-1">{doubtDetail.title}</h2>
+                {doubtDetail.question && doubtDetail.question !== doubtDetail.title && (
+                  <p className="text-sm text-muted-foreground leading-relaxed">{doubtDetail.question}</p>
+                )}
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/30">
                   <p className="text-xs text-muted-foreground">Asked by <strong>{doubtDetail.authorName}</strong></p>
                   <Button
                     size="sm"
                     variant={showAiPanel ? "default" : "outline"}
                     className={`h-8 gap-1.5 text-xs ${showAiPanel ? "bg-primary" : "border-primary/40 text-primary hover:bg-primary/10"}`}
-                    onClick={() => setShowAiPanel((v) => !v)}
+                    onClick={() => setShowAiPanel(v => !v)}
                   >
                     <Sparkles size={13} />
-                    {showAiPanel ? "Hide AI Answer" : "Ask AI"}
+                    {showAiPanel ? "Hide AI" : "Ask AI"}
                   </Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* AI Answer Panel */}
-            {showAiPanel && (
-              <AiAnswerPanel
-                key={selectedId}
-                doubtId={selectedId}
-                onClose={() => setShowAiPanel(false)}
-              />
-            )}
+            {showAiPanel && <LegacyAiPanel doubtId={selectedId} onClose={() => setShowAiPanel(false)} />}
 
-            <h3 className="text-base font-semibold">
+            <p className="text-sm font-semibold">
               {doubtDetail.answers.length} Answer{doubtDetail.answers.length !== 1 ? "s" : ""}
-            </h3>
+            </p>
 
             {doubtDetail.answers.length === 0 && (
               <div className="p-8 text-center border border-dashed rounded-xl text-muted-foreground text-sm">
-                No answers yet. Be the first to help!
+                No answers yet — be the first to help!
               </div>
             )}
 
@@ -357,11 +472,12 @@ export default function StudentDoubts() {
             <Card className="bg-card/40 border-border/40">
               <CardContent className="p-4">
                 <p className="text-sm font-semibold mb-2">Your Answer</p>
-                <Textarea
+                <textarea
                   value={answerText}
-                  onChange={(e) => setAnswerText(e.target.value)}
+                  onChange={e => setAnswerText(e.target.value)}
                   placeholder="Share your knowledge…"
-                  className="min-h-[100px] bg-background/50 border-border/50 mb-3 text-sm"
+                  rows={3}
+                  className="w-full bg-background/50 border border-border/50 rounded-xl px-3 py-2 text-sm outline-none focus:border-primary/50 resize-none mb-3"
                 />
                 <Button
                   className="gap-2"
@@ -378,48 +494,41 @@ export default function StudentDoubts() {
     );
   }
 
-  // ─── List view ────────────────────────────────────────────────────────────
+  // ── List view ──
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight mb-2 flex items-center gap-2">
-            <MessageSquare size={22} className="text-primary" /> Doubt Board
-          </h1>
-          <p className="text-muted-foreground">Ask questions — get answers from AI or your peers.</p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex gap-1.5 flex-wrap">
+          {["All", ...SUBJECTS].map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilterSubject(s)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                filterSubject === s
+                  ? "bg-primary text-white border-primary"
+                  : "bg-card/40 border-border/50 text-muted-foreground hover:border-border"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
         </div>
-        <Button onClick={() => setShowCreate(true)} className="gap-2 shrink-0">
-          <Plus size={16} /> Ask Question
+        <Button size="sm" className="gap-1.5 shrink-0" onClick={() => setShowCreate(true)}>
+          <Plus size={14} /> Ask Peers
         </Button>
-      </div>
-
-      <div className="flex gap-2 flex-wrap">
-        {["All", ...SUBJECTS].map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilterSubject(s)}
-            className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-              filterSubject === s
-                ? "bg-primary text-white border-primary"
-                : "bg-card/40 border-border/50 text-muted-foreground hover:border-border"
-            }`}
-          >
-            {s}
-          </button>
-        ))}
       </div>
 
       {isLoading ? (
         <div className="space-y-3">
-          {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+          {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
         </div>
       ) : doubts.length === 0 ? (
         <div className="p-12 text-center border border-dashed rounded-xl text-muted-foreground">
-          <MessageSquare size={32} className="mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No questions yet.{filterSubject !== "All" ? " Try a different subject." : " Be the first to ask!"}</p>
+          <Users size={32} className="mx-auto mb-3 opacity-30" />
+          <p className="text-sm">No community questions yet.{filterSubject !== "All" ? " Try a different subject." : ""}</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {doubts.map((doubt) => (
             <Card
               key={doubt.id}
@@ -429,7 +538,7 @@ export default function StudentDoubts() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
                         {doubt.subject}
                       </Badge>
@@ -439,70 +548,189 @@ export default function StudentDoubts() {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm font-semibold truncate">{doubt.title}</p>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{doubt.question}</p>
+                    <p className="text-sm font-medium truncate">{doubt.title}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs text-muted-foreground">{timeAgo(doubt.createdAt)}</p>
                     <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground justify-end">
-                      <MessageSquare size={12} /> {doubt.answerCount}
+                      <MessageSquare size={11} /> {doubt.answerCount}
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Asked by {doubt.authorName}</p>
+                <p className="text-xs text-muted-foreground mt-1.5">Asked by {doubt.authorName}</p>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
 
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-card border-border/60 sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Ask a Question</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subject</label>
-              <Select value={form.subject} onValueChange={(v) => setForm((p) => ({ ...p, subject: v }))}>
-                <SelectTrigger className="bg-background/50 border-border/50">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUBJECTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
+      {/* Ask peers dialog */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
+          <div className="relative bg-card border border-border/60 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-foreground">Ask the Community</h3>
+              <button onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground">
+                <X size={16} />
+              </button>
             </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Question Title</label>
-              <Input
-                value={form.title}
-                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                placeholder="e.g. What is the function of the SA node?"
-                className="bg-background/50 border-border/50"
-              />
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subject</label>
+                <Select value={newQ.subject} onValueChange={v => setNewQ(p => ({ ...p, subject: v }))}>
+                  <SelectTrigger className="bg-background/50 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Your Question</label>
+                <Input
+                  value={newQ.title}
+                  onChange={e => setNewQ(p => ({ ...p, title: e.target.value }))}
+                  placeholder="e.g. What is the function of the SA node?"
+                  className="bg-background/50 border-border/50"
+                  onKeyDown={e => { if (e.key === "Enter" && newQ.title.trim()) createMutation.mutate({ subject: newQ.subject, title: newQ.title, question: newQ.title }); }}
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Details</label>
-              <Textarea
-                value={form.question}
-                onChange={(e) => setForm((p) => ({ ...p, question: e.target.value }))}
-                placeholder="Add more context to your question…"
-                className="min-h-[100px] bg-background/50 border-border/50"
-              />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowCreate(false)}>Cancel</Button>
+              <Button
+                className="flex-1"
+                disabled={!newQ.title.trim() || createMutation.isPending}
+                onClick={() => createMutation.mutate({ subject: newQ.subject, title: newQ.title, question: newQ.title })}
+              >
+                {createMutation.isPending ? "Posting…" : "Post Question"}
+              </Button>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-            <Button
-              disabled={!form.title.trim() || !form.question.trim() || createMutation.isPending}
-              onClick={() => createMutation.mutate(form)}
-            >
-              {createMutation.isPending ? "Posting…" : "Post Question"}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Legacy AI panel (for community thread view) ──────────────────────────────
+
+function LegacyAiPanel({ doubtId, onClose }: { doubtId: number; onClose: () => void }) {
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
+
+  const ask = async () => {
+    setText(""); setDone(false); setError(""); setLoading(true);
+    abortRef.current = new AbortController();
+    try {
+      const token = localStorage.getItem("mission_token");
+      const res = await fetch(`/api/doubts/${doubtId}/ai-answer`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        signal: abortRef.current.signal,
+      });
+      if (!res.ok || !res.body) { setError("AI could not answer. Try again."); setLoading(false); return; }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { value, done: sd } = await reader.read();
+        if (sd) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n"); buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const p = JSON.parse(line.slice(6));
+            if (p.content) setText(t => t + p.content);
+            if (p.done) setDone(true);
+            if (p.error) setError(p.error);
+          } catch {}
+        }
+      }
+    } catch (e: any) {
+      if (e.name !== "AbortError") setError("Connection error. Try again.");
+    } finally { setLoading(false); }
+  };
+
+  useEffect(() => { ask(); return () => abortRef.current?.abort(); }, []);
+
+  return (
+    <div className="rounded-xl border border-primary/30 bg-primary/5 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-primary/20 bg-primary/10">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+            <Bot size={14} className="text-primary" />
+          </div>
+          <span className="text-sm font-semibold text-primary">AI Tutor</span>
+          {loading && <TypingDots />}
+          {done && <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-green-500/40 text-green-400">Done</Badge>}
+        </div>
+        <div className="flex gap-1">
+          {!loading && (
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-primary/70 hover:text-primary" onClick={ask}>
+              <RotateCcw size={13} />
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          )}
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground" onClick={onClose}>
+            <X size={14} />
+          </Button>
+        </div>
+      </div>
+      <div className="px-4 py-3 min-h-[60px] max-h-[360px] overflow-y-auto">
+        {error ? <p className="text-sm text-destructive">{error}</p>
+          : text ? <p className="text-sm leading-relaxed whitespace-pre-wrap">{text}</p>
+          : loading ? <div className="space-y-2 pt-1"><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-5/6" /><Skeleton className="h-3 w-4/6" /></div>
+          : null}
+      </div>
+      <p className="px-4 pb-2.5 text-[10px] text-muted-foreground/50">AI answers may contain errors. Always verify with textbooks.</p>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
+export default function StudentDoubts() {
+  const [tab, setTab] = useState<"ai" | "community">("ai");
+
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Bot size={22} className="text-primary" /> Doubt Solver
+          </h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            {tab === "ai" ? "Ask anything — get an instant AI answer" : "Questions & answers from your batchmates"}
+          </p>
+        </div>
+      </div>
+
+      {/* Tab switcher */}
+      <div className="flex gap-1 p-1 bg-muted/30 border border-border/40 rounded-xl w-fit">
+        {(["ai", "community"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              tab === t
+                ? "bg-background shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t === "ai" ? <><Bot size={14} /> AI Chat</> : <><Users size={14} /> Community</>}
+          </button>
+        ))}
+      </div>
+
+      {tab === "ai" ? <AiChatTab /> : <CommunityTab />}
     </div>
   );
 }

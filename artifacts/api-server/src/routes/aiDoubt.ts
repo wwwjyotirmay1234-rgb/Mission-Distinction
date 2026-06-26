@@ -17,6 +17,51 @@ Guidelines:
 - If a question is outside 1st year MBBS scope, still answer helpfully
 - Always be encouraging and supportive to students`;
 
+// ── Instant AI chat (no doubt record needed) ──────────────────────────────
+router.post("/ai-chat", authMiddleware, async (req: Request, res: Response) => {
+  const { question } = req.body;
+  if (!question?.trim()) {
+    res.status(400).json({ error: "Question is required" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  try {
+    const stream = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_completion_tokens: 8192,
+      stream: true,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: question.trim() },
+      ],
+    });
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) {
+        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+      }
+    }
+
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+  } catch (err: any) {
+    console.error("AI chat error:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "AI answer failed. Please try again." });
+    } else {
+      res.write(`data: ${JSON.stringify({ error: "AI answer failed." })}\n\n`);
+      res.end();
+    }
+  }
+});
+
+// ── AI answer for an existing doubt (legacy) ──────────────────────────────
 router.post("/:id/ai-answer", authMiddleware, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
