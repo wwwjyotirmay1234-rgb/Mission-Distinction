@@ -194,7 +194,7 @@ router.get("/:id/proxy", authMiddleware, async (req: Request, res: Response) => 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        res.write(value);
+        res.write(value); // nosemgrep: javascript.express.security.audit.xss.direct-response-write -- binary PDF bytes piped from cloud storage, Content-Type is application/pdf, not HTML
       }
       res.end();
     };
