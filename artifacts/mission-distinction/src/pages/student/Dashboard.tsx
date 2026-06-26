@@ -19,7 +19,7 @@ import {
   getListAnnouncementsQueryKey,
   getListCommunityGroupsQueryKey,
 } from "@workspace/api-client-react";
-import { FileText, File, CheckCircle, Flame, Play, BookOpen, Bookmark, Calendar, ArrowRight, MessageSquare, Bell } from "lucide-react";
+import { FileText, File, CheckCircle, Flame, Play, BookOpen, Bookmark, Calendar, ArrowRight, MessageSquare, Bell, GraduationCap, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
 
 interface DashboardActivity {
@@ -73,9 +73,19 @@ export default function StudentDashboard() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
+  const [pendingYear, setPendingYear] = useState<string | null>(null);
+
   const handleYearChange = async (newYear: string) => {
     if (!user || newYear === user.year) return;
+    // Ask for confirmation before switching years
+    setPendingYear(newYear);
+  };
+
+  const confirmYearChange = async () => {
+    if (!user || !pendingYear) return;
     setSavingYear(true);
+    const newYear = pendingYear;
+    setPendingYear(null);
     try {
       const res = await apiFetch(`/api/users/${user.id}`, {
         method: "PATCH",
@@ -90,7 +100,7 @@ export default function StudentDashboard() {
       updateUser(updated);
       // Invalidate all cached content so every page re-fetches for the new year
       await queryClient.invalidateQueries();
-      toast.success(`Switched to ${newYear} MBBS`);
+      toast.success(`Switched to ${newYear} MBBS! 🎓`);
       // Redirect to Coming Soon for years that don't have content yet
       if (!is1stYear(newYear)) {
         setLocation("/coming-soon");
@@ -131,23 +141,72 @@ export default function StudentDashboard() {
           </h1>
           <p className="text-muted-foreground">Ready to conquer your goals today?</p>
         </div>
-        <div className="flex gap-2 items-center">
-          <Select
-            value={user?.year || ""}
-            onValueChange={handleYearChange}
-            disabled={savingYear}
-          >
-            <SelectTrigger className="h-7 px-3 py-1 text-xs bg-card/50 border-border/60 rounded-full w-auto gap-1.5 focus:ring-1 focus:ring-primary/50">
-              <SelectValue placeholder="Select year" />
-            </SelectTrigger>
-            <SelectContent>
-              {YEAR_OPTIONS.map((y) => (
-                <SelectItem key={y} value={y} className="text-xs">{y} MBBS</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Badge variant="outline" className="px-2 py-1 bg-card/50 max-w-[180px] truncate block">{user?.college || "My College"}</Badge>
+        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+          {/* Academic Year selector */}
+          <div className="flex items-center gap-2 bg-card border border-border/60 rounded-xl px-3 py-2 shadow-sm">
+            <GraduationCap size={15} className="text-primary shrink-0" />
+            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Academic Year</span>
+            <Select
+              value={user?.year || ""}
+              onValueChange={handleYearChange}
+              disabled={savingYear}
+            >
+              <SelectTrigger className="h-7 px-2 text-xs border-0 bg-transparent p-0 shadow-none focus:ring-0 gap-1 font-semibold text-foreground w-auto min-w-[90px]">
+                <SelectValue placeholder="Select year" />
+                <ChevronDown size={12} className="text-muted-foreground" />
+              </SelectTrigger>
+              <SelectContent>
+                {YEAR_OPTIONS.map((y) => (
+                  <SelectItem key={y} value={y} className="text-sm">
+                    <span className="font-medium">{y} MBBS</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {savingYear && <span className="text-[10px] text-muted-foreground animate-pulse">Saving…</span>}
+          </div>
+          <Badge variant="outline" className="px-2 py-1.5 bg-card/50 max-w-[180px] truncate text-xs">{user?.college || "My College"}</Badge>
         </div>
+
+        {/* Year change confirmation dialog */}
+        {pendingYear && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPendingYear(null)} />
+            <div className="relative bg-card border border-border rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <GraduationCap size={20} className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground">Change Academic Year?</h3>
+                  <p className="text-xs text-muted-foreground">This updates your year across the app</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                You're switching to <span className="font-semibold text-foreground">{pendingYear} MBBS</span>.
+                {!is1stYear(pendingYear) && (
+                  <span className="block mt-1 text-amber-400/90">
+                    ⚠️ Content for {pendingYear} is coming soon — you'll be redirected to the waiting page.
+                  </span>
+                )}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  className="flex-1 px-4 py-2 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-muted/40 transition-colors"
+                  onClick={() => setPendingYear(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="flex-1 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors"
+                  onClick={confirmYearChange}
+                >
+                  Yes, Switch
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
