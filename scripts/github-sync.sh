@@ -13,9 +13,18 @@ if [ -z "$REPO_URL" ] || [ -z "$TOKEN" ]; then
 fi
 
 BARE_URL="${REPO_URL#https://}"
-AUTHED_URL="https://x-access-token:${TOKEN}@${BARE_URL}"
 
 echo "[github-sync] Watching for new commits on main..."
+
+push_to_github() {
+  CRED_FILE=$(mktemp)
+  chmod 600 "$CRED_FILE"
+  echo "https://x-access-token:${TOKEN}@${BARE_URL}" > "$CRED_FILE"
+  git -c credential.helper="store --file=$CRED_FILE" push "https://${BARE_URL}" main --quiet 2>&1
+  local EXIT_CODE=$?
+  rm -f "$CRED_FILE"
+  return $EXIT_CODE
+}
 
 while true; do
   if [ -f "$REF_FILE" ]; then
@@ -23,7 +32,7 @@ while true; do
     if [ -n "$CURRENT_SHA" ] && [ "$CURRENT_SHA" != "$LAST_SHA" ]; then
       if [ -n "$LAST_SHA" ]; then
         echo "[github-sync] New commit detected: ${CURRENT_SHA:0:8} — pushing to GitHub..."
-        if git push "$AUTHED_URL" main --quiet 2>&1; then
+        if push_to_github; then
           echo "[github-sync] ✓ Pushed ${CURRENT_SHA:0:8} to GitHub."
         else
           echo "[github-sync] Push failed — will retry next cycle."
