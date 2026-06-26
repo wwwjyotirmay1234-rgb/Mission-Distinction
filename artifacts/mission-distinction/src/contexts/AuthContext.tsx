@@ -36,7 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(response.token);
     localStorage.setItem("mission_user", JSON.stringify(response.user));
     localStorage.setItem("mission_token", response.token);
-    localStorage.removeItem("mission_refresh_token");
+    if (response.refreshToken) {
+      localStorage.setItem("mission_refresh_token", response.refreshToken);
+    }
   };
 
   const logout = () => {
@@ -64,14 +66,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // which would invalidate all but the first (single-use tokens).
     let refreshPromise: Promise<string | null> | null = null;
 
-    setTokenRefresher(async () => {
+    const doRefresh = async (): Promise<string | null> => {
       if (refreshPromise) return refreshPromise;
       refreshPromise = (async () => {
         try {
+          // Send the stored refresh token in the request body as a fallback for
+          // environments where the httpOnly cookie is cleared (e.g. iOS PWA).
+          const storedRefresh = localStorage.getItem("mission_refresh_token");
           const res = await fetch("/api/auth/refresh", {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
+            body: storedRefresh ? JSON.stringify({ refreshToken: storedRefresh }) : undefined,
           });
           if (!res.ok) {
             window.dispatchEvent(new Event("auth:logout"));
@@ -80,6 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = await res.json();
           localStorage.setItem("mission_token", data.token);
           localStorage.setItem("mission_user", JSON.stringify(data.user));
+          if (data.refreshToken) {
+            localStorage.setItem("mission_refresh_token", data.refreshToken);
+          }
           window.dispatchEvent(new CustomEvent("auth:tokenRefreshed", { detail: data }));
           return data.token as string;
         } catch {
@@ -90,11 +99,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })();
       return refreshPromise;
-    });
+    };
+
+    setTokenRefresher(doRefresh);
+
+    // Silently refresh the token when the app comes back from background.
+    // This prevents stale/expired tokens after the user has been away.
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      const t = localStorage.getItem("mission_token");
+      if (!t) return;
+      // Decode the JWT exp claim (no library needed — it's just base64).
+      try {
+        const payload = JSON.parse(atob(t.split(".")[1]));
+        const expiresIn = (payload.exp ?? 0) * 1000 - Date.now();
+        // Proactively refresh if token expires within 7 days.
+        if (expiresIn < 7 * 24 * 60 * 60 * 1000) {
+          doRefresh().catch(() => {});
+        }
+      } catch {
+        // Malformed token — let the next API call handle it.
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       setTokenRefresher(null);
       setAuthTokenGetter(null);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 
