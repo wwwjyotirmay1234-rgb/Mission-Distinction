@@ -4,8 +4,17 @@ import { db } from "@workspace/db";
 import { pushSubscriptionsTable, appSettingsTable } from "@workspace/db";
 import { authMiddleware } from "../middlewares/auth";
 import { eq, and } from "drizzle-orm";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
+
+const pushSubscribeLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: { error: "Too many subscription requests." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 async function getOrCreateVapidKeys(): Promise<{ publicKey: string; privateKey: string }> {
   const envPublic = process.env.VAPID_PUBLIC_KEY;
@@ -59,7 +68,7 @@ router.get("/vapid-key", async (_req: Request, res: Response) => {
   }
 });
 
-router.post("/subscribe", authMiddleware, async (req: Request, res: Response) => {
+router.post("/subscribe", authMiddleware, pushSubscribeLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const { endpoint, keys } = req.body;
@@ -82,7 +91,7 @@ router.post("/subscribe", authMiddleware, async (req: Request, res: Response) =>
   }
 });
 
-router.delete("/subscribe", authMiddleware, async (req: Request, res: Response) => {
+router.delete("/subscribe", authMiddleware, pushSubscribeLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const { endpoint } = req.body;

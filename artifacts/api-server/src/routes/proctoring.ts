@@ -4,12 +4,29 @@ import { db } from "@workspace/db";
 import { proctoringLogsTable, quizAttemptsTable } from "@workspace/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
 
+const analyzeFrameLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: "Too many frame analysis requests. Slow down." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const logLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  message: { error: "Too many proctoring log events." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const MINOR_EVENTS = new Set(["session_started", "camera_error", "right_click"]);
 
-router.post("/log", authMiddleware, async (req: Request, res: Response) => {
+router.post("/log", authMiddleware, logLimiter, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
     const { sessionId, quizId, eventType, details, aiAnalysis } = req.body;
@@ -30,7 +47,7 @@ router.post("/log", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-router.post("/analyze-frame", authMiddleware, async (req: Request, res: Response) => {
+router.post("/analyze-frame", authMiddleware, analyzeFrameLimiter, async (req: Request, res: Response) => {
   try {
     const { imageBase64 } = req.body;
     if (!imageBase64) { res.status(400).json({ error: "Missing imageBase64" }); return; }

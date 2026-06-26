@@ -5,10 +5,19 @@ import { eq, desc } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
 
-router.post("/", authMiddleware, async (req: Request, res: Response) => {
+const feedbackLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: "Too many feedback submissions. Please wait before submitting again." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post("/", authMiddleware, feedbackLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const { category, subject, message, rating } = req.body;

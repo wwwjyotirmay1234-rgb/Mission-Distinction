@@ -55,7 +55,7 @@ router.post("/", authMiddleware, createExamLimiter, async (req: Request, res: Re
 // Create global exam (admin only)
 router.post("/global", authMiddleware, async (req: Request, res: Response) => {
   try {
-    if (!(req as any).user?.isAdmin) { res.status(403).json({ error: "Admin only" }); return; }
+    if ((req as any).user?.role !== "admin") { res.status(403).json({ error: "Admin only" }); return; }
     const { title, subject, examDate, description } = req.body;
     if (!title?.trim() || !subject || !examDate) { res.status(400).json({ error: "title, subject, examDate required" }); return; }
     const [row] = await db.insert(examsTable).values({
@@ -75,7 +75,7 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = parseId((req as any).user?.id);
     const id = parseId(req.params.id);
-    const isAdmin = (req as any).user?.isAdmin;
+    const isAdmin = (req as any).user?.role === "admin";
     const [row] = await db.select().from(examsTable).where(eq(examsTable.id, id)).limit(1);
     if (!row) { res.status(404).json({ error: "Exam not found" }); return; }
     if (!isAdmin && row.userId !== userId) { res.status(403).json({ error: "Not yours" }); return; }
