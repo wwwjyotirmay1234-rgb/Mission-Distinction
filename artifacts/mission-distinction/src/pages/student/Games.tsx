@@ -322,7 +322,7 @@ function Hub({ onSelect, rankLevel, currentXp }: { onSelect: (id: GameId) => voi
                   {GAME_POSTERS[g.id] && (
                     <div className="absolute inset-0 z-0">
                       <img src={GAME_POSTERS[g.id]} alt="" className="w-full h-full object-cover object-center" />
-                      <div className="absolute inset-0 bg-background/82" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background/90" />
                     </div>
                   )}
                   {isLocked && <LockOverlay requiredLevel={reqLevel} />}
@@ -365,7 +365,7 @@ function Hub({ onSelect, rankLevel, currentXp }: { onSelect: (id: GameId) => voi
                   {GAME_POSTERS[g.id] && (
                     <div className="absolute inset-0 z-0">
                       <img src={GAME_POSTERS[g.id]} alt="" className="w-full h-full object-cover object-center" />
-                      <div className="absolute inset-0 bg-background/82" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background/90" />
                     </div>
                   )}
                   {isLocked && <LockOverlay requiredLevel={reqLevel} />}
