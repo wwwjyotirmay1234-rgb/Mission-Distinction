@@ -16,12 +16,9 @@ import { Eye, EyeOff, Activity, ShieldCheck, TrendingUp, Award, Zap } from "luci
 import { InstallSection } from "@/components/InstallSection";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 
-const isMobileBrowser = () =>
-  /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) ||
-  navigator.maxTouchPoints > 1;
 
 const ODISHA_GOVT_COLLEGES = [
   "AIIMS Bhubaneswar",
@@ -130,15 +127,24 @@ export default function LandingPage() {
 
   useEffect(() => {
     let active = true;
-    setGoogleLoading(true);
+    // Only show loading if we're returning from a Google redirect
+    const redirectPending = sessionStorage.getItem("md_google_redirect") === "1";
+    if (redirectPending) {
+      setGoogleLoading(true);
+      sessionStorage.removeItem("md_google_redirect");
+    }
+
     getRedirectResult(auth)
       .then(async (result) => {
-        if (!result || !active) { setGoogleLoading(false); return; }
+        if (!result || !active) {
+          if (redirectPending) setGoogleLoading(false);
+          return;
+        }
         try {
           const idToken = await result.user.getIdToken();
           await finishGoogleAuth(idToken);
         } catch (err: any) {
-          toast.error(err?.message || "Google sign-in failed after redirect. Please try again.");
+          toast.error(err?.message || "Google sign-in failed. Please try again.");
           setGoogleLoading(false);
         }
       })
@@ -148,17 +154,19 @@ export default function LandingPage() {
           toast.error(
             `Google sign-in blocked: add "${window.location.hostname}" to Firebase Console → Authentication → Settings → Authorized domains.`
           );
+          setGoogleLoading(false);
         } else if (code && code !== "auth/no-auth-event") {
           toast.error(`Google sign-in failed (${code}). Please try again.`);
+          setGoogleLoading(false);
+        } else {
+          if (redirectPending) setGoogleLoading(false);
         }
-        setGoogleLoading(false);
       });
     return () => { active = false; };
   }, []);
 
   const handleGoogleSignIn = async () => {
     // Google sign-in cannot run inside an iframe (Replit canvas preview).
-    // Open the app in a real top-level tab where popups and redirects work normally.
     if (window.self !== window.top) {
       window.open(window.location.href, "_blank");
       toast.info("Opening in a new tab — sign in with Google there.");
@@ -167,50 +175,15 @@ export default function LandingPage() {
 
     setGoogleLoading(true);
 
-    // Mobile browsers (iOS Safari, Android Chrome) block window.open/popups
-    // even with user interaction — use redirect flow on mobile instead.
-    if (isMobileBrowser()) {
-      try {
-        await signInWithRedirect(auth, googleProvider);
-        // Page will reload; getRedirectResult() in useEffect handles the result.
-      } catch (err: any) {
-        toast.error("Could not start Google sign-in. Please try again.");
-        setGoogleLoading(false);
-      }
-      return;
-    }
-
-    // Desktop: use popup (faster UX, no full-page reload).
+    // Use redirect flow for everyone — popup is unreliable on iOS/Android and
+    // can silently fail on desktop Chrome without throwing a catchable error.
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
-      await finishGoogleAuth(idToken);
+      sessionStorage.setItem("md_google_redirect", "1");
+      await signInWithRedirect(auth, googleProvider);
+      // Page navigates away; result handled in useEffect via getRedirectResult.
     } catch (err: any) {
-      const code: string = err?.code ?? "";
-      if (code === "auth/popup-blocked") {
-        // Fall back to redirect when popup is blocked on desktop too.
-        try {
-          await signInWithRedirect(auth, googleProvider);
-        } catch {
-          toast.error("Popup was blocked and redirect also failed. Please allow popups for this site, then retry.");
-          setGoogleLoading(false);
-        }
-      } else if (code === "auth/unauthorized-domain") {
-        toast.error(
-          `Google sign-in blocked: add "${window.location.hostname}" to Firebase Console → Authentication → Settings → Authorized domains.`
-        );
-      } else if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
-        // user dismissed — no toast needed
-      } else if (code === "auth/network-request-failed") {
-        toast.error(
-          "Google sign-in was blocked — this is usually caused by Brave Shields or an ad-blocker. " +
-          "Try disabling Shields for this site (lion icon → toggle off), then retry."
-        );
-      } else if (err?.message) {
-        toast.error(err.message);
-      } else {
-        toast.error("Google sign-in failed. Please try again.");
-      }
+      sessionStorage.removeItem("md_google_redirect");
+      toast.error("Could not start Google sign-in. Please try again.");
       setGoogleLoading(false);
     }
   };
