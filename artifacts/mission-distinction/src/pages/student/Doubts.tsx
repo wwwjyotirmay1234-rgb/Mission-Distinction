@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, ZoomIn } from "lucide-react";
+import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -80,87 +80,38 @@ function TypingDots() {
   );
 }
 
-// ─── Diagram block — fetches DALL-E image for a [DIAGRAM: ...] tag ───────────
+// ─── Diagram block — styled drawing guide card ────────────────────────────────
 
 function DiagramBlock({ description }: { description: string }) {
-  const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
-  const [url, setUrl] = useState("");
-  const [zoomed, setZoomed] = useState(false);
-
-  useEffect(() => {
-    const token = localStorage.getItem("mission_token");
-    fetch("/api/doubts/generate-diagram", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ description }),
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.url) { setUrl(data.url); setStatus("done"); }
-        else setStatus("error");
-      })
-      .catch(() => setStatus("error"));
-  }, [description]);
-
-  if (status === "loading") {
-    return (
-      <div className="my-3 rounded-xl border border-primary/20 bg-primary/5 overflow-hidden">
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-primary/10">
-          <ImageIcon size={13} className="text-primary/60" />
-          <span className="text-xs text-primary/70 font-medium">Generating diagram…</span>
-          <TypingDots />
-        </div>
-        <Skeleton className="w-full h-52 rounded-none" />
-      </div>
-    );
-  }
-
-  if (status === "error") {
-    return (
-      <div className="my-2 flex items-center gap-2 px-3 py-2 rounded-xl border border-border/40 text-xs text-muted-foreground/60">
-        <ImageIcon size={13} />
-        <span className="italic">Diagram: {description.length > 60 ? description.slice(0, 60) + "…" : description}</span>
-      </div>
-    );
-  }
+  const sentences = description
+    .split(/[.;]/)
+    .map(s => s.trim())
+    .filter(Boolean);
 
   return (
-    <>
-      <div
-        className="my-3 rounded-xl overflow-hidden border border-border/50 cursor-zoom-in group relative"
-        onClick={() => setZoomed(true)}
-      >
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-lg p-1.5">
-          <ZoomIn size={14} className="text-white" />
-        </div>
-        <img src={url} alt={description} className="w-full object-cover" />
-        <div className="px-3 py-2 bg-muted/30 border-t border-border/30">
-          <p className="text-[10px] text-muted-foreground/70 italic leading-snug">{description}</p>
-        </div>
+    <div className="my-3 rounded-xl border border-primary/30 bg-primary/5 overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-primary/15 bg-primary/10">
+        <ImageIcon size={13} className="text-primary shrink-0" />
+        <span className="text-xs text-primary font-semibold tracking-wide uppercase">Diagram to Draw in Exam</span>
       </div>
-
-      {zoomed && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-          onClick={() => setZoomed(false)}
-        >
-          <div className="relative max-w-3xl w-full">
-            <img src={url} alt={description} className="w-full rounded-2xl shadow-2xl" />
-            <button
-              className="absolute top-3 right-3 bg-black/60 rounded-full p-1.5 text-white hover:bg-black/80"
-              onClick={() => setZoomed(false)}
-            >
-              <X size={18} />
-            </button>
-            <p className="text-xs text-white/70 text-center mt-3 italic">{description}</p>
-          </div>
-        </div>
-      )}
-    </>
+      <div className="px-4 py-3 space-y-1.5">
+        {sentences.length > 1 ? (
+          <ul className="space-y-1.5">
+            {sentences.map((s, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm leading-snug">
+                <span className="mt-1 w-1.5 h-1.5 rounded-full bg-primary/50 shrink-0" />
+                <span className="text-foreground/80">{s}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-foreground/80 leading-relaxed">{description}</p>
+        )}
+        <p className="text-[10px] text-muted-foreground/60 pt-1 italic">
+          ✏️ Sketch this diagram with all labels — examiners award marks for neat, labelled diagrams.
+        </p>
+      </div>
+    </div>
   );
 }
 

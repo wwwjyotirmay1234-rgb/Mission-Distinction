@@ -17,15 +17,6 @@ const aiChatLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Stricter: DALL-E 3 costs ~$0.04/image
-const diagramLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 500 : 15,
-  message: { error: "Diagram limit reached. You can generate up to 15 diagrams per hour." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 // ── Input sanitiser (mirrors aiTools.ts) ──────────────────────────────────────
 function sanitize(value: unknown, maxLen: number): string | null {
   if (typeof value !== "string") return null;
@@ -132,36 +123,7 @@ Rules for diagrams:
 - Be very specific and detailed in the description — include all structures, labels, values, and anatomical relations
 - Include diagrams for: anatomy (structures, cross-sections, dissections), physiology (graphs, curves), biochemistry (pathway flowcharts), pathology (gross/microscopic appearance), histology (labeled cross-sections)
 - For LAQ answers: include 1–3 diagrams; for SAQ: include 1 if relevant; for NEET PG: include 1 if a visual aid helps
-- The diagram description will be sent to an AI image generator, so describe exactly what should appear in the illustration`;
-
-// ── Generate diagram image via DALL-E 3 ──────────────────────────────────
-router.post("/generate-diagram", authMiddleware, diagramLimiter, async (req: Request, res: Response) => {
-  const description = sanitize(req.body.description, 600);
-  if (!description) {
-    res.status(400).json({ error: "Description required (max 600 characters)" });
-    return;
-  }
-
-  try {
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: `Medical education diagram for MBBS students: ${description}. Style: clean white background, precise black ink anatomical illustration like Gray's Anatomy textbook, all structures clearly labeled with bold text and leader lines, professional medical illustration quality, no decorative elements, suitable for exam answer paper.`,
-      n: 1,
-      size: "1024x1024",
-      quality: "standard",
-    });
-
-    const url = response.data[0]?.url;
-    if (!url) {
-      res.status(500).json({ error: "Image generation failed" });
-      return;
-    }
-    res.json({ url });
-  } catch (err: any) {
-    console.error("Diagram generation error:", err);
-    res.status(500).json({ error: "Could not generate diagram. Please try again." });
-  }
-});
+- The diagram description is displayed as a step-by-step drawing guide for students to sketch in their exam — be instructional and precise`;
 
 // ── Instant AI chat (no doubt record needed) ──────────────────────────────
 router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res: Response) => {
