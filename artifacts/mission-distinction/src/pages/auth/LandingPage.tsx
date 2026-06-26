@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, Redirect } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStudentLogin, useStudentRegister, useAdminLogin, useAdminRegister } from "@workspace/api-client-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -93,7 +93,16 @@ export default function LandingPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [, setLocation] = useLocation();
-  const { login } = useAuth();
+  const { login, isAuthenticated, isAdmin, user } = useAuth();
+
+  // ── Already logged in — go straight to the right dashboard ─────────────────
+  // This is what makes the app feel like a real app: open it and you're in,
+  // no login screen every time.
+  if (isAuthenticated) {
+    if (isAdmin) return <Redirect to="/admin/dashboard" />;
+    const year = user?.year;
+    return <Redirect to={getRouteByYear(year)} />;
+  }
 
   const studentLoginMutation = useStudentLogin();
   const studentRegisterMutation = useStudentRegister();

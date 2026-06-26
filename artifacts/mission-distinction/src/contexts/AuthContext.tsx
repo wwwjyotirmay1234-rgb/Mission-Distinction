@@ -95,6 +95,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setTokenRefresher(doRefresh);
 
+    // On mount: proactively refresh if the stored token is close to expiry.
+    // This ensures the session is healthy on every cold start, not just when
+    // the visibility changes later.
+    (function checkOnMount() {
+      const t = localStorage.getItem("mission_token");
+      if (!t) return;
+      try {
+        const payload = JSON.parse(atob(t.split(".")[1]));
+        const expiresIn = (payload.exp ?? 0) * 1000 - Date.now();
+        if (expiresIn < 7 * 24 * 60 * 60 * 1000) {
+          doRefresh().catch(() => {});
+        }
+      } catch {}
+    })();
+
     // Silently refresh the token when the app comes back from background.
     // This prevents stale/expired tokens after the user has been away.
     const onVisibilityChange = () => {
