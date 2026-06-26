@@ -16,8 +16,12 @@ import { Eye, EyeOff, Activity, ShieldCheck, TrendingUp, Award, Zap } from "luci
 import { InstallSection } from "@/components/InstallSection";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { signInWithPopup, getRedirectResult } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+
+const isMobileBrowser = () =>
+  /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) ||
+  navigator.maxTouchPoints > 1;
 
 const ODISHA_GOVT_COLLEGES = [
   "AIIMS Bhubaneswar",
@@ -126,14 +130,16 @@ export default function LandingPage() {
 
   useEffect(() => {
     let active = true;
+    setGoogleLoading(true);
     getRedirectResult(auth)
       .then(async (result) => {
-        if (!result || !active) return;
+        if (!result || !active) { setGoogleLoading(false); return; }
         try {
           const idToken = await result.user.getIdToken();
           await finishGoogleAuth(idToken);
         } catch (err: any) {
           toast.error(err?.message || "Google sign-in failed after redirect. Please try again.");
+          setGoogleLoading(false);
         }
       })
       .catch((err: any) => {
@@ -145,6 +151,7 @@ export default function LandingPage() {
         } else if (code && code !== "auth/no-auth-event") {
           toast.error(`Google sign-in failed (${code}). Please try again.`);
         }
+        setGoogleLoading(false);
       });
     return () => { active = false; };
   }, []);
@@ -160,10 +167,20 @@ export default function LandingPage() {
 
     setGoogleLoading(true);
 
-    // Always use signInWithPopup (works on mobile too — opens a new tab).
-    // signInWithRedirect is unreliable on modern browsers (Chrome 115+, iOS Safari)
-    // because third-party cookies from firebaseapp.com are blocked, causing
-    // getRedirectResult to silently return null after the user authenticates.
+    // Mobile browsers (iOS Safari, Android Chrome) block window.open/popups
+    // even with user interaction — use redirect flow on mobile instead.
+    if (isMobileBrowser()) {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        // Page will reload; getRedirectResult() in useEffect handles the result.
+      } catch (err: any) {
+        toast.error("Could not start Google sign-in. Please try again.");
+        setGoogleLoading(false);
+      }
+      return;
+    }
+
+    // Desktop: use popup (faster UX, no full-page reload).
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
@@ -171,9 +188,13 @@ export default function LandingPage() {
     } catch (err: any) {
       const code: string = err?.code ?? "";
       if (code === "auth/popup-blocked") {
-        // Redirect flow is unreliable on Chrome 115+ (third-party cookies blocked).
-        // Ask the user to allow popups instead.
-        toast.error("Popup was blocked. Please allow popups for this site in your browser settings, then try again.");
+        // Fall back to redirect when popup is blocked on desktop too.
+        try {
+          await signInWithRedirect(auth, googleProvider);
+        } catch {
+          toast.error("Popup was blocked and redirect also failed. Please allow popups for this site, then retry.");
+          setGoogleLoading(false);
+        }
       } else if (code === "auth/unauthorized-domain") {
         toast.error(
           `Google sign-in blocked: add "${window.location.hostname}" to Firebase Console → Authentication → Settings → Authorized domains.`
