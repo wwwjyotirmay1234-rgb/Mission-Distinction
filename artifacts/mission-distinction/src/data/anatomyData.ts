@@ -61,6 +61,7 @@ export type AnatomySystem = {
   crossSectionDescription: string;
   ctNote: string;
   mriNote: string;
+  sketchfabId?: string;
 };
 
 export const ANATOMY_SYSTEMS: AnatomySystem[] = [
@@ -373,6 +374,7 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
     darkColor: "#7c2d12",
     modelCount: 187,
     icon: "💪",
+    sketchfabId: "c23ad54a770244a6a0067fe86c9c410b",
     cadavericTitle: "Brachial Plexus Dissection",
     cadavericSide: "Right Side",
     cadavericDescription: "Dissection showing the brachial plexus in the right axillary region. Arises from C5-T1 ventral rami, forms roots, trunks (R-M-L: mnemonic), divisions, cords, and terminal branches.",

@@ -541,6 +541,41 @@ const ALL_LAYERS = [
 // ─────────────────────────────────────────────────────────────────────────────
 // Public component
 // ─────────────────────────────────────────────────────────────────────────────
+// Sketchfab embedded iframe viewer
+// ─────────────────────────────────────────────────────────────────────────────
+function SketchfabViewer({ modelId, title }: { modelId: string; title: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const embedUrl =
+    `https://sketchfab.com/models/${modelId}/embed` +
+    `?autostart=1&preload=1&ui_theme=dark&ui_controls=1` +
+    `&ui_infos=0&ui_watermark_link=0&ui_watermark=0` +
+    `&ui_ar=0&ui_help=0&ui_settings=0&ui_vr=0`;
+
+  return (
+    <div className="w-full h-full relative rounded-xl overflow-hidden bg-[#0d0a22]">
+      {!loaded && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
+          <div className="w-10 h-10 rounded-full border-2 border-violet-500 border-t-transparent animate-spin" />
+          <span className="text-xs text-slate-400">Loading Sketchfab model…</span>
+        </div>
+      )}
+      <iframe
+        title={title}
+        src={embedUrl}
+        allow="autoplay; fullscreen; xr-spatial-tracking"
+        className="w-full h-full border-0"
+        onLoad={() => setLoaded(true)}
+      />
+      <div className="absolute bottom-2 right-2 pointer-events-none">
+        <span className="text-[10px] text-slate-600 bg-black/40 px-2 py-0.5 rounded-full">
+          Powered by Sketchfab
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 export default function ModelViewer3D({
   system,
   showLabels,
@@ -553,15 +588,19 @@ export default function ModelViewer3D({
   selectedLabel: string | null;
 }) {
   const [isInteracting, setIsInteracting] = useState(false);
+  const [viewMode, setViewMode] = useState<"3d" | "sketchfab">("3d");
   const [visibleLayers, setVisibleLayers] = useState<Set<string>>(
     new Set(["bone", "muscle", "vessel", "nerve", "organ"])
   );
+
+  // Reset to 3D view when system changes
+  React.useEffect(() => { setViewMode("3d"); }, [system.id]);
 
   function toggleLayer(id: string) {
     setVisibleLayers(prev => {
       const next = new Set(prev);
       if (next.has(id)) {
-        if (next.size > 1) next.delete(id); // keep at least one layer visible
+        if (next.size > 1) next.delete(id);
       } else {
         next.add(id);
       }
@@ -573,51 +612,84 @@ export default function ModelViewer3D({
     <div
       className="w-full h-full relative rounded-xl overflow-hidden"
       style={{ background: "linear-gradient(160deg, #0a0618 0%, #0d0a22 50%, #080518 100%)" }}
-      onPointerDown={() => setIsInteracting(true)}
+      onPointerDown={() => { if (viewMode === "3d") setIsInteracting(true); }}
       onPointerUp={() => setIsInteracting(false)}
     >
-      <Canvas
-        camera={{ position: [0, 0, 5.2], fov: 40 }}
-        shadows
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-        style={{ background: "transparent" }}
-        dpr={[1, 2]}
-      >
-        <Suspense fallback={null}>
-          <Scene
-            system={system}
-            showLabels={showLabels}
-            onLabelSelect={onLabelSelect}
-            selectedLabel={selectedLabel}
-            visibleLayers={visibleLayers}
-            isInteracting={isInteracting}
-          />
-        </Suspense>
-      </Canvas>
-
-      {/* Layer toggles — bottom strip */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/10">
-        {ALL_LAYERS.map(layer => (
+      {/* View mode toggle — top right, only shown when Sketchfab model available */}
+      {system.sketchfabId && (
+        <div className="absolute top-2 right-2 z-20 flex items-center gap-1 bg-black/70 backdrop-blur-md rounded-full p-0.5 border border-white/10">
           <button
-            key={layer.id}
-            onClick={e => { e.stopPropagation(); toggleLayer(layer.id); }}
-            onPointerDown={e => e.stopPropagation()}
-            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wide transition-all ${
-              visibleLayers.has(layer.id)
-                ? "bg-violet-600/50 border border-violet-400/50 text-violet-200"
-                : "bg-white/5 border border-white/8 text-slate-600"
+            onClick={() => setViewMode("3d")}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all ${
+              viewMode === "3d"
+                ? "bg-violet-600 text-white shadow-lg shadow-violet-900/50"
+                : "text-slate-400 hover:text-white"
             }`}
           >
-            <span className="text-xs leading-none">{layer.emoji}</span>
-            <span className="hidden sm:inline">{layer.label}</span>
+            ⬡ Procedural
           </button>
-        ))}
-      </div>
+          <button
+            onClick={() => setViewMode("sketchfab")}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all ${
+              viewMode === "sketchfab"
+                ? "bg-violet-600 text-white shadow-lg shadow-violet-900/50"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            ✦ Sketchfab
+          </button>
+        </div>
+      )}
 
-      {/* Touch hint */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] text-slate-600 pointer-events-none select-none hidden md:block">
-        Drag to rotate · Scroll to zoom · Two-finger pan
-      </div>
+      {/* Sketchfab iframe */}
+      {viewMode === "sketchfab" && system.sketchfabId ? (
+        <SketchfabViewer modelId={system.sketchfabId} title={system.name} />
+      ) : (
+        <>
+          <Canvas
+            camera={{ position: [0, 0, 5.2], fov: 40 }}
+            shadows
+            gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+            style={{ background: "transparent" }}
+            dpr={[1, 2]}
+          >
+            <Suspense fallback={null}>
+              <Scene
+                system={system}
+                showLabels={showLabels}
+                onLabelSelect={onLabelSelect}
+                selectedLabel={selectedLabel}
+                visibleLayers={visibleLayers}
+                isInteracting={isInteracting}
+              />
+            </Suspense>
+          </Canvas>
+
+          {/* Layer toggles — bottom strip */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/10">
+            {ALL_LAYERS.map(layer => (
+              <button
+                key={layer.id}
+                onClick={e => { e.stopPropagation(); toggleLayer(layer.id); }}
+                onPointerDown={e => e.stopPropagation()}
+                className={`flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wide transition-all ${
+                  visibleLayers.has(layer.id)
+                    ? "bg-violet-600/50 border border-violet-400/50 text-violet-200"
+                    : "bg-white/5 border border-white/8 text-slate-600"
+                }`}
+              >
+                <span className="text-xs leading-none">{layer.emoji}</span>
+                <span className="hidden sm:inline">{layer.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Touch hint */}
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] text-slate-600 pointer-events-none select-none hidden md:block">
+            Drag to rotate · Scroll to zoom · Two-finger pan
+          </div>
+        </>
+      )}
     </div>
   );
 }
