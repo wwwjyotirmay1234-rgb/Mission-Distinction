@@ -11,17 +11,11 @@ export async function apiFetch(
   const response = await fetch(input, { ...init, headers });
   if (response.status !== 401) return response;
 
-  const refreshToken = localStorage.getItem("mission_refresh_token");
-  if (!refreshToken) {
-    window.dispatchEvent(new Event("auth:logout"));
-    return response;
-  }
-
   try {
     const refreshRes = await fetch("/api/auth/refresh", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
     });
     if (!refreshRes.ok) {
       window.dispatchEvent(new Event("auth:logout"));
@@ -30,9 +24,6 @@ export async function apiFetch(
     const data = await refreshRes.json();
     localStorage.setItem("mission_token", data.token);
     localStorage.setItem("mission_user", JSON.stringify(data.user));
-    if (data.refreshToken) {
-      localStorage.setItem("mission_refresh_token", data.refreshToken);
-    }
     window.dispatchEvent(new CustomEvent("auth:tokenRefreshed", { detail: data }));
 
     const retryHeaders = new Headers(init.headers ?? {});
