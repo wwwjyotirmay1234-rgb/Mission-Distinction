@@ -4,6 +4,15 @@ import { Shuffle, Brain, Stethoscope, Zap, Grid3x3, ArrowLeft, Users, Castle, Di
 import { Button } from "@/components/ui/button";
 import { useXPStats } from "@/hooks/useXPStats";
 import { RANKS } from "@/lib/ranks";
+import wordScramblePoster from "@assets/IMG_4758_1782470391390.png";
+import memoryMatchPoster from "@assets/IMG_4765_1782470458393.png";
+import diagnosisPoster from "@assets/IMG_4759_1782470391391.png";
+import spellingBeePoster from "@assets/IMG_4763_1782470427730.png";
+import crosswordPoster from "@assets/IMG_4760_1782470391391.png";
+import quizBattlePoster from "@assets/F8EC9F6A-CA5F-4B94-B9E8-00332D66570F_1782470305162.png";
+import chessPoster from "@assets/579A5592-071D-448E-90D7-4C5503326266_1782470305162.png";
+import ludoPoster from "@assets/22D4EE8A-9642-4BCB-BD18-514AE77AF495_1782470305162.png";
+import snlPoster from "@assets/DB2E80A1-DC42-456B-A779-9DC7218518B3_1782470305162.png";
 import WordScramble from "./games/WordScramble";
 import MemoryMatch from "./games/MemoryMatch";
 import DiagnosisChallenge from "./games/DiagnosisChallenge";
@@ -125,6 +134,30 @@ const GAME_REQUIRED_LEVELS: Record<string, number> = {
   "snl": 5,
 };
 
+const GAME_POSTERS: Record<string, string> = {
+  "word-scramble": wordScramblePoster,
+  "memory-match": memoryMatchPoster,
+  "diagnosis": diagnosisPoster,
+  "spelling-bee": spellingBeePoster,
+  "crossword": crosswordPoster,
+  "multiplayer": quizBattlePoster,
+  "chess": chessPoster,
+  "ludo": ludoPoster,
+  "snl": snlPoster,
+};
+
+const GAME_TAGLINES: Record<string, string> = {
+  "word-scramble": "Unscramble the words. Expand your knowledge.",
+  "memory-match": "Match. Remember. Master Medicine.",
+  "diagnosis": "Think like a doctor. Solve the case. Save the patient.",
+  "spelling-bee": "Spell it Right. Know it Well.",
+  "crossword": "Clues Today. Knowledge Forever.",
+  "multiplayer": "Knowledge. Speed. Victory.",
+  "chess": "Think. Strategize. Conquer.",
+  "ludo": "Roll. Move. Strategize. Win!",
+  "snl": "Roll. Climb. Avoid. Win!",
+};
+
 function GameIcon({ icon: Icon, color }: { icon: React.ElementType; color: string }) {
   return (
     <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg shrink-0`}>
@@ -155,6 +188,8 @@ type PeekGame = {
   badge?: string;
   detail?: string;
   requiredLevel: number;
+  posterImage?: string;
+  tagline?: string;
 };
 
 function GamePeekModal({ game, currentXp, onClose }: { game: PeekGame; currentXp: number; onClose: () => void }) {
@@ -181,26 +216,35 @@ function GamePeekModal({ game, currentXp, onClose }: { game: PeekGame; currentXp
           transition={{ type: "spring", stiffness: 320, damping: 28 }}
           onClick={e => e.stopPropagation()}
         >
-          {/* Hero banner */}
-          <div className={`relative bg-gradient-to-br ${game.color} h-40 flex flex-col items-center justify-center gap-3`}>
-            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-              <game.icon size={30} className="text-white" />
-            </div>
-            <div className="text-center">
-              <h2 className="text-white font-bold text-lg leading-tight">{game.title}</h2>
-              {(game.tag || game.badge) && (
-                <span className="text-white/70 text-xs font-medium">{game.tag ?? game.badge}</span>
-              )}
-            </div>
-            <button onClick={onClose} className="absolute top-3 right-3 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+          {/* Poster hero */}
+          <div className="relative h-64 overflow-hidden bg-black">
+            {game.posterImage ? (
+              <img
+                src={game.posterImage}
+                alt={game.title}
+                className="w-full h-full object-cover object-top"
+              />
+            ) : (
+              <div className={`w-full h-full bg-gradient-to-br ${game.color} flex items-center justify-center`}>
+                <game.icon size={48} className="text-white/80" />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+            <button
+              onClick={onClose}
+              className="absolute top-3 right-3 p-1.5 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors backdrop-blur-sm"
+            >
               <X size={14} />
             </button>
+            {game.tagline && (
+              <p className="absolute bottom-3 left-0 right-0 text-center text-white/80 text-[11px] font-semibold tracking-wide px-4">
+                {game.tagline}
+              </p>
+            )}
           </div>
 
           {/* Info */}
-          <div className="bg-card p-5 space-y-4">
-            <p className="text-sm text-muted-foreground leading-relaxed text-center">{game.description}</p>
-            {game.detail && <p className="text-xs text-primary/80 font-medium text-center">✨ {game.detail}</p>}
+          <div className="bg-card p-4 space-y-3">
 
             {/* Lock status */}
             <div className="bg-background/60 border border-border/50 rounded-2xl p-4 space-y-3">
@@ -271,7 +315,7 @@ function Hub({ onSelect, rankLevel, currentXp }: { onSelect: (id: GameId) => voi
                 <div
                   className={`relative w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} cursor-pointer ${!isLocked && "hover:scale-[1.01] hover:shadow-lg"}`}
                   onClick={() => isLocked
-                    ? setPeekGame({ title: g.title, description: g.description, icon: g.icon, color: g.color, badge: g.badge, detail: g.detail, requiredLevel: reqLevel })
+                    ? setPeekGame({ title: g.title, description: g.description, icon: g.icon, color: g.color, badge: g.badge, detail: g.detail, requiredLevel: reqLevel, posterImage: GAME_POSTERS[g.id], tagline: GAME_TAGLINES[g.id] })
                     : onSelect(g.id)
                   }
                 >
@@ -308,7 +352,7 @@ function Hub({ onSelect, rankLevel, currentXp }: { onSelect: (id: GameId) => voi
                 <div
                   className={`relative w-full text-left p-5 rounded-2xl border transition-all duration-200 ${g.bg} cursor-pointer ${!isLocked && "hover:scale-[1.02] hover:shadow-lg"}`}
                   onClick={() => isLocked
-                    ? setPeekGame({ title: g.title, description: g.description, icon: g.icon, color: g.color, tag: g.tag, requiredLevel: reqLevel })
+                    ? setPeekGame({ title: g.title, description: g.description, icon: g.icon, color: g.color, tag: g.tag, requiredLevel: reqLevel, posterImage: GAME_POSTERS[g.id], tagline: GAME_TAGLINES[g.id] })
                     : onSelect(g.id)
                   }
                 >
