@@ -85,7 +85,57 @@ You cover ALL MBBS years and subjects:
 Final Year Part I: Medicine & Allied (Psychiatry, Dermatology), Surgery & Allied (Orthopaedics, Anaesthesia), OBG
 Final Year Part II: Paediatrics, Ophthalmology, ENT, Community Medicine (PSM), Radiology
 
-Students are preparing for: Odisha MBBS University Exams, NEET PG, INICET, FMGE, and Competency-Based Medical Education (CBME) assessments.`;
+Students are preparing for: Odisha MBBS University Exams, NEET PG, INICET, FMGE, and Competency-Based Medical Education (CBME) assessments.
+
+---
+
+## DIAGRAMS — CRITICAL RULE
+Whenever a diagram, graph, flowchart, or illustration would help the answer (and it always does in a real exam), include a diagram tag on its own line using EXACTLY this format:
+
+[DIAGRAM: detailed description of what the diagram should show]
+
+Examples:
+[DIAGRAM: Brachial plexus formation showing roots C5-T1, trunks (upper/middle/lower), anterior and posterior divisions, lateral/medial/posterior cords, and terminal branches (musculocutaneous, median, ulnar, radial, axillary) with labels]
+[DIAGRAM: Cross-section of kidney cortex showing renal corpuscle with glomerulus and Bowman's capsule, proximal convoluted tubule, distal convoluted tubule, peritubular capillaries, with all structures labeled]
+[DIAGRAM: Action potential graph with time on x-axis and membrane potential (mV) on y-axis, showing resting potential at -70mV, threshold at -55mV, depolarization spike to +30mV, repolarization, and hyperpolarization, with each phase labeled]
+[DIAGRAM: Krebs cycle (citric acid cycle) flowchart showing all 8 steps with enzyme names, substrates, NADH/FADH2/GTP yields at each step, starting and ending with acetyl-CoA entering oxaloacetate]
+[DIAGRAM: Cardiac cycle Wiggers diagram showing aortic pressure, left ventricular pressure, left atrial pressure, and ventricular volume curves plotted against time, with all phases labeled]
+
+Rules for diagrams:
+- Place the [DIAGRAM: ...] tag on its own separate line
+- Be very specific and detailed in the description — include all structures, labels, values, and anatomical relations
+- Include diagrams for: anatomy (structures, cross-sections, dissections), physiology (graphs, curves), biochemistry (pathway flowcharts), pathology (gross/microscopic appearance), histology (labeled cross-sections)
+- For LAQ answers: include 1–3 diagrams; for SAQ: include 1 if relevant; for NEET PG: include 1 if a visual aid helps
+- The diagram description will be sent to an AI image generator, so describe exactly what should appear in the illustration`;
+
+// ── Generate diagram image via DALL-E 3 ──────────────────────────────────
+router.post("/generate-diagram", authMiddleware, async (req: Request, res: Response) => {
+  const { description } = req.body;
+  if (!description?.trim()) {
+    res.status(400).json({ error: "Description required" });
+    return;
+  }
+
+  try {
+    const response = await openai.images.generate({
+      model: "dall-e-3",
+      prompt: `Medical education diagram for MBBS students: ${description.trim()}. Style: clean white background, precise black ink anatomical illustration like Gray's Anatomy textbook, all structures clearly labeled with bold text and leader lines, professional medical illustration quality, no decorative elements, suitable for exam answer paper.`,
+      n: 1,
+      size: "1024x1024",
+      quality: "standard",
+    });
+
+    const url = response.data[0]?.url;
+    if (!url) {
+      res.status(500).json({ error: "Image generation failed" });
+      return;
+    }
+    res.json({ url });
+  } catch (err: any) {
+    console.error("Diagram generation error:", err);
+    res.status(500).json({ error: "Could not generate diagram. Please try again." });
+  }
+});
 
 // ── Instant AI chat (no doubt record needed) ──────────────────────────────
 router.post("/ai-chat", authMiddleware, async (req: Request, res: Response) => {
