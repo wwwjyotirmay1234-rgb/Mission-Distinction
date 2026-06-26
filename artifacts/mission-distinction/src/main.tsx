@@ -1,7 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { initAnalytics } from "./lib/analytics";
 
 initAnalytics();
@@ -20,34 +19,9 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-setAuthTokenGetter(async () => {
-  const token = localStorage.getItem("mission_token");
-  if (!token) return null;
-  try {
-    const [, payloadB64] = token.split(".");
-    const payload = JSON.parse(atob(payloadB64));
-    const expiresAt = (payload.exp as number) * 1000;
-    if (expiresAt - Date.now() < 60 * 1000) {
-      const refreshToken = localStorage.getItem("mission_refresh_token");
-      if (!refreshToken) return null;
-      const res = await fetch("/api/auth/refresh", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem("mission_token", data.token);
-        if (data.refreshToken) localStorage.setItem("mission_refresh_token", data.refreshToken);
-        if (data.user) localStorage.setItem("mission_user", JSON.stringify(data.user));
-        return data.token as string;
-      }
-      return null;
-    }
-  } catch {
-  }
-  return token;
-});
+// Request persistent storage so iOS/Android don't evict our token/session data
+if ("storage" in navigator && "persist" in navigator.storage) {
+  navigator.storage.persist().catch(() => {});
+}
 
 createRoot(document.getElementById("root")!).render(<App />);

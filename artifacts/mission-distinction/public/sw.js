@@ -1,7 +1,17 @@
-const CACHE_NAME = "mission-distinction-v10";
-const STATIC_ASSETS = ["/", "/index.html"];
-const API_CACHE_NAME = "mission-distinction-api-v10";
-const ASSET_CACHE_NAME = "mission-distinction-assets-v10";
+const CACHE_VERSION = "v11";
+
+// Derive the base path from where the SW is installed (e.g. /mission-distinction/)
+// so paths work correctly both in dev (/) and production (/mission-distinction/).
+const BASE = new URL("./", self.location).pathname;
+
+const CACHE_NAME = `mission-distinction-${CACHE_VERSION}`;
+const API_CACHE_NAME = `mission-distinction-api-${CACHE_VERSION}`;
+const ASSET_CACHE_NAME = `mission-distinction-assets-${CACHE_VERSION}`;
+
+const STATIC_ASSETS = [
+  BASE,
+  BASE + "index.html",
+];
 
 const CACHEABLE_API_PREFIXES = [
   "/api/quizzes",
@@ -108,14 +118,21 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         })
-        .catch(() => caches.match("/index.html"))
+        .catch(async () => {
+          // Try the exact URL first, then fall back to the index shell
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          const shell = await caches.match(new URL(BASE + "index.html", self.location).href)
+            || await caches.match(new URL(BASE, self.location).href);
+          return shell || new Response("Offline", { status: 503 });
+        })
     );
     return;
   }
 
-  // ── Vite-hashed assets (/assets/*.js, /assets/*.css, /assets/*.woff2 etc.)
-  //    These are immutable (content-hash in filename) → cache-first forever ──
-  if (url.pathname.startsWith("/assets/")) {
+  // ── Vite-hashed assets — BASE + assets/*.js/css/woff2 etc.
+  //    Content-hash in filename → cache-first forever ─────────────────────
+  if (url.pathname.startsWith(BASE + "assets/")) {
     event.respondWith(
       caches.open(ASSET_CACHE_NAME).then(async (cache) => {
         const cached = await cache.match(event.request);

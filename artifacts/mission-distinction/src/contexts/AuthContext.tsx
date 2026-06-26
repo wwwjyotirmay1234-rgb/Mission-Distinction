@@ -59,26 +59,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setAuthTokenGetter(() => localStorage.getItem("mission_token"));
+
+    // Refresh lock — prevents parallel 401s from each triggering a rotation,
+    // which would invalidate all but the first (single-use tokens).
+    let refreshPromise: Promise<string | null> | null = null;
+
     setTokenRefresher(async () => {
-      try {
-        const res = await fetch("/api/auth/refresh", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!res.ok) {
+      if (refreshPromise) return refreshPromise;
+      refreshPromise = (async () => {
+        try {
+          const res = await fetch("/api/auth/refresh", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          });
+          if (!res.ok) {
+            window.dispatchEvent(new Event("auth:logout"));
+            return null;
+          }
+          const data = await res.json();
+          localStorage.setItem("mission_token", data.token);
+          localStorage.setItem("mission_user", JSON.stringify(data.user));
+          window.dispatchEvent(new CustomEvent("auth:tokenRefreshed", { detail: data }));
+          return data.token as string;
+        } catch {
           window.dispatchEvent(new Event("auth:logout"));
           return null;
+        } finally {
+          refreshPromise = null;
         }
-        const data = await res.json();
-        localStorage.setItem("mission_token", data.token);
-        localStorage.setItem("mission_user", JSON.stringify(data.user));
-        window.dispatchEvent(new CustomEvent("auth:tokenRefreshed", { detail: data }));
-        return data.token as string;
-      } catch {
-        window.dispatchEvent(new Event("auth:logout"));
-        return null;
-      }
+      })();
+      return refreshPromise;
     });
 
     return () => {

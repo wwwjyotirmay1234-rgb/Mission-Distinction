@@ -4,4 +4,6 @@
 - [Load test baseline](load-test-baseline.md) — localhost: 2032 req/s, 0% errors, p95=20ms, p99=41ms; thresholds: error<1%, p95<2000ms, rps>10
 - [Admin 12-feature schema and routes](admin-features-schema.md) — new tables (audit_logs, student_warnings, content_reports, pinned_notices), route files, quiz schema column gotchas
 - [Mobile PWA lessons](mobile-pwa-lessons.md) — JWT expiry, Google auth, PDF viewer, SW caching, and viewport pitfalls for this app
+- [Refresh token race condition fix](refresh-lock.md) — single-use rotation + parallel 401s = cascade logout; fix with a shared Promise lock in setTokenRefresher
+- [SW base path for production](sw-base-path.md) — derive BASE from self.location so /assets/ and nav fallback work at /mission-distinction/ not just /
 - [SAST taint-breaking patterns](sast-taint-breaking.md) — how to break semgrep taint chains and clear html-in-template-string / unsafe-dynamic-method findings
