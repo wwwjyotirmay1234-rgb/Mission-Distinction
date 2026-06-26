@@ -149,6 +149,10 @@ export default function MultiplayerGame({ onBack }: { onBack: () => void }) {
       setPhase("ended");
     });
 
+    socket.on("xp-awarded", ({ xpEarned, reason }: { xpEarned: number; reason: string }) => {
+      toast.success(`+${xpEarned} XP earned from ${reason}!`, { duration: 5000 });
+    });
+
     socketRef.current = socket;
     return socket;
   }, [phase]);

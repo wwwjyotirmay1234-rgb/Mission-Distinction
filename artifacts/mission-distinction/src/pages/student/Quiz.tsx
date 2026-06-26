@@ -70,6 +70,10 @@ interface QuizResult {
     maxMarks: number;
     questionType: string;
   }>;
+  xpEarned?: number;
+  rankUp?: boolean;
+  newRankName?: string;
+  totalXp?: number;
 }
 
 const SUBJECTS = ["all", "Anatomy", "Physiology", "Biochemistry", "NEET PG", "University Exams"];
@@ -593,6 +597,32 @@ export default function StudentQuiz() {
             {result.total > 0 && <p className="text-xs text-muted-foreground mt-1">Passing score: 60%</p>}
           </CardContent>
         </Card>
+
+        {/* XP Banner */}
+        {result.xpEarned !== undefined && result.xpEarned > 0 && (
+          <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-primary/10 border border-primary/30">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                <Trophy className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-primary">+{result.xpEarned} XP Earned!</p>
+                <p className="text-xs text-muted-foreground">
+                  50 base + {result.score} correct × 5 XP
+                  {result.rankUp && result.newRankName && (
+                    <span className="ml-1 font-semibold text-yellow-400"> · 🎖️ Ranked up to {result.newRankName}!</span>
+                  )}
+                </p>
+              </div>
+            </div>
+            {result.totalXp !== undefined && (
+              <div className="text-right shrink-0">
+                <p className="text-xs text-muted-foreground">Total XP</p>
+                <p className="text-sm font-bold text-foreground">{result.totalXp.toLocaleString()}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         <h2 className="text-lg font-semibold">Answer Review</h2>
         <div className="space-y-3">

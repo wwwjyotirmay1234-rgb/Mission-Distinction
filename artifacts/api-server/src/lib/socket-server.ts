@@ -4,6 +4,8 @@ import { parseToken } from "./auth";
 import { db } from "@workspace/db";
 import { usersTable, communityGroupsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { awardXp } from "./xp";
+import { updateStreak } from "./streak";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { registerChessHandlers } from "./game-socket-chess";
 import { registerLudoHandlers } from "./game-socket-ludo";
@@ -93,10 +95,26 @@ function advanceQuestion(room: GameRoom, code: string) {
   room.currentQuestion++;
   if (room.currentQuestion >= room.questions.length) {
     room.status = "ended";
-    const leaderboard = Array.from(room.players.values())
-      .map(p => ({ id: p.id, name: p.name, score: p.score }))
-      .sort((a, b) => b.score - a.score);
+    const sorted = Array.from(room.players.values()).sort((a, b) => b.score - a.score);
+    const leaderboard = sorted.map(p => ({ id: p.id, name: p.name, score: p.score }));
     io.to(`game:${code}`).emit("game:ended", { leaderboard });
+
+    // Award XP to every player who participated
+    const playerXpMap: Record<number, number> = {};
+    for (const p of sorted) {
+      // Base participation XP + bonus for each estimated correct answer (100 pts each)
+      const estimatedCorrect = Math.min(TOTAL_QUESTIONS, Math.round(p.score / 100));
+      const xp = 30 + estimatedCorrect * 5;
+      playerXpMap[p.id] = xp;
+      awardXp(p.id, xp, "multiplayer_quiz", `Multiplayer quiz: ${room.subject} (score ${p.score})`).catch(() => {});
+      updateStreak(p.id).catch(() => {});
+    }
+
+    // Notify each player's personal socket about their XP reward
+    for (const p of sorted) {
+      io.to(`user:${p.id}`).emit("xp-awarded", { xpEarned: playerXpMap[p.id], reason: "Multiplayer Quiz" });
+    }
+
     gameRooms.delete(code);
     return;
   }

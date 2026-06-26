@@ -375,7 +375,8 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
     });
 
     await updateStreak(user.id);
-    awardXp(user.id, XP_VALUES.QUIZ_COMPLETE + score * XP_VALUES.CORRECT_ANSWER, "quiz_complete", `Completed quiz: ${quiz.title} (${score}/${total})`).catch(() => {});
+    const xpEarned = XP_VALUES.QUIZ_COMPLETE + score * XP_VALUES.CORRECT_ANSWER;
+    const xpResult = await awardXp(user.id, xpEarned, "quiz_complete", `Completed quiz: ${quiz.title} (${score}/${total})`).catch(() => ({ rankUp: false, newRankName: "", newXp: 0 }));
 
     const pendingSubmissions = subjectiveQuestions.map(q => ({
       questionId: q.id,
@@ -391,6 +392,10 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
       hasPending,
       pendingCount: subjectiveQuestions.length,
       pendingSubmissions,
+      xpEarned,
+      rankUp: xpResult.rankUp,
+      newRankName: xpResult.newRankName,
+      totalXp: xpResult.newXp,
     });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
