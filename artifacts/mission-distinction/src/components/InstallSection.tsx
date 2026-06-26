@@ -17,7 +17,9 @@ export function InstallSection() {
 
   useEffect(() => {
     const ua = navigator.userAgent;
-    const ios = /ipad|iphone|ipod/i.test(ua) && !(window as any).MSStream;
+    // iPads on iOS 13+ report a desktop Mac UA — detect via touch points
+    const isTouchMac = /mac/i.test(ua) && navigator.maxTouchPoints > 1;
+    const ios = (/ipad|iphone|ipod/i.test(ua) || isTouchMac) && !(window as any).MSStream;
     const android = /android/i.test(ua);
     setIsIOS(ios);
     setIsAndroid(android);

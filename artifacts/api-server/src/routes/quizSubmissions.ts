@@ -80,7 +80,7 @@ router.get("/admin/all", adminMiddleware, async (req: Request, res: Response) =>
           q.model_answer,
           qz.title AS quiz_title,
           qz.subject AS quiz_subject,
-          u.name AS student_name,
+          u.full_name AS student_name,
           u.email AS student_email
         FROM quiz_submissions qs
         LEFT JOIN questions q ON q.id = qs.question_id

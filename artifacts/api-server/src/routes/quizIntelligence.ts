@@ -86,15 +86,17 @@ router.get("/feature-usage", adminMiddleware, async (_req: Request, res: Respons
       db.execute(sql`SELECT COUNT(*) as c FROM mnemonics`),
     ]);
 
-    const [aiCount] = await db.execute(sql`SELECT COUNT(*) as c FROM activity WHERE type = 'ai'`).catch(() => [{ c: 0 }]);
-    const [flashcardCount] = await db.execute(sql`SELECT COUNT(*) as c FROM flashcard_decks`).catch(() => [{ c: 0 }]);
+    const aiResult = await db.execute(sql`SELECT COUNT(*) as c FROM activity WHERE type = 'ai'`).catch(() => null);
+    const flashcardResult = await db.execute(sql`SELECT COUNT(*) as c FROM flashcard_decks`).catch(() => null);
+    const aiCount = (aiResult as any)?.rows?.[0] ?? (aiResult as any)?.[0] ?? { c: 0 };
+    const flashcardCount = (flashcardResult as any)?.rows?.[0] ?? (flashcardResult as any)?.[0] ?? { c: 0 };
 
     res.json([
       { feature: "Quiz Attempts", count: Number((quizCount[0] as any)?.c ?? 0), color: "#7c3aed" },
-      { feature: "Doubts Posted", count: Number((doubtCount as any)[0]?.c ?? 0), color: "#2563eb" },
-      { feature: "Study Rooms", count: Number((roomCount as any)[0]?.c ?? 0), color: "#059669" },
-      { feature: "Confessions", count: Number((confessionCount as any)[0]?.c ?? 0), color: "#d97706" },
-      { feature: "Mnemonics", count: Number((mnemonicCount as any)[0]?.c ?? 0), color: "#dc2626" },
+      { feature: "Doubts Posted", count: Number((doubtCount as any)?.rows?.[0]?.c ?? (doubtCount as any)?.[0]?.c ?? 0), color: "#2563eb" },
+      { feature: "Study Rooms", count: Number((roomCount as any)?.rows?.[0]?.c ?? (roomCount as any)?.[0]?.c ?? 0), color: "#059669" },
+      { feature: "Confessions", count: Number((confessionCount as any)?.rows?.[0]?.c ?? (confessionCount as any)?.[0]?.c ?? 0), color: "#d97706" },
+      { feature: "Mnemonics", count: Number((mnemonicCount as any)?.rows?.[0]?.c ?? (mnemonicCount as any)?.[0]?.c ?? 0), color: "#dc2626" },
       { feature: "Flashcard Decks", count: Number((flashcardCount as any)?.c ?? 0), color: "#7c3aed" },
     ]);
   } catch (e) {
