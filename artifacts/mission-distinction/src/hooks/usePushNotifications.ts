@@ -34,7 +34,9 @@ export function usePushNotifications() {
     setLoading(true);
     try {
       const reg = await navigator.serviceWorker.ready;
-      const res = await fetch(`/api/push/vapid-key`);
+      const res = await fetch(`/api/push/vapid-key`, {
+        credentials: "include"
+      });
       const { publicKey } = await res.json();
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,

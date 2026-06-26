@@ -38,6 +38,7 @@ export default function ResetPassword() {
       const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
       const res = await fetch(`${baseUrl}/api/auth/reset-password`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, newPassword: values.newPassword }),
       });

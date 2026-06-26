@@ -55,7 +55,9 @@ router.get("/overview", adminMiddleware, async (_req: Request, res: Response) =>
 // Score distribution for a specific quiz
 router.get("/quiz/:id/distribution", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const quizId = parseId(req.params.id);
+    const quizId = parseId(req.params.id as string);
+    if (!quizId) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
+
     const attempts = await db.select({
       percentage: quizAttemptsTable.percentage,
       createdAt: quizAttemptsTable.createdAt,
@@ -80,10 +82,10 @@ router.get("/feature-usage", adminMiddleware, async (_req: Request, res: Respons
   try {
     const [quizCount, doubtCount, confessionCount, roomCount, mnemonicCount] = await Promise.all([
       db.select({ c: sql<number>`COUNT(*)` }).from(quizAttemptsTable),
-      db.execute(sql`SELECT COUNT(*) as c FROM doubts`),
-      db.execute(sql`SELECT COUNT(*) as c FROM confessions`),
-      db.execute(sql`SELECT COUNT(*) as c FROM study_rooms`),
-      db.execute(sql`SELECT COUNT(*) as c FROM mnemonics`),
+      db.execute(sql`SELECT COUNT(*) as c FROM doubts`).then(r => (r as any).rows?.[0] || (r as any)[0] || { c: 0 }),
+      db.execute(sql`SELECT COUNT(*) as c FROM confessions`).then(r => (r as any).rows?.[0] || (r as any)[0] || { c: 0 }),
+      db.execute(sql`SELECT COUNT(*) as c FROM study_rooms`).then(r => (r as any).rows?.[0] || (r as any)[0] || { c: 0 }),
+      db.execute(sql`SELECT COUNT(*) as c FROM mnemonics`).then(r => (r as any).rows?.[0] || (r as any)[0] || { c: 0 }),
     ]);
 
     const aiResult = await db.execute(sql`SELECT COUNT(*) as c FROM activity WHERE type = 'ai'`).catch(() => null);
@@ -93,11 +95,11 @@ router.get("/feature-usage", adminMiddleware, async (_req: Request, res: Respons
 
     res.json([
       { feature: "Quiz Attempts", count: Number((quizCount[0] as any)?.c ?? 0), color: "#7c3aed" },
-      { feature: "Doubts Posted", count: Number((doubtCount as any)?.rows?.[0]?.c ?? (doubtCount as any)?.[0]?.c ?? 0), color: "#2563eb" },
-      { feature: "Study Rooms", count: Number((roomCount as any)?.rows?.[0]?.c ?? (roomCount as any)?.[0]?.c ?? 0), color: "#059669" },
-      { feature: "Confessions", count: Number((confessionCount as any)?.rows?.[0]?.c ?? (confessionCount as any)?.[0]?.c ?? 0), color: "#d97706" },
-      { feature: "Mnemonics", count: Number((mnemonicCount as any)?.rows?.[0]?.c ?? (mnemonicCount as any)?.[0]?.c ?? 0), color: "#dc2626" },
-      { feature: "Flashcard Decks", count: Number((flashcardCount as any)?.c ?? 0), color: "#7c3aed" },
+      { feature: "Doubts Posted", count: Number(doubtCount.c ?? 0), color: "#2563eb" },
+      { feature: "Study Rooms", count: Number(roomCount.c ?? 0), color: "#059669" },
+      { feature: "Confessions", count: Number(confessionCount.c ?? 0), color: "#d97706" },
+      { feature: "Mnemonics", count: Number(mnemonicCount.c ?? 0), color: "#dc2626" },
+      { feature: "Flashcard Decks", count: Number(flashcardCount.c ?? 0), color: "#7c3aed" },
     ]);
   } catch (e) {
     console.error(e);
@@ -123,7 +125,8 @@ router.get("/heatmap", adminMiddleware, async (_req: Request, res: Response) => 
 // Student performance report
 router.get("/student-report/:userId", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = parseId(req.params.userId);
+    const userId = parseId(req.params.userId as string);
+    if (!userId) { res.status(400).json({ error: "Invalid user ID" }); return; }
 
     const [quizStats, recentAttempts, activityBreakdown] = await Promise.all([
       db.select({

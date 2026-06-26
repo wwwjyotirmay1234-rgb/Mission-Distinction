@@ -30,6 +30,7 @@ export default function ForgotPassword() {
       const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
       const res = await fetch(`${baseUrl}/api/auth/forgot-password`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });

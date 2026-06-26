@@ -24,6 +24,7 @@ async function uploadPdfFile(file: File, onProgress: (p: number) => void): Promi
   const token = localStorage.getItem("mission_token");
   const presignResp = await fetch("/api/upload/pdf/request-upload-url", {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -55,6 +56,7 @@ async function uploadCoverImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/upload/image");
+    xhr.withCredentials = true;
     const token = localStorage.getItem("mission_token");
     if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     xhr.onload = () => {

@@ -102,7 +102,7 @@ router.get("/admin/all", adminMiddleware, async (req: Request, res: Response) =>
 
 router.post("/:id/ai-grade", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseId(req.params.id);
+    const id = parseId(req.params.id as string);
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
 
     const [submission] = await db.select().from(quizSubmissionsTable).where(eq(quizSubmissionsTable.id, id));
@@ -183,7 +183,7 @@ Return JSON only: {"marks": <number 0-${maxMarks}>, "feedback": "<2-3 sentence c
 
 router.patch("/:id/grade", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseId(req.params.id);
+    const id = parseId(req.params.id as string);
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
 
     const { adminMarks, adminFeedback } = req.body;

@@ -32,6 +32,7 @@ setAuthTokenGetter(async () => {
       if (!refreshToken) return null;
       const res = await fetch("/api/auth/refresh", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
       });

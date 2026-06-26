@@ -110,6 +110,7 @@ function AiAnswerPanel({ doubtId, onClose }: { doubtId: number; onClose: () => v
       const token = localStorage.getItem("mission_token");
       const res = await fetch(`/api/doubts/${doubtId}/ai-answer`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),

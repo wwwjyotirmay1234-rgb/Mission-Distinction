@@ -29,12 +29,12 @@ export function generateToken(userId: number, role: string, userAgent?: string):
   const payload: Record<string, unknown> = { userId, role };
   const uah = uaHash(userAgent);
   if (uah) payload.uah = uah;
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(payload, JWT_SECRET!, { expiresIn: JWT_EXPIRES_IN });
 }
 
 export function parseToken(token: string): { userId: number; role: string; uah?: string } | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; role: string; uah?: string };
+    const decoded = jwt.verify(token, JWT_SECRET!) as { userId: number; role: string; uah?: string };
     return { userId: decoded.userId, role: decoded.role, uah: decoded.uah };
   } catch {
     return null;

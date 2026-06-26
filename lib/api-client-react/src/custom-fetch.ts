@@ -371,13 +371,13 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  const response = await fetch(input, { ...init, method, headers, credentials: init.credentials ?? "include" });
 
   if (response.status === 401 && _tokenRefresher) {
     const newToken = await _tokenRefresher().catch(() => null);
     if (newToken) {
       headers.set("authorization", `Bearer ${newToken}`);
-      const retryResponse = await fetch(input, { ...init, method, headers });
+      const retryResponse = await fetch(input, { ...init, method, headers, credentials: init.credentials ?? "include" });
       if (!retryResponse.ok) {
         const retryData = await parseErrorBody(retryResponse, method);
         throw new ApiError(retryResponse, retryData, requestInfo);

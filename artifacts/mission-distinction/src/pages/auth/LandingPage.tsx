@@ -102,6 +102,7 @@ export default function LandingPage() {
   const finishGoogleAuth = async (idToken: string) => {
     const res = await fetch(`/api/auth/google`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ idToken }),
     });

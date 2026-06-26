@@ -8,7 +8,7 @@ export async function apiFetch(
     headers.set("authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(input, { ...init, headers });
+  const response = await fetch(input, { ...init, headers, credentials: init.credentials ?? "include" });
   if (response.status !== 401) return response;
 
   try {
@@ -28,7 +28,7 @@ export async function apiFetch(
 
     const retryHeaders = new Headers(init.headers ?? {});
     retryHeaders.set("authorization", `Bearer ${data.token}`);
-    return fetch(input, { ...init, headers: retryHeaders });
+    return fetch(input, { ...init, headers: retryHeaders, credentials: init.credentials ?? "include" });
   } catch {
     window.dispatchEvent(new Event("auth:logout"));
     return response;

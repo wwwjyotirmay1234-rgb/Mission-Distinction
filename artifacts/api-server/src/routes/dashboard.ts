@@ -35,8 +35,16 @@ router.get("/student-stats", authMiddleware, async (req: Request, res: Response)
     const pdfsThisWeek = pdfsAll.filter(a => new Date(a.createdAt) >= weekAgo).length;
     const pdfsLastWeek = pdfsAll.filter(a => { const d = new Date(a.createdAt); return d >= twoWeeksAgo && d < weekAgo; }).length;
 
-    const quizzesThisWeek = attempts.filter(a => new Date(a.id) >= weekAgo).length;
-    const quizzesLastWeekCount = attempts.filter(a => { const d = new Date(a.id); return d >= twoWeeksAgo && d < weekAgo; }).length;
+    const quizzesThisWeek = attempts.filter(a => {
+      const createdAt = (a as any).createdAt;
+      return createdAt && new Date(createdAt) >= weekAgo;
+    }).length;
+    const quizzesLastWeekCount = attempts.filter(a => {
+      const createdAt = (a as any).createdAt;
+      if (!createdAt) return false;
+      const d = new Date(createdAt);
+      return d >= twoWeeksAgo && d < weekAgo;
+    }).length;
 
     const attemptsThisWeek = attempts.filter(a => {
       const createdAt = (a as any).createdAt;

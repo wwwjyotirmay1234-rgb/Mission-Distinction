@@ -22,7 +22,9 @@ export default function VerifyEmail() {
     const verify = async () => {
       try {
         const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-        const res = await fetch(`${baseUrl}/api/auth/verify-email?token=${encodeURIComponent(tokenParam)}`);
+        const res = await fetch(`${baseUrl}/api/auth/verify-email?token=${encodeURIComponent(tokenParam)}`, {
+          credentials: "include"
+        });
         const data = await res.json();
         if (res.ok) {
           setStatus("success");
