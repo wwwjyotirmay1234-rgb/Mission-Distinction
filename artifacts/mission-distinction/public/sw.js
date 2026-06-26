@@ -355,9 +355,9 @@ self.addEventListener("notificationclick", event => {
   }
 
   // Default — open/focus the app
-  const targetUrl = nData.url || nData.type === "alarm"
+  const targetUrl = nData.type === "alarm"
     ? (BASE + "student/tools")
-    : (BASE);
+    : (nData.url || BASE);
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then(clientList => {

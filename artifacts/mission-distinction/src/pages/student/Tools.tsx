@@ -494,10 +494,11 @@ function AlarmClock_() {
     const handler = (event: MessageEvent) => {
       const { type, alarmId } = event.data ?? {};
       if (type === "ALARM_FIRED") {
-        setAlarms(prev => {
-          const target = prev.find(a => a.id === alarmId);
-          if (!target || target.fired) return prev;
-          // Play audio if the page is visible (SW can't play audio directly)
+        // Read current state directly — source of truth is localStorage
+        const currentAlarms = loadAlarms();
+        const target = currentAlarms.find(a => a.id === alarmId);
+        if (target && !target.fired) {
+          // Side effects OUTSIDE the state updater to avoid double-execution in Strict Mode
           if (document.visibilityState === "visible") {
             playAlarmSound(target);
           }
@@ -505,9 +506,10 @@ function AlarmClock_() {
             duration: 60_000,
             action: { label: "Dismiss", onClick: () => stopCurrentAlarmAudio() },
           });
-          return prev.map(a => a.id === alarmId ? { ...a, fired: true, active: false } : a);
-        });
-        awardActivityXP("alarm_used");
+          awardActivityXP("alarm_used");
+          // Pure state update
+          setAlarms(prev => prev.map(a => a.id === alarmId ? { ...a, fired: true, active: false } : a));
+        }
       }
       if (type === "ALARM_DISMISS") {
         stopCurrentAlarmAudio();
@@ -522,24 +524,25 @@ function AlarmClock_() {
     checkRef.current = setInterval(() => {
       const now = new Date();
       const hhmm = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-      setAlarms(prev => {
-        let changed = false;
-        const next = prev.map(a => {
-          if (a.active && !a.fired && a.time === hhmm) {
-            playAlarmSound(a);
-            showAlarmNotification("⏰ Alarm!", a.label || `Alarm set for ${a.time}`, a.id);
-            toast(`⏰ ${a.label || `Alarm at ${a.time}`}`, {
-              duration: 60_000,
-              action: { label: "Dismiss", onClick: () => stopCurrentAlarmAudio() },
-            });
-            awardActivityXP("alarm_used");
-            changed = true;
-            return { ...a, fired: true, active: false };
-          }
-          return a;
+      // Identify alarms to fire from localStorage (source of truth)
+      const toFire = loadAlarms().filter(a => a.active && !a.fired && a.time === hhmm);
+      if (toFire.length === 0) return;
+      // Side effects OUTSIDE the state updater
+      for (const a of toFire) {
+        playAlarmSound(a);
+        showAlarmNotification("⏰ Alarm!", a.label || `Alarm set for ${a.time}`, a.id);
+        toast(`⏰ ${a.label || `Alarm at ${a.time}`}`, {
+          duration: 60_000,
+          action: { label: "Dismiss", onClick: () => stopCurrentAlarmAudio() },
         });
-        return changed ? next : prev;
-      });
+        awardActivityXP("alarm_used");
+      }
+      // Pure state update — mark fired
+      setAlarms(prev => prev.map(a =>
+        a.active && !a.fired && a.time === hhmm
+          ? { ...a, fired: true, active: false }
+          : a
+      ));
     }, 1_000);
     return () => { if (checkRef.current) clearInterval(checkRef.current); };
   }, []);
