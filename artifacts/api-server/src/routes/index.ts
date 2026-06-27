@@ -38,6 +38,7 @@ import { gamesRouter } from "./games";
 import { quizSubmissionsRouter } from "./quizSubmissions";
 import { proctoringRouter } from "./proctoring";
 import { xpRouter } from "./xp";
+import { anatomyAIRouter } from "./anatomyAI";
 
 const router: IRouter = Router();
 
@@ -85,5 +86,6 @@ router.use("/quiz-submissions", quizSubmissionsRouter);
 router.use("/admin/quiz-submissions", quizSubmissionsRouter);
 router.use("/proctoring", proctoringRouter);
 router.use("/xp", xpRouter);
+router.use("/anatomy", anatomyAIRouter);
 
 export default router;
