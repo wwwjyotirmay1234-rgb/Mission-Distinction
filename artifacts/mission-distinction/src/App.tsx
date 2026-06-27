@@ -78,6 +78,7 @@ import AdminUsers from "@/pages/admin/Users";
 import AdminNotes from "@/pages/admin/Notes";
 import AdminPDFs from "@/pages/admin/PDFs";
 import AdminBooks from "@/pages/admin/Books";
+import AdminPYQs from "@/pages/admin/PYQs";
 import AdminQuizzes from "@/pages/admin/Quizzes";
 import AdminAnnouncements from "@/pages/admin/Announcements";
 import AdminAnalytics from "@/pages/admin/Analytics";
@@ -167,6 +168,7 @@ function Router() {
               <Route path="/admin/content/notes" component={AdminNotes} />
               <Route path="/admin/content/pdfs" component={AdminPDFs} />
               <Route path="/admin/content/books" component={AdminBooks} />
+              <Route path="/admin/content/pyqs" component={AdminPYQs} />
               <Route path="/admin/quizzes/:id/edit" component={AdminQuizEditor} />
               <Route path="/admin/quizzes" component={AdminQuizzes} />
               <Route path="/admin/news" component={AdminNews} />

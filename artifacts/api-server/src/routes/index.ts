@@ -39,6 +39,7 @@ import { quizSubmissionsRouter } from "./quizSubmissions";
 import { proctoringRouter } from "./proctoring";
 import { xpRouter } from "./xp";
 import { anatomyAIRouter } from "./anatomyAI";
+import pyqsRouter from "./pyqs";
 
 const router: IRouter = Router();
 
@@ -87,5 +88,6 @@ router.use("/admin/quiz-submissions", quizSubmissionsRouter);
 router.use("/proctoring", proctoringRouter);
 router.use("/xp", xpRouter);
 router.use("/anatomy", anatomyAIRouter);
+router.use("/pyqs", pyqsRouter);
 
 export default router;

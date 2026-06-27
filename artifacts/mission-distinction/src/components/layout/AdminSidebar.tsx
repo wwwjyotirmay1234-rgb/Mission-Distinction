@@ -38,6 +38,7 @@ const navItems = [
       { label: "Notes", href: "/admin/content/notes" },
       { label: "PDF Library", href: "/admin/content/pdfs" },
       { label: "Books Library", href: "/admin/content/books" },
+      { label: "PYQs", href: "/admin/content/pyqs" },
     ],
   },
   {

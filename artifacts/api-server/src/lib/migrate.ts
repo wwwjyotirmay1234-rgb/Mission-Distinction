@@ -297,6 +297,17 @@ export async function runStartupMigrations() {
         ADD COLUMN IF NOT EXISTS deleted_for_everyone BOOLEAN DEFAULT FALSE,
         ADD COLUMN IF NOT EXISTS deleted_by TEXT DEFAULT '[]',
         ADD COLUMN IF NOT EXISTS seen_by TEXT DEFAULT '[]';
+
+      CREATE TABLE IF NOT EXISTS pyqs (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        year TEXT NOT NULL,
+        url TEXT NOT NULL,
+        download_count INTEGER DEFAULT 0,
+        created_by INTEGER,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
     `);
   } finally {
     client.release();

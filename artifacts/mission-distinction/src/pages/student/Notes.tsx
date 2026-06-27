@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useListNotes, getListNotesQueryKey, customFetch } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, FileText, Download, BookMarked, X, ChevronLeft, BookOpen, ExternalLink, BookText } from "lucide-react";
+import { Search, Filter, FileText, Download, BookMarked, X, ChevronLeft, BookOpen, ExternalLink, BookText, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Note = {
@@ -27,6 +27,15 @@ type Book = {
   author?: string | null;
   url: string;
   coverUrl?: string | null;
+};
+
+type PYQ = {
+  id: number;
+  title: string;
+  subject: string;
+  year: string;
+  url: string;
+  downloadCount?: number;
 };
 
 const SUBJECT_COLORS: Record<string, string> = {
@@ -149,6 +158,103 @@ function trackBookRead(bookId: number) {
   customFetch(`/api/books/${bookId}/read`, { method: "POST" }).catch(() => {});
 }
 
+async function fetchPYQs(search?: string, subject?: string): Promise<PYQ[]> {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (subject) params.set("subject", subject);
+  const qs = params.toString();
+  return customFetch<PYQ[]>(`/api/pyqs${qs ? `?${qs}` : ""}`);
+}
+
+function trackPYQRead(pyqId: number) {
+  customFetch(`/api/pyqs/${pyqId}/read`, { method: "POST" }).catch(() => {});
+}
+
+function getDriveEmbedUrl(url: string): string {
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
+  return url;
+}
+
+function PYQCard({ pyq }: { pyq: PYQ }) {
+  const color = SUBJECT_COLORS[pyq.subject] || DEFAULT_COLOR;
+  const isDrive = pyq.url.includes("drive.google.com");
+  const embedUrl = isDrive ? getDriveEmbedUrl(pyq.url) : getServeUrlWithToken(pyq.url);
+  const [viewing, setViewing] = React.useState(false);
+
+  const open = () => {
+    trackPYQRead(pyq.id);
+    setViewing(true);
+  };
+
+  return (
+    <>
+      <Card className="bg-card/40 border-border/40 hover:border-primary/40 transition-all group flex flex-col overflow-hidden">
+        <div className="h-28 bg-gradient-to-br from-amber-500/10 to-amber-500/5 flex items-center justify-center">
+          <ClipboardList size={40} className="text-amber-500/40" />
+        </div>
+        <CardContent className="p-4 flex-1 flex flex-col">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <Badge variant="outline" className={`text-[10px] uppercase tracking-wider px-2 border shrink-0 ${color}`}>
+              {pyq.subject}
+            </Badge>
+            <Badge variant="outline" className="text-[10px] px-2 border border-amber-500/30 text-amber-400 bg-amber-500/5 shrink-0">
+              {pyq.year}
+            </Badge>
+          </div>
+          <h3 className="font-semibold text-sm mb-3 line-clamp-2 group-hover:text-primary transition-colors flex-1">
+            {pyq.title}
+          </h3>
+          <Button className="w-full text-xs gap-1.5 mt-auto" size="sm" onClick={open}>
+            <FileText size={12} /> Open PYQ
+          </Button>
+        </CardContent>
+      </Card>
+
+      {viewing && (
+        <Dialog open onOpenChange={v => { if (!v) setViewing(false); }}>
+          <DialogContent className="max-w-3xl w-full max-h-[90vh] flex flex-col bg-card border-border/50 p-0 gap-0">
+            <DialogHeader className="px-6 py-4 border-b border-border/50 flex-row items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <Badge variant="outline" className={`text-[10px] uppercase tracking-wider px-2 border ${color}`}>{pyq.subject}</Badge>
+                  <Badge variant="outline" className="text-[10px] px-2 border border-amber-500/30 text-amber-400">{pyq.year}</Badge>
+                </div>
+                <DialogTitle className="text-lg font-bold leading-tight">{pyq.title}</DialogTitle>
+              </div>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 shrink-0 ml-2" onClick={() => setViewing(false)}>
+                <X size={16} />
+              </Button>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden min-h-0">
+              <iframe
+                src={embedUrl}
+                className="w-full h-full rounded border-0"
+                style={{ minHeight: "60vh" }}
+                title={pyq.title}
+                allow="autoplay"
+              />
+            </div>
+            <div className="px-6 py-3 border-t border-border/50 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">{pyq.downloadCount ?? 0} views</span>
+              <div className="flex gap-2">
+                <a href={pyq.url} target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
+                    <ExternalLink size={12} /> Open in new tab
+                  </Button>
+                </a>
+                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => setViewing(false)}>
+                  <ChevronLeft size={13} /> Back
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+}
+
 function BookCard({ book }: { book: Book }) {
   const color = SUBJECT_COLORS[book.subject] || DEFAULT_COLOR;
   const openUrl = getServeUrlWithToken(book.url);
@@ -195,7 +301,7 @@ function BookCard({ book }: { book: Book }) {
 }
 
 export default function StudentNotes() {
-  const [activeTab, setActiveTab] = useState<"notes" | "books">("notes");
+  const [activeTab, setActiveTab] = useState<"notes" | "books" | "pyqs">("notes");
   const [search, setSearch] = useState("");
   const [activeSubject, setActiveSubject] = useState("All Subjects");
   const [viewingNote, setViewingNote] = useState<Note | null>(null);
@@ -216,7 +322,14 @@ export default function StudentNotes() {
     staleTime: 30_000,
   });
 
-  const isLoading = activeTab === "notes" ? notesLoading : booksLoading;
+  const { data: pyqsData, isLoading: pyqsLoading } = useQuery<PYQ[]>({
+    queryKey: ["pyqs", search, activeSubject],
+    queryFn: () => fetchPYQs(search || undefined, activeSubject === "All Subjects" ? undefined : activeSubject),
+    enabled: activeTab === "pyqs",
+    staleTime: 30_000,
+  });
+
+  const isLoading = activeTab === "notes" ? notesLoading : activeTab === "books" ? booksLoading : pyqsLoading;
 
   return (
     <div className="space-y-6">
@@ -224,14 +337,14 @@ export default function StudentNotes() {
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Notes & Books Library</h1>
-          <p className="text-muted-foreground">High-yield notes and textbooks crafted for distinction.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Notes, Books & PYQs</h1>
+          <p className="text-muted-foreground">High-yield notes, textbooks, and previous year question papers.</p>
         </div>
         <div className="flex gap-2">
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder={activeTab === "notes" ? "Search notes..." : "Search books..."}
+              placeholder={activeTab === "notes" ? "Search notes..." : activeTab === "books" ? "Search books..." : "Search PYQs..."}
               className="pl-9 bg-muted/50 border-border/50"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -264,6 +377,16 @@ export default function StudentNotes() {
           }`}
         >
           <BookOpen size={15} /> Books
+        </button>
+        <button
+          onClick={() => setActiveTab("pyqs")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === "pyqs"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <ClipboardList size={15} /> PYQs
         </button>
       </div>
 
@@ -355,6 +478,21 @@ export default function StudentNotes() {
             </div>
           ) : (
             booksData.map((book) => <BookCard key={book.id} book={book} />)
+          )}
+        </div>
+      )}
+
+      {/* PYQs Grid */}
+      {activeTab === "pyqs" && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {isLoading ? (
+            Array(10).fill(0).map((_, i) => <Skeleton key={i} className="h-56 w-full rounded-xl" />)
+          ) : !pyqsData || pyqsData.length === 0 ? (
+            <div className="col-span-full p-12 text-center border border-dashed rounded-xl text-muted-foreground">
+              No PYQs found. {activeSubject !== "All Subjects" || search ? "Try adjusting your search or filter." : "Admin hasn't uploaded any PYQs yet."}
+            </div>
+          ) : (
+            pyqsData.map((pyq) => <PYQCard key={pyq.id} pyq={pyq} />)
           )}
         </div>
       )}
