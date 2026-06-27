@@ -227,10 +227,17 @@ function ModelCard({ system, structure, onClick }: {
 // ─────────────────────────────────────────────────────────────────────────────
 // System section (heading + horizontal card scroll)
 // ─────────────────────────────────────────────────────────────────────────────
-function SystemSection({ system, onSelectStructure }: {
+function SystemSection({ system, onSelectStructure, selectedRegion }: {
   system: AnatomySystem;
   onSelectStructure: (sys: AnatomySystem, struct: AnatomyStructure) => void;
+  selectedRegion: RegionId;
 }) {
+  // Filter to structures tagged for this region (or untagged structures, which are shown everywhere)
+  const visibleStructures = system.structures.filter(
+    s => !s.regions || s.regions.includes(selectedRegion)
+  );
+  if (visibleStructures.length === 0) return null;
+
   return (
     <div>
       {/* Heading — plain medium-weight, matching reference "Musculoskeletal system" style */}
@@ -250,7 +257,7 @@ function SystemSection({ system, onSelectStructure }: {
         className="flex gap-3 pl-4 pr-4 overflow-x-auto"
         style={{ scrollbarWidth: "none", paddingBottom: 4 }}
       >
-        {system.structures.map(struct => (
+        {visibleStructures.map(struct => (
           <ModelCard
             key={struct.id}
             system={system}
@@ -272,7 +279,7 @@ function HubLanding({ onSelectSystem, onSelectResult, globalSearch, setGlobalSea
   globalSearch: string;
   setGlobalSearch: (v: string) => void;
 }) {
-  const [selectedRegion, setSelectedRegion] = useState<RegionId>("trunk");
+  const [selectedRegion, setSelectedRegion] = useState<RegionId>("head");
 
   const searchResults = useMemo(
     () => (globalSearch.trim().length > 1 ? searchStructures(globalSearch) : []),
@@ -395,6 +402,7 @@ function HubLanding({ onSelectSystem, onSelectResult, globalSearch, setGlobalSea
               key={sys.id}
               system={sys}
               onSelectStructure={onSelectResult}
+              selectedRegion={selectedRegion}
             />
           ))
         )}

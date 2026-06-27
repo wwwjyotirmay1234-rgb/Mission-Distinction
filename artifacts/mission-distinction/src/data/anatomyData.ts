@@ -43,6 +43,8 @@ export type AnatomyStructure = {
   action?: string;
   /** Optional per-structure GLB override (takes precedence over system glbPath) */
   glbPath?: string;
+  /** Which body regions this structure belongs to — used to filter cards per region tab */
+  regions?: string[];
 };
 
 export type AnatomySystem = {
@@ -205,6 +207,7 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
         id: "skull",
         name: "Skull",
         glbPath: "/models/skull.glb",
+        regions: ["head"],
         description: "The skull is a bony structure that forms the head in vertebrates, protecting the brain and supporting the face. It consists of 22 bones — 8 cranial bones forming the neurocranium (protecting the brain) and 14 facial bones forming the viscerocranium.",
         clinicalPoints: [
           "Pterion: H-shaped junction of frontal, parietal, temporal, and sphenoid bones — thinnest part of skull; middle meningeal artery lies deep to it; blow → extradural haematoma",
@@ -247,6 +250,7 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
       {
         id: "humerus",
         name: "Humerus",
+        regions: ["upper_limb"],
         description: "The humerus is the long bone of the arm, articulating with the scapula (glenoid) proximally and the radius and ulna distally at the elbow. The shaft is cylindrical in cross-section and contains the radial groove posteriorly for the radial nerve.",
         clinicalPoints: [
           "Surgical neck fracture → axillary nerve injury (paralysis of deltoid, loss of 'regimental badge' sensation)",
