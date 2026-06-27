@@ -2,7 +2,7 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -102,6 +102,17 @@ import ProctoringReport from "@/pages/admin/ProctoringReport";
 
 const queryClient = new QueryClient();
 
+const ANATOMY_PREVIEW_EMAIL = "www.jyotirmay1234@gmail.com";
+
+function AnatomyRoute() {
+  const { user } = useAuth();
+  if (user?.email !== ANATOMY_PREVIEW_EMAIL) {
+    window.location.replace("/student/dashboard");
+    return null;
+  }
+  return <StudentAnatomyHub />;
+}
+
 function Router() {
   return (
     <Switch>
@@ -118,7 +129,7 @@ function Router() {
         <ProtectedRoute>
           <StudentLayout>
             <Switch>
-              <Route path="/student/anatomy">{() => { window.location.replace("/student/dashboard"); return null; }}</Route>
+              <Route path="/student/anatomy" component={AnatomyRoute} />
               <Route path="/student/dashboard" component={StudentDashboard} />
               <Route path="/student/quiz" component={StudentQuiz} />
               <Route path="/student/notes" component={StudentNotes} />

@@ -29,6 +29,9 @@ import {
 } from "lucide-react";
 import { useXPStats } from "@/hooks/useXPStats";
 import { XPProgressBar } from "@/components/XPProgressBar";
+import { useAuth } from "@/contexts/AuthContext";
+
+const ANATOMY_PREVIEW_EMAIL = "www.jyotirmay1234@gmail.com";
 
 const LAST_SEEN_KEY = "md_announcements_last_seen";
 
@@ -54,9 +57,11 @@ interface NavItem {
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
   const { data: xpStats } = useXPStats();
+  const { user } = useAuth();
 
   const xp = xpStats?.totalXp ?? 0;
   const rankLevel = xpStats?.currentRankLevel ?? 1;
+  const canSeeAnatomy = user?.email === ANATOMY_PREVIEW_EMAIL;
 
   const { data: announcements } = useListAnnouncements(
     {},
@@ -69,7 +74,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   }, [announcements]);
 
   const navItems: NavItem[] = [
-    { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy", comingSoon: true },
+    { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy", comingSoon: !canSeeAnatomy },
     { icon: LayoutDashboard, label: "Dashboard", href: "/student/dashboard" },
     { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
     { icon: FileText, label: "Notes & Books", href: "/student/notes" },
