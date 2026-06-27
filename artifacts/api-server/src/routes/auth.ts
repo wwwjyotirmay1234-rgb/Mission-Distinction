@@ -16,9 +16,11 @@ import rateLimit from "express-rate-limit";
 
 const router = Router();
 
+// Limits are set high enough for a full college batch (200+ students)
+// logging in from the same campus WiFi (shared IP address).
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 500 : 12,
+  max: process.env.NODE_ENV === "development" ? 1000 : 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many login attempts. Please try again in 15 minutes." },
@@ -26,7 +28,7 @@ const loginLimiter = rateLimit({
 
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 8,
+  max: 250,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many registration attempts. Please try again in an hour." },
@@ -34,7 +36,7 @@ const registerLimiter = rateLimit({
 
 const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 50,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many password reset requests. Please try again in 15 minutes." },
@@ -42,7 +44,7 @@ const forgotPasswordLimiter = rateLimit({
 
 const resetPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 500 : 10,
+  max: process.env.NODE_ENV === "development" ? 1000 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many password reset attempts. Please try again in an hour." },
@@ -50,7 +52,7 @@ const resetPasswordLimiter = rateLimit({
 
 const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 500 : 30,
+  max: process.env.NODE_ENV === "development" ? 1000 : 600,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many token refresh requests. Please try again shortly." },
@@ -58,7 +60,7 @@ const refreshLimiter = rateLimit({
 
 const googleAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 500 : 40,
+  max: process.env.NODE_ENV === "development" ? 1000 : 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many Google sign-in attempts. Please try again shortly." },

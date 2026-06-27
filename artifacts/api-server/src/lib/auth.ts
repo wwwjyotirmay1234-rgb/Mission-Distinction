@@ -7,7 +7,7 @@ if (!JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is not set. Add it to Replit Secrets before starting the server.");
 }
 const JWT_EXPIRES_IN = "90d";
-const BCRYPT_ROUNDS = 10;
+const BCRYPT_ROUNDS = 8;
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, BCRYPT_ROUNDS);
