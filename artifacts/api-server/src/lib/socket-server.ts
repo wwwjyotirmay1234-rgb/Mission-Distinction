@@ -58,6 +58,10 @@ const TOTAL_QUESTIONS = 10;
 interface CallParticipant { id: number; name: string; socketId: string; }
 const callRooms = new Map<string, Set<CallParticipant>>();
 
+// ── Video call join-request approval ──────────────────────────────────────────
+interface PendingJoinRequest { userId: number; name: string; hostUserId: number; }
+const callJoinRequests = new Map<string, Map<string, PendingJoinRequest>>(); // roomKey → socketId → request
+
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
@@ -342,6 +346,32 @@ export function initSocketServer(httpServer: HttpServer) {
       socket.to(`call:${roomKey}`).emit("call:user-left", { socketId: socket.id, userId: user.id });
     });
 
+    // ── Video call join-request approval ───────────────────────────────────────
+    socket.on("call:request-join", ({ roomKey, hostUserId }: { roomKey: string; hostUserId: number }) => {
+      if (typeof roomKey !== "string" || typeof hostUserId !== "number") return;
+      const requests = callJoinRequests.get(roomKey) ?? new Map<string, PendingJoinRequest>();
+      requests.set(socket.id, { userId: user.id, name: user.fullName, hostUserId });
+      callJoinRequests.set(roomKey, requests);
+      io.to(`user:${hostUserId}`).emit("call:join-request", {
+        roomKey,
+        requesterName: user.fullName,
+        requesterSocketId: socket.id,
+        requesterId: user.id,
+      });
+    });
+
+    socket.on("call:approve", ({ roomKey, requesterSocketId }: { roomKey: string; requesterSocketId: string }) => {
+      if (typeof roomKey !== "string" || typeof requesterSocketId !== "string") return;
+      callJoinRequests.get(roomKey)?.delete(requesterSocketId);
+      io.to(requesterSocketId).emit("call:approved", { roomKey });
+    });
+
+    socket.on("call:deny", ({ roomKey, requesterSocketId }: { roomKey: string; requesterSocketId: string }) => {
+      if (typeof roomKey !== "string" || typeof requesterSocketId !== "string") return;
+      callJoinRequests.get(roomKey)?.delete(requesterSocketId);
+      io.to(requesterSocketId).emit("call:denied", { roomKey });
+    });
+
     // ── Disconnect ─────────────────────────────────────────────────────────────
     socket.on("disconnect", async () => {
       for (const room of socket.rooms) {
@@ -371,6 +401,11 @@ export function initSocketServer(httpServer: HttpServer) {
             }
           }
         }
+      }
+      // Clean up any pending join requests from this socket
+      for (const [roomKey, requests] of callJoinRequests.entries()) {
+        requests.delete(socket.id);
+        if (requests.size === 0) callJoinRequests.delete(roomKey);
       }
     });
   });

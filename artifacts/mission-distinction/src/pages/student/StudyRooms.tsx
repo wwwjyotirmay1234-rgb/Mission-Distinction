@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { io, Socket } from "socket.io-client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Plus, ChevronLeft, Play, Clock, BookOpen, LogOut, Video } from "lucide-react";
+import { Users, Plus, ChevronLeft, Play, Clock, BookOpen, LogOut, Video, UserCheck, UserX, Bell, Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import VideoCall from "@/components/VideoCall";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "General", "NEET PG"];
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 interface Room {
   id: number; hostId: number; hostName: string; name: string; subject: string;
@@ -22,6 +24,13 @@ interface Room {
 }
 interface Member { id: number; userId: number; userName: string; }
 
+interface PendingApproval {
+  roomKey: string;
+  requesterName: string;
+  requesterSocketId: string;
+  requesterId: number;
+}
+
 function formatMmSs(ms: number) {
   if (ms <= 0) return "00:00";
   const m = Math.floor(ms / 60000);
@@ -29,14 +38,21 @@ function formatMmSs(ms: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+type VideoCallStatus = "idle" | "requesting" | "denied";
 
 function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const queryClient = useQueryClient();
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [timerDone, setTimerDone] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
+
+  // Approval state
+  const roomSocket = useRef<Socket | null>(null);
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
+  const [videoCallStatus, setVideoCallStatus] = useState<VideoCallStatus>("idle");
+  const requestTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data, isLoading } = useQuery<Room & { members: Member[] }>({
     queryKey: ["study-room", roomId],
@@ -54,6 +70,7 @@ function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["study-rooms"] }); onBack(); },
   });
 
+  // Heartbeat
   useEffect(() => {
     apiFetch(`/api/study-rooms/${roomId}/heartbeat`, { method: "POST" }).catch(() => {});
     heartbeatRef.current = setInterval(() => {
@@ -62,6 +79,7 @@ function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
     return () => { if (heartbeatRef.current) clearInterval(heartbeatRef.current); };
   }, [roomId]);
 
+  // Timer countdown
   useEffect(() => {
     if (!data?.endsAt || data.status !== "active") return;
     const tick = setInterval(() => {
@@ -72,18 +90,130 @@ function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
     return () => clearInterval(tick);
   }, [data?.endsAt, data?.status]);
 
+  // Approval socket — always active while in room
+  useEffect(() => {
+    if (!token) return;
+    const socket = io(window.location.origin, {
+      path: `${BASE}/api/socket.io/`,
+      auth: { token },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+    });
+    roomSocket.current = socket;
+
+    // Host: someone wants to join the video call
+    socket.on("call:join-request", (payload: PendingApproval) => {
+      setPendingApprovals(prev => {
+        if (prev.find(p => p.requesterSocketId === payload.requesterSocketId)) return prev;
+        return [...prev, payload];
+      });
+      toast(`${payload.requesterName} wants to join the video call`, {
+        duration: 15000,
+        icon: "📹",
+      });
+    });
+
+    // Non-host: host approved our request
+    socket.on("call:approved", () => {
+      if (requestTimeoutRef.current) clearTimeout(requestTimeoutRef.current);
+      setVideoCallStatus("idle");
+      setVideoOpen(true);
+      toast.success("Host approved — joining video call!");
+    });
+
+    // Non-host: host denied our request
+    socket.on("call:denied", () => {
+      if (requestTimeoutRef.current) clearTimeout(requestTimeoutRef.current);
+      setVideoCallStatus("denied");
+      toast.error("Host declined your request to join the video call.");
+      setTimeout(() => setVideoCallStatus("idle"), 4000);
+    });
+
+    return () => {
+      if (requestTimeoutRef.current) clearTimeout(requestTimeoutRef.current);
+      socket.disconnect();
+      roomSocket.current = null;
+    };
+  }, [token]);
+
   if (isLoading || !data) return <div className="space-y-4"><Skeleton className="h-40 w-full" /></div>;
 
   const isHost = data.hostId === user?.id;
+  const roomKey = `room-${roomId}`;
   const pct = data.endsAt && data.startedAt
     ? Math.max(0, Math.min(100, (timeLeft / (data.timerMinutes * 60000)) * 100))
     : 100;
+
+  const handleVideoCallClick = () => {
+    if (isHost) {
+      setVideoOpen(v => !v);
+      return;
+    }
+    // Non-host: request host approval
+    if (videoOpen) {
+      setVideoOpen(false);
+      return;
+    }
+    if (videoCallStatus === "requesting") return; // already waiting
+    setVideoCallStatus("requesting");
+    roomSocket.current?.emit("call:request-join", { roomKey, hostUserId: data.hostId });
+    // Timeout after 45s if no response
+    requestTimeoutRef.current = setTimeout(() => {
+      setVideoCallStatus("idle");
+      toast.error("No response from host. Try again.");
+    }, 45000);
+  };
+
+  const handleApprove = (req: PendingApproval) => {
+    roomSocket.current?.emit("call:approve", { roomKey: req.roomKey, requesterSocketId: req.requesterSocketId });
+    setPendingApprovals(prev => prev.filter(p => p.requesterSocketId !== req.requesterSocketId));
+    if (!videoOpen) setVideoOpen(true);
+  };
+
+  const handleDeny = (req: PendingApproval) => {
+    roomSocket.current?.emit("call:deny", { roomKey: req.roomKey, requesterSocketId: req.requesterSocketId });
+    setPendingApprovals(prev => prev.filter(p => p.requesterSocketId !== req.requesterSocketId));
+  };
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" className="gap-2 -ml-2" onClick={onBack}><ChevronLeft size={16} /> All Rooms</Button>
       </div>
+
+      {/* Host: pending approval notifications */}
+      {isHost && pendingApprovals.length > 0 && (
+        <div className="space-y-2">
+          {pendingApprovals.map(req => (
+            <div key={req.requesterSocketId} className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 animate-in slide-in-from-top-2 duration-300">
+              <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+                <Bell size={16} className="text-amber-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">{req.requesterName}</p>
+                <p className="text-xs text-muted-foreground">wants to join the video call</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  className="h-8 px-3 text-xs gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => handleApprove(req)}
+                >
+                  <UserCheck size={13} /> Admit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-3 text-xs gap-1.5 border-red-500/40 text-red-400 hover:bg-red-500/10"
+                  onClick={() => handleDeny(req)}
+                >
+                  <UserX size={13} /> Deny
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <Card className="border-primary/30 bg-card/50">
         <CardContent className="p-6">
@@ -101,14 +231,28 @@ function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant={videoOpen ? "default" : "outline"}
-                className={`gap-1.5 text-xs ${videoOpen ? "bg-primary text-primary-foreground" : "border-primary/30 text-primary hover:bg-primary/10"}`}
-                onClick={() => setVideoOpen(v => !v)}
-              >
-                <Video size={13} /> {videoOpen ? "End Call" : "Video Call"}
-              </Button>
+              {/* Video call button — host opens directly, non-host requests approval */}
+              {!isHost && videoCallStatus === "requesting" ? (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <Loader2 size={13} className="text-amber-400 animate-spin" />
+                  <span className="text-xs text-amber-400 font-medium">Waiting…</span>
+                </div>
+              ) : !isHost && videoCallStatus === "denied" ? (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30">
+                  <XCircle size={13} className="text-red-400" />
+                  <span className="text-xs text-red-400 font-medium">Declined</span>
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  variant={videoOpen ? "default" : "outline"}
+                  className={`gap-1.5 text-xs ${videoOpen ? "bg-primary text-primary-foreground" : "border-primary/30 text-primary hover:bg-primary/10"}`}
+                  onClick={handleVideoCallClick}
+                >
+                  <Video size={13} />
+                  {videoOpen ? "End Call" : isHost ? "Video Call" : "Request Call"}
+                </Button>
+              )}
               <Button variant="outline" size="sm" className="gap-1.5 text-xs border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => leaveMutation.mutate()}>
                 <LogOut size={13} /> Leave
               </Button>
@@ -166,23 +310,52 @@ function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
         </div>
       </div>
 
-      {/* Video call hint when not open */}
+      {/* Video call hint / status when not open */}
       {!videoOpen && (
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => setVideoOpen(true)}>
-          <Video size={18} className="text-primary shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-primary">Start a Video Call</p>
-            <p className="text-xs text-muted-foreground">Face-to-face study with your room members — works right inside the app</p>
-          </div>
-          <Button size="sm" variant="outline" className="ml-auto shrink-0 border-primary/30 text-primary hover:bg-primary/10 text-xs gap-1">
-            <Video size={12} /> Join
-          </Button>
-        </div>
+        <>
+          {videoCallStatus === "requesting" ? (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+              <Loader2 size={18} className="text-amber-400 shrink-0 animate-spin" />
+              <div>
+                <p className="text-sm font-medium text-amber-400">Waiting for host to admit you</p>
+                <p className="text-xs text-muted-foreground">The host will see your request and can approve or deny it</p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="ml-auto text-xs text-muted-foreground shrink-0"
+                onClick={() => { setVideoCallStatus("idle"); if (requestTimeoutRef.current) clearTimeout(requestTimeoutRef.current); }}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <div
+              className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
+              onClick={handleVideoCallClick}
+            >
+              <Video size={18} className="text-primary shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-primary">
+                  {isHost ? "Start a Video Call" : "Join Video Call"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {isHost
+                    ? "Face-to-face study with your room members — works right inside the app"
+                    : "Send a request to the host to join the video call"}
+                </p>
+              </div>
+              <Button size="sm" variant="outline" className="ml-auto shrink-0 border-primary/30 text-primary hover:bg-primary/10 text-xs gap-1">
+                <Video size={12} /> {isHost ? "Start" : "Request"}
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       {videoOpen && (
         <VideoCall
-          roomKey={`room-${roomId}`}
+          roomKey={roomKey}
           title={data.name}
           onClose={() => setVideoOpen(false)}
         />
