@@ -97,14 +97,9 @@ function DiagramBlock({ description }: { description: string }) {
     setImgState("loading");
     setErrMsg("");
     try {
-      const token = localStorage.getItem("mission_token");
-      const res = await fetch("/api/ai-tools/generate-diagram", {
+      const res = await apiFetch("/api/ai/generate-diagram", {
         method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description }),
       });
       const data = await res.json();
