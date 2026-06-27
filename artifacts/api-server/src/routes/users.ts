@@ -97,13 +97,18 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
     }
 
     if (avatarUrl !== undefined && avatarUrl !== null && avatarUrl !== "") {
-      try {
-        const u = new URL(avatarUrl);
-        if (u.protocol !== "https:") {
-          res.status(400).json({ error: "avatarUrl must be an HTTPS URL" }); return;
+      // Accept our own root-relative paths (/api/upload/avatar/…) — these are
+      // returned by the upload route and work in both dev and production.
+      // Absolute URLs must be https:// (e.g. legacy entries from before the fix).
+      if (!avatarUrl.startsWith("/api/upload/avatar/")) {
+        try {
+          const u = new URL(avatarUrl);
+          if (u.protocol !== "https:") {
+            res.status(400).json({ error: "avatarUrl must be an HTTPS URL" }); return;
+          }
+        } catch {
+          res.status(400).json({ error: "avatarUrl must be a valid URL" }); return;
         }
-      } catch {
-        res.status(400).json({ error: "avatarUrl must be a valid URL" }); return;
       }
     }
 

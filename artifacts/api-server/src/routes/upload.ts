@@ -237,10 +237,9 @@ router.post("/avatar", authMiddleware, avatarLimiter, upload.single("file"), asy
     const fileName = `avatar_${userId}_${Date.now()}.jpg`;
     const fileRef = bucket.file(`avatars/${fileName}`);
     await fileRef.save(req.file.buffer, { metadata: { contentType: realMime } });
-    // Serve via our own proxy (GCS bucket has public access prevention)
-    const proto = req.get("x-forwarded-proto") || req.protocol;
-    const host = req.get("x-forwarded-host") || req.get("host");
-    const url = `${proto}://${host}/api/upload/avatar/${fileName}`;
+    // Return a root-relative path so it works in both dev (Vite proxy) and prod
+    // without depending on x-forwarded-proto/host which Vite does not forward.
+    const url = `/api/upload/avatar/${fileName}`;
     res.json({ url });
   } catch (err: any) {
     console.error("Avatar upload error:", err);
