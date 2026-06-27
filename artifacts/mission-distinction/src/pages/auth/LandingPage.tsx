@@ -16,7 +16,7 @@ import { Eye, EyeOff, Activity, ShieldCheck, TrendingUp, Award, Zap } from "luci
 import { InstallSection } from "@/components/InstallSection";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 
 
@@ -143,12 +143,17 @@ export default function LandingPage() {
       sessionStorage.removeItem("md_google_redirect");
     }
 
+    // Track whether getRedirectResult already handled the auth so the
+    // onAuthStateChanged fallback below doesn't double-fire.
+    let handledByRedirectResult = false;
+
     getRedirectResult(auth)
       .then(async (result) => {
         if (!result || !active) {
           if (redirectPending) setGoogleLoading(false);
           return;
         }
+        handledByRedirectResult = true;
         try {
           const idToken = await result.user.getIdToken();
           await finishGoogleAuth(idToken);
@@ -171,7 +176,33 @@ export default function LandingPage() {
           if (redirectPending) setGoogleLoading(false);
         }
       });
-    return () => { active = false; };
+
+    // Fallback for iOS/Android browsers that drop the auth event on redirect:
+    // If we came back from a Google redirect but getRedirectResult returned null
+    // (auth/no-auth-event), Firebase still has the signed-in user in its local
+    // persistence. Catch that here and finish the backend auth handshake.
+    let unsubscribe: (() => void) | null = null;
+    if (redirectPending) {
+      unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (!active || handledByRedirectResult || !firebaseUser) return;
+        // Give getRedirectResult a short head-start to avoid a race.
+        await new Promise((r) => setTimeout(r, 500));
+        if (!active || handledByRedirectResult) return;
+        handledByRedirectResult = true;
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          await finishGoogleAuth(idToken);
+        } catch (err: any) {
+          toast.error(err?.message || "Google sign-in failed. Please try again.");
+          setGoogleLoading(false);
+        }
+      });
+    }
+
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
   }, []);
 
   const handleGoogleSignIn = async () => {

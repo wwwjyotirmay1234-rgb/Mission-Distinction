@@ -8,10 +8,10 @@ description: Hard-won mobile/PWA fixes for Mission Distinction — auth, PDF vie
 **Why:** Mobile browsers don't always send the refresh cookie reliably (especially from PWA home-screen shortcuts), so short-lived tokens get users kicked out constantly.
 **How to apply:** Keep JWT_EXPIRES_IN at "7d". The refresh token (30d, httpOnly cookie) handles rotation for active sessions.
 
-## Google login on mobile: skip popup, use redirect
-**Rule:** On mobile (`/Mobi|Android|iPhone|iPad/i`), call `signInWithRedirect` directly instead of `signInWithPopup`.
-**Why:** Mobile browsers block popups aggressively. The popup attempt always fails or is very slow, then falls back to redirect — wasting several seconds.
-**How to apply:** Check `isMobileDevice` at top of `handleGoogleSignIn` and return early via redirect.
+## Google login on mobile: skip popup, use redirect + onAuthStateChanged fallback
+**Rule:** On mobile (`/Mobi|Android|iPhone|iPad/i`), call `signInWithRedirect` directly. Also add an `onAuthStateChanged` fallback for when `getRedirectResult` drops the auth event.
+**Why:** Mobile browsers block popups. Additionally, iOS (ITP) and some Android browsers silently throw `auth/no-auth-event` from `getRedirectResult` — the user IS signed into Firebase but the backend never gets notified, causing "multiple attempts needed". Firebase still has the user in local persistence, so `onAuthStateChanged` catches them.
+**How to apply:** In the `useEffect`, after `getRedirectResult`, if `redirectPending===true` register an `onAuthStateChanged` listener. Guard with a `handledByRedirectResult` flag + 500ms delay so `getRedirectResult` gets first pick. Only call `finishGoogleAuth` once. Unsubscribe on cleanup.
 
 ## PDF/document viewer on mobile
 **Rule:** Google Docs viewer (`docs.google.com/viewer?url=...`) is unreliable on mobile — often blank or "Unable to preview". On mobile, show direct "Read PDF" + "Download" buttons instead.
