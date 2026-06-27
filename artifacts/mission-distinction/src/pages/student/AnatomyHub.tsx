@@ -26,6 +26,7 @@ const SYSTEM_COLORS: Record<string, { bg: string; text: string; border: string; 
   urinary:        { bg: "rgba(59,130,246,0.12)", text: "#60a5fa", border: "rgba(59,130,246,0.3)", glow: "rgba(59,130,246,0.4)" },
   lymphatic:      { bg: "rgba(16,185,129,0.12)", text: "#34d399", border: "rgba(16,185,129,0.3)", glow: "rgba(16,185,129,0.4)" },
   reproductive:   { bg: "rgba(236,72,153,0.12)", text: "#f472b6", border: "rgba(236,72,153,0.3)", glow: "rgba(236,72,153,0.4)" },
+  sensory:        { bg: "rgba(20,184,166,0.12)", text: "#2dd4bf", border: "rgba(20,184,166,0.3)", glow: "rgba(20,184,166,0.4)" },
 };
 
 const INFO_TABS: { id: TabId; label: string; icon: string }[] = [
@@ -51,7 +52,7 @@ type RegionId = "head" | "trunk" | "upper_limb" | "lower_limb";
 // Region configuration
 // ─────────────────────────────────────────────────────────────────────────────
 const BODY_REGIONS: { id: RegionId; label: string }[] = [
-  { id: "head",       label: "Skull" },
+  { id: "head",       label: "Head" },
   { id: "trunk",      label: "Trunk" },
   { id: "upper_limb", label: "Upper Limb" },
   { id: "lower_limb", label: "Lower Limb" },
@@ -74,10 +75,19 @@ const REGION_ACCENT: Record<RegionId, string> = {
 };
 
 const REGION_SYSTEM_IDS: Record<RegionId, string[]> = {
-  head:       ["skeletal", "nervous", "endocrine"],
+  head:       ["skeletal", "cardiovascular", "nervous", "lymphatic", "sensory"],
   trunk:      ["cardiovascular", "respiratory", "digestive", "urinary", "reproductive", "lymphatic"],
   upper_limb: ["skeletal", "muscular"],
   lower_limb: [],
+};
+
+// Section heading overrides when viewing the Head region — mirrors the reference app labels
+const HEAD_SECTION_LABELS: Partial<Record<string, string>> = {
+  skeletal:      "Musculoskeletal system",
+  cardiovascular:"Cardiovascular system",
+  nervous:       "Nervous system",
+  lymphatic:     "Lymphatic system",
+  sensory:       "Sense organs",
 };
 
 // BASE_URL is '/' in dev, '/mission-distinction/' in production build
@@ -123,10 +133,13 @@ function ModelCard({ system, structure, onClick }: {
 
   /* Short region label shown in the footer — mirrors the reference app's
      "HEAD / Muscles and bones" pattern where the top line is a category
-     and the second line is a descriptor. We derive it from structure name. */
-  const words = structure.name.split(" ");
-  const topLabel   = words.length > 1 ? words.slice(0, -1).join(" ").toUpperCase() : structure.name.toUpperCase();
-  const bottomLabel = words.length > 1 ? words[words.length - 1] : (system.name.replace(" System", ""));
+     and the second line is a descriptor. Use explicit cardLabel/cardSubtitle
+     when provided; otherwise derive from the structure name. */
+  const structIcon = structure.icon ?? system.icon;
+  const topLabel   = structure.cardLabel   ?? structure.name.toUpperCase();
+  const bottomLabel = structure.cardSubtitle !== undefined
+    ? structure.cardSubtitle
+    : system.name.replace(" System", "").replace(" Organs", "");
 
   return (
     <button
@@ -142,44 +155,68 @@ function ModelCard({ system, structure, onClick }: {
         height: 194,
         borderRadius: 12,
         background: "#23232f",
-        border: "1px solid rgba(255,255,255,0.09)",
-        boxShadow: "0 6px 22px rgba(0,0,0,0.6)",
+        border: `1px solid ${c.border}`,
+        boxShadow: `0 6px 22px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.04)`,
         transform: pressed ? "scale(0.95)" : "scale(1)",
       }}
     >
       {/* ── Illustration area (≈ 62 % of card height) ── */}
       <div
         className="relative overflow-hidden"
-        style={{ height: 120, background: "#1c1c28" }}
+        style={{ height: 120, background: "#1a1a26" }}
       >
-        {/* Subtle colour-tinted radial backdrop — evokes the system colour */}
+        {/* Strong system-colour wash that fills most of the image area */}
         <div
           className="absolute inset-0"
           style={{
-            background: `radial-gradient(ellipse at 50% 70%, ${c.glow.replace("0.4","0.22")} 0%, transparent 72%)`,
+            background: `radial-gradient(ellipse at 50% 60%, ${c.glow.replace("0.4","0.35")} 0%, ${c.glow.replace("0.4","0.08")} 55%, transparent 80%)`,
           }}
         />
-        {/* Faint dot-grid texture, matching reference card "paper" feel */}
+        {/* Light-grey diffuse "light source" at top to brighten illustration area */}
         <div
-          className="absolute inset-0 opacity-[0.06]"
+          className="absolute inset-0"
+          style={{
+            background: "radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.07) 0%, transparent 65%)",
+          }}
+        />
+        {/* Faint hex dot texture */}
+        <div
+          className="absolute inset-0 opacity-[0.05]"
           style={{
             backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)",
-            backgroundSize: "14px 14px",
+            backgroundSize: "12px 12px",
           }}
         />
-        {/* Main illustration — large system emoji */}
+        {/* Soft circular halo behind emoji */}
+        <div
+          className="absolute"
+          style={{
+            width: 80, height: 80,
+            borderRadius: "50%",
+            background: c.bg,
+            top: "50%", left: "50%",
+            transform: "translate(-50%, -46%)",
+            filter: "blur(12px)",
+          }}
+        />
+        {/* Main illustration — structure-specific or system emoji */}
         <div className="absolute inset-0 flex items-center justify-center">
           <span
             className="select-none"
             style={{
-              fontSize: 62,
+              fontSize: 58,
               lineHeight: 1,
-              filter: `drop-shadow(0 6px 20px ${c.glow.replace("0.4","0.6")})`,
+              filter: `drop-shadow(0 4px 16px ${c.glow.replace("0.4","0.75")}) drop-shadow(0 0 6px ${c.glow.replace("0.4","0.4")})`,
             }}
           >
-            {system.icon}
+            {structIcon}
           </span>
         </div>
+        {/* Top-right system colour chip */}
+        <div
+          className="absolute top-2 right-2 rounded-full"
+          style={{ width: 7, height: 7, background: c.text, opacity: 0.6 }}
+        />
       </div>
 
       {/* ── Footer strip — dark charcoal, matches reference "poster" footer ── */}
@@ -187,8 +224,8 @@ function ModelCard({ system, structure, onClick }: {
         className="flex-1 flex flex-col justify-center"
         style={{
           padding: "7px 10px 8px",
-          background: "#111118",
-          borderTop: "1px solid rgba(255,255,255,0.05)",
+          background: "#101018",
+          borderTop: `1px solid ${c.border}`,
         }}
       >
         {/* Top line: bold uppercase label (reference: "HEAD", "SKULL", "BRAIN") */}
@@ -199,23 +236,25 @@ function ModelCard({ system, structure, onClick }: {
             fontWeight: 800,
             color: "#ffffff",
             textTransform: "uppercase",
-            letterSpacing: "0.04em",
+            letterSpacing: "0.05em",
           }}
         >
           {topLabel}
         </p>
         {/* Bottom line: subtitle / view descriptor */}
-        <p
-          className="mt-0.5 line-clamp-1"
-          style={{
-            fontSize: 10,
-            fontWeight: 400,
-            color: c.text,
-            opacity: 0.85,
-          }}
-        >
-          {bottomLabel}
-        </p>
+        {bottomLabel ? (
+          <p
+            className="mt-0.5 line-clamp-1"
+            style={{
+              fontSize: 10,
+              fontWeight: 400,
+              color: c.text,
+              opacity: 0.9,
+            }}
+          >
+            {bottomLabel}
+          </p>
+        ) : null}
         {/* Mini metadata */}
         <p className="mt-1.5 text-[9px] text-slate-600">
           {structure.labels.length} labels · {structure.quiz.length} Q
@@ -228,32 +267,53 @@ function ModelCard({ system, structure, onClick }: {
 // ─────────────────────────────────────────────────────────────────────────────
 // System section (heading + horizontal card scroll)
 // ─────────────────────────────────────────────────────────────────────────────
-function SystemSection({ system, onSelectStructure, selectedRegion }: {
+function SystemSection({ system, onSelectStructure, selectedRegion, sectionLabel }: {
   system: AnatomySystem;
   onSelectStructure: (sys: AnatomySystem, struct: AnatomyStructure) => void;
   selectedRegion: RegionId;
+  sectionLabel?: string;
 }) {
-  // Filter to structures tagged for this region (or untagged structures, which are shown everywhere)
-  const visibleStructures = system.structures.filter(
-    s => !s.regions || s.regions.includes(selectedRegion)
+  const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
+  // Head is a curated catalog — only show explicitly head-tagged structures.
+  // For all other regions keep the original rule: tagged structures match their region;
+  // untagged structures fall back to showing everywhere (trunk default).
+  const visibleStructures = system.structures.filter(s =>
+    selectedRegion === "head"
+      ? (s.regions?.includes("head") ?? false)
+      : (!s.regions || s.regions.includes(selectedRegion))
   );
   if (visibleStructures.length === 0) return null;
 
+  const heading = sectionLabel ?? system.name;
+
   return (
     <div>
-      {/* Heading — plain medium-weight, matching reference "Musculoskeletal system" style */}
-      <h2
-        className="px-4 mb-3"
-        style={{
-          fontSize: 17,
-          fontWeight: 500,
-          color: "rgba(255,255,255,0.88)",
-          letterSpacing: "0.01em",
-          lineHeight: 1.3,
-        }}
-      >
-        {system.name}
-      </h2>
+      {/* Section heading row */}
+      <div className="px-4 mb-3 flex items-center gap-2.5">
+        <span
+          className="text-lg"
+          style={{ filter: `drop-shadow(0 0 6px ${c.glow})` }}
+        >
+          {system.icon}
+        </span>
+        <h2
+          style={{
+            fontSize: 16,
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.92)",
+            letterSpacing: "0.005em",
+            lineHeight: 1.3,
+          }}
+        >
+          {heading}
+        </h2>
+        <div
+          className="ml-auto text-[11px] font-medium px-2 py-0.5 rounded-full"
+          style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
+        >
+          {visibleStructures.length}
+        </div>
+      </div>
       <div
         className="flex gap-3 pl-4 pr-4 overflow-x-auto"
         style={{ scrollbarWidth: "none", paddingBottom: 4 }}
@@ -404,6 +464,7 @@ function HubLanding({ onSelectSystem, onSelectResult, globalSearch, setGlobalSea
               system={sys}
               onSelectStructure={onSelectResult}
               selectedRegion={selectedRegion}
+              sectionLabel={selectedRegion === "head" ? HEAD_SECTION_LABELS[sys.id] : undefined}
             />
           ))
         )}

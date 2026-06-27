@@ -45,6 +45,12 @@ export type AnatomyStructure = {
   glbPath?: string;
   /** Which body regions this structure belongs to — used to filter cards per region tab */
   regions?: string[];
+  /** Bold uppercase label shown on the catalog card (e.g. "SKULL", "BRAIN", "EYE") */
+  cardLabel?: string;
+  /** Subtitle shown below the card label (e.g. "Arteries & Veins", "Cranial Nerves") */
+  cardSubtitle?: string;
+  /** Emoji icon override for this structure's catalog card */
+  icon?: string;
 };
 
 export type AnatomySystem = {
@@ -151,6 +157,44 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
         nerveSupply: "SA node: RCA branch (55%) or LCx (45%). AV node: RCA (90%). Cardiac plexus: T1–T5 sympathetics + vagus parasympathetics.",
       },
       {
+        id: "head-vasculature",
+        name: "Head Vasculature",
+        regions: ["head"],
+        cardLabel: "HEAD",
+        cardSubtitle: "Arteries & Veins",
+        icon: "🩸",
+        description: "The head and neck receive their arterial supply primarily from the common carotid arteries (internal and external branches) and the vertebral arteries. The venous drainage is via the internal and external jugular veins. This rich vascular network supplies the brain, face, scalp, and neck structures.",
+        clinicalPoints: [
+          "Internal carotid artery (ICA): no branches in neck; enters carotid canal → cavernous sinus → gives ophthalmic, anterior choroidal, PComm, then divides into ACA + MCA",
+          "External carotid artery (ECA): 8 branches — Superior Thyroid, Ascending pharyngeal, Lingual, Facial, Occipital, Posterior auricular, Superficial temporal, Maxillary (SALFOPSMM or 'Some Anatomists Like Freaking Out Poor Medical Students')",
+          "Vertebral artery: branch of subclavian; ascends through C6-C1 transverse foramina → foramen magnum → joins contralateral to form basilar artery → gives PICA, AICA, SCA, then PCA",
+          "Carotid sinus: at bifurcation of CCA — baroreceptors → CN IX (carotid sinus nerve) → nucleus tractus solitarius → regulate BP",
+          "Carotid body: chemoreceptor (O2, CO2, pH) at bifurcation → CN IX → responds to hypoxia",
+          "Circle of Willis: anastomotic ring — ACA + AComm + ICA + PComm + PCA; provides collateral flow; berry aneurysm at junctions (AComm most common)",
+        ],
+        studyNotes: "ECA branches mnemonic: 'Some Anatomists Like Freaking Out Poor Medical Students' — Superior thyroid, Ascending pharyngeal, Lingual, Facial, Occipital, Posterior auricular, Maxillary, Superficial temporal. Circle of Willis: complete in only ~20% — incomplete predisposes to ischaemic stroke if one vessel occludes.",
+        quiz: [
+          { q: "Which artery supplies the anterior 2/3 of brain in the territory most commonly affected by stroke?", options: ["Posterior cerebral artery", "Middle cerebral artery", "Anterior cerebral artery", "Basilar artery"], correct: 1, explanation: "The middle cerebral artery (MCA) supplies the lateral cortex — including primary motor and sensory cortex for the face and upper limb, Broca's area, and Wernicke's area. MCA stroke causes contralateral hemiplegia (arm > leg), hemisensory loss, and aphasia (dominant hemisphere)." },
+          { q: "The vertebral arteries are branches of which vessels?", options: ["Common carotid arteries", "External carotid arteries", "Subclavian arteries", "Axillary arteries"], correct: 2, explanation: "Vertebral arteries arise as the first branch of the subclavian artery. They ascend through the transverse foramina of C6-C1, enter the skull through the foramen magnum, and unite to form the basilar artery at the pontomedullary junction." },
+        ],
+        labels: [
+          { id: "ica", name: "Internal Carotid Artery", pos: [0.4, 0.2, 0.5], description: "No branches in neck. Enters skull via carotid canal in petrous temporal bone. Supplies brain and orbit.", clinicalNote: "Atherosclerosis at ICA origin = most common cause of embolic stroke", layer: "vessel" },
+          { id: "eca", name: "External Carotid Artery", pos: [0.6, 0.1, 0.5], description: "Supplies face, scalp, mouth, and most head and neck structures. 8 named branches (SALFOPSM).", layer: "vessel" },
+          { id: "vertebral", name: "Vertebral Artery", pos: [-0.3, -0.2, 0.5], description: "Branch of subclavian. Ascends through C6-C1 transverse foramina. Forms basilar artery at foramen magnum.", clinicalNote: "Vertebrobasilar insufficiency: dizziness, diplopia, dysphagia, dysarthria, drop attacks", layer: "vessel" },
+          { id: "facial-a", name: "Facial Artery", pos: [0.7, 0.0, 0.7], description: "Branch of ECA. Passes over body of mandible at anterior border of masseter (palpable pulse). Supplies face.", layer: "vessel" },
+          { id: "superficial-temporal", name: "Superficial Temporal Artery", pos: [0.9, 0.5, 0.4], description: "Terminal branch of ECA. Palpable in front of tragus. Temporal arteritis affects this vessel.", clinicalNote: "Giant cell (temporal) arteritis: >50yrs, headache, jaw claudication, ESR↑, risk of blindness", layer: "vessel" },
+        ],
+        relations: [
+          "CCA bifurcates at C3/4 level (upper border of thyroid cartilage)",
+          "ICA and ECA: ICA is postero-medial, ECA is antero-lateral initially",
+          "IJV lies lateral to ICA/ECA in carotid sheath",
+          "Vagus nerve (CN X) runs posterior within carotid sheath",
+          "Sympathetic chain: behind carotid sheath, anterior to prevertebral fascia",
+        ],
+        bloodSupply: "Self — these are the supplying arteries of the head.",
+        nerveSupply: "Carotid sinus/body: CN IX (glossopharyngeal). Vasomotor control via cervical sympathetic chain.",
+      },
+      {
         id: "coronary-arteries",
         name: "Coronary Arteries",
         description: "The coronary arteries arise from the aortic sinuses (sinuses of Valsalva) just above the aortic valve cusps. They supply the myocardium during diastole when coronary perfusion pressure is highest.",
@@ -248,6 +292,40 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
         nerveSupply: "Scalp sensory: V1 (ophthalmic — supraorbital, supratrochlear), V2 (zygomatic), V3 (auriculotemporal), C2 (greater occipital), C2/3 (lesser occipital, great auricular). No sensory nerves in bone itself.",
       },
       {
+        id: "mandible-bone",
+        name: "Mandible",
+        regions: ["head"],
+        cardLabel: "MANDIBLE",
+        cardSubtitle: "",
+        icon: "🦷",
+        description: "The mandible is the only movable bone of the skull and the strongest bone of the face. It forms the lower jaw and holds the lower teeth. It consists of a body (horizontal part) and two rami (vertical parts) that articulate with the temporal bone at the temporomandibular joint (TMJ).",
+        clinicalPoints: [
+          "Inferior alveolar nerve (branch of V3) runs in the mandibular canal and exits at the mental foramen — targeted in dental blocks",
+          "Condylar process articulates at TMJ — subcondylar fracture is the most common mandibular fracture",
+          "Symphysis menti: midline fusion site; fracture here → bilateral posterior displacement of tongue → airway obstruction",
+          "Mental foramen: at the level of 2nd premolar, halfway between upper and lower borders — marks exit of mental nerve (sensation to chin and lower lip)",
+          "Le Fort fractures involve maxilla; isolated mandible fracture classified by site: condylar, subcondylar, coronoid, ramus, angle, body, symphysis, parasymphysis",
+          "TMJ disorders: clicking, pain, limited mouth opening — common cause of facial pain",
+        ],
+        studyNotes: "Muscles of mastication (all CN V3 motor): Masseter (elevation), Temporalis (elevation + retraction), Medial pterygoid (elevation + protrusion), Lateral pterygoid (depression + protrusion, only muscle that opens mouth). 'My Teeth Meet Properly' mnemonic.",
+        quiz: [
+          { q: "Which nerve provides sensation to the chin and lower lip and exits at the mental foramen?", options: ["Inferior alveolar nerve", "Mental nerve", "Lingual nerve", "Buccal nerve"], correct: 1, explanation: "The mental nerve is the terminal branch of the inferior alveolar nerve (branch of V3). It exits through the mental foramen (at the level of the 2nd premolar) and supplies sensory innervation to the chin, lower lip, and adjacent skin." },
+          { q: "The temporomandibular joint (TMJ) is formed between which bones?", options: ["Mandible and maxilla", "Mandible and zygomatic", "Condyle of mandible and mandibular fossa of temporal bone", "Mandible and sphenoid"], correct: 2, explanation: "The TMJ is formed between the condylar process (head) of the mandible and the mandibular fossa + articular tubercle of the temporal bone. It is a synovial joint with an intra-articular disc dividing it into upper (gliding) and lower (rotation) compartments." },
+        ],
+        labels: [
+          { id: "body-mandible", name: "Body of Mandible", pos: [0.0, -0.5, 0.9], description: "Horizontal part. Contains mental symphysis (midline fusion), mental protuberance (chin), alveolar part (holds teeth).", layer: "bone" },
+          { id: "ramus", name: "Ramus", pos: [0.7, 0.0, 0.6], description: "Vertical part. Connects body to condyle and coronoid process. Gives attachment to masseter (lateral) and medial pterygoid (medial).", layer: "bone" },
+          { id: "condyle", name: "Condylar Process", pos: [0.7, 0.6, 0.3], description: "Articulates with temporal bone at TMJ. Has a head and neck. Subcondylar fractures are most common.", clinicalNote: "Fracture in children → growth disturbance → facial asymmetry", layer: "bone" },
+          { id: "coronoid", name: "Coronoid Process", pos: [0.5, 0.5, 0.5], description: "Anterior projection above ramus. Gives attachment to temporalis muscle. Non-articular.", layer: "bone" },
+          { id: "mental-foramen", name: "Mental Foramen", pos: [0.35, -0.4, 0.9], description: "Exit point of mental nerve and vessels (terminal of inferior alveolar). At level of 2nd premolar, midway between upper and lower borders.", clinicalNote: "Dental block: inferior alveolar nerve anaesthesia at mandibular foramen", layer: "bone" },
+        ],
+        mnemonics: [
+          { mnemonic: "My Teeth Meet Properly — Muscles of Mastication", meaning: "Masseter, Temporalis, Medial pterygoid, lateral Pterygoid — all V3 motor", tip: "Only the LATERAL pterygoid depresses/opens the jaw; all others elevate/close" },
+        ],
+        bloodSupply: "Inferior alveolar artery (from maxillary artery, branch of ECA) runs in mandibular canal. Mental artery exits at mental foramen. Facial artery crosses the lower border of mandible at anterior border of masseter (palpable pulse).",
+        nerveSupply: "V3 (mandibular division of trigeminal): inferior alveolar nerve (teeth, chin), lingual nerve (tongue sensation), mental nerve (chin/lip), buccal nerve (cheek mucosa). Motor: all muscles of mastication via V3.",
+      },
+      {
         id: "humerus",
         name: "Humerus",
         regions: ["upper_limb"],
@@ -322,6 +400,10 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
       {
         id: "cerebral-cortex",
         name: "Cerebral Cortex",
+        regions: ["head"],
+        cardLabel: "BRAIN",
+        cardSubtitle: "Cerebral Cortex",
+        icon: "🧠",
         description: "The cerebral cortex is the outer layer of grey matter (1.5–4 mm thick) containing billions of neurons arranged in 6 layers (neocortex). It is folded into gyri (ridges) and sulci (grooves) to increase surface area to ~2500cm².",
         clinicalPoints: [
           "Broca's area (44, 45): inferior frontal gyrus, dominant hemisphere → expressive/motor aphasia if damaged",
@@ -357,6 +439,44 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
         ],
         bloodSupply: "Internal carotid → MCA (largest: lateral cortex, capsule) + ACA (medial: frontal/parietal leg area). Vertebral → Basilar → PCA (occipital, thalamus, midbrain). Circle of Willis connects all.",
         nerveSupply: "Not innervated (no nociceptors in brain parenchyma — no headache from brain itself). Meninges, blood vessels, and cranial nerves are pain-sensitive.",
+      },
+      {
+        id: "cranial-nerves",
+        name: "Cranial Nerves",
+        regions: ["head"],
+        cardLabel: "HEAD",
+        cardSubtitle: "Cranial Nerves",
+        icon: "⚡",
+        description: "The 12 pairs of cranial nerves arise from the brain and brainstem and supply the head, neck, and thoracoabdominal viscera. They are numbered I–XII in craniocaudal order of their origin. Each may be sensory, motor, or both, and may carry somatic and/or autonomic fibres.",
+        clinicalPoints: [
+          "CN I (Olfactory): sensory only — anosmia from cribriform plate fracture or viral infection (COVID-19)",
+          "CN II (Optic): sensory only — papilloedema (raised ICP), optic neuritis (MS), visual field defects map to the lesion site",
+          "CN III (Oculomotor): motor (SR, MR, IR, IO, LPS) + parasympathetic (pupil constriction, accommodation) — palsy: 'down and out' eye + dilated pupil (posterior communicating artery aneurysm)",
+          "CN V (Trigeminal): largest cranial nerve — 3 divisions V1 (ophthalmic), V2 (maxillary), V3 (mandibular, only motor); trigeminal neuralgia = lancinating unilateral facial pain",
+          "CN VII (Facial): UMN palsy (stroke) spares forehead; LMN palsy (Bell's) = complete ipsilateral facial weakness including forehead",
+          "CN VIII (Vestibulocochlear): sensorineural hearing loss (cochlear); vestibular = nystagmus, vertigo; acoustic neuroma at CP angle",
+          "CN X (Vagus): longest cranial nerve; most important parasympathetic nerve; recurrent laryngeal nerve palsy → hoarse voice",
+          "CN XII (Hypoglossal): tongue motor — palsy → tongue deviates TOWARD the lesion side",
+        ],
+        studyNotes: "Cranial nerve types mnemonic: 'Some Say Marry Money But My Brother Says Big Brains Matter Most' — S=Sensory, M=Motor, B=Both. CNXI−XII always motor. Parasympathetic: CN III, VII, IX, X ('the dirty 4'). For exam: always know clinical deficits of each nerve.",
+        quiz: [
+          { q: "A patient with a posterior communicating artery aneurysm presents with a dilated pupil and 'down and out' eye. Which cranial nerve is compressed?", options: ["CN IV", "CN VI", "CN III", "CN II"], correct: 2, explanation: "CN III (oculomotor nerve) carries parasympathetic fibres on its outer surface (pupillary constriction). External compression (e.g., PCom aneurysm, uncal herniation) affects parasympathetics first → dilated pupil + complete CN III palsy ('down and out' due to unopposed SO/LR). This is a surgical emergency." },
+          { q: "Bell's palsy (LMN CN VII palsy) differs from a cortical (UMN) lesion because:", options: ["Bell's causes taste loss", "Bell's spares the forehead", "UMN lesion causes complete ipsilateral weakness", "Bell's causes complete ipsilateral facial weakness including forehead"], correct: 3, explanation: "In LMN (Bell's) palsy, ALL ipsilateral facial muscles are affected including the forehead. In UMN (cortical/subcortical) lesion, the upper face (forehead) is SPARED because the upper facial nucleus receives bilateral cortical innervation. Bell's also affects taste (chorda tympani, CN VII) and stapedius (hyperacusis)." },
+        ],
+        labels: [
+          { id: "cn1", name: "CN I — Olfactory", pos: [0.0, 1.1, 0.7], description: "Smell. 20 bundles through cribriform plate. Only CN that doesn't relay in thalamus first (goes directly to olfactory cortex).", layer: "nerve" },
+          { id: "cn2", name: "CN II — Optic", pos: [-0.1, 0.7, 1.0], description: "Vision. Optic chiasm: nasal fibres cross, temporal fibres stay. Lesions map to specific visual field defects.", clinicalNote: "Papilloedema = raised ICP; optic neuritis = MS; RAPD = afferent pupil defect", layer: "nerve" },
+          { id: "cn3", name: "CN III — Oculomotor", pos: [0.2, 0.3, 0.8], description: "Moves eye (SR, MR, IR, IO); elevates eyelid (LPS); pupil constriction + accommodation (parasympathetic).", clinicalNote: "Complete palsy: ptosis, dilated pupil, eye deviated down and out", layer: "nerve" },
+          { id: "cn5", name: "CN V — Trigeminal", pos: [0.6, 0.2, 0.5], description: "Largest cranial nerve. V1: forehead/orbit; V2: cheek/upper lip; V3: jaw/tongue (motor to mastication).", clinicalNote: "Trigeminal neuralgia: lancinating pain in V2/V3 territory", layer: "nerve" },
+          { id: "cn7", name: "CN VII — Facial", pos: [0.8, -0.1, 0.3], description: "Motor: all muscles of facial expression. Sensory: taste (anterior 2/3 tongue via chorda tympani). Parasympathetic: lacrimal, submandibular, sublingual glands.", clinicalNote: "Bell's palsy: LMN lesion → complete ipsilateral facial weakness", layer: "nerve" },
+          { id: "cn10", name: "CN X — Vagus", pos: [0.3, -0.5, 0.2], description: "Longest CN. Motor: pharynx, larynx, soft palate. Parasympathetic: heart, lungs, GI to splenic flexure. Sensory: larynx, pharynx, thoracoabdominal viscera.", clinicalNote: "Recurrent laryngeal nerve palsy: hoarse voice; left RLN longer, more vulnerable", layer: "nerve" },
+        ],
+        mnemonics: [
+          { mnemonic: "On Old Olympus Towering Top, A Fin And German Viewed A Hop — Cranial Nerve Names", meaning: "Olfactory, Optic, Oculomotor, Trochlear, Trigeminal, Abducens, Facial, Auditory/Vestibulocochlear, Glossopharyngeal, Vagus, Accessory, Hypoglossal", tip: "For type: 'Some Say Marry Money But My Brother Says Big Brains Matter Most' (S/M/B for I through XII)" },
+          { mnemonic: "The Dirty Four (Parasympathetics): CN III, VII, IX, X", meaning: "CN III → ciliary ganglion (pupil constriction); VII → pterygopalatine + submandibular ganglia (lacrimal, salivary); IX → otic ganglion (parotid); X → intramural ganglia (heart, lungs, GI)", tip: "Remember 3,7,9,10 carry parasympathetics; all other CNs are somatic only" },
+        ],
+        bloodSupply: "Cranial nerves supplied by adjacent arteries: CN III by PCom aneurysm territory; CN VII by AICA in internal acoustic meatus; CN VIII by labyrinthine artery.",
+        nerveSupply: "These ARE the nerves.",
       },
     ],
   },
@@ -805,6 +925,36 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
         nerveSupply: "Sympathetic (T6-T10) via coeliac plexus. Parasympathetic: vagus nerve. Pain referred to left shoulder (Kehr's sign) if blood irritates left diaphragm.",
         lymphDrainage: "Hilar lymph nodes → coeliac nodes → cisterna chyli. Spleen drains lymph produced within itself → lymph nodes at hilum.",
       },
+      {
+        id: "head-lymphatics",
+        name: "Head Lymphatics",
+        regions: ["head"],
+        cardLabel: "HEAD",
+        cardSubtitle: "Lymphatic System",
+        icon: "🫧",
+        description: "The lymphatic drainage of the head and neck is clinically vital — it is the most common site of lymph node enlargement and cancer metastasis. Lymph from the head, face, and scalp drains through regional node groups arranged in a 'pericervical collar' and then into the deep cervical chain.",
+        clinicalPoints: [
+          "Pericervical collar (from anterior to posterior): submental → submandibular → preauricular (parotid) → postauricular (mastoid) → occipital nodes",
+          "All lymph from head and neck ultimately drains into the deep cervical chain (along IJV) and then into the thoracic duct (left) or right lymphatic duct (right)",
+          "Virchow's node (Troisier's sign): enlarged left supraclavicular node = metastasis from abdominal/thoracic malignancy (especially gastric cancer)",
+          "Waldeyer's ring: lymphoid ring at oropharyngeal inlet — palatine tonsils, nasopharyngeal tonsil (adenoids), lingual tonsil, tubal tonsils; site of lymphoma",
+          "Cervical lymphadenopathy: reactive (infection, EBV), TB (most common worldwide cause of cervical LAD), lymphoma, metastatic carcinoma (head/neck primary vs. below clavicle)",
+          "Level classification (I–VII) used in oncology to map neck dissection: I (submental/submandibular), II-IV (deep cervical), V (posterior triangle), VI (central compartment)",
+        ],
+        studyNotes: "For MCQs: oral cavity → submandibular nodes; nasopharynx → retropharyngeal + upper deep cervical; thyroid → paratracheal + pretracheal (central compartment, level VI); scalp → pericervical collar. Sentinel node biopsy: first node in drainage path.",
+        quiz: [
+          { q: "Virchow's node (Troisier's sign) is located where and indicates metastasis from where?", options: ["Right supraclavicular, head and neck cancer", "Left supraclavicular, abdominal/thoracic malignancy", "Submental, oral cancer", "Axillary, breast cancer"], correct: 1, explanation: "Virchow's node (left supraclavicular node) receives lymphatic drainage from the thoracic duct. Enlargement suggests metastatic malignancy — classically gastric carcinoma, but also lung, oesophageal, or other abdominal cancers. This is Troisier's sign." },
+          { q: "Which lymphoid ring guards the oropharyngeal inlet?", options: ["Peyer's patches", "Waldeyer's ring", "MALT (gut-associated)", "Mediastinal lymphoid tissue"], correct: 1, explanation: "Waldeyer's ring is the ring of lymphoid tissue surrounding the oro- and nasopharyngeal inlet: palatine tonsils (largest), pharyngeal tonsil (adenoids), lingual tonsil (base of tongue), and tubal tonsils (around Eustachian tube opening). It is the first line of defence against inhaled/ingested pathogens." },
+        ],
+        labels: [
+          { id: "submandibular-nodes", name: "Submandibular Nodes", pos: [0.5, -0.2, 0.7], description: "Drain floor of mouth, anterior tongue, cheek, lower lip, and submandibular gland. Clinically palpable below lower border of mandible.", layer: "organ" },
+          { id: "deep-cervical", name: "Deep Cervical Chain", pos: [0.6, -0.4, 0.3], description: "Along IJV. Final common pathway for all head/neck lymph. Upper (jugulodigastric — drains tonsil) and lower (jugulo-omohyoid — drains tongue) are key nodes.", clinicalNote: "Jugulodigastric node: most commonly enlarged in tonsillitis", layer: "organ" },
+          { id: "parotid-nodes", name: "Parotid/Preauricular Nodes", pos: [0.8, 0.1, 0.5], description: "Drain scalp (anterior), eyelids, external acoustic meatus, and parotid gland itself. Superficial + deep.", layer: "organ" },
+          { id: "occipital-nodes", name: "Occipital Nodes", pos: [-0.1, 0.2, -0.9], description: "At the apex of the posterior triangle, posterior scalp drainage. Enlarge in scalp infections (tinea capitis, pediculosis capitis).", layer: "organ" },
+        ],
+        bloodSupply: "Lymphatic capillaries and vessels have no separate blood supply — they derive nutrients from surrounding tissue.",
+        nerveSupply: "Lymphatic vessels contain smooth muscle (autonomic tone). Lymph node capsule: somatic sensation via regional cutaneous nerves.",
+      },
     ],
   },
 
@@ -873,6 +1023,103 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
         bloodSupply: "Uterine artery (from internal iliac) — anastomoses with ovarian artery at the cornua. Cervix + vagina: vaginal artery (from internal iliac). Venous: uterine venous plexus → internal iliac vein.",
         nerveSupply: "Sympathetic (T10–L2) via uterovaginal plexus (Lee-Frankenhauser plexus) at uterosacral ligament. Parasympathetic (S2–S4). Pain from body of uterus: T10-T12; cervix: S2-S4.",
         lymphDrainage: "Body of uterus + cervix → external and internal iliac nodes → para-aortic nodes. Fundus → para-aortic nodes directly (via ovarian vessels) + superficial inguinal nodes (via round ligament).",
+      },
+    ],
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // 11. SPECIAL SENSES (Sense Organs)
+  // ══════════════════════════════════════════════════════════════════════════
+  {
+    id: "sensory",
+    name: "Sense Organs",
+    color: "#14b8a6",
+    darkColor: "#134e4a",
+    modelCount: 12,
+    icon: "👁️",
+    cadavericTitle: "Orbit — Sagittal Section",
+    cadavericSide: "Sagittal",
+    cadavericDescription: "The orbit is a bony pyramid containing the eyeball, extraocular muscles, optic nerve, lacrimal apparatus, and orbital fat. Seven bones form the orbital walls. The optic canal transmits CN II and the ophthalmic artery. The superior orbital fissure (SOF) transmits CN III, IV, V1, VI, and sympathetic fibres.",
+    cadavericImageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Schematic_diagram_of_the_human_eye_en.svg/500px-Schematic_diagram_of_the_human_eye_en.svg.png",
+    cadavericAnnotations: [
+      { label: "Cornea", x: 52, y: 48 }, { label: "Iris", x: 48, y: 50 },
+      { label: "Lens", x: 55, y: 50 }, { label: "Retina", x: 72, y: 50 },
+      { label: "Optic Nerve", x: 80, y: 52 }, { label: "Vitreous", x: 65, y: 50 },
+    ],
+    crossSectionTitle: "Orbit — Axial CT",
+    crossSectionLevel: "Level of optic nerve",
+    crossSectionDescription: "Axial CT of the orbits showing the eyeballs, optic nerves, lateral and medial rectus muscles, and optic canals. The optic nerve shows a 'target sign' in optic nerve sheath meningioma.",
+    ctNote: "CT orbit: blow-out fracture (inferior wall most common — 'trapdoor'). Orbital cellulitis with subperiosteal abscess: CT with IV contrast essential.",
+    mriNote: "MRI: optic neuritis (T2 bright, enhancing optic nerve), orbital tumours, extraocular muscle disease (thyroid eye disease: belly enlargement, sparing tendons).",
+    structures: [
+      {
+        id: "eye",
+        name: "Eye",
+        regions: ["head"],
+        cardLabel: "EYE",
+        cardSubtitle: "",
+        icon: "👁️",
+        description: "The eye (globe) is a spherical organ approximately 2.5 cm in diameter. It has three coats: fibrous (sclera + cornea), vascular (uvea: choroid + ciliary body + iris), and neural (retina). The lens focuses light onto the fovea centralis of the retina — the area of highest visual acuity.",
+        clinicalPoints: [
+          "Retinal detachment: painless visual loss, 'curtain coming down', floaters + flashes — retinal break allows vitreous to track under retina",
+          "Glaucoma: raised IOP → optic disc cupping → visual field loss (peripheral first). Acute angle-closure: severe pain, red eye, fixed mid-dilated pupil, nausea",
+          "Cataract: lens opacity → blurred vision, glare. Most common cause of reversible blindness worldwide; managed with phacoemulsification",
+          "Papilloedema (bilateral disc swelling): raised ICP — haemorrhages, exudates, blurred disc margins on fundoscopy",
+          "Diabetic retinopathy: background (microaneurysms, dot haemorrhages) → proliferative (neovascularisation) → vitreous haemorrhage/traction detachment",
+          "Corneal reflex: afferent CN V1 (nasociliary branch), efferent CN VII (orbicularis oculi) — tests brainstem in comatose patients",
+        ],
+        studyNotes: "Visual pathway for MCQs: retina → optic nerve → optic chiasm (nasal fibres cross) → optic tract → LGN of thalamus → optic radiation → primary visual cortex (V1, calcarine sulcus). Lesions: monocular blindness (optic nerve), bitemporal hemianopia (chiasm/pituitary), homonymous hemianopia (optic tract/radiation/cortex).",
+        quiz: [
+          { q: "A pituitary macroadenoma compresses the optic chiasm from below. What visual field defect results?", options: ["Right homonymous hemianopia", "Bitemporal hemianopia", "Left monocular blindness", "Right superior quadrantanopia"], correct: 1, explanation: "The optic chiasm contains crossing nasal fibres (which carry temporal visual field from each eye). Compression from below (pituitary tumour) disrupts these crossing fibres first → bitemporal hemianopia (tunnel vision, loss of the outer/temporal fields of both eyes)." },
+          { q: "Acute angle-closure glaucoma presents with:", options: ["Gradual bilateral visual field loss + cup:disc ratio >0.7", "Sudden severe eye pain, red eye, fixed mid-dilated pupil, nausea", "Painless floaters and flashes with 'curtain' visual loss", "Bilateral disc swelling with haemorrhages"], correct: 1, explanation: "Acute angle-closure glaucoma: sudden-onset severe periorbital pain, red eye, fixed mid-dilated pupil (iris ischaemia), corneal clouding (oedema), nausea/vomiting. Emergency treatment: pilocarpine (miosis to open angle) + acetazolamide + laser peripheral iridotomy." },
+        ],
+        labels: [
+          { id: "cornea", name: "Cornea", pos: [0.0, 0.0, 1.1], description: "Transparent avascular layer — provides 2/3 of refractive power. Nourished by aqueous humour + tears. Rich sensory supply (CN V1 nasociliary).", clinicalNote: "Corneal ulcer: dendritic (HSV), geographic. Fluorescein stain under blue light", layer: "organ" },
+          { id: "iris", name: "Iris", pos: [0.0, 0.0, 0.9], description: "Pigmented diaphragm with central aperture (pupil). Sphincter pupillae (constriction, CN III parasympathetic) and dilator pupillae (dilation, sympathetic).", clinicalNote: "Irregular pupil + anterior chamber cells: uveitis (iritis)", layer: "organ" },
+          { id: "lens", name: "Lens", pos: [0.0, 0.0, 0.7], description: "Biconvex, avascular, transparent. Accommodation (CN III → ciliary muscle → zonule relaxation → lens becomes more convex). Presbyopia after 40yrs.", clinicalNote: "Cataract types: nuclear (myopic shift), cortical, posterior subcapsular (steroids, DM)", layer: "organ" },
+          { id: "retina", name: "Retina", pos: [0.0, 0.0, -0.5], description: "Innermost neural layer. Rods (periphery, low light) and cones (fovea, colour, high acuity). Fovea centralis = point of highest acuity.", clinicalNote: "Retinal detachment: urgent — rhegmatogenous (break) most common", layer: "nerve" },
+          { id: "optic-disc", name: "Optic Disc", pos: [0.3, 0.1, -0.6], description: "Exit of optic nerve from eye. 'Blind spot' — no photoreceptors. Cup:disc ratio normally <0.5; >0.7 suggests glaucoma.", clinicalNote: "Papilloedema: bilateral disc swelling from raised ICP; must exclude SOL", layer: "nerve" },
+        ],
+        mnemonics: [
+          { mnemonic: "Visual field defects by lesion location: 'One eye → optic nerve; Both temporal → chiasm; Same side → tract/radiation/cortex'", meaning: "Optic nerve: ipsilateral monocular blindness. Chiasm: bitemporal hemianopia. Post-chiasmal: homonymous hemianopia (contralateral fields lost)", tip: "Pituitary tumour = chiasm (bitemporal). Stroke = post-chiasmal (homonymous)" },
+        ],
+        bloodSupply: "Ophthalmic artery (first branch of ICA in skull). Central retinal artery (CRA): end artery — occlusion → sudden, painless, complete monocular blindness (retina appears white, cherry-red spot at fovea). Choroid: posterior ciliary arteries.",
+        nerveSupply: "CN II (optic): vision afferent. CN III: superior, inferior, medial rectus, inferior oblique, LPS; parasympathetic (pupil constriction, accommodation). CN IV: superior oblique. CN VI: lateral rectus. CN V1: sensory (nasociliary branch).",
+      },
+      {
+        id: "ear",
+        name: "Ear",
+        regions: ["head"],
+        cardLabel: "EAR",
+        cardSubtitle: "",
+        icon: "👂",
+        description: "The ear comprises three parts: external (auricle + external acoustic meatus + tympanic membrane), middle (tympanic cavity with ossicles: malleus, incus, stapes), and inner (cochlea for hearing + semicircular canals for balance). Sound waves → tympanic membrane → ossicles → oval window → cochlea → CN VIII.",
+        clinicalPoints: [
+          "Otitis media (middle ear infection): most common in children; bulging red tympanic membrane; may cause conductive hearing loss; complications: mastoiditis, meningitis, facial nerve palsy",
+          "Conductive hearing loss: problem in external or middle ear. Weber: lateralises to AFFECTED side. Rinne: BC > AC (Rinne negative = conductive)",
+          "Sensorineural hearing loss (SNHL): cochlea or CN VIII. Weber: lateralises to UNAFFECTED side. Rinne: AC > BC (positive) in both ears but reduced bilaterally",
+          "Acoustic neuroma (vestibular schwannoma): CN VIII at CP angle — unilateral SNHL + tinnitus + vertigo. Associated with NF2",
+          "Presbycusis: age-related SNHL, bilateral, high frequency first. Most common cause of SNHL in elderly",
+          "Battle's sign: bruising behind ear over mastoid process → petrous temporal bone fracture. CSF otorrhoea if tympanic membrane perforated",
+        ],
+        studyNotes: "Ossicles: Malleus (handle attached to TM), Incus (bridges), Stapes (footplate in oval window). Stapedius (CN VII) and tensor tympani (V3) dampen loud sounds. CN VII passes through middle ear — parotid surgery + middle ear disease risks CN VII palsy. Meniere's disease triad: episodic vertigo + tinnitus + SNHL.",
+        quiz: [
+          { q: "Weber test lateralises to the RIGHT ear. Rinne test is NEGATIVE (BC > AC) on the RIGHT. What type of hearing loss does the patient have?", options: ["Sensorineural hearing loss, right", "Conductive hearing loss, right", "Sensorineural hearing loss, left", "Mixed hearing loss, bilateral"], correct: 1, explanation: "Weber lateralises to the AFFECTED side in conductive hearing loss (because bone conduction bypasses the blocked external/middle ear pathway, giving better perception of the vibrating tuning fork). Rinne negative (BC > AC) on the right confirms right conductive hearing loss." },
+          { q: "A 35-year-old has unilateral sensorineural hearing loss, tinnitus, and vertigo. MRI shows a mass at the cerebellopontine angle. Most likely diagnosis?", options: ["Meningioma", "Acoustic neuroma (vestibular schwannoma)", "Cholesteatoma", "Epidermoid cyst"], correct: 1, explanation: "Acoustic neuroma (vestibular schwannoma) is a Schwann cell tumour of CN VIII (vestibular division), located at the cerebellopontine angle. Classic triad: unilateral SNHL + tinnitus + vertigo. Bilateral acoustic neuromas = NF2. Treatment: surgery or stereotactic radiosurgery (Gamma Knife)." },
+        ],
+        labels: [
+          { id: "tympanic-membrane", name: "Tympanic Membrane", pos: [0.8, 0.0, 0.5], description: "Ear drum: separates EAM from middle ear. 3 layers (epithelium, fibrous, mucosa). Cone of light reflected at 5 o'clock (right ear). Perforated = conductive deafness.", clinicalNote: "Otoscopy: light reflex absent + bulging = otitis media; pearly white keratin mass = cholesteatoma", layer: "organ" },
+          { id: "ossicles", name: "Ossicular Chain", pos: [0.6, 0.05, 0.4], description: "Malleus (handle on TM), Incus (bridge), Stapes (footplate on oval window). Amplify sound 22× and impedance-match air to fluid.", clinicalNote: "Otosclerosis: stapes fixation → conductive hearing loss in young adults", layer: "bone" },
+          { id: "cochlea", name: "Cochlea", pos: [0.5, -0.2, 0.2], description: "2.5 spiral turns. 3 fluid-filled chambers: scala vestibuli (perilymph), scala media (endolymph, high K+), scala tympani (perilymph). Organ of Corti = transducer (inner hair cells).", clinicalNote: "Cochlear implant: direct electrical stimulation of cochlear nerve for severe SNHL", layer: "organ" },
+          { id: "semicircular-canals", name: "Semicircular Canals", pos: [0.4, 0.2, 0.1], description: "3 canals (superior, posterior, lateral) — detect angular acceleration. Ampullae contain cupula + hair cells. BPPV: calcium crystals in posterior canal.", clinicalNote: "BPPV: Epley manoeuvre — repositions otoliths from posterior canal", layer: "organ" },
+          { id: "eustachian-tube", name: "Eustachian Tube", pos: [0.5, -0.1, 0.6], description: "Connects middle ear to nasopharynx. Opens on swallowing/yawning to equalise pressure. Lined by ciliated respiratory epithelium.", clinicalNote: "Dysfunction → glue ear (otitis media with effusion) in children", layer: "organ" },
+        ],
+        mnemonics: [
+          { mnemonic: "Ossicles: Malleus → Incus → Stapes (MIS — Most Inside Smallest)", meaning: "Handle of Malleus is attached to TM; Stapes footplate sits in oval window; Incus (anvil) bridges them", tip: "Stapes (stirrup) is the smallest bone in the body" },
+          { mnemonic: "Weber + Rinne for Conductive Hearing Loss: 'Weber to the BAD ear, Rinne Negative'", meaning: "Conductive: Weber lateralises to affected side; Rinne negative (BC > AC). SNHL: Weber to good ear; Rinne positive both (but reduced)", tip: "Rinne positive = normal (AC > BC). Negative = conductive loss on that side" },
+        ],
+        bloodSupply: "Labyrinthine (internal auditory) artery from AICA (anterior inferior cerebellar artery). End artery — occlusion → sudden deafness + vestibular loss (labyrinthine infarction).",
+        nerveSupply: "CN VIII: cochlear division (hearing), vestibular division (balance). CN VII passes through middle ear in facial canal — at risk in middle ear disease/surgery.",
       },
     ],
   },
