@@ -198,6 +198,7 @@ export interface QuizInput {
   difficulty: string;
   durationMinutes?: number;
   isFeatured?: boolean;
+  isProctored?: boolean;
 }
 
 export interface Question {

@@ -25,7 +25,7 @@ export default function AdminQuizzes() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     title: "", subject: "", description: "", difficulty: "medium",
-    durationMinutes: "", isFeatured: false,
+    durationMinutes: "", isFeatured: false, isProctored: false,
   });
   const queryClient = useQueryClient();
 
@@ -50,13 +50,14 @@ export default function AdminQuizzes() {
         difficulty: form.difficulty as "easy" | "medium" | "hard",
         durationMinutes: form.durationMinutes ? parseInt(form.durationMinutes) : undefined,
         isFeatured: form.isFeatured,
+        isProctored: form.isProctored,
       }
     }, {
       onSuccess: () => {
         toast.success("Quiz created! You can now add questions from the quiz detail page.");
         queryClient.invalidateQueries({ queryKey: getListQuizzesQueryKey() });
         setOpen(false);
-        setForm({ title: "", subject: "", description: "", difficulty: "medium", durationMinutes: "", isFeatured: false });
+        setForm({ title: "", subject: "", description: "", difficulty: "medium", durationMinutes: "", isFeatured: false, isProctored: false });
       },
       onError: () => toast.error("Failed to create quiz."),
     });
@@ -224,9 +225,15 @@ export default function AdminQuizzes() {
                 <Label>Duration (minutes)</Label>
                 <Input type="number" placeholder="e.g. 30" className="bg-background/50" value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })} />
               </div>
-              <div className="flex items-center gap-3 pt-6">
-                <Switch checked={form.isFeatured} onCheckedChange={(v) => setForm({ ...form, isFeatured: v })} />
-                <Label className="cursor-pointer">Mark as Featured</Label>
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center gap-3 pt-2">
+                  <Switch checked={form.isFeatured} onCheckedChange={(v) => setForm({ ...form, isFeatured: v })} />
+                  <Label className="cursor-pointer">Featured</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch checked={form.isProctored} onCheckedChange={(v) => setForm({ ...form, isProctored: v })} />
+                  <Label className="cursor-pointer">Proctored</Label>
+                </div>
               </div>
             </div>
           </div>

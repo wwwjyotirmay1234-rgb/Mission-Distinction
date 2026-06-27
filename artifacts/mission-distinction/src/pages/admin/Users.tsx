@@ -26,6 +26,7 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string | undefined>(undefined);
   const [confirmDelete, setConfirmDelete] = useState<{ id: number; name: string } | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [warnDialog, setWarnDialog] = useState<{ id: number; name: string } | null>(null);
   const [warnReason, setWarnReason] = useState("");
@@ -154,7 +155,7 @@ export default function AdminUsers() {
             <Button size="sm" variant="outline" onClick={exportCSV} className="gap-1.5 text-xs">
               <Download className="w-3.5 h-3.5" /> Export Selected
             </Button>
-            <Button size="sm" variant="outline" onClick={bulkDelete} className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
+            <Button size="sm" variant="outline" onClick={() => setConfirmBulkDelete(true)} className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
               <Trash2 className="w-3.5 h-3.5" /> Delete Selected
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())} className="text-xs">Clear</Button>
@@ -297,6 +298,27 @@ export default function AdminUsers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk delete confirm */}
+      <AlertDialog open={confirmBulkDelete} onOpenChange={(o) => !o && setConfirmBulkDelete(false)}>
+        <AlertDialogContent className="bg-card border-border/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selected.size} User{selected.size !== 1 ? "s" : ""}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong className="text-foreground">{selected.size} account{selected.size !== 1 ? "s" : ""}</strong> and all their data. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              onClick={() => { setConfirmBulkDelete(false); bulkDelete(); }}
+            >
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete confirm */}
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>

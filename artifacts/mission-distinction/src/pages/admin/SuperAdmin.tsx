@@ -10,6 +10,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Shield, ShieldOff, Trash2, Eye, Search, Users, UserCheck, UserX,
   Crown, Flame, Activity, UserPlus, UserMinus, LogOut, Globe, Settings,
   MessageSquare, Key, Check, RefreshCw,
@@ -96,6 +100,7 @@ export default function SuperAdminPanel() {
   const [groupsLoading, setGroupsLoading] = useState(false);
   const [groupSearch, setGroupSearch] = useState("");
   const [deletingGroupId, setDeletingGroupId] = useState<number | null>(null);
+  const [deleteGroupTarget, setDeleteGroupTarget] = useState<GroupRow | null>(null);
 
   // ─ Platform tab
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
@@ -158,7 +163,13 @@ export default function SuperAdminPanel() {
   }
 
   async function deleteGroup(group: GroupRow) {
-    if (!window.confirm(`Delete group "${group.name}"? This removes all messages and members.`)) return;
+    setDeleteGroupTarget(group);
+  }
+
+  async function confirmDeleteGroup() {
+    const group = deleteGroupTarget;
+    if (!group) return;
+    setDeleteGroupTarget(null);
     setDeletingGroupId(group.id);
     try {
       const res = await api(`/api/super-admin/community/${group.id}`, { method: "DELETE" });
@@ -537,7 +548,7 @@ export default function SuperAdminPanel() {
                   </div>
                 )}
                 <DialogFooter className="gap-2">
-                  <Button variant="outline" onClick={() => setActionDialog(null)}>Cancel</Button>
+                  <Button variant="outline" onClick={() => { setActionDialog(null); setBanReason(""); }}>Cancel</Button>
                   <Button variant={meta.variant} disabled={actionLoading} onClick={confirmAction}>
                     {actionLoading ? "Processing…" : meta.confirmLabel}
                   </Button>
@@ -547,6 +558,24 @@ export default function SuperAdminPanel() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Delete group confirmation */}
+      <AlertDialog open={!!deleteGroupTarget} onOpenChange={(o) => !o && setDeleteGroupTarget(null)}>
+        <AlertDialogContent className="bg-card border-border/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Community Group</AlertDialogTitle>
+            <AlertDialogDescription>
+              Delete <strong className="text-foreground">"{deleteGroupTarget?.name}"</strong>? This permanently removes all messages and members and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive hover:bg-destructive/90 text-destructive-foreground" onClick={confirmDeleteGroup}>
+              Delete Group
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

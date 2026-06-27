@@ -165,6 +165,9 @@ router.post("/:id/questions/bulk", adminMiddleware, async (req: Request, res: Re
     if (!Array.isArray(questions) || questions.length === 0) {
       res.status(400).json({ error: "questions must be a non-empty array" }); return;
     }
+    if (questions.length > 200) {
+      res.status(400).json({ error: "Cannot import more than 200 questions at once" }); return;
+    }
     const inserted: any[] = [];
     for (const q of questions) {
       const { text, questionType = "mcq", options, correctOption, correctAnswer, explanation } = q;
