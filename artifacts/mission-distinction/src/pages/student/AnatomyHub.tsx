@@ -10,7 +10,7 @@ import {
   type AnatomyStructure,
   type StructureLabel,
 } from "@/data/anatomyData";
-import { ChevronDown, ChevronUp, X, Search, ArrowLeft, List, BookOpen, Sparkles, RefreshCw, BookMarked } from "lucide-react";
+import { ChevronDown, ChevronUp, X, Search, ArrowLeft, List, BookOpen, Sparkles, RefreshCw, BookMarked, ZoomIn } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // System brand colours
@@ -515,6 +515,26 @@ function LabelsPanel({ structure, selectedLabel, onLabelSelect, onAskAI }: {
             {label.clinicalNote && selectedLabel === label.id && (
               <p className="text-[11px] text-red-300 mt-1.5 bg-red-900/15 rounded px-1.5 py-1 border border-red-500/15 leading-snug">⚕ {label.clinicalNote}</p>
             )}
+            {selectedLabel === label.id && (label.origin || label.insertion || label.innervation || label.action) && (
+              <div className="mt-2.5 space-y-2 bg-black/25 rounded-lg px-2.5 py-2 border border-white/5">
+                {OIIA_ROWS.map(({ key, label: rowLabel, dot, glow, text }) => {
+                  const val = label[key];
+                  if (!val) return null;
+                  return (
+                    <div key={key} className="flex items-start gap-2">
+                      <div
+                        className="rounded-full shrink-0"
+                        style={{ width: 8, height: 8, background: dot, boxShadow: `0 0 5px ${glow}`, marginTop: 3 }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] font-black tracking-widest uppercase mr-1.5" style={{ color: text }}>{rowLabel}</span>
+                        <span className="text-[10px] text-slate-400 leading-snug">{val}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {selectedLabel === label.id && (
               <button
                 onClick={e => { e.stopPropagation(); onAskAI(label); }}
@@ -817,6 +837,106 @@ function MnemonicsPanel({ structure }: { structure: AnatomyStructure }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// OIIA Card — Complete Anatomy-style overlay shown over the 3D canvas
+// when a label is selected. Shows Origin / Insertion / Innervation / Action.
+// ─────────────────────────────────────────────────────────────────────────────
+const OIIA_ROWS = [
+  { key: "origin",      label: "ORIGIN",      dot: "#ef4444", glow: "rgba(239,68,68,0.5)",   text: "#fca5a5" },
+  { key: "insertion",   label: "INSERTION",   dot: "#3b82f6", glow: "rgba(59,130,246,0.5)",  text: "#93c5fd" },
+  { key: "innervation", label: "INNERVATION", dot: "#eab308", glow: "rgba(234,179,8,0.5)",   text: "#fde047" },
+  { key: "action",      label: "ACTION",      dot: "#22c55e", glow: "rgba(34,197,94,0.5)",   text: "#86efac" },
+] as const;
+
+function OIIACard({ label, parentStructure, onClose }: {
+  label: StructureLabel;
+  parentStructure?: AnatomyStructure;
+  onClose: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Per-label OIIA takes priority; fall back to parent structure fields
+  const oiia = {
+    origin:      label.origin      ?? parentStructure?.origin,
+    insertion:   label.insertion   ?? parentStructure?.insertion,
+    innervation: label.innervation ?? parentStructure?.innervation ?? parentStructure?.nerveSupply,
+    action:      label.action      ?? parentStructure?.action,
+  };
+  const hasOIIA = Object.values(oiia).some(Boolean);
+
+  return (
+    <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none select-none">
+      <div
+        className="pointer-events-auto"
+        style={{
+          background: "rgba(5,3,18,0.93)",
+          backdropFilter: "blur(14px)",
+          borderBottom: "1px solid rgba(255,255,255,0.07)",
+        }}
+      >
+        {/* ── Name row ── */}
+        <div className="flex items-start justify-between gap-2 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[13px] font-black text-white leading-tight tracking-tight">{label.name}</h2>
+            {label.latinName && (
+              <p className="text-[10px] text-slate-500 mt-0.5 italic leading-snug">{label.latinName}</p>
+            )}
+            {!label.latinName && label.description && (
+              <p className="text-[10px] text-slate-500 mt-0.5 leading-snug line-clamp-1">{label.description}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+            {hasOIIA && (
+              <button
+                onClick={() => setExpanded(e => !e)}
+                className="flex items-center gap-1 text-[9px] font-black tracking-widest uppercase text-slate-400 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/8"
+              >
+                {expanded ? "COLLAPSE" : "EXPAND"}
+                {expanded ? <ChevronUp size={9} /> : <ChevronDown size={9} />}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1 text-slate-600 hover:text-slate-300 transition-colors rounded-lg hover:bg-white/8"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        </div>
+
+        {/* ── OIIA rows (expanded) ── */}
+        {expanded && hasOIIA && (
+          <div className="px-4 pb-3 space-y-2.5 border-t border-white/5 pt-2.5">
+            {OIIA_ROWS.map(({ key, label: rowLabel, dot, glow, text }) => {
+              const val = oiia[key];
+              if (!val) return null;
+              return (
+                <div key={key} className="flex items-start gap-3">
+                  <div
+                    className="mt-0.5 shrink-0 rounded-full"
+                    style={{
+                      width: 10, height: 10,
+                      background: dot,
+                      boxShadow: `0 0 7px ${glow}`,
+                      marginTop: 3,
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[9px] font-black tracking-widest uppercase mb-0.5" style={{ color: text }}>
+                      {rowLabel}
+                    </p>
+                    <p className="text-[11px] text-slate-300 leading-snug">{val}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Structure info panel (shared between right panel and bottom sheet)
 // ─────────────────────────────────────────────────────────────────────────────
 function StructureInfoPanel({ system, structure, activeTab, setActiveTab, selectedLabel, onLabelSelect }: {
@@ -1022,13 +1142,13 @@ function SystemView({ system, onBack, initialStructure }: {
           {selectedLabel && (() => {
             const allLabels = system.structures.flatMap(s => s.labels);
             const lbl = allLabels.find(l => l.id === selectedLabel);
+            const parentStruct = system.structures.find(s => s.labels.some(l => l.id === selectedLabel));
             return lbl ? (
-              <div className="absolute top-3 left-3 z-20 max-w-[calc(100%-1.5rem)] pointer-events-none">
-                <div className="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-violet-500/40 shadow-xl">
-                  <span className="w-2 h-2 rounded-full bg-violet-400 shrink-0 shadow-[0_0_6px_#7c3aed]" />
-                  <span className="text-[11px] font-bold text-violet-200 truncate">{lbl.name}</span>
-                </div>
-              </div>
+              <OIIACard
+                label={lbl}
+                parentStructure={parentStruct}
+                onClose={() => { setSelectedLabel(null); }}
+              />
             ) : null;
           })()}
 

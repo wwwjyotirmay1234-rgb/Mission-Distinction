@@ -13,10 +13,20 @@ export type QuizQuestion = {
 export type StructureLabel = {
   id: string;
   name: string;
+  /** Latin anatomical name shown below the structure name in the OIIA card */
+  latinName?: string;
   pos: [number, number, number];
   description: string;
   clinicalNote?: string;
   layer?: "bone" | "muscle" | "vessel" | "nerve" | "organ";
+  /** Muscle origin — shown with red dot in OIIA card */
+  origin?: string;
+  /** Muscle insertion — shown with blue dot in OIIA card */
+  insertion?: string;
+  /** Nerve supply — shown with yellow dot in OIIA card */
+  innervation?: string;
+  /** Muscle action — shown with green dot in OIIA card */
+  action?: string;
 };
 
 export type Mnemonic = {
@@ -40,6 +50,8 @@ export type AnatomyStructure = {
   lymphDrainage?: string;
   origin?: string;
   insertion?: string;
+  /** Nerve supply / innervation for this structure */
+  innervation?: string;
   action?: string;
   /** Optional per-structure GLB override (takes precedence over system glbPath) */
   glbPath?: string;
@@ -803,11 +815,51 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
           { q: "Which is the safest quadrant for intramuscular injection in the deltoid?", options: ["Upper inner", "Upper outer", "Lower inner", "Lower outer"], correct: 1, explanation: "Upper outer quadrant avoids the axillary nerve and posterior circumflex humeral vessels that lie in the lower portion of the deltoid." },
         ],
         labels: [
-          { id: "ant-deltoid", name: "Anterior Deltoid", pos: [-0.9, 0.5, 0.5], description: "Clavicular head. Flexion + medial rotation of shoulder.", layer: "muscle" },
-          { id: "mid-deltoid", name: "Middle Deltoid", pos: [-1.1, 0.0, 0.5], description: "Acromial head. Primary abductor (15°–90°). Site of safe IM injection.", layer: "muscle" },
-          { id: "post-deltoid", name: "Posterior Deltoid", pos: [-0.85, -0.4, 0.5], description: "Spinal head. Extension + lateral rotation of shoulder.", layer: "muscle" },
-          { id: "biceps", name: "Biceps Brachii", pos: [-0.55, -0.7, 0.5], description: "Two heads. Flexion + supination. Musculocutaneous nerve (C5,6). Biceps reflex = C5,6.", layer: "muscle" },
-          { id: "triceps", name: "Triceps Brachii", pos: [0.9, -0.2, 0.5], description: "Three heads. Elbow extension. Radial nerve (C6,7,8). Long head from infraglenoid tubercle.", layer: "muscle" },
+          {
+            id: "ant-deltoid", name: "Anterior Deltoid", latinName: "Deltoideus (pars clavicularis)",
+            pos: [-0.9, 0.5, 0.5], layer: "muscle",
+            description: "Clavicular head. Flexion + medial rotation of shoulder.",
+            origin: "Anterior border of the lateral 1/3 of the clavicle",
+            insertion: "Deltoid tuberosity of humerus",
+            innervation: "Axillary nerve (C5, C6) — posterior cord of brachial plexus",
+            action: "Flexion and medial rotation of the shoulder joint",
+          },
+          {
+            id: "mid-deltoid", name: "Middle Deltoid", latinName: "Deltoideus (pars acromialis)",
+            pos: [-1.1, 0.0, 0.5], layer: "muscle",
+            description: "Acromial head. Primary abductor (15°–90°). Site of safe IM injection.",
+            origin: "Lateral margin and superior surface of the acromion",
+            insertion: "Deltoid tuberosity of humerus",
+            innervation: "Axillary nerve (C5, C6) — posterior cord of brachial plexus",
+            action: "Abduction of the shoulder (15°–90°) — most powerful abductor",
+          },
+          {
+            id: "post-deltoid", name: "Posterior Deltoid", latinName: "Deltoideus (pars spinalis)",
+            pos: [-0.85, -0.4, 0.5], layer: "muscle",
+            description: "Spinal head. Extension + lateral rotation of shoulder.",
+            origin: "Lower lip of the posterior border of the spine of scapula",
+            insertion: "Deltoid tuberosity of humerus",
+            innervation: "Axillary nerve (C5, C6) — posterior cord of brachial plexus",
+            action: "Extension and lateral rotation of the shoulder joint",
+          },
+          {
+            id: "biceps", name: "Biceps Brachii", latinName: "Musculus biceps brachii",
+            pos: [-0.55, -0.7, 0.5], layer: "muscle",
+            description: "Two heads. Flexion + supination. Musculocutaneous nerve (C5,6). Biceps reflex = C5,6.",
+            origin: "Long head: supraglenoid tubercle of scapula; Short head: coracoid process of scapula",
+            insertion: "Radial tuberosity and bicipital aponeurosis (into deep fascia of forearm)",
+            innervation: "Musculocutaneous nerve (C5, C6)",
+            action: "Flexion of elbow; supination of forearm (most powerful supinator); weak shoulder flexion",
+          },
+          {
+            id: "triceps", name: "Triceps Brachii", latinName: "Musculus triceps brachii",
+            pos: [0.9, -0.2, 0.5], layer: "muscle",
+            description: "Three heads. Elbow extension. Radial nerve (C6,7,8). Long head from infraglenoid tubercle.",
+            origin: "Long head: infraglenoid tubercle of scapula; Lateral head: posterior humerus (above radial groove); Medial head: posterior humerus (below radial groove)",
+            insertion: "Posterior surface of olecranon of ulna",
+            innervation: "Radial nerve (C6, C7, C8)",
+            action: "Extension of elbow (all heads); extension and adduction of shoulder (long head only)",
+          },
         ],
         mnemonics: [
           { mnemonic: "SITS on the glenoid rim", meaning: "Supraspinatus, Infraspinatus, Teres minor, Subscapularis — rotator cuff muscles. S=abduction, I+T=lateral rotation, Sub=medial rotation", tip: "Supraspinatus: most commonly torn (impingement at subacromial arch)" },
@@ -815,6 +867,7 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
         ],
         origin: "Clavicle (anterior 1/3), acromion, spine of scapula",
         insertion: "Deltoid tuberosity of humerus",
+        innervation: "Axillary nerve (C5, C6) — posterior cord of brachial plexus",
         action: "Anterior: flexion, medial rotation; Middle: abduction; Posterior: extension, lateral rotation",
         bloodSupply: "Posterior circumflex humeral artery (from axillary) + thoracoacromial artery (from axillary).",
         nerveSupply: "Axillary nerve (C5, C6) — posterior cord of brachial plexus.",
@@ -823,6 +876,92 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
           "Deep: subacromial bursa (risk of bursitis in impingement)",
           "The axillary nerve runs 6–7cm below the tip of the acromion — critical for safe IM injection site",
         ],
+      },
+      {
+        id: "abdominal-muscles",
+        name: "Abdominal Wall Muscles",
+        cardLabel: "MUSCLES",
+        cardSubtitle: "Abdominal wall",
+        icon: "💪",
+        regions: ["trunk"],
+        description: "The anterolateral abdominal wall has three flat muscles (external oblique, internal oblique, transversus abdominis) and one vertical pair (rectus abdominis). They form the rectus sheath and protect abdominal viscera.",
+        clinicalPoints: [
+          "Inguinal ligament = lower free edge of external oblique aponeurosis (ASIS → pubic tubercle)",
+          "Hesselbach's triangle (direct inguinal hernia): inferior epigastric vessels (lateral), rectus sheath (medial), inguinal ligament (inferior)",
+          "Arcuate line (semicircular line of Douglas): posterior rectus sheath absent below this line (lower 1/4 of abdomen)",
+          "McBurney's point: 2/3 way from umbilicus to ASIS — maximum tenderness in acute appendicitis",
+          "Spigelian hernia: through linea semilunaris, lateral to rectus sheath, at or below arcuate line",
+          "Paramedian incision: spares rectus muscle by retracting laterally; stronger than midline, but takes longer",
+        ],
+        studyNotes: "Inguinal canal (4cm oblique passage): Anterior wall = EO aponeurosis + IO (lateral half); Posterior wall = transversalis fascia + conjoint tendon (medial); Roof = arching fibres of IO + TA; Floor = inguinal ligament + lacunar ligament (medial).",
+        quiz: [
+          { q: "The 'hands in trouser pockets' direction describes fibres of which muscle?", options: ["Internal oblique", "Transversus abdominis", "External oblique", "Rectus abdominis"], correct: 2, explanation: "External oblique fibres run inferomedially — like hands slipping into front trouser pockets. Internal oblique: superomedially (perpendicular). Transversus abdominis: horizontal." },
+          { q: "The inguinal ligament is the lower free border of which structure?", options: ["Internal oblique aponeurosis", "Transversus abdominis", "External oblique aponeurosis", "Conjoint tendon"], correct: 2, explanation: "Inguinal ligament = lower rolled-back edge of external oblique aponeurosis, stretching from ASIS to pubic tubercle." },
+          { q: "Which nerve is at risk in a right iliac fossa (McBurney's) incision?", options: ["Genitofemoral nerve", "Femoral nerve", "Ilioinguinal nerve (L1)", "Obturator nerve"], correct: 2, explanation: "The ilioinguinal nerve (L1) runs between internal oblique and transversus abdominis and is commonly encountered and may be divided in a gridiron incision for appendicectomy." },
+        ],
+        labels: [
+          {
+            id: "ext-oblique", name: "External Oblique", latinName: "Musculus obliquus externus abdominis",
+            pos: [-0.6, 0.05, 0.55], layer: "muscle",
+            description: "Outermost flat muscle. Fibres run inferomedially (hands-in-pockets direction). Aponeurosis forms inguinal ligament inferiorly.",
+            origin: "External surfaces of ribs 5–12 (by fleshy digitations interdigitating with serratus anterior and latissimus dorsi)",
+            insertion: "Linea alba, pubic symphysis, pubic crest, pubic tubercle, anterior half of iliac crest; lower free border = inguinal ligament",
+            innervation: "Ventral rami T7–T12 (intercostal nerves); Iliohypogastric nerve (L1); Ilioinguinal nerve (L1)",
+            action: "Bilateral: trunk flexion, compresses/supports abdominal viscera; Unilateral: lateral flexion to same side, rotation to opposite side",
+          },
+          {
+            id: "int-oblique", name: "Internal Oblique", latinName: "Musculus obliquus internus abdominis",
+            pos: [0.6, 0.05, 0.45], layer: "muscle",
+            description: "Middle flat muscle. Fibres run superomedially (perpendicular to external oblique). Forms conjoint tendon with transversus.",
+            origin: "Thoracolumbar fascia, anterior 2/3 of iliac crest, lateral 2/3 of inguinal ligament",
+            insertion: "Inferior borders of ribs 10–12; linea alba; pubic crest; conjoint tendon (with transversus abdominis)",
+            innervation: "Ventral rami T7–T12; Iliohypogastric nerve (L1); Ilioinguinal nerve (L1)",
+            action: "Bilateral: trunk flexion, compresses viscera; Unilateral: lateral flexion and rotation to same side",
+          },
+          {
+            id: "transversus", name: "Transversus Abdominis", latinName: "Musculus transversus abdominis",
+            pos: [0.0, -0.1, 0.38], layer: "muscle",
+            description: "Deepest flat muscle ('corset muscle'). Horizontal fibres provide transverse tension — key to intra-abdominal pressure.",
+            origin: "Lateral 1/3 of inguinal ligament, iliac crest, thoracolumbar fascia, costal cartilages 7–12 (deep surface)",
+            insertion: "Linea alba, pubic crest, pubic symphysis; forms conjoint tendon with internal oblique",
+            innervation: "Ventral rami T7–T12; Iliohypogastric nerve (L1); Ilioinguinal nerve (L1)",
+            action: "Compresses and supports abdominal viscera; maintains intra-abdominal pressure; forced expiration",
+          },
+          {
+            id: "rectus-abdominis", name: "Rectus Abdominis", latinName: "Musculus rectus abdominis",
+            pos: [0.0, 0.35, 0.6], layer: "muscle",
+            description: "Paired vertical strap muscle enclosed in rectus sheath. 3–4 tendinous intersections. The '6-pack' muscle.",
+            origin: "Pubic symphysis and pubic crest",
+            insertion: "Xiphoid process and costal cartilages 5, 6, and 7",
+            innervation: "Ventral rami T7–T12 (segmental innervation along length of muscle)",
+            action: "Flexion of lumbar vertebral column (trunk curl); depression of rib cage; compresses abdominal viscera; aids expiration",
+          },
+          {
+            id: "pyramidalis", name: "Pyramidalis", latinName: "Musculus pyramidalis",
+            pos: [0.25, -0.65, 0.6], layer: "muscle",
+            description: "Small triangular muscle anterior to rectus abdominis. Absent in ~20% of individuals. Clinically unimportant.",
+            origin: "Pubic symphysis and pubic crest (anterior surface)",
+            insertion: "Linea alba (midway between pubic symphysis and umbilicus)",
+            innervation: "Subcostal nerve (T12)",
+            action: "Tenses the linea alba",
+          },
+        ],
+        mnemonics: [
+          { mnemonic: "EIT → External oblique: Opposite side rotation; Internal oblique: Ipsilateral rotation; Transversus: Tension (compresses)", meaning: "Remember the rotation directions: External = Opposite, Internal = Ipsilateral. Both work with contralateral external oblique.", tip: "Left internal oblique + Right external oblique → rotate trunk to the LEFT" },
+          { mnemonic: "Rectus sheath above arcuate line: FRONT = EO + IO; BACK = IO + TA; Below = ALL THREE anterior (no posterior sheath)", meaning: "Above arcuate line: IO aponeurosis splits around rectus. Below arcuate line (lower 1/4): all aponeuroses pass anterior to rectus — posterior sheath absent (only transversalis fascia).", tip: "Arcuate line = semicircular line of Douglas — visible as curved line on posterior rectus sheath" },
+        ],
+        relations: [
+          "Anterior to external oblique: skin, Camper's fascia (fatty), Scarpa's fascia (membranous)",
+          "Posterior to transversus abdominis: transversalis fascia → extraperitoneal fat → parietal peritoneum",
+          "Linea semilunaris: lateral border of rectus sheath — site of Spigelian hernia",
+          "Linea alba: avascular midline raphe from xiphoid to pubic symphysis — incision site (no major vessels)",
+        ],
+        origin: "See individual muscle labels for specific origins",
+        insertion: "See individual muscle labels for specific insertions",
+        innervation: "T7–T12 intercostal nerves (segmental); Iliohypogastric nerve (L1); Ilioinguinal nerve (L1)",
+        action: "Collectively: trunk flexion and rotation; compression of abdominal viscera; forced expiration",
+        nerveSupply: "T7–T12 ventral rami (intercostal nerves) supply external oblique, internal oblique, transversus abdominis, and rectus abdominis in a segmental pattern. Iliohypogastric (L1) and ilioinguinal (L1) supply lower fibres.",
+        bloodSupply: "Superior epigastric artery (terminal branch of internal thoracic) + inferior epigastric artery (from external iliac) anastomose within rectus sheath. Lateral muscles: lower posterior intercostal arteries + lumbar arteries.",
       },
     ],
   },
