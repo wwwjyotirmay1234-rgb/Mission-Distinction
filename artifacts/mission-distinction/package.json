@@ -80,6 +80,7 @@
     "@react-three/fiber": "^9.6.1",
     "chess.js": "^1.4.0",
     "firebase": "^12.14.0",
+    "html2canvas": "^1.4.1",
     "posthog-js": "^1.386.6",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",

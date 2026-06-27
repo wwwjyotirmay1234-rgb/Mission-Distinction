@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Bell, LogOut, User as UserIcon, Menu, Zap, Megaphone, Newspaper, CalendarDays, AlertTriangle } from "lucide-react";
+import { ScreenshotButton } from "@/components/ScreenshotButton";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
@@ -262,6 +263,7 @@ export function Header() {
           </button>
         )}
 
+        {user?.role !== "admin" && <ScreenshotButton />}
         {user?.role !== "admin" && <NotificationsBell />}
 
         <DropdownMenu>
