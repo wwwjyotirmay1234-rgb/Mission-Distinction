@@ -322,6 +322,7 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
     darkColor: "#164e63",
     modelCount: 65,
     icon: "🫁",
+    glbPath: "/models/respiratory.glb",
     cadavericTitle: "Lungs – Anterior View In Situ",
     cadavericSide: "Anterior",
     cadavericDescription: "Cadaveric lungs in situ showing the right (3 lobes) and left (2 lobes) lungs, cardiac notch of the left lung, and the relation to the pericardium. The hilum contains the bronchi, pulmonary vessels, and lymphatics.",
