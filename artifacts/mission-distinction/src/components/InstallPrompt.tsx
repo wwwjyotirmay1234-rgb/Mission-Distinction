@@ -14,8 +14,12 @@ export function InstallPrompt() {
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
   useEffect(() => {
-    const dismissed = localStorage.getItem("pwa-install-dismissed");
-    if (dismissed) return;
+    const dismissedAt = localStorage.getItem("pwa-install-dismissed");
+    if (dismissedAt) {
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      if (Date.now() - Number(dismissedAt) < sevenDays) return;
+      localStorage.removeItem("pwa-install-dismissed");
+    }
 
     const isIOSDevice = /ipad|iphone|ipod/i.test(navigator.userAgent) && !(window as any).MSStream;
     const isInStandaloneMode = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone;
@@ -54,7 +58,7 @@ export function InstallPrompt() {
   const handleDismiss = () => {
     setShowBanner(false);
     setShowIOSInstructions(false);
-    localStorage.setItem("pwa-install-dismissed", "1");
+    localStorage.setItem("pwa-install-dismissed", String(Date.now()));
   };
 
   if (!showBanner) return null;
