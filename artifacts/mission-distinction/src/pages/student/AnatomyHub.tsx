@@ -116,6 +116,14 @@ function ModelCard({ system, structure, onClick }: {
 }) {
   const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
   const [pressed, setPressed] = useState(false);
+
+  /* Short region label shown in the footer — mirrors the reference app's
+     "HEAD / Muscles and bones" pattern where the top line is a category
+     and the second line is a descriptor. We derive it from structure name. */
+  const words = structure.name.split(" ");
+  const topLabel   = words.length > 1 ? words.slice(0, -1).join(" ").toUpperCase() : structure.name.toUpperCase();
+  const bottomLabel = words.length > 1 ? words[words.length - 1] : (system.name.replace(" System", ""));
+
   return (
     <button
       onClick={onClick}
@@ -124,41 +132,89 @@ function ModelCard({ system, structure, onClick }: {
       onMouseLeave={() => setPressed(false)}
       onTouchStart={() => setPressed(true)}
       onTouchEnd={() => setPressed(false)}
-      className="flex-shrink-0 flex flex-col overflow-hidden rounded-2xl text-left transition-all duration-150"
+      className="flex-shrink-0 flex flex-col overflow-hidden text-left transition-all duration-150"
       style={{
-        width: 148,
-        height: 186,
-        background: `linear-gradient(165deg, #0d0820 0%, ${c.bg.replace("0.12", "0.35")} 100%)`,
-        border: `1.5px solid ${c.border}`,
-        boxShadow: `0 4px 24px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)`,
-        transform: pressed ? "scale(0.96)" : "scale(1)",
+        width: 152,
+        height: 194,
+        borderRadius: 12,
+        background: "#23232f",
+        border: "1px solid rgba(255,255,255,0.09)",
+        boxShadow: "0 6px 22px rgba(0,0,0,0.6)",
+        transform: pressed ? "scale(0.95)" : "scale(1)",
       }}
     >
-      <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{ background: `radial-gradient(circle at 50% 60%, ${c.glow} 0%, transparent 70%)` }}
-        />
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px)", backgroundSize: "12px 12px" }}
-        />
-        <span className="relative z-10 text-5xl leading-none select-none" style={{ filter: `drop-shadow(0 4px 16px ${c.glow})` }}>
-          {system.icon}
-        </span>
-        <span className="relative z-10 mt-2 text-[9px] font-black uppercase tracking-[0.15em] px-2 text-center" style={{ color: c.text }}>
-          {system.name.replace(" System", "")}
-        </span>
-      </div>
+      {/* ── Illustration area (≈ 62 % of card height) ── */}
       <div
-        className="px-2.5 pb-2.5 pt-2"
-        style={{ borderTop: `1px solid ${c.border.replace("0.3", "0.2")}`, background: "rgba(0,0,0,0.45)" }}
+        className="relative overflow-hidden"
+        style={{ height: 120, background: "#1c1c28" }}
       >
-        <p className="text-[11px] font-black text-white leading-tight uppercase line-clamp-2">
-          {structure.name}
+        {/* Subtle colour-tinted radial backdrop — evokes the system colour */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(ellipse at 50% 70%, ${c.glow.replace("0.4","0.22")} 0%, transparent 72%)`,
+          }}
+        />
+        {/* Faint dot-grid texture, matching reference card "paper" feel */}
+        <div
+          className="absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)",
+            backgroundSize: "14px 14px",
+          }}
+        />
+        {/* Main illustration — large system emoji */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span
+            className="select-none"
+            style={{
+              fontSize: 62,
+              lineHeight: 1,
+              filter: `drop-shadow(0 6px 20px ${c.glow.replace("0.4","0.6")})`,
+            }}
+          >
+            {system.icon}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Footer strip — dark charcoal, matches reference "poster" footer ── */}
+      <div
+        className="flex-1 flex flex-col justify-center"
+        style={{
+          padding: "7px 10px 8px",
+          background: "#111118",
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+        }}
+      >
+        {/* Top line: bold uppercase label (reference: "HEAD", "SKULL", "BRAIN") */}
+        <p
+          className="leading-tight line-clamp-1"
+          style={{
+            fontSize: 11,
+            fontWeight: 800,
+            color: "#ffffff",
+            textTransform: "uppercase",
+            letterSpacing: "0.04em",
+          }}
+        >
+          {topLabel}
         </p>
-        <p className="text-[10px] mt-0.5 truncate" style={{ color: c.text }}>
-          {structure.labels.length} labels · {structure.quiz.length} quiz
+        {/* Bottom line: subtitle / view descriptor */}
+        <p
+          className="mt-0.5 line-clamp-1"
+          style={{
+            fontSize: 10,
+            fontWeight: 400,
+            color: c.text,
+            opacity: 0.85,
+          }}
+        >
+          {bottomLabel}
+        </p>
+        {/* Mini metadata */}
+        <p className="mt-1.5 text-[9px] text-slate-600">
+          {structure.labels.length} labels · {structure.quiz.length} Q
         </p>
       </div>
     </button>
@@ -174,7 +230,19 @@ function SystemSection({ system, onSelectStructure }: {
 }) {
   return (
     <div>
-      <h2 className="text-[15px] font-bold text-white px-4 mb-3">{system.name}</h2>
+      {/* Heading — plain medium-weight, matching reference "Musculoskeletal system" style */}
+      <h2
+        className="px-4 mb-3"
+        style={{
+          fontSize: 17,
+          fontWeight: 500,
+          color: "rgba(255,255,255,0.88)",
+          letterSpacing: "0.01em",
+          lineHeight: 1.3,
+        }}
+      >
+        {system.name}
+      </h2>
       <div
         className="flex gap-3 pl-4 pr-4 overflow-x-auto"
         style={{ scrollbarWidth: "none", paddingBottom: 4 }}
