@@ -241,6 +241,57 @@ Return JSON array only:
   }
 });
 
+// ── Generate a textbook-quality SVG anatomical diagram via gpt-5.4 ────────────
+
+const DIAGRAM_SVG_SYSTEM_PROMPT = `You are a precision medical illustration AI. Generate anatomical diagrams as clean, accurate SVG code — styled exactly like BD Chaurasia's Human Anatomy textbook illustrations.
+
+SVG requirements:
+- viewBox="0 0 820 680" width="820" height="680"
+- White background: <rect width="820" height="680" fill="white"/>
+- Black ink line art: strokes are #1a1a1a, stroke-width 1.5-2 for outlines, 0.7-1 for fine detail
+- Body/structure fills: light warm grey #f0ede8 or #ede8e0 for soft tissue
+- ONE highlight color: golden yellow #e8c840 fill (opacity 0.7) for key labelled structures only, used sparingly (2-4 structures max)
+- All structures drawn with anatomically ACCURATE shapes and correct proportional relationships
+- Leader lines: thin (#999, stroke-width 0.6) straight horizontal or angled lines from structure edge to label
+- Labels: font-family="Arial, sans-serif" font-size="11.5" fill="#111" — arranged neatly on both sides
+- Labels MUST NOT overlap each other or the diagram body
+- Left-side labels: text-anchor="end", right-side labels: text-anchor="start"
+- Add a bold title at top center: font-size="15" font-weight="bold" fill="#1a1a1a"
+- Add italic figure caption at bottom: font-size="10" fill="#555" font-style="italic"
+- If two standard views are taught in exams (e.g. ventral + dorsal for brainstem), draw both side by side with sub-labels
+- Include ALL named structures that appear in university MBBS exam questions
+- Use fine parallel hatching lines for cut surfaces or cross-sections
+- Nerve roots: thin wavy lines; blood vessels: slightly thicker lines with branching
+- Ensure structural accuracy: sizes, positions, connections must be anatomically correct
+
+Return ONLY valid SVG code starting with <svg and ending with </svg>. No markdown, no explanation, no code fences.`;
+
+router.post("/generate-diagram-svg", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
+  try {
+    const description = sanitizePromptInput(req.body.description, 800);
+    if (!description) { res.status(400).json({ error: "description required (max 800 chars)" }); return; }
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5.4",
+      max_completion_tokens: 8192,
+      messages: [
+        { role: "system", content: DIAGRAM_SVG_SYSTEM_PROMPT },
+        { role: "user", content: `Generate an accurate anatomical SVG diagram for a university MBBS exam: ${description}` },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content ?? "";
+    const start = raw.indexOf("<svg");
+    const end = raw.lastIndexOf("</svg>") + 6;
+    if (start === -1 || end < 6) { res.status(500).json({ error: "AI did not return valid SVG. Please retry." }); return; }
+    const svg = raw.slice(start, end);
+    res.json({ svg });
+  } catch (err: any) {
+    console.error("SVG diagram generation error:", err);
+    res.status(500).json({ error: err?.message || "Diagram generation failed. Please try again." });
+  }
+});
+
 // ── Generate a medical diagram image via gpt-image-1 ──────────────────────────
 router.post("/generate-diagram", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
   try {

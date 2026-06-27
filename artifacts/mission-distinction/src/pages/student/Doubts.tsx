@@ -81,7 +81,7 @@ function TypingDots() {
   );
 }
 
-// ─── Diagram block — styled drawing guide card + AI image generation ──────────
+// ─── Diagram block — SVG textbook-quality diagram + drawing guide ─────────────
 
 function DiagramBlock({ description }: { description: string }) {
   const sentences = description
@@ -89,73 +89,103 @@ function DiagramBlock({ description }: { description: string }) {
     .map(s => s.trim())
     .filter(Boolean);
 
-  const [imgState, setImgState] = React.useState<"idle" | "loading" | "done" | "error">("idle");
-  const [imgUrl, setImgUrl] = React.useState<string | null>(null);
+  const [state, setState] = React.useState<"idle" | "loading" | "done" | "error">("idle");
+  const [svgData, setSvgData] = React.useState<string | null>(null);
   const [errMsg, setErrMsg] = React.useState<string>("");
 
-  const generateImage = async () => {
-    setImgState("loading");
+  const generateDiagram = async () => {
+    setState("loading");
     setErrMsg("");
     try {
-      const res = await apiFetch("/api/ai/generate-diagram", {
+      const res = await apiFetch("/api/ai/generate-diagram-svg", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Generation failed");
-      setImgUrl(`data:image/png;base64,${data.b64_json}`);
-      setImgState("done");
+      if (!data.svg || !data.svg.startsWith("<svg")) throw new Error("Invalid diagram returned");
+      setSvgData(data.svg);
+      setState("done");
     } catch (e: any) {
-      setErrMsg(e.message || "Image generation failed");
-      setImgState("error");
+      setErrMsg(e.message || "Diagram generation failed");
+      setState("error");
     }
+  };
+
+  const downloadSvg = () => {
+    if (!svgData) return;
+    const blob = new Blob([svgData], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `diagram-${Date.now()}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   return (
     <div className="my-3 rounded-xl border border-primary/30 bg-primary/5 overflow-hidden">
+      {/* Header bar */}
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-primary/15 bg-primary/10">
         <div className="flex items-center gap-2">
           <ImageIcon size={13} className="text-primary shrink-0" />
           <span className="text-xs text-primary font-semibold tracking-wide uppercase">Diagram to Draw in Exam</span>
         </div>
-        {imgState === "idle" && (
-          <button
-            onClick={generateImage}
-            className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-md bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
-          >
-            <Sparkles size={10} /> Generate Image
-          </button>
-        )}
-        {imgState === "error" && (
-          <button
-            onClick={generateImage}
-            className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-md bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors"
-          >
-            <RotateCcw size={10} /> Retry
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          {state === "done" && (
+            <button
+              onClick={downloadSvg}
+              title="Download diagram as SVG"
+              className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-md bg-primary/10 hover:bg-primary/20 text-primary/70 hover:text-primary transition-colors"
+            >
+              ↓ SVG
+            </button>
+          )}
+          {(state === "idle" || state === "error") && (
+            <button
+              onClick={generateDiagram}
+              className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-md transition-colors ${
+                state === "error"
+                  ? "bg-destructive/10 hover:bg-destructive/20 text-destructive"
+                  : "bg-primary/20 hover:bg-primary/30 text-primary"
+              }`}
+            >
+              {state === "error" ? <><RotateCcw size={10} /> Retry</> : <><Sparkles size={10} /> Generate Diagram</>}
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Generated image */}
-      {imgState === "loading" && (
-        <div className="px-4 py-6 flex flex-col items-center gap-2 text-primary/60">
+      {/* Loading state */}
+      {state === "loading" && (
+        <div className="px-4 py-8 flex flex-col items-center gap-3 text-primary/60">
           <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-          <p className="text-xs text-muted-foreground">Generating diagram with AI… (~10 sec)</p>
+          <div className="text-center">
+            <p className="text-xs font-medium text-primary/70">Generating textbook-quality diagram…</p>
+            <p className="text-[10px] text-muted-foreground mt-1">This takes ~20 seconds for accurate anatomy</p>
+          </div>
         </div>
       )}
-      {imgState === "done" && imgUrl && (
+
+      {/* SVG diagram */}
+      {state === "done" && svgData && (
         <div className="p-2">
-          <img
-            src={imgUrl}
-            alt={description.slice(0, 100)}
-            className="w-full rounded-lg border border-border/30"
-            style={{ maxHeight: "480px", objectFit: "contain", background: "#fff" }}
+          <div
+            className="w-full rounded-lg border border-border/30 overflow-hidden bg-white"
+            style={{ lineHeight: 0 }}
+            dangerouslySetInnerHTML={{ __html: svgData }}
           />
-          <p className="text-[10px] text-muted-foreground/50 text-center pt-1.5 italic">AI-generated illustration — verify labels with your textbook</p>
+          <p className="text-[10px] text-muted-foreground/50 text-center pt-1.5 italic">
+            AI-generated — verify all labels and structures with your textbook before exam
+          </p>
         </div>
       )}
-      {imgState === "error" && (
+
+      {/* Error */}
+      {state === "error" && (
         <div className="px-4 py-2 text-xs text-destructive/80">{errMsg}</div>
       )}
 
