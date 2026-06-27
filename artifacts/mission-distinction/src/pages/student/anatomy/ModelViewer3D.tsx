@@ -17,6 +17,31 @@ const LAYERS = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Anatomical material colors — applied to GLB meshes that have no texture
+// ─────────────────────────────────────────────────────────────────────────────
+const LAYER_MAT: Record<string, { color: string; roughness: number; metalness: number }> = {
+  bone:   { color: "#F5EDD0", roughness: 0.72, metalness: 0.00 },
+  muscle: { color: "#C23B2B", roughness: 0.58, metalness: 0.05 },
+  vessel: { color: "#CC2200", roughness: 0.38, metalness: 0.18 },
+  nerve:  { color: "#D4A800", roughness: 0.50, metalness: 0.04 },
+  organ:  { color: "#C47A55", roughness: 0.62, metalness: 0.04 },
+};
+
+// Per-system organ color (used when layer === "organ")
+const SYSTEM_ORGAN_COLOR: Record<string, string> = {
+  cardiovascular: "#8B1A2A",
+  respiratory:    "#D96060",
+  digestive:      "#C47A55",
+  urinary:        "#C9923A",
+  reproductive:   "#C45A5A",
+  endocrine:      "#8B62C4",
+  nervous:        "#D4A8A0",
+  lymphatic:      "#8B7060",
+  muscular:       "#B83030",
+  skeletal:       "#F0E8D0",
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Model Render Props
 // ─────────────────────────────────────────────────────────────────────────────
 interface MRP { globalOp: number; isolated: string | null; hidden: Set<string> }
@@ -72,27 +97,49 @@ class GLBErrorBoundary extends React.Component<EBProps, EBState> {
 // ─────────────────────────────────────────────────────────────────────────────
 // GLBModel — loads any anatomy GLB, auto-classifies meshes, applies MRP
 // ─────────────────────────────────────────────────────────────────────────────
-function GLBModel({ glbPath, p, overrides }: {
+function GLBModel({ glbPath, p, overrides, systemId }: {
   glbPath: string;
   p: MRP;
   overrides?: Record<string, LayerId>;
+  systemId?: string;
 }) {
   const { scene } = useGLTF(glbPath);
 
-  // Clone the scene + clone all materials so we can mutate them safely
+  // Clone the scene + clone all materials, then paint anatomical colors
   const clonedScene = useMemo(() => {
     const clone = scene.clone(true);
     clone.traverse(child => {
       const mesh = child as THREE.Mesh;
       if (!mesh.isMesh) return;
+
+      // Clone materials so we can mutate safely
       if (Array.isArray(mesh.material)) {
         mesh.material = mesh.material.map((m: THREE.Material) => m.clone());
       } else if (mesh.material) {
         mesh.material = (mesh.material as THREE.Material).clone();
       }
+
+      // Classify this mesh and apply anatomy color to untextured surfaces
+      const name = mesh.name || mesh.parent?.name || "";
+      const layer = classifyMeshByName(name, overrides);
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      mats.forEach(rawMat => {
+        const mat = rawMat as THREE.MeshStandardMaterial;
+        if (!mat || !("color" in mat)) return;
+        // Only recolor if the mesh has no diffuse texture (avoids tinting real textures)
+        if (mat.map) return;
+        const layerCfg = LAYER_MAT[layer] ?? LAYER_MAT.organ;
+        const col = layer === "organ"
+          ? (systemId ? (SYSTEM_ORGAN_COLOR[systemId] ?? layerCfg.color) : layerCfg.color)
+          : layerCfg.color;
+        mat.color.set(col);
+        mat.roughness = layerCfg.roughness;
+        mat.metalness = layerCfg.metalness;
+        mat.needsUpdate = true;
+      });
     });
     return clone;
-  }, [scene]);
+  }, [scene, overrides, systemId]);
 
   // Build mesh→layer map once
   const meshLayerMap = useMemo(() => {
@@ -416,6 +463,7 @@ function SystemModel({ system, p, glbExists, structureGlbPath }: {
           glbPath={effectivePath}
           p={p}
           overrides={system.glbLayers as Record<string, LayerId> | undefined}
+          systemId={system.id}
         />
         {import.meta.env.DEV && <GLBInspector glbPath={effectivePath} />}
       </Suspense>
