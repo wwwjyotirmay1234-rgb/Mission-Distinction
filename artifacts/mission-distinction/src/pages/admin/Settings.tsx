@@ -139,7 +139,7 @@ export default function AdminSettings() {
           <div className="flex items-center gap-4">
             <div className="relative group">
               <Avatar className="h-16 w-16">
-                <AvatarImage src={avatarUrl || user?.avatarUrl || ""} />
+                <AvatarImage key={avatarUrl || user?.avatarUrl || "none"} src={avatarUrl || user?.avatarUrl || ""} />
                 <AvatarFallback className="text-xl bg-secondary/20 text-secondary font-bold">
                   {initials}
                 </AvatarFallback>
@@ -161,20 +161,24 @@ export default function AdminSettings() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
                 className="gap-2 w-fit"
+                asChild
               >
-                <Camera className="h-3.5 w-3.5" />
-                {uploading ? "Uploading…" : "Change Avatar"}
+                <label htmlFor="admin-avatar-upload" className="cursor-pointer">
+                  <Camera className="h-3.5 w-3.5" />
+                  {uploading ? "Uploading…" : "Change Avatar"}
+                </label>
               </Button>
               <p className="text-xs text-muted-foreground">JPG, PNG or WebP · max 30 MB</p>
             </div>
             <input
+              id="admin-avatar-upload"
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
-              className="hidden"
+              className="sr-only"
+              disabled={uploading}
               onChange={handleAvatarChange}
             />
           </div>

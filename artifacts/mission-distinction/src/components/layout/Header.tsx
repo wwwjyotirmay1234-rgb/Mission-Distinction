@@ -279,7 +279,7 @@ export function Header() {
                 </p>
               </div>
               <Avatar className="h-9 w-9 border border-border shrink-0">
-                <AvatarImage src={user?.avatarUrl || ""} alt={user?.fullName} />
+                <AvatarImage key={user?.avatarUrl || "none"} src={user?.avatarUrl || ""} alt={user?.fullName} />
                 <AvatarFallback className="bg-primary/20 text-primary">{initials}</AvatarFallback>
               </Avatar>
             </button>

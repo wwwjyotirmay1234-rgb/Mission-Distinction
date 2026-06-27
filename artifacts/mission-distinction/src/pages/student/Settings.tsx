@@ -175,7 +175,7 @@ export default function StudentSettings() {
           <div className="flex items-center gap-6">
             <div className="relative group">
               <Avatar className="h-20 w-20">
-                <AvatarImage src={avatarUrl || user?.avatarUrl || ""} />
+                <AvatarImage key={avatarUrl || user?.avatarUrl || "none"} src={avatarUrl || user?.avatarUrl || ""} />
                 <AvatarFallback className="text-2xl bg-primary/20 text-primary">{initials}</AvatarFallback>
               </Avatar>
               {uploading && (
@@ -187,22 +187,25 @@ export default function StudentSettings() {
             <div className="flex flex-col gap-2">
               <Button
                 variant="outline"
-                onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
                 className="gap-2"
                 aria-label="Change profile avatar"
+                asChild
               >
-                <Camera className="h-4 w-4" aria-hidden="true" />
-                {uploading ? "Uploading…" : "Change Avatar"}
+                <label htmlFor="student-avatar-upload" className="cursor-pointer">
+                  <Camera className="h-4 w-4" aria-hidden="true" />
+                  {uploading ? "Uploading…" : "Change Avatar"}
+                </label>
               </Button>
               <p className="text-xs text-muted-foreground">JPG, PNG or WebP · max 30 MB</p>
             </div>
             <input
+              id="student-avatar-upload"
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              className="hidden"
-              aria-label="Upload avatar image"
+              className="sr-only"
+              disabled={uploading}
               onChange={handleAvatarChange}
             />
           </div>
