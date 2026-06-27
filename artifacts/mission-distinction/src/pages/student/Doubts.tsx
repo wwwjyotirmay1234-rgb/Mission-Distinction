@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -185,6 +186,32 @@ function DiagramBlock({ description }: { description: string }) {
   );
 }
 
+// ─── Markdown components — ChatGPT-like styling ──────────────────────────────
+
+const mdComponents: React.ComponentProps<typeof ReactMarkdown>["components"] = {
+  p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+  strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+  em: ({ children }) => <em className="italic text-foreground/90">{children}</em>,
+  h1: ({ children }) => <h1 className="text-lg font-bold mt-4 mb-2 text-foreground">{children}</h1>,
+  h2: ({ children }) => <h2 className="text-base font-bold mt-3 mb-1.5 text-foreground">{children}</h2>,
+  h3: ({ children }) => <h3 className="text-sm font-semibold mt-2 mb-1 text-foreground/90">{children}</h3>,
+  ul: ({ children }) => <ul className="list-disc pl-5 mb-2 space-y-0.5">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 space-y-0.5">{children}</ol>,
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  code: ({ children, className }) =>
+    className ? (
+      <pre className="my-2 p-3 rounded-lg bg-black/30 text-xs overflow-x-auto font-mono">
+        <code>{children}</code>
+      </pre>
+    ) : (
+      <code className="px-1 py-0.5 rounded bg-black/20 text-xs font-mono text-primary/90">{children}</code>
+    ),
+  blockquote: ({ children }) => (
+    <blockquote className="border-l-2 border-primary/40 pl-3 my-2 text-foreground/70 italic">{children}</blockquote>
+  ),
+  hr: () => <hr className="my-3 border-border/40" />,
+};
+
 // ─── Parse AI text and render [DIAGRAM: ...] tags as DiagramBlocks ────────────
 
 function renderMessageContent(text: string) {
@@ -209,7 +236,7 @@ function renderMessageContent(text: string) {
       {parts.map((p, i) =>
         p.type === "text" ? (
           p.value.trim() ? (
-            <p key={i} className="whitespace-pre-wrap leading-relaxed">{p.value}</p>
+            <ReactMarkdown key={i} components={mdComponents}>{p.value}</ReactMarkdown>
           ) : null
         ) : (
           <DiagramBlock key={i} description={p.value} />
@@ -401,10 +428,12 @@ function AiChatTab() {
                 {msg.role === "user" ? (
                   msg.content ? <p className="whitespace-pre-wrap">{msg.content}</p> : null
                 ) : msg.streaming ? (
-                  // While streaming: show raw text so partial [DIAGRAM:...] tags don't fire yet
+                  // While streaming: render markdown but strip partial [DIAGRAM:...] tags
                   msg.content ? (
                     <>
-                      <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                      <ReactMarkdown components={mdComponents}>
+                        {msg.content.replace(/\[DIAGRAM:[^\]]*$/g, "")}
+                      </ReactMarkdown>
                       <span className="inline-block w-0.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-text-bottom" />
                     </>
                   ) : (
