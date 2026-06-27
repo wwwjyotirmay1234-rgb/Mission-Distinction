@@ -110,6 +110,11 @@ async function deleteAudioBlob(id: string) {
 // Module-level so any code path can stop the currently ringing alarm.
 let _alarmAudio: { el: HTMLAudioElement; url: string } | null = null;
 
+// ─── Dedup set: alarms fired in this session ───────────────────────────────────
+// Prevents double-fire when both the in-app interval AND the SW fire at the same time,
+// or when React defers the state update and the next interval tick sees fired=false again.
+const _firedIds = new Set<string>();
+
 function stopCurrentAlarmAudio() {
   if (_alarmAudio) {
     try { _alarmAudio.el.pause(); _alarmAudio.el.currentTime = 0; } catch {}
@@ -493,11 +498,12 @@ function AlarmClock_() {
     const handler = (event: MessageEvent) => {
       const { type, alarmId } = event.data ?? {};
       if (type === "ALARM_FIRED") {
-        // Read current state directly — source of truth is localStorage
+        // Guard against double-fire (SW + in-app interval can both fire at the same moment)
+        if (_firedIds.has(alarmId)) return;
+        _firedIds.add(alarmId);
         const currentAlarms = loadAlarms();
         const target = currentAlarms.find(a => a.id === alarmId);
-        if (target && !target.fired) {
-          // Side effects OUTSIDE the state updater to avoid double-execution in Strict Mode
+        if (target) {
           if (document.visibilityState === "visible") {
             playAlarmSound(target);
           }
@@ -506,7 +512,6 @@ function AlarmClock_() {
             action: { label: "Dismiss", onClick: () => stopCurrentAlarmAudio() },
           });
           awardActivityXP("alarm_used");
-          // Pure state update
           setAlarms(prev => prev.map(a => a.id === alarmId ? { ...a, fired: true, active: false } : a));
         }
       }
@@ -523,10 +528,13 @@ function AlarmClock_() {
     checkRef.current = setInterval(() => {
       const now = new Date();
       const hhmm = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-      // Identify alarms to fire from localStorage (source of truth)
-      const toFire = loadAlarms().filter(a => a.active && !a.fired && a.time === hhmm);
+      // Use _firedIds to prevent double-fire even if React hasn't flushed the state update yet
+      const toFire = loadAlarms().filter(
+        a => a.active && !a.fired && a.time === hhmm && !_firedIds.has(a.id)
+      );
       if (toFire.length === 0) return;
-      // Side effects OUTSIDE the state updater
+      // Mark fired immediately in the dedup set (synchronous, no React delay)
+      toFire.forEach(a => _firedIds.add(a.id));
       for (const a of toFire) {
         playAlarmSound(a);
         showAlarmNotification("⏰ Alarm!", a.label || `Alarm set for ${a.time}`, a.id);
@@ -536,14 +544,45 @@ function AlarmClock_() {
         });
         awardActivityXP("alarm_used");
       }
-      // Pure state update — mark fired
       setAlarms(prev => prev.map(a =>
-        a.active && !a.fired && a.time === hhmm
-          ? { ...a, fired: true, active: false }
-          : a
+        toFire.some(f => f.id === a.id) ? { ...a, fired: true, active: false } : a
       ));
     }, 1_000);
     return () => { if (checkRef.current) clearInterval(checkRef.current); };
+  }, []);
+
+  // Missed-alarm check: when the app regains focus after being backgrounded, fire any
+  // alarms that fired while the SW was killed and the timer was throttled.
+  useEffect(() => {
+    const checkMissed = () => {
+      if (document.visibilityState !== "visible") return;
+      const now = new Date();
+      const missed = loadAlarms().filter(a => {
+        if (!a.active || _firedIds.has(a.id)) return false;
+        const [h, m] = a.time.split(":").map(Number);
+        const alarmMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0).getTime();
+        const diffMs = now.getTime() - alarmMs;
+        // Fire if alarm was set for within the last 5 minutes
+        return diffMs >= 0 && diffMs < 5 * 60 * 1000;
+      });
+      if (missed.length === 0) return;
+      missed.forEach(a => _firedIds.add(a.id));
+      for (const a of missed) {
+        playAlarmSound(a);
+        toast(`⏰ ${a.label || `Alarm at ${a.time}`}`, {
+          duration: 60_000,
+          action: { label: "Dismiss", onClick: () => stopCurrentAlarmAudio() },
+        });
+        awardActivityXP("alarm_used");
+      }
+      setAlarms(prev => prev.map(a =>
+        missed.some(m => m.id === a.id) ? { ...a, fired: true, active: false } : a
+      ));
+    };
+    document.addEventListener("visibilitychange", checkMissed);
+    // Also run immediately on mount in case the page load itself was triggered by tapping the alarm notification
+    checkMissed();
+    return () => document.removeEventListener("visibilitychange", checkMissed);
   }, []);
 
   const handleAudioFile = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v14"; // bumped — Android WebGL canvas fix
+const CACHE_VERSION = "v15"; // bumped — alarm double-fire fix + missed-alarm recovery
 
 const BASE = new URL("./", self.location).pathname;
 
@@ -98,7 +98,14 @@ function scheduleAlarmTimer(alarm) {
   const [h, m] = alarm.time.split(":").map(Number);
   const now = new Date();
   const fire = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
-  if (fire.getTime() <= Date.now()) fire.setDate(fire.getDate() + 1);
+  const missedByMs = Date.now() - fire.getTime();
+  if (missedByMs >= 0 && missedByMs < 5 * 60 * 1000) {
+    // Alarm fired within the last 5 minutes while SW was killed — fire immediately
+    fire.setTime(Date.now() + 500);
+  } else if (fire.getTime() <= Date.now()) {
+    // Missed by more than 5 minutes — schedule for same time tomorrow
+    fire.setDate(fire.getDate() + 1);
+  }
   const delay = fire.getTime() - Date.now();
 
   const timerId = setTimeout(async () => {
