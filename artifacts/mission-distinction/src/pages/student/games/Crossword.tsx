@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 import { Grid3x3, CheckCircle2, RotateCcw, Eye } from "lucide-react";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"];
+import { ALL_SUBJECTS, DIFFICULTY_OPTIONS, type Difficulty } from "./gameConstants";
 
 interface WordPlacement {
   number: number; word: string; clue: string;
@@ -40,6 +40,7 @@ function buildNumbers(words: WordPlacement[], size: number): (number | null)[][]
 
 export default function Crossword() {
   const [subject, setSubject] = useState("Anatomy");
+  const [difficulty, setDifficulty] = useState<Difficulty>("neet-pg");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<CrosswordData | null>(null);
   const [solution, setSolution] = useState<(string | null)[][]>([]);
@@ -59,7 +60,7 @@ export default function Crossword() {
       const res = await apiFetch("/api/games/crossword", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject }),
+        body: JSON.stringify({ subject, difficulty }),
       });
       if (!res.ok) throw new Error("Failed");
       const d: CrosswordData = await res.json();
@@ -142,7 +143,17 @@ export default function Crossword() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            {ALL_SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={difficulty} onValueChange={v => setDifficulty(v as Difficulty)}>
+          <SelectTrigger className="w-32 bg-card/40 border-border/40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {DIFFICULTY_OPTIONS.map(d => (
+              <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Button onClick={generate} disabled={loading} className="gap-2">

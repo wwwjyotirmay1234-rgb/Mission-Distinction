@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 import { Stethoscope, CheckCircle2, XCircle, ChevronRight, RotateCcw } from "lucide-react";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"];
+import { ALL_SUBJECTS, DIFFICULTY_OPTIONS, type Difficulty } from "./gameConstants";
 
 interface Challenge {
   scenario: string;
@@ -19,6 +19,7 @@ interface Challenge {
 
 export default function DiagnosisChallenge() {
   const [subject, setSubject] = useState("Physiology");
+  const [difficulty, setDifficulty] = useState<Difficulty>("neet-pg");
   const [loading, setLoading] = useState(false);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -34,7 +35,7 @@ export default function DiagnosisChallenge() {
       const res = await apiFetch("/api/games/diagnosis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject }),
+        body: JSON.stringify({ subject, difficulty }),
       });
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
@@ -65,7 +66,17 @@ export default function DiagnosisChallenge() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            {ALL_SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={difficulty} onValueChange={v => setDifficulty(v as Difficulty)}>
+          <SelectTrigger className="w-32 bg-card/40 border-border/40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {DIFFICULTY_OPTIONS.map(d => (
+              <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Button onClick={generate} disabled={loading} className="gap-2">

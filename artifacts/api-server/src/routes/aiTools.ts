@@ -23,25 +23,73 @@ const aiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const SYSTEM_PROMPT = `You are an expert Indian medical educator and NEET PG question-setter.
+Reference ONLY gold-standard textbooks:
+• Anatomy: Gray's Anatomy (42nd Ed), BD Chaurasia's Human Anatomy, Snell's Clinical Anatomy
+• Physiology: Ganong's Review (26th Ed), Guyton & Hall Medical Physiology (14th Ed)
+• Biochemistry: Harper's Illustrated Biochemistry (32nd Ed), Lippincott's Illustrated Biochemistry
+• Pathology: Robbins & Cotran (10th Ed), Harsh Mohan Textbook of Pathology
+• Pharmacology: KD Tripathi Essentials (8th Ed), Goodman & Gilman's
+• Microbiology: Ananthanarayan & Paniker (10th Ed), Murray's Medical Microbiology
+• Medicine: Harrison's Principles (21st Ed), Davidson's Principles & Practice
+• Surgery: Bailey & Love's (28th Ed), Sabiston Textbook of Surgery
+• Pediatrics: Nelson Textbook of Pediatrics, Ghai Essential Pediatrics
+• Obstetrics & Gynecology: Dutta's Obstetrics & Gynecology, Williams Obstetrics
+• Community Medicine: Park's Textbook of Preventive and Social Medicine (26th Ed)
+All content must be factually accurate, evidence-based, and at NEET PG examination standard.
+Return ONLY valid JSON, no markdown, no preamble.`;
+
+function getDifficultyInstruction(difficulty: string): string {
+  if (difficulty === "foundation") {
+    return "Difficulty: 1st–2nd Year MBBS Foundation level. Test understanding of core mechanisms and concepts — not just memorised facts. Questions should require reasoning, not mere recall.";
+  }
+  if (difficulty === "clinical") {
+    return "Difficulty: Final Year MBBS / Clinical level. Integrate basic sciences with clinical presentations. Use case-based scenarios testing applied reasoning and clinical decision-making.";
+  }
+  return "Difficulty: NEET PG / Postgraduate Entrance level. Questions must be at peak difficulty: tricky single-best-answer format, plausible distractors, test mechanistic and applied knowledge. Every distractor must be clinically plausible. Include recent advances and guideline-based content.";
+}
+
 // Generate MCQs
 router.post("/mcq", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
   try {
-    const { count = 5 } = req.body;
+    const { count = 5, difficulty = "neet-pg" } = req.body;
     const subject = sanitizePromptInput(req.body.subject, 100);
     const topic = sanitizePromptInput(req.body.topic, 200);
     if (!subject || !topic) { res.status(400).json({ error: "subject and topic required" }); return; }
     const n = Math.min(Math.max(parseInt(count) || 5, 1), 10);
 
+    const diffInstr = getDifficultyInstruction(difficulty);
     const p = safeParams({ subject, topic, n });
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+      temperature: 1.0,
       messages: [
-        { role: "system", content: "You are an expert MBBS medical educator. Generate accurate, clinically relevant MCQs. Return only valid JSON." },
-        { role: "user", content: "Subject: " + p.subject },
-        { role: "user", content: "Topic: " + p.topic },
-        { role: "user", content: "Generate " + p.n + " high-quality MCQ questions for a 1st Year MBBS student. Format response as valid JSON array only (no markdown):\n[\n  {\n    \"question\": \"...\",\n    \"options\": [\"A. ...\", \"B. ...\", \"C. ...\", \"D. ...\"],\n    \"answer\": \"A\",\n    \"explanation\": \"...\"\n  }\n]" },
+        { role: "system", content: SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: `Subject: ${p.subject}
+Topic: ${p.topic}
+${diffInstr}
+
+Generate ${p.n} high-quality MCQ questions. Each must:
+- Be a single-best-answer type (not multiple correct)
+- Have 4 options (A, B, C, D) with plausible distractors
+- Include a detailed explanation citing the gold-standard textbook concept
+- For NEET PG level: use clinical vignettes or mechanism-based scenarios
+- Avoid trivially easy or overly obvious questions
+
+Return valid JSON array only (no markdown):
+[
+  {
+    "question": "...",
+    "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+    "answer": "A",
+    "explanation": "...(cite relevant textbook concept and why distractors are wrong)"
+  }
+]`,
+        },
       ],
-      temperature: 0.7,
     });
 
     const text = completion.choices[0]?.message?.content ?? "[]";
@@ -63,14 +111,23 @@ router.post("/summarise", authMiddleware, aiLimiter, async (req: Request, res: R
     if (!text) { res.status(400).json({ error: "text required" }); return; }
 
     const p = safeParams({ text, subject: subject ?? "" });
-    const subjectPrefix = p.subject ? "Subject: " + p.subject + "\n" : "";
+    const subjectPrefix = p.subject ? `Subject: ${p.subject}\n` : "";
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are an expert MBBS medical tutor who creates concise, exam-focused summaries." },
-        { role: "user", content: subjectPrefix + "Summarise the following notes for a 1st Year MBBS student. Provide:\n1. A concise bullet-point summary of key points (max 10 bullets)\n2. 3 important exam questions with brief answers\n3. Key terms to remember\n\nNotes:\n" + p.text },
-      ],
       temperature: 0.5,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: `${subjectPrefix}Summarise the following notes for MBBS/NEET PG revision. Provide:
+1. A concise bullet-point summary of key exam-relevant points (max 10 bullets)
+2. 3 high-yield NEET PG type questions with brief answers
+3. Key terms and their clinical significance
+
+Notes:
+${p.text}`,
+        },
+      ],
     });
 
     res.json({ summary: completion.choices[0]?.message?.content ?? "" });
@@ -89,13 +146,23 @@ router.post("/mnemonic", authMiddleware, aiLimiter, async (req: Request, res: Re
     const p = safeParams({ subject, topic });
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+      temperature: 0.9,
       messages: [
-        { role: "system", content: "You are an expert MBBS medical educator who creates memorable mnemonics. Be creative, accurate, and clinically relevant. Return only valid JSON." },
-        { role: "user", content: "Subject: " + p.subject },
-        { role: "user", content: "Topic: " + p.topic },
-        { role: "user", content: "Create a mnemonic for a 1st Year MBBS student. Return JSON only:\n{\n  \"mnemonic\": \"the mnemonic phrase (e.g. acronym or rhyme)\",\n  \"description\": \"explanation of what each letter/word represents\"\n}" },
+        { role: "system", content: SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: `Subject: ${p.subject}
+Topic: ${p.topic}
+
+Create a memorable mnemonic for MBBS/NEET PG students.
+Prefer mnemonics that are commonly used in Indian medical colleges or NEET PG resources.
+Return JSON only:
+{
+  "mnemonic": "the mnemonic phrase (acronym, rhyme or story)",
+  "description": "Detailed explanation of what each letter/word represents with clinical context"
+}`,
+        },
       ],
-      temperature: 0.8,
     });
 
     const text = completion.choices[0]?.message?.content ?? "{}";
@@ -112,22 +179,35 @@ router.post("/mnemonic", authMiddleware, aiLimiter, async (req: Request, res: Re
 // Generate flashcard set
 router.post("/flashcards", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
   try {
-    const { count = 8 } = req.body;
+    const { count = 8, difficulty = "neet-pg" } = req.body;
     const subject = sanitizePromptInput(req.body.subject, 100);
     const topic = sanitizePromptInput(req.body.topic, 200);
     if (!subject || !topic) { res.status(400).json({ error: "subject and topic required" }); return; }
     const n = Math.min(Math.max(parseInt(count) || 8, 3), 15);
 
+    const diffInstr = getDifficultyInstruction(difficulty);
     const p = safeParams({ subject, topic, n });
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+      temperature: 0.9,
       messages: [
-        { role: "system", content: "You are an expert MBBS medical educator. Generate high-quality flashcards for spaced repetition. Return only valid JSON." },
-        { role: "user", content: "Subject: " + p.subject },
-        { role: "user", content: "Topic: " + p.topic },
-        { role: "user", content: "Generate " + p.n + " flashcards for a 1st Year MBBS student. Return JSON array only:\n[\n  { \"front\": \"question or term\", \"back\": \"answer or definition\" }\n]" },
+        { role: "system", content: SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: `Subject: ${p.subject}
+Topic: ${p.topic}
+${diffInstr}
+
+Generate ${p.n} flashcards for NEET PG spaced repetition revision.
+Front: a focused question or term that tests applied knowledge — not just "define X".
+Back: a precise, high-yield answer with the key clinical or mechanistic insight.
+Return JSON array only:
+[
+  { "front": "Mechanism by which ACE inhibitors reduce proteinuria in CKD", "back": "Efferent arteriole dilation → decreased intraglomerular pressure → reduced filtration of protein" }
+]`,
+        },
       ],
-      temperature: 0.6,
     });
 
     const text = completion.choices[0]?.message?.content ?? "[]";

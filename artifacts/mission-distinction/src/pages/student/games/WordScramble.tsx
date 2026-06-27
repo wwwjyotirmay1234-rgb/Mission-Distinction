@@ -7,12 +7,13 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 import { Shuffle, CheckCircle2, XCircle, Lightbulb, RotateCcw } from "lucide-react";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"];
+import { ALL_SUBJECTS, DIFFICULTY_OPTIONS, type Difficulty } from "./gameConstants";
 
 interface Puzzle { word: string; scrambled: string; definition: string; hint: string; }
 
 export default function WordScramble() {
   const [subject, setSubject] = useState("Anatomy");
+  const [difficulty, setDifficulty] = useState<Difficulty>("neet-pg");
   const [loading, setLoading] = useState(false);
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [input, setInput] = useState("");
@@ -32,7 +33,7 @@ export default function WordScramble() {
       const res = await apiFetch("/api/games/word-scramble", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject }),
+        body: JSON.stringify({ subject, difficulty }),
       });
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
@@ -75,7 +76,17 @@ export default function WordScramble() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            {ALL_SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={difficulty} onValueChange={v => setDifficulty(v as Difficulty)}>
+          <SelectTrigger className="w-32 bg-card/40 border-border/40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {DIFFICULTY_OPTIONS.map(d => (
+              <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Button onClick={generate} disabled={loading} className="gap-2">
