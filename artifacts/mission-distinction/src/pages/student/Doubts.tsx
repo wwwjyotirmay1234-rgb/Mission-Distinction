@@ -107,7 +107,12 @@ function DiagramBlock({ description }: { description: string }) {
       if (!res.ok) throw new Error(data.error || "Generation failed");
       if (!data.svg || !data.svg.startsWith("<svg")) throw new Error("Invalid diagram returned");
       const clean = DOMPurify.sanitize(data.svg, { USE_PROFILES: { svg: true }, FORCE_BODY: false });
-      setSvgData(clean);
+      // Strip hardcoded width/height so SVG scales to container via viewBox
+      const responsive = clean
+        .replace(/(<svg\b[^>]*?)\s+width="[^"]*"/i, "$1")
+        .replace(/(<svg\b[^>]*?)\s+height="[^"]*"/i, "$1")
+        .replace(/<svg\b/, '<svg style="width:100%;height:auto;display:block"');
+      setSvgData(responsive);
       setState("done");
     } catch (e: any) {
       setErrMsg(e.message || "Diagram generation failed");

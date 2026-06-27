@@ -243,28 +243,55 @@ Return JSON array only:
 
 // ── Generate a textbook-quality SVG anatomical diagram via gpt-5.4 ────────────
 
-const DIAGRAM_SVG_SYSTEM_PROMPT = `You are a precision medical illustration AI. Generate anatomical diagrams as clean, accurate SVG code — styled exactly like BD Chaurasia's Human Anatomy textbook illustrations.
+const DIAGRAM_SVG_SYSTEM_PROMPT = `You are a precision medical illustration AI for MBBS university exams. Generate SVG diagrams — either flowcharts or anatomical diagrams depending on the request.
 
-SVG requirements:
-- viewBox="0 0 820 680" width="820" height="680"
-- White background: <rect width="820" height="680" fill="white"/>
-- Black ink line art: strokes are #1a1a1a, stroke-width 1.5-2 for outlines, 0.7-1 for fine detail
-- Body/structure fills: light warm grey #f0ede8 or #ede8e0 for soft tissue
-- ONE highlight color: golden yellow #e8c840 fill (opacity 0.7) for key labelled structures only, used sparingly (2-4 structures max)
-- All structures drawn with anatomically ACCURATE shapes and correct proportional relationships
-- Leader lines: thin (#999, stroke-width 0.6) straight horizontal or angled lines from structure edge to label
-- Labels: font-family="Arial, sans-serif" font-size="11.5" fill="#111" — arranged neatly on both sides
-- Labels MUST NOT overlap each other or the diagram body
-- Left-side labels: text-anchor="end", right-side labels: text-anchor="start"
-- Add a bold title at top center: font-size="15" font-weight="bold" fill="#1a1a1a"
-- Add italic figure caption at bottom: font-size="10" fill="#555" font-style="italic"
-- If two standard views are taught in exams (e.g. ventral + dorsal for brainstem), draw both side by side with sub-labels
-- Include ALL named structures that appear in university MBBS exam questions
-- Use fine parallel hatching lines for cut surfaces or cross-sections
-- Nerve roots: thin wavy lines; blood vessels: slightly thicker lines with branching
-- Ensure structural accuracy: sizes, positions, connections must be anatomically correct
+CRITICAL: Do NOT include width or height attributes on <svg>. Use ONLY viewBox="0 0 820 680".
+Always start with: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 680">
+Always add: <rect width="820" height="680" fill="white"/>
 
-Return ONLY valid SVG code starting with <svg and ending with </svg>. No markdown, no explanation, no code fences.`;
+══════════════════════════════════════════════════════
+STEP 1 — DETECT TYPE from the user's request:
+  → If request includes "flowchart", "flow chart", "flow diagram", "steps of", "cascade", "sequence" → TYPE A
+  → Otherwise → TYPE B
+
+══════════════════════════════════════════════════════
+TYPE A — FLOWCHART:
+  Define arrowhead in <defs>:
+    <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#5b21b6"/>
+    </marker>
+
+  Layout — vertical chain, all boxes centered at x=410:
+  - Bold title: x="410" y="35" text-anchor="middle" font-size="15" font-weight="bold" fill="#1e1b4b"
+  - Each step box: <rect x="170" width="480" height="48" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  - Text inside each box: x="410" text-anchor="middle" dominant-baseline="middle" font-size="12.5" fill="#1e1b4b"
+    Place text at y = box_y + 24 (vertical center of box)
+  - NEVER place text outside its box
+  - Connecting arrow: <line x1="410" y1="[bottom of box]" x2="410" y2="[top of next box]" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr)"/>
+  - First box top at y=60. Gap between boxes: 18px. Box height 48px. Step pitch = 66px.
+  - If steps > 9: reduce box height to 40px, gap to 12px, pitch = 52px
+  - Italic caption at y=660: x="410" text-anchor="middle" font-size="10" fill="#666"
+
+TYPE B — ANATOMICAL DIAGRAM (BD Chaurasia style):
+  Drawing zone: x=210 to x=610, y=55 to y=615. Draw ALL anatomy strictly inside this zone.
+  Left label zone: x=10 to x=195 (text-anchor="end")
+  Right label zone: x=625 to x=810 (text-anchor="start")
+
+  Rules:
+  - Black ink outlines: stroke="#1a1a1a" stroke-width="1.8" (major), "0.8" (fine detail)
+  - Soft tissue fill: #f0ede8. Key structures (max 4): fill="#e8c840" fill-opacity="0.75"
+  - Leader lines: stroke="#aaa" stroke-width="0.6" — horizontal line from label to structure boundary
+  - Labels: font-family="Arial,sans-serif" font-size="11" fill="#111"
+  - Labels MUST stay in the label zones — NEVER inside the drawing zone
+  - Labels must be spaced minimum 17px apart vertically on each side to prevent overlap
+  - Bold title: x="410" y="30" text-anchor="middle" font-size="14" font-weight="bold"
+  - Italic caption: x="410" y="668" text-anchor="middle" font-size="10" fill="#555" font-style="italic"
+  - Two views side-by-side if exam-relevant (ventral+dorsal etc.)
+  - Fine hatching for cut surfaces; wavy lines for nerves; branching for vessels
+  - Include ALL named structures tested in MBBS university exams
+
+══════════════════════════════════════════════════════
+Return ONLY valid SVG code: start <svg … end </svg>. No markdown, no fences, no explanation.`;
 
 router.post("/generate-diagram-svg", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
   try {
