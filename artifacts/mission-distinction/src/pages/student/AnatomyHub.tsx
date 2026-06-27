@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import ModelViewer3D from "./anatomy/ModelViewer3D";
 import CadavericViewer from "./anatomy/CadavericViewer";
 import CrossSectionViewer from "./anatomy/CrossSectionViewer";
@@ -11,13 +11,6 @@ import {
   type StructureLabel,
 } from "@/data/anatomyData";
 import { ChevronDown, ChevronUp, X, Search, ArrowLeft, List, BookOpen } from "lucide-react";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
-type TabId = "labels" | "cadaveric" | "crosssection" | "clinical" | "quiz" | "relations" | "mnemonics";
-type HubPage = "landing" | "system";
-type SheetState = "closed" | "peek" | "full";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // System brand colours
@@ -36,107 +29,317 @@ const SYSTEM_COLORS: Record<string, { bg: string; text: string; border: string; 
 };
 
 const INFO_TABS: { id: TabId; label: string; icon: string }[] = [
-  { id: "labels",       label: "Labels",       icon: "⬡" },
-  { id: "clinical",     label: "Clinical",      icon: "🏥" },
-  { id: "quiz",         label: "Quiz",          icon: "✍️" },
-  { id: "relations",    label: "Relations",     icon: "🔗" },
-  { id: "mnemonics",    label: "Mnemonics",     icon: "💡" },
-  { id: "cadaveric",    label: "Cadaveric",     icon: "🔬" },
-  { id: "crosssection", label: "CT/MRI",        icon: "📡" },
+  { id: "labels",       label: "Labels",    icon: "⬡" },
+  { id: "clinical",     label: "Clinical",  icon: "🏥" },
+  { id: "quiz",         label: "Quiz",      icon: "✍️" },
+  { id: "relations",    label: "Relations", icon: "🔗" },
+  { id: "mnemonics",    label: "Mnemonics", icon: "💡" },
+  { id: "cadaveric",    label: "Cadaveric", icon: "🔬" },
+  { id: "crosssection", label: "CT/MRI",   icon: "📡" },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Landing — system grid + global search
+// Types
 // ─────────────────────────────────────────────────────────────────────────────
-function SystemCard({ system, onClick }: { system: AnatomySystem; onClick: () => void }) {
+type TabId = "labels" | "cadaveric" | "crosssection" | "clinical" | "quiz" | "relations" | "mnemonics";
+type HubPage = "landing" | "system";
+type SheetState = "closed" | "peek" | "full";
+type RegionId = "head" | "trunk" | "upper_limb" | "lower_limb";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Region configuration
+// ─────────────────────────────────────────────────────────────────────────────
+const BODY_REGIONS: { id: RegionId; line1: string; line2?: string }[] = [
+  { id: "head",        line1: "Head" },
+  { id: "trunk",       line1: "Trunk" },
+  { id: "upper_limb",  line1: "Upper", line2: "limb" },
+  { id: "lower_limb",  line1: "Lower", line2: "limb" },
+];
+
+const REGION_SYSTEM_IDS: Record<RegionId, string[]> = {
+  head:       ["nervous", "endocrine"],
+  trunk:      ["cardiovascular", "respiratory", "digestive", "urinary", "reproductive", "lymphatic"],
+  upper_limb: ["skeletal", "muscular"],
+  lower_limb: [],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Body region SVG silhouettes
+// ─────────────────────────────────────────────────────────────────────────────
+function RegionIcon({ id, active }: { id: RegionId; active: boolean }) {
+  const c = active ? "#ffffff" : "#6b7280";
+  if (id === "head") return (
+    <svg viewBox="0 0 36 44" width="30" height="36" fill="none">
+      <ellipse cx="18" cy="14" rx="12" ry="13" fill={c} />
+      <rect x="13" y="25" width="10" height="9" rx="3" fill={c} opacity={0.75} />
+      <path d="M10 33 Q5 36 6 44 L14 44" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" opacity={0.5} />
+      <path d="M26 33 Q31 36 30 44 L22 44" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" opacity={0.5} />
+    </svg>
+  );
+  if (id === "trunk") return (
+    <svg viewBox="0 0 36 44" width="30" height="36" fill="none">
+      <path d="M4 6 L32 6 L35 16 L30 42 L6 42 L1 16 Z" fill={c} />
+      <rect x="0" y="6" width="6" height="14" rx="3" fill={c} opacity={0.7} />
+      <rect x="30" y="6" width="6" height="14" rx="3" fill={c} opacity={0.7} />
+    </svg>
+  );
+  if (id === "upper_limb") return (
+    <svg viewBox="0 0 36 44" width="30" height="36" fill="none">
+      <rect x="13" y="2" width="10" height="22" rx="5" fill={c} />
+      <rect x="10" y="22" width="8" height="14" rx="4" fill={c} opacity={0.85} />
+      <rect x="19" y="22" width="8" height="14" rx="4" fill={c} opacity={0.85} />
+      <rect x="9" y="34" width="4" height="8" rx="2" fill={c} opacity={0.6} />
+      <rect x="14" y="35" width="4" height="7" rx="2" fill={c} opacity={0.6} />
+      <rect x="19" y="34" width="4" height="8" rx="2" fill={c} opacity={0.6} />
+      <rect x="24" y="35" width="4" height="7" rx="2" fill={c} opacity={0.6} />
+    </svg>
+  );
+  return (
+    <svg viewBox="0 0 36 44" width="30" height="36" fill="none">
+      <rect x="5" y="2" width="11" height="22" rx="5.5" fill={c} />
+      <rect x="20" y="2" width="11" height="22" rx="5.5" fill={c} />
+      <rect x="4" y="22" width="12" height="18" rx="4" fill={c} opacity={0.85} />
+      <rect x="20" y="22" width="12" height="18" rx="4" fill={c} opacity={0.85} />
+      <rect x="3" y="37" width="13" height="6" rx="3" fill={c} opacity={0.65} />
+      <rect x="20" y="37" width="13" height="6" rx="3" fill={c} opacity={0.65} />
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Model card (structure thumbnail)
+// ─────────────────────────────────────────────────────────────────────────────
+function ModelCard({ system, structure, onClick }: {
+  system: AnatomySystem;
+  structure: AnatomyStructure;
+  onClick: () => void;
+}) {
   const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
+  const [pressed, setPressed] = useState(false);
   return (
     <button
       onClick={onClick}
-      className="group relative flex flex-col gap-3 p-4 rounded-2xl border text-left transition-all duration-200 hover:scale-[1.03] active:scale-[0.97]"
-      style={{ background: c.bg, borderColor: c.border, boxShadow: "0 2px 14px rgba(0,0,0,0.35)" }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => setPressed(false)}
+      className="flex-shrink-0 flex flex-col overflow-hidden rounded-2xl text-left transition-all duration-150"
+      style={{
+        width: 148,
+        height: 186,
+        background: `linear-gradient(165deg, #0d0820 0%, ${c.bg.replace("0.12", "0.35")} 100%)`,
+        border: `1.5px solid ${c.border}`,
+        boxShadow: `0 4px 24px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)`,
+        transform: pressed ? "scale(0.96)" : "scale(1)",
+      }}
     >
-      <div className="flex items-start justify-between">
-        <span className="text-3xl leading-none">{system.icon}</span>
-        <span className="text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-black/35 border" style={{ borderColor: c.border, color: c.text }}>
-          {system.structures.length} topics
+      <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{ background: `radial-gradient(circle at 50% 60%, ${c.glow} 0%, transparent 70%)` }}
+        />
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px)", backgroundSize: "12px 12px" }}
+        />
+        <span className="relative z-10 text-5xl leading-none select-none" style={{ filter: `drop-shadow(0 4px 16px ${c.glow})` }}>
+          {system.icon}
+        </span>
+        <span className="relative z-10 mt-2 text-[9px] font-black uppercase tracking-[0.15em] px-2 text-center" style={{ color: c.text }}>
+          {system.name.replace(" System", "")}
         </span>
       </div>
-      <div>
-        <h3 className="font-bold text-sm text-white leading-tight">{system.name}</h3>
-        <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{system.structures.map(s => s.name).join(" · ")}</p>
+      <div
+        className="px-2.5 pb-2.5 pt-2"
+        style={{ borderTop: `1px solid ${c.border.replace("0.3", "0.2")}`, background: "rgba(0,0,0,0.45)" }}
+      >
+        <p className="text-[11px] font-black text-white leading-tight uppercase line-clamp-2">
+          {structure.name}
+        </p>
+        <p className="text-[10px] mt-0.5 truncate" style={{ color: c.text }}>
+          {structure.labels.length} labels · {structure.quiz.length} quiz
+        </p>
       </div>
-      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" style={{ boxShadow: `inset 0 0 28px ${c.glow}` }} />
     </button>
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// System section (heading + horizontal card scroll)
+// ─────────────────────────────────────────────────────────────────────────────
+function SystemSection({ system, onSelectStructure }: {
+  system: AnatomySystem;
+  onSelectStructure: (sys: AnatomySystem, struct: AnatomyStructure) => void;
+}) {
+  return (
+    <div>
+      <h2 className="text-[15px] font-bold text-white px-4 mb-3">{system.name}</h2>
+      <div
+        className="flex gap-3 pl-4 pr-4 overflow-x-auto"
+        style={{ scrollbarWidth: "none", paddingBottom: 4 }}
+      >
+        {system.structures.map(struct => (
+          <ModelCard
+            key={struct.id}
+            system={system}
+            structure={struct}
+            onClick={() => onSelectStructure(system, struct)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hub landing — region selector + system cards
+// ─────────────────────────────────────────────────────────────────────────────
 function HubLanding({ onSelectSystem, onSelectResult, globalSearch, setGlobalSearch }: {
   onSelectSystem: (s: AnatomySystem, struct?: AnatomyStructure) => void;
   onSelectResult: (sys: AnatomySystem, struct: AnatomyStructure) => void;
-  globalSearch: string; setGlobalSearch: (v: string) => void;
+  globalSearch: string;
+  setGlobalSearch: (v: string) => void;
 }) {
-  const searchResults = useMemo(() => globalSearch.trim().length > 1 ? searchStructures(globalSearch) : [], [globalSearch]);
-  const totalStructures = useMemo(() => ANATOMY_SYSTEMS.reduce((a, s) => a + s.structures.length, 0), []);
-  const totalLabels = useMemo(() => ANATOMY_SYSTEMS.reduce((a, s) => a + s.structures.reduce((b, st) => b + st.labels.length, 0), 0), []);
+  const [selectedRegion, setSelectedRegion] = useState<RegionId>("trunk");
+
+  const searchResults = useMemo(
+    () => (globalSearch.trim().length > 1 ? searchStructures(globalSearch) : []),
+    [globalSearch],
+  );
+
+  const systemsForRegion = useMemo(() => {
+    const ids = REGION_SYSTEM_IDS[selectedRegion];
+    return ANATOMY_SYSTEMS.filter(s => ids.includes(s.id));
+  }, [selectedRegion]);
+
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6" style={{ scrollbarWidth: "thin", scrollbarColor: "#3b0764 transparent" }}>
-      {/* Hero */}
-      <div className="text-center mb-6">
-        <p className="text-[10px] text-violet-400 font-bold uppercase tracking-[0.2em] mb-1.5">Interactive 3D Anatomy</p>
-        <h1 className="text-2xl font-black text-white mb-1 leading-tight">Anatomy Hub</h1>
-        <p className="text-xs text-slate-500">1st Year MBBS · All 10 Body Systems</p>
-        <div className="flex justify-center gap-8 mt-4">
-          {[{ n: ANATOMY_SYSTEMS.length, l: "Systems" }, { n: totalStructures, l: "Topics" }, { n: totalLabels, l: "3D Labels" }].map(s => (
-            <div key={s.l} className="text-center">
-              <div className="text-2xl font-black text-violet-400">{s.n}</div>
-              <div className="text-[10px] text-slate-600 uppercase tracking-wider">{s.l}</div>
-            </div>
-          ))}
+    <div className="flex-1 flex flex-col overflow-hidden">
+
+      {/* ── Region selector row ── */}
+      <div
+        className="flex items-start justify-center gap-4 sm:gap-6 px-4 py-4 shrink-0 border-b border-white/8"
+        style={{ background: "rgba(0,0,0,0.25)" }}
+      >
+        {BODY_REGIONS.map(region => {
+          const active = selectedRegion === region.id && !globalSearch;
+          return (
+            <button
+              key={region.id}
+              onClick={() => { setSelectedRegion(region.id); setGlobalSearch(""); }}
+              className="flex flex-col items-center gap-2 transition-all"
+              style={{ minWidth: 64 }}
+            >
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200"
+                style={{
+                  background: active ? "rgba(255,255,255,0.13)" : "rgba(255,255,255,0.05)",
+                  border: `2px solid ${active ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.1)"}`,
+                  boxShadow: active ? "0 0 0 4px rgba(255,255,255,0.07), 0 4px 20px rgba(0,0,0,0.4)" : "none",
+                }}
+              >
+                <RegionIcon id={region.id} active={active} />
+              </div>
+              <span
+                className="text-[11px] font-bold leading-tight text-center"
+                style={{ color: active ? "#ffffff" : "#6b7280" }}
+              >
+                {region.line1}
+                {region.line2 && <><br />{region.line2}</>}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Search bar ── */}
+      <div className="px-4 py-2.5 border-b border-white/5 shrink-0" style={{ background: "rgba(0,0,0,0.15)" }}>
+        <div className="relative max-w-lg mx-auto">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          <input
+            value={globalSearch}
+            onChange={e => setGlobalSearch(e.target.value)}
+            placeholder="Search any structure — heart, humerus, nephron…"
+            className="w-full pl-8 pr-8 py-2 rounded-xl text-sm placeholder-slate-600 focus:outline-none transition-all"
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#fff",
+            }}
+            onFocus={e => { e.currentTarget.style.borderColor = "rgba(124,58,237,0.5)"; }}
+            onBlur={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+          />
+          {globalSearch && (
+            <button
+              onClick={() => setGlobalSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+            >
+              <X size={12} />
+            </button>
+          )}
         </div>
       </div>
-      {/* Search */}
-      <div className="relative max-w-lg mx-auto mb-6">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-        <input
-          value={globalSearch}
-          onChange={e => setGlobalSearch(e.target.value)}
-          placeholder="Search any structure — LAD, Broca's, nephron, uterus..."
-          className="w-full pl-9 pr-9 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 transition-all"
-        />
-        {globalSearch && <button onClick={() => setGlobalSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"><X size={14} /></button>}
-      </div>
-      {/* Results or grid */}
-      {globalSearch ? (
-        <div className="max-w-lg mx-auto">
-          <p className="text-[11px] text-slate-500 mb-2 px-1">{searchResults.length} result{searchResults.length !== 1 ? "s" : ""} for "{globalSearch}"</p>
-          {searchResults.length === 0
-            ? <p className="text-center text-slate-600 py-8 text-sm">No structures found. Try a different term.</p>
-            : <div className="space-y-1.5">
-              {searchResults.map(({ system, structure }) => {
-                const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
-                return (
-                  <button key={`${system.id}-${structure.id}`} onClick={() => onSelectResult(system, structure)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl border text-left hover:scale-[1.01] transition-all"
-                    style={{ background: c.bg, borderColor: c.border }}
-                  >
-                    <span className="text-xl">{system.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-sm text-white truncate">{structure.name}</div>
-                      <div className="text-[11px] truncate" style={{ color: c.text }}>{system.name}</div>
-                    </div>
-                    <span className="text-slate-500 text-xs shrink-0">→</span>
-                  </button>
-                );
-              })}
+
+      {/* ── Content ── */}
+      <div
+        className="flex-1 overflow-y-auto py-5 space-y-7"
+        style={{ scrollbarWidth: "thin", scrollbarColor: "#3b0764 transparent" }}
+      >
+        {globalSearch ? (
+          /* Search results */
+          <div className="px-4">
+            <p className="text-[11px] text-slate-500 mb-3">
+              {searchResults.length} result{searchResults.length !== 1 ? "s" : ""} for &quot;{globalSearch}&quot;
+            </p>
+            {searchResults.length === 0 ? (
+              <p className="text-center text-slate-600 py-10 text-sm">No structures found. Try a different term.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {searchResults.map(({ system, structure }) => {
+                  const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
+                  return (
+                    <button
+                      key={`${system.id}-${structure.id}`}
+                      onClick={() => onSelectResult(system, structure)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all hover:brightness-110"
+                      style={{ background: c.bg, borderColor: c.border }}
+                    >
+                      <span className="text-xl">{system.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-sm text-white truncate">{structure.name}</div>
+                        <div className="text-[11px] truncate" style={{ color: c.text }}>{system.name}</div>
+                      </div>
+                      <span className="text-slate-500 text-xs shrink-0">→</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : systemsForRegion.length === 0 ? (
+          /* Coming soon */
+          <div className="flex flex-col items-center justify-center py-24 px-8 gap-5">
+            <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+              <RegionIcon id={selectedRegion} active={false} />
             </div>
-          }
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-w-5xl mx-auto">
-          {ANATOMY_SYSTEMS.map(s => <SystemCard key={s.id} system={s} onClick={() => onSelectSystem(s)} />)}
-        </div>
-      )}
+            <div className="text-center">
+              <p className="font-bold text-white text-base mb-2">Coming Soon</p>
+              <p className="text-slate-500 text-sm max-w-xs">
+                3D anatomy models for the {BODY_REGIONS.find(r => r.id === selectedRegion)?.line1}{" "}
+                {BODY_REGIONS.find(r => r.id === selectedRegion)?.line2} region are being added. Check back soon!
+              </p>
+            </div>
+          </div>
+        ) : (
+          systemsForRegion.map(sys => (
+            <SystemSection
+              key={sys.id}
+              system={sys}
+              onSelectStructure={onSelectResult}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -260,13 +463,11 @@ function StructureInfoPanel({ system, structure, activeTab, setActiveTab, select
   const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Structure header */}
       <div className="px-4 pt-3 pb-2.5 border-b border-white/6 shrink-0">
         <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color: c.text }}>{system.name}</p>
         <h2 className="font-black text-white text-sm leading-tight">{structure.name}</h2>
         <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">{structure.description.slice(0, 110)}…</p>
       </div>
-      {/* Tab strip */}
       <div className="flex overflow-x-auto shrink-0 border-b border-white/6" style={{ scrollbarWidth: "none" }}>
         {INFO_TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -279,7 +480,6 @@ function StructureInfoPanel({ system, structure, activeTab, setActiveTab, select
           </button>
         ))}
       </div>
-      {/* Content */}
       <div className="flex-1 overflow-y-auto p-4" style={{ scrollbarWidth: "thin", scrollbarColor: "#3b0764 transparent" }}>
         {activeTab === "labels"       && <LabelsPanel structure={structure} selectedLabel={selectedLabel} onLabelSelect={onLabelSelect} />}
         {activeTab === "clinical"     && <ClinicalPanel structure={structure} />}
@@ -312,7 +512,7 @@ function SystemView({ system, onBack, initialStructure }: {
 
   const filtered = useMemo(
     () => system.structures.filter(s => s.name.toLowerCase().includes(structSearch.toLowerCase()) || s.description.toLowerCase().includes(structSearch.toLowerCase())),
-    [system.structures, structSearch]
+    [system.structures, structSearch],
   );
 
   function handleLabelSelect(label: StructureLabel) {
@@ -327,9 +527,7 @@ function SystemView({ system, onBack, initialStructure }: {
     setActiveTab("labels");
     setShowStructList(false);
     setStructSearch("");
-    // Auto-peek the info sheet on mobile when structure is tapped
     setSheetState(prev => prev === "closed" ? "peek" : prev);
-    // Scroll strip to show active item
     setTimeout(() => {
       const btn = document.getElementById(`struct-btn-${s.id}`);
       btn?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
@@ -352,27 +550,25 @@ function SystemView({ system, onBack, initialStructure }: {
           className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-sm group shrink-0"
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
-          <span className="hidden sm:inline text-xs font-medium">Systems</span>
+          <span className="hidden sm:inline text-xs font-medium">Regions</span>
         </button>
         <span className="text-slate-700">/</span>
         <span className="text-lg shrink-0">{system.icon}</span>
         <span className="font-bold text-sm truncate" style={{ color: c.text }}>{system.name}</span>
-        <span className="text-[10px] text-slate-600 hidden sm:inline">System</span>
+        <span className="text-[10px] text-slate-600 hidden sm:inline">·</span>
+        <span className="text-[10px] text-slate-600 hidden sm:inline truncate">{selectedStructure.name}</span>
 
         <div className="ml-auto flex items-center gap-1.5">
-          {/* Search toggle */}
           <button onClick={() => setShowSearch(p => !p)}
             className={`p-2 rounded-xl transition-colors ${showSearch ? "bg-violet-700/40 text-violet-300" : "text-slate-500 hover:bg-white/8 hover:text-white"}`}
           >
             <Search size={14} />
           </button>
-          {/* Structure list toggle */}
           <button onClick={() => setShowStructList(p => !p)}
             className={`p-2 rounded-xl transition-colors ${showStructList ? "bg-violet-700/40 text-violet-300" : "text-slate-500 hover:bg-white/8 hover:text-white"}`}
           >
             <List size={14} />
           </button>
-          {/* Info panel toggle (mobile — opens sheet) */}
           <button
             onClick={() => handleSheetOpen("clinical")}
             className="md:hidden p-2 rounded-xl text-slate-500 hover:bg-white/8 hover:text-white transition-colors"
@@ -393,7 +589,6 @@ function SystemView({ system, onBack, initialStructure }: {
             />
             {structSearch && <button onClick={() => setStructSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-white"><X size={12} /></button>}
           </div>
-          {/* Search results */}
           {structSearch && (
             <div className="max-w-md mx-auto mt-1.5 space-y-1 max-h-40 overflow-y-auto">
               {filtered.map(s => (
@@ -413,7 +608,7 @@ function SystemView({ system, onBack, initialStructure }: {
         </div>
       )}
 
-      {/* ─── Structures dropdown (desktop alternative to strip) ─── */}
+      {/* ─── Structures dropdown ─── */}
       {showStructList && (
         <div className="absolute top-14 right-3 z-30 w-64 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/12 shadow-2xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
@@ -441,7 +636,6 @@ function SystemView({ system, onBack, initialStructure }: {
       {/* ─── Main content row ─── */}
       <div className="flex-1 flex min-h-0 overflow-hidden relative">
 
-        {/* 3D Viewer — always flex-1 */}
         <div className="flex-1 min-w-0 relative">
           <ModelViewer3D
             system={system}
@@ -449,7 +643,6 @@ function SystemView({ system, onBack, initialStructure }: {
             onLabelSelect={handleLabelSelect}
           />
 
-          {/* Selected label name badge — bottom of 3D viewer */}
           {selectedLabel && (() => {
             const allLabels = system.structures.flatMap(s => s.labels);
             const lbl = allLabels.find(l => l.id === selectedLabel);
@@ -463,7 +656,6 @@ function SystemView({ system, onBack, initialStructure }: {
             ) : null;
           })()}
 
-          {/* Mobile FAB — open info sheet */}
           <button
             onClick={() => handleSheetOpen()}
             className="absolute bottom-16 right-3 md:hidden bg-violet-600 hover:bg-violet-500 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-xl shadow-violet-900/40 border border-violet-400/30 transition-colors z-10"
@@ -522,7 +714,6 @@ function SystemView({ system, onBack, initialStructure }: {
       >
         {sheetState !== "closed" && (
           <>
-            {/* Drag handle */}
             <div className="flex items-center justify-between px-4 pt-3 pb-1 shrink-0">
               <button onClick={() => setSheetState(prev => prev === "full" ? "peek" : "full")}
                 className="flex flex-col items-center gap-1 flex-1"
@@ -533,7 +724,6 @@ function SystemView({ system, onBack, initialStructure }: {
                 <X size={14} />
               </button>
             </div>
-            {/* Expand toggle */}
             <div className="shrink-0">
               <button
                 onClick={() => setSheetState(prev => prev === "full" ? "peek" : "full")}
@@ -543,7 +733,6 @@ function SystemView({ system, onBack, initialStructure }: {
                 <span>{sheetState === "full" ? "Collapse" : "Expand"}</span>
               </button>
             </div>
-            {/* Info panel content */}
             <div className="flex-1 min-h-0">
               <StructureInfoPanel
                 system={system}
@@ -558,7 +747,6 @@ function SystemView({ system, onBack, initialStructure }: {
         )}
       </div>
 
-      {/* Sheet backdrop */}
       {sheetState !== "closed" && (
         <div className="md:hidden fixed inset-0 z-30 bg-black/20 backdrop-blur-[1px]" onClick={() => setSheetState("closed")} />
       )}
@@ -584,15 +772,16 @@ export default function AnatomyHub() {
 
   return (
     <div className="flex flex-col w-full h-full overflow-hidden" style={{ background: "linear-gradient(135deg,#060414 0%,#0a0520 50%,#060318 100%)" }}>
-      {/* Nav bar */}
       <nav className="flex items-center justify-between px-4 py-2.5 border-b border-white/8 bg-black/50 backdrop-blur-md shrink-0 z-10">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black text-white select-none" style={{ background: "linear-gradient(135deg,#7c3aed,#a21caf)" }}>A</div>
           <span className="font-black text-white text-sm tracking-tight">Anatomy Hub</span>
           <span className="text-[9px] text-slate-600 uppercase tracking-wider hidden sm:inline ml-1">1st Year MBBS</span>
         </div>
-        <div className="flex items-center gap-3 text-[10px] text-slate-600">
-          <span className="text-violet-400 font-bold">All 10 Systems</span>
+        <div className="flex items-center gap-3 text-[10px] text-slate-500">
+          <span className="text-violet-400 font-bold">{ANATOMY_SYSTEMS.length} Systems</span>
+          <span>·</span>
+          <span>{ANATOMY_SYSTEMS.reduce((a, s) => a + s.structures.length, 0)} Topics</span>
         </div>
       </nav>
 
