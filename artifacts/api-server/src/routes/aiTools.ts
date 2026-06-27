@@ -335,4 +335,46 @@ router.post("/generate-diagram", authMiddleware, aiLimiter, async (req: Request,
   }
 });
 
+// ── Web image search via DuckDuckGo (no API key required) ─────────────────────
+router.get("/search-images", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const raw = sanitizePromptInput(String(req.query.q || ""), 200);
+    if (!raw) { res.status(400).json({ error: "q required" }); return; }
+
+    const query = `${raw} anatomy medical diagram`;
+    const ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+    // Step 1 — get VQD token
+    const initRes = await fetch(`https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=images&ia=images`, {
+      headers: { "User-Agent": ua },
+    });
+    const html = await initRes.text();
+    const vqdMatch = html.match(/vqd=["']?([^"'&\s]+)/);
+    if (!vqdMatch) { res.json({ images: [] }); return; }
+    const vqd = vqdMatch[1];
+
+    // Step 2 — fetch image results JSON
+    const imgRes = await fetch(
+      `https://duckduckgo.com/i.js?q=${encodeURIComponent(query)}&vqd=${encodeURIComponent(vqd)}&o=json&s=0`,
+      { headers: { "User-Agent": ua, Referer: "https://duckduckgo.com" } },
+    );
+    const data = await imgRes.json() as { results?: any[] };
+
+    const images = (data.results ?? [])
+      .filter((r: any) => r.image && r.thumbnail)
+      .slice(0, 6)
+      .map((r: any) => ({
+        title: String(r.title ?? "").slice(0, 80),
+        url: r.image as string,
+        thumb: r.thumbnail as string,
+        source: String(r.source ?? ""),
+      }));
+
+    res.json({ images });
+  } catch (err: any) {
+    console.error("Image search error:", err?.message);
+    res.json({ images: [] }); // graceful degradation
+  }
+});
+
 export { router as aiToolsRouter };

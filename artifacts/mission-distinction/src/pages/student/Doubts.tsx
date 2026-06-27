@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon } from "lucide-react";
+import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -93,31 +93,53 @@ function DiagramBlock({ description }: { description: string }) {
   const [state, setState] = React.useState<"idle" | "loading" | "done" | "error">("idle");
   const [svgData, setSvgData] = React.useState<string | null>(null);
   const [errMsg, setErrMsg] = React.useState<string>("");
+  const [webImgs, setWebImgs] = React.useState<{ title: string; url: string; thumb: string; source: string }[]>([]);
+  const [webImgState, setWebImgState] = React.useState<"idle" | "loading" | "done">("idle");
 
   const generateDiagram = async () => {
     setState("loading");
     setErrMsg("");
-    try {
-      const res = await apiFetch("/api/ai/generate-diagram-svg", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Generation failed");
-      if (!data.svg || !data.svg.startsWith("<svg")) throw new Error("Invalid diagram returned");
-      const clean = DOMPurify.sanitize(data.svg, { USE_PROFILES: { svg: true }, FORCE_BODY: false });
-      // Strip hardcoded width/height so SVG scales to container via viewBox
-      const responsive = clean
-        .replace(/(<svg\b[^>]*?)\s+width="[^"]*"/i, "$1")
-        .replace(/(<svg\b[^>]*?)\s+height="[^"]*"/i, "$1")
-        .replace(/<svg\b/, '<svg style="width:100%;height:auto;display:block"');
-      setSvgData(responsive);
-      setState("done");
-    } catch (e: any) {
-      setErrMsg(e.message || "Diagram generation failed");
-      setState("error");
-    }
+    setWebImgs([]);
+    setWebImgState("loading");
+
+    // Image search — fast (~1-2s), updates independently
+    const fetchImages = async () => {
+      try {
+        const res = await apiFetch(`/api/ai/search-images?q=${encodeURIComponent(description)}`);
+        const data = await res.json();
+        setWebImgs(data.images ?? []);
+      } catch {
+        // silently fail — images are supplementary
+      } finally {
+        setWebImgState("done");
+      }
+    };
+
+    // SVG generation — slow (~20s), main output
+    const fetchSvg = async () => {
+      try {
+        const res = await apiFetch("/api/ai/generate-diagram-svg", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Generation failed");
+        if (!data.svg || !data.svg.startsWith("<svg")) throw new Error("Invalid diagram returned");
+        const clean = DOMPurify.sanitize(data.svg, { USE_PROFILES: { svg: true }, FORCE_BODY: false });
+        const responsive = clean
+          .replace(/(<svg\b[^>]*?)\s+width="[^"]*"/i, "$1")
+          .replace(/(<svg\b[^>]*?)\s+height="[^"]*"/i, "$1")
+          .replace(/<svg\b/, '<svg style="width:100%;height:auto;display:block"');
+        setSvgData(responsive);
+        setState("done");
+      } catch (e: any) {
+        setErrMsg(e.message || "Diagram generation failed");
+        setState("error");
+      }
+    };
+
+    await Promise.all([fetchImages(), fetchSvg()]);
   };
 
   const downloadSvg = () => {
@@ -168,7 +190,7 @@ function DiagramBlock({ description }: { description: string }) {
 
       {/* Loading state */}
       {state === "loading" && (
-        <div className="px-4 py-8 flex flex-col items-center gap-3 text-primary/60">
+        <div className="px-4 py-6 flex flex-col items-center gap-3 text-primary/60">
           <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
           <div className="text-center">
             <p className="text-xs font-medium text-primary/70">Generating textbook-quality diagram…</p>
@@ -177,9 +199,48 @@ function DiagramBlock({ description }: { description: string }) {
         </div>
       )}
 
+      {/* Reference images from web — appear fast (~2s) while SVG is still loading */}
+      {webImgState !== "idle" && (
+        <div className="border-t border-primary/10 px-3 py-2.5">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Globe size={10} className="text-primary/50" />
+            <span className="text-[10px] font-semibold text-primary/50 uppercase tracking-wide">Reference Images from Web</span>
+          </div>
+          {webImgState === "loading" ? (
+            <div className="flex gap-2">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="w-20 h-16 rounded-md bg-primary/10 animate-pulse shrink-0" />
+              ))}
+            </div>
+          ) : webImgs.length > 0 ? (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {webImgs.map((img, i) => (
+                <a
+                  key={i}
+                  href={img.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={img.title}
+                  className="shrink-0 block"
+                >
+                  <img
+                    src={img.thumb}
+                    alt={img.title}
+                    className="w-20 h-16 object-cover rounded-md border border-border/30 hover:border-primary/50 transition-colors"
+                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[10px] text-muted-foreground/40 italic">No reference images found</p>
+          )}
+        </div>
+      )}
+
       {/* SVG diagram */}
       {state === "done" && svgData && (
-        <div className="p-2">
+        <div className="p-2 border-t border-primary/10">
           <div
             className="w-full rounded-lg border border-border/30 overflow-hidden bg-white"
             style={{ lineHeight: 0 }}
