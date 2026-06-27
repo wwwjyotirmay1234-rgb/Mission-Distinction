@@ -78,7 +78,7 @@ const REGION_SYSTEM_IDS: Record<RegionId, string[]> = {
   head:       ["skeletal", "nervous", "lymphatic", "sensory"],
   trunk:      ["skeletal", "cardiovascular", "nervous", "respiratory", "digestive", "urinary", "reproductive", "lymphatic"],
   upper_limb: ["skeletal", "muscular"],
-  lower_limb: [],
+  lower_limb: ["skeletal", "muscular", "digestive"],
 };
 
 // Section heading overrides when viewing the Head region — mirrors the reference app labels

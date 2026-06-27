@@ -2,7 +2,7 @@ import React, { Suspense, useRef, useState, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Environment, Html, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { Eye, EyeOff, Layers, Crosshair, RotateCcw, SlidersHorizontal, X, Download } from "lucide-react";
+import { Eye, EyeOff, Layers, Crosshair, RotateCcw, SlidersHorizontal, X, Download, Tag } from "lucide-react";
 import type { AnatomySystem, StructureLabel } from "@/data/anatomyData";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -424,32 +424,66 @@ function SystemModel({ system, p, glbExists, structureGlbPath }: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Label3D — only renders when selected
+// Label3D — shows as a pin always when showAll=true; selected pin shows text
 // ─────────────────────────────────────────────────────────────────────────────
-function Label3D({ label, selected, onSelect }: {
-  label: StructureLabel; selected: boolean; onSelect: (l: StructureLabel) => void;
+function Label3D({ label, selected, onSelect, showAll }: {
+  label: StructureLabel; selected: boolean;
+  onSelect: (l: StructureLabel) => void; showAll: boolean;
 }) {
-  if (!selected) return null;
+  if (!showAll && !selected) return null;
   return (
     <Html position={label.pos} center distanceFactor={6} zIndexRange={[20, 200]}>
       <button onClick={() => onSelect(label)}
         style={{ background: "none", border: "none", padding: 0 }}
-        className="flex items-center gap-2 cursor-pointer select-none"
+        className="flex items-center gap-1.5 cursor-pointer select-none group"
       >
+        {/* Pulse ring on selected */}
+        <span style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {selected && (
+            <span style={{
+              position: "absolute", width: 22, height: 22, borderRadius: "50%",
+              border: "2px solid #c4b5fd", opacity: 0.5,
+              animation: "ping 1.2s cubic-bezier(0,0,0.2,1) infinite",
+            }} />
+          )}
+          <span style={{
+            width: selected ? 14 : 10,
+            height: selected ? 14 : 10,
+            borderRadius: "50%",
+            background: selected ? "#7c3aed" : "rgba(124,58,237,0.7)",
+            border: selected ? "2.5px solid #c4b5fd" : "1.5px solid rgba(196,181,253,0.5)",
+            boxShadow: selected
+              ? "0 0 14px #7c3aed, 0 0 4px rgba(255,255,255,0.6)"
+              : "0 0 6px rgba(124,58,237,0.6)",
+            display: "block",
+            transition: "all 0.15s",
+          }} />
+        </span>
+        {/* Label text — always visible when selected; hover-visible when showAll */}
         <span style={{
-          width: 13, height: 13, borderRadius: "50%",
-          background: "#7c3aed", border: "2.5px solid #c4b5fd",
-          boxShadow: "0 0 14px #7c3aed, 0 0 4px rgba(255,255,255,0.6)", display: "block",
-        }} />
-        <span style={{
-          fontSize: 11, fontWeight: 800, color: "#ede9fe",
-          background: "rgba(6,4,20,0.92)", padding: "3px 8px", borderRadius: 6,
+          fontSize: 10, fontWeight: 800, color: selected ? "#ede9fe" : "#c4b5fd",
+          background: selected ? "rgba(6,4,20,0.95)" : "rgba(6,4,20,0.75)",
+          padding: "2px 7px", borderRadius: 5,
           whiteSpace: "nowrap", letterSpacing: "0.02em",
-          border: "1px solid rgba(167,139,250,0.55)",
-          boxShadow: "0 2px 14px rgba(0,0,0,0.6)",
+          border: `1px solid ${selected ? "rgba(167,139,250,0.7)" : "rgba(167,139,250,0.25)"}`,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.6)",
+          display: selected ? "block" : "none",
+          transition: "opacity 0.1s",
         }}>
           {label.name}
         </span>
+        {/* Tooltip on hover for unselected pins */}
+        {!selected && (
+          <span className="group-hover:flex hidden" style={{
+            fontSize: 10, fontWeight: 700, color: "#c4b5fd",
+            background: "rgba(6,4,20,0.92)", padding: "2px 7px", borderRadius: 5,
+            whiteSpace: "nowrap", letterSpacing: "0.02em",
+            border: "1px solid rgba(167,139,250,0.4)",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.6)",
+          }}>
+            {label.name}
+          </span>
+        )}
       </button>
     </Html>
   );
@@ -483,12 +517,12 @@ function CameraController({ resetTrigger, isInteracting, onInteract }: {
 // Scene
 // ─────────────────────────────────────────────────────────────────────────────
 function Scene({ system, selectedLabel, onLabelSelect, mrp, resetTrigger,
-  isInteracting, onInteract, glbExists, structureGlbPath }: {
+  isInteracting, onInteract, glbExists, structureGlbPath, showAllLabels }: {
   system: AnatomySystem; selectedLabel: string | null;
   onLabelSelect: (l: StructureLabel) => void; mrp: MRP;
   resetTrigger: number; isInteracting: boolean;
   onInteract: (v: boolean) => void; glbExists: boolean | null;
-  structureGlbPath?: string;
+  structureGlbPath?: string; showAllLabels: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   useFrame(() => {
@@ -507,7 +541,12 @@ function Scene({ system, selectedLabel, onLabelSelect, mrp, resetTrigger,
       <group ref={groupRef}>
         <SystemModel system={system} p={mrp} glbExists={glbExists} structureGlbPath={structureGlbPath} />
         {allLabels.map(label => (
-          <Label3D key={label.id} label={label} selected={selectedLabel === label.id} onSelect={onLabelSelect} />
+          <Label3D
+            key={label.id} label={label}
+            selected={selectedLabel === label.id}
+            onSelect={onLabelSelect}
+            showAll={showAllLabels}
+          />
         ))}
         {/* Show "no GLB" prompt inside 3D if effective path set but file absent */}
         {effectivePath && glbExists === false && (
@@ -581,6 +620,7 @@ export default function ModelViewer3D({
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [resetTrigger, setResetTrigger] = useState(0);
   const [showLayerPanel, setShowLayerPanel] = useState(false);
+  const [showAllLabels, setShowAllLabels] = useState(true);
 
   // Effective GLB path: per-structure takes priority over system-level
   const effectiveGlbPath = structureGlbPath ?? system.glbPath;
@@ -595,6 +635,7 @@ export default function ModelViewer3D({
   React.useEffect(() => {
     setViewMode("3d"); setIsolated(null); setHidden(new Set());
     setGlobalOp(1.0); setShowOpSlider(false); setShowLayerPanel(false);
+    setShowAllLabels(true);
   }, [system.id, structureGlbPath]);
 
   const mrp: MRP = useMemo(() => ({ globalOp, isolated, hidden }), [globalOp, isolated, hidden]);
@@ -695,7 +736,7 @@ export default function ModelViewer3D({
               system={system} selectedLabel={selectedLabel} onLabelSelect={onLabelSelect}
               mrp={mrp} resetTrigger={resetTrigger} isInteracting={isInteracting}
               onInteract={setIsInteracting} glbExists={glbExists}
-              structureGlbPath={structureGlbPath}
+              structureGlbPath={structureGlbPath} showAllLabels={showAllLabels}
             />
           </Suspense>
         </Canvas>
@@ -703,6 +744,12 @@ export default function ModelViewer3D({
 
       {/* Bottom control bar */}
       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-0.5 bg-black/80 backdrop-blur-xl rounded-2xl px-1.5 py-1.5 border border-white/12 shadow-2xl">
+        <button onClick={() => setShowAllLabels(p => !p)}
+          className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-wide transition-all ${showAllLabels ? "bg-violet-700/60 text-violet-200" : "text-slate-400 hover:bg-white/8 hover:text-white"}`}
+        >
+          <Tag size={14} />
+          <span>Labels</span>
+        </button>
         <button onClick={() => { setShowLayerPanel(p => !p); setShowOpSlider(false); }}
           className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-wide transition-all ${showLayerPanel ? "bg-violet-700/60 text-violet-200" : "text-slate-400 hover:bg-white/8 hover:text-white"}`}
         >
