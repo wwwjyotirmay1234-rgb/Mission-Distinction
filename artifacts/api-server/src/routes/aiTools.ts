@@ -238,7 +238,7 @@ router.post("/generate-diagram", authMiddleware, aiLimiter, async (req: Request,
       response_format: "url",
     });
 
-    const url = response.data[0]?.url;
+    const url = (response.data ?? [])[0]?.url;
     if (!url) { res.status(500).json({ error: "Image generation failed" }); return; }
     res.json({ url });
   } catch (err: any) {
