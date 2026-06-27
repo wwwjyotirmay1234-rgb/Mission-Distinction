@@ -48,6 +48,7 @@ interface NavItem {
   href: string;
   badge?: number;
   requiredLevel?: number;
+  comingSoon?: boolean;
 }
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -68,7 +69,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   }, [announcements]);
 
   const navItems: NavItem[] = [
-    { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy" },
+    { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy", comingSoon: true },
     { icon: LayoutDashboard, label: "Dashboard", href: "/student/dashboard" },
     { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
     { icon: FileText, label: "Notes & Books", href: "/student/notes" },
@@ -111,6 +112,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           const isActive = location === item.href || location.startsWith(item.href + "/");
           const required = item.requiredLevel ?? 1;
           const isLocked = required > rankLevel;
+
+          if (item.comingSoon) {
+            return (
+              <div key={item.href}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium cursor-not-allowed text-muted-foreground/40 select-none"
+                title="Coming soon"
+              >
+                <item.icon size={18} className="text-muted-foreground/30" />
+                <span className="flex-1 truncate">{item.label}</span>
+                <span className="text-[9px] font-bold uppercase tracking-wide bg-muted/60 text-muted-foreground/50 px-1.5 py-0.5 rounded-full shrink-0">Soon</span>
+              </div>
+            );
+          }
 
           if (isLocked) {
             return (

@@ -118,7 +118,7 @@ function Router() {
         <ProtectedRoute>
           <StudentLayout>
             <Switch>
-              <Route path="/student/anatomy" component={StudentAnatomyHub} />
+              <Route path="/student/anatomy">{() => { window.location.replace("/student/dashboard"); return null; }}</Route>
               <Route path="/student/dashboard" component={StudentDashboard} />
               <Route path="/student/quiz" component={StudentQuiz} />
               <Route path="/student/notes" component={StudentNotes} />
