@@ -79,6 +79,9 @@ const REGION_SYSTEM_IDS: Record<RegionId, string[]> = {
   lower_limb: [],
 };
 
+// BASE_URL is '/' in dev, '/mission-distinction/' in production build
+const REGION_ICONS_URL = `${import.meta.env.BASE_URL}region-icons.png`;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Region image tile (cropped from region-icons.png)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -90,7 +93,7 @@ function RegionTile({ id, active, size = 72 }: { id: RegionId; active: boolean; 
         width: size,
         height: size,
         borderRadius: 14,
-        backgroundImage: "url('/mission-distinction/region-icons.png')",
+        backgroundImage: `url(${REGION_ICONS_URL})`,
         backgroundSize: "400% auto",
         backgroundPosition: `${REGION_IMG_POS[id]} center`,
         backgroundRepeat: "no-repeat",
