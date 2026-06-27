@@ -49,12 +49,28 @@ type RegionId = "head" | "trunk" | "upper_limb" | "lower_limb";
 // ─────────────────────────────────────────────────────────────────────────────
 // Region configuration
 // ─────────────────────────────────────────────────────────────────────────────
-const BODY_REGIONS: { id: RegionId; line1: string; line2?: string }[] = [
-  { id: "head",        line1: "Head" },
-  { id: "trunk",       line1: "Trunk" },
-  { id: "upper_limb",  line1: "Upper", line2: "limb" },
-  { id: "lower_limb",  line1: "Lower", line2: "limb" },
+const BODY_REGIONS: { id: RegionId; label: string }[] = [
+  { id: "head",       label: "Skull" },
+  { id: "trunk",      label: "Trunk" },
+  { id: "upper_limb", label: "Upper Limb" },
+  { id: "lower_limb", label: "Lower Limb" },
 ];
+
+// X-offset of each region panel inside region-icons.png (4 equal panels side-by-side)
+const REGION_IMG_POS: Record<RegionId, string> = {
+  head:       "0%",
+  trunk:      "33.33%",
+  upper_limb: "66.67%",
+  lower_limb: "100%",
+};
+
+// Accent colour matching each panel border in the reference image
+const REGION_ACCENT: Record<RegionId, string> = {
+  head:       "#3b82f6",   // blue
+  trunk:      "#14b8a6",   // teal
+  upper_limb: "#8b5cf6",   // purple
+  lower_limb: "#f59e0b",   // amber
+};
 
 const REGION_SYSTEM_IDS: Record<RegionId, string[]> = {
   head:       ["nervous", "endocrine"],
@@ -64,45 +80,29 @@ const REGION_SYSTEM_IDS: Record<RegionId, string[]> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Body region SVG silhouettes
+// Region image tile (cropped from region-icons.png)
 // ─────────────────────────────────────────────────────────────────────────────
-function RegionIcon({ id, active }: { id: RegionId; active: boolean }) {
-  const c = active ? "#ffffff" : "#6b7280";
-  if (id === "head") return (
-    <svg viewBox="0 0 36 44" width="30" height="36" fill="none">
-      <ellipse cx="18" cy="14" rx="12" ry="13" fill={c} />
-      <rect x="13" y="25" width="10" height="9" rx="3" fill={c} opacity={0.75} />
-      <path d="M10 33 Q5 36 6 44 L14 44" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" opacity={0.5} />
-      <path d="M26 33 Q31 36 30 44 L22 44" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" opacity={0.5} />
-    </svg>
-  );
-  if (id === "trunk") return (
-    <svg viewBox="0 0 36 44" width="30" height="36" fill="none">
-      <path d="M4 6 L32 6 L35 16 L30 42 L6 42 L1 16 Z" fill={c} />
-      <rect x="0" y="6" width="6" height="14" rx="3" fill={c} opacity={0.7} />
-      <rect x="30" y="6" width="6" height="14" rx="3" fill={c} opacity={0.7} />
-    </svg>
-  );
-  if (id === "upper_limb") return (
-    <svg viewBox="0 0 36 44" width="30" height="36" fill="none">
-      <rect x="13" y="2" width="10" height="22" rx="5" fill={c} />
-      <rect x="10" y="22" width="8" height="14" rx="4" fill={c} opacity={0.85} />
-      <rect x="19" y="22" width="8" height="14" rx="4" fill={c} opacity={0.85} />
-      <rect x="9" y="34" width="4" height="8" rx="2" fill={c} opacity={0.6} />
-      <rect x="14" y="35" width="4" height="7" rx="2" fill={c} opacity={0.6} />
-      <rect x="19" y="34" width="4" height="8" rx="2" fill={c} opacity={0.6} />
-      <rect x="24" y="35" width="4" height="7" rx="2" fill={c} opacity={0.6} />
-    </svg>
-  );
+function RegionTile({ id, active, size = 72 }: { id: RegionId; active: boolean; size?: number }) {
+  const accent = REGION_ACCENT[id];
   return (
-    <svg viewBox="0 0 36 44" width="30" height="36" fill="none">
-      <rect x="5" y="2" width="11" height="22" rx="5.5" fill={c} />
-      <rect x="20" y="2" width="11" height="22" rx="5.5" fill={c} />
-      <rect x="4" y="22" width="12" height="18" rx="4" fill={c} opacity={0.85} />
-      <rect x="20" y="22" width="12" height="18" rx="4" fill={c} opacity={0.85} />
-      <rect x="3" y="37" width="13" height="6" rx="3" fill={c} opacity={0.65} />
-      <rect x="20" y="37" width="13" height="6" rx="3" fill={c} opacity={0.65} />
-    </svg>
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 14,
+        backgroundImage: "url('/mission-distinction/region-icons.png')",
+        backgroundSize: "400% auto",
+        backgroundPosition: `${REGION_IMG_POS[id]} center`,
+        backgroundRepeat: "no-repeat",
+        border: `2.5px solid ${active ? accent : "rgba(255,255,255,0.1)"}`,
+        boxShadow: active
+          ? `0 0 0 3px ${accent}30, 0 6px 24px rgba(0,0,0,0.55)`
+          : "0 2px 10px rgba(0,0,0,0.4)",
+        transition: "border-color 0.2s, box-shadow 0.2s",
+        overflow: "hidden",
+        flexShrink: 0,
+      }}
+    />
   );
 }
 
@@ -218,34 +218,25 @@ function HubLanding({ onSelectSystem, onSelectResult, globalSearch, setGlobalSea
 
       {/* ── Region selector row ── */}
       <div
-        className="flex items-start justify-center gap-4 sm:gap-6 px-4 py-4 shrink-0 border-b border-white/8"
-        style={{ background: "rgba(0,0,0,0.25)" }}
+        className="flex items-start justify-center gap-4 sm:gap-7 px-4 py-4 shrink-0 border-b border-white/8"
+        style={{ background: "rgba(0,0,0,0.3)" }}
       >
         {BODY_REGIONS.map(region => {
           const active = selectedRegion === region.id && !globalSearch;
+          const accent = REGION_ACCENT[region.id];
           return (
             <button
               key={region.id}
               onClick={() => { setSelectedRegion(region.id); setGlobalSearch(""); }}
-              className="flex flex-col items-center gap-2 transition-all"
-              style={{ minWidth: 64 }}
+              className="flex flex-col items-center gap-2 transition-all active:scale-95"
+              style={{ minWidth: 68 }}
             >
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200"
-                style={{
-                  background: active ? "rgba(255,255,255,0.13)" : "rgba(255,255,255,0.05)",
-                  border: `2px solid ${active ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.1)"}`,
-                  boxShadow: active ? "0 0 0 4px rgba(255,255,255,0.07), 0 4px 20px rgba(0,0,0,0.4)" : "none",
-                }}
-              >
-                <RegionIcon id={region.id} active={active} />
-              </div>
+              <RegionTile id={region.id} active={active} size={72} />
               <span
                 className="text-[11px] font-bold leading-tight text-center"
-                style={{ color: active ? "#ffffff" : "#6b7280" }}
+                style={{ color: active ? accent : "#6b7280" }}
               >
-                {region.line1}
-                {region.line2 && <><br />{region.line2}</>}
+                {region.label}
               </span>
             </button>
           );
@@ -319,14 +310,11 @@ function HubLanding({ onSelectSystem, onSelectResult, globalSearch, setGlobalSea
         ) : systemsForRegion.length === 0 ? (
           /* Coming soon */
           <div className="flex flex-col items-center justify-center py-24 px-8 gap-5">
-            <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-              <RegionIcon id={selectedRegion} active={false} />
-            </div>
+            <RegionTile id={selectedRegion} active={false} size={80} />
             <div className="text-center">
               <p className="font-bold text-white text-base mb-2">Coming Soon</p>
               <p className="text-slate-500 text-sm max-w-xs">
-                3D anatomy models for the {BODY_REGIONS.find(r => r.id === selectedRegion)?.line1}{" "}
-                {BODY_REGIONS.find(r => r.id === selectedRegion)?.line2} region are being added. Check back soon!
+                3D anatomy models for the {BODY_REGIONS.find(r => r.id === selectedRegion)?.label} region are being added. Check back soon!
               </p>
             </div>
           </div>
