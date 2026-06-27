@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v12"; // bumped — alarm scheduling support added
+const CACHE_VERSION = "v13"; // bumped — anatomy UI full rewrite
 
 const BASE = new URL("./", self.location).pathname;
 

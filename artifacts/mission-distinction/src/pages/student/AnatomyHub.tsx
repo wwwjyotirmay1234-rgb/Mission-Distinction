@@ -270,12 +270,12 @@ function StructureInfoPanel({ system, structure, activeTab, setActiveTab, select
       <div className="flex overflow-x-auto shrink-0 border-b border-white/6" style={{ scrollbarWidth: "none" }}>
         {INFO_TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-[11px] font-bold whitespace-nowrap shrink-0 border-b-2 transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-2.5 text-[11px] font-bold whitespace-nowrap shrink-0 border-b-2 transition-colors ${
               activeTab === tab.id ? "border-violet-500 text-violet-300" : "border-transparent text-slate-500 hover:text-slate-300"
             }`}
           >
-            <span>{tab.icon}</span>
-            <span className="hidden sm:inline">{tab.label}</span>
+            <span className="text-[13px] leading-none">{tab.icon}</span>
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
@@ -302,7 +302,7 @@ function SystemView({ system, onBack, initialStructure }: {
   const [selectedStructure, setSelectedStructure] = useState<AnatomyStructure>(initialStructure ?? system.structures[0]);
   const [activeTab, setActiveTab] = useState<TabId>("labels");
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
-  const [sheetState, setSheetState] = useState<SheetState>("closed");
+  const [sheetState, setSheetState] = useState<SheetState>("peek");
   const [showSearch, setShowSearch] = useState(false);
   const [structSearch, setStructSearch] = useState("");
   const [showStructList, setShowStructList] = useState(false);
@@ -327,6 +327,8 @@ function SystemView({ system, onBack, initialStructure }: {
     setActiveTab("labels");
     setShowStructList(false);
     setStructSearch("");
+    // Auto-peek the info sheet on mobile when structure is tapped
+    setSheetState(prev => prev === "closed" ? "peek" : prev);
     // Scroll strip to show active item
     setTimeout(() => {
       const btn = document.getElementById(`struct-btn-${s.id}`);
@@ -339,7 +341,7 @@ function SystemView({ system, onBack, initialStructure }: {
     setSheetState(prev => prev === "closed" ? "peek" : "full");
   }
 
-  const sheetHeight = sheetState === "full" ? "62vh" : sheetState === "peek" ? "220px" : "0px";
+  const sheetHeight = sheetState === "full" ? "72vh" : sheetState === "peek" ? "260px" : "0px";
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
