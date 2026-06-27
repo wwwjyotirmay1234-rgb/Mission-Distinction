@@ -76,7 +76,7 @@ const REGION_ACCENT: Record<RegionId, string> = {
 
 const REGION_SYSTEM_IDS: Record<RegionId, string[]> = {
   head:       ["skeletal", "cardiovascular", "nervous", "lymphatic", "sensory"],
-  trunk:      ["cardiovascular", "respiratory", "digestive", "urinary", "reproductive", "lymphatic"],
+  trunk:      ["skeletal", "cardiovascular", "nervous", "respiratory", "digestive", "urinary", "reproductive", "lymphatic"],
   upper_limb: ["skeletal", "muscular"],
   lower_limb: [],
 };
@@ -88,6 +88,18 @@ const HEAD_SECTION_LABELS: Partial<Record<string, string>> = {
   nervous:       "Nervous system",
   lymphatic:     "Lymphatic system",
   sensory:       "Sense organs",
+};
+
+// Section heading overrides when viewing the Trunk region — mirrors the reference app labels
+const TRUNK_SECTION_LABELS: Partial<Record<string, string>> = {
+  skeletal:      "Musculoskeletal system",
+  cardiovascular:"Cardiovascular system",
+  nervous:       "Nervous system",
+  respiratory:   "Respiratory system",
+  digestive:     "Digestive system",
+  urinary:       "Urogenital system",
+  reproductive:  "Urogenital system",
+  lymphatic:     "Lymphatic system",
 };
 
 // BASE_URL is '/' in dev, '/mission-distinction/' in production build
@@ -464,7 +476,7 @@ function HubLanding({ onSelectSystem, onSelectResult, globalSearch, setGlobalSea
               system={sys}
               onSelectStructure={onSelectResult}
               selectedRegion={selectedRegion}
-              sectionLabel={selectedRegion === "head" ? HEAD_SECTION_LABELS[sys.id] : undefined}
+              sectionLabel={selectedRegion === "head" ? HEAD_SECTION_LABELS[sys.id] : selectedRegion === "trunk" ? TRUNK_SECTION_LABELS[sys.id] : undefined}
             />
           ))
         )}

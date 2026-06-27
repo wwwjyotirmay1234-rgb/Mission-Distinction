@@ -119,6 +119,9 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
       {
         id: "left-ventricle",
         name: "Left Ventricle",
+        cardLabel: "HEART",
+        cardSubtitle: "External view",
+        icon: "🫀",
         description: "The left ventricle (LV) is the most muscular chamber of the heart, with a wall thickness of 8–12 mm. It ejects oxygenated blood into the systemic circulation via the aorta. Its shape is ellipsoidal (not spherical) and contains the papillary muscles and chordae tendineae.",
         clinicalPoints: [
           "Wall thickness >12mm on echo → left ventricular hypertrophy (LVH): caused by hypertension, aortic stenosis",
@@ -197,6 +200,9 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
       {
         id: "coronary-arteries",
         name: "Coronary Arteries",
+        cardLabel: "HEART",
+        cardSubtitle: "Arteries",
+        icon: "🫀",
         description: "The coronary arteries arise from the aortic sinuses (sinuses of Valsalva) just above the aortic valve cusps. They supply the myocardium during diastole when coronary perfusion pressure is highest.",
         clinicalPoints: [
           "LAD: anterior wall LV + anterior septum — most common site of MI ('widow maker')",
@@ -368,6 +374,127 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
         bloodSupply: "Anterior circumflex humeral artery (arcuate artery: main supply to humeral head) + posterior circumflex humeral artery (both from axillary artery). Shaft: profunda brachii (deep brachial artery).",
         nerveSupply: "Not a nerve organ — but muscles attached are: deltoid/teres minor (axillary C5,6), biceps/brachialis (musculocutaneous C5,6), triceps (radial C6,7,8), flexors (median C6–T1), extensors (radial C6–8).",
       },
+      {
+        id: "rib-cage",
+        name: "Rib Cage",
+        regions: ["trunk"],
+        cardLabel: "TRUNK",
+        cardSubtitle: "Bones",
+        icon: "🦴",
+        description: "The thoracic cage consists of 12 pairs of ribs, 12 thoracic vertebrae, and the sternum. Ribs 1–7 are true ribs (direct sternal attachment); ribs 8–10 are false ribs (attach via rib 7 cartilage); ribs 11–12 are floating ribs (no anterior attachment). The intercostal neurovascular bundle (VAN: vein, artery, nerve) runs in the costal groove on the inferior border of each rib.",
+        clinicalPoints: [
+          "Flail chest: ≥3 consecutive ribs broken in ≥2 places → paradoxical respiration (segment sucks in on inspiration)",
+          "Rib 1 & 2 fractures indicate massive force — associated with aortic injury and brachial plexus damage",
+          "Rib notching on CXR (inferior rib borders): coarctation of aorta — collateral flow via intercostal arteries erodes ribs",
+          "Cervical rib (from C7): compresses lower brachial plexus (T1 root) or subclavian artery → thoracic outlet syndrome",
+          "Costochondritis (Tietze's syndrome): tender swelling at costal cartilage junction — reproduces chest pain on palpation, distinguishing from cardiac cause",
+          "Sternal fracture: seatbelt injury; always perform ECG + troponin to exclude blunt cardiac injury",
+        ],
+        studyNotes: "VAN rule: neurovascular bundle runs Vein–Artery–Nerve from superior to inferior in the costal groove. Insert chest drain / thoracocentesis needle OVER the upper border of the rib below to avoid VAN. Safe triangle for chest drain: 4th–5th ICS, mid-axillary line, anterior to latissimus dorsi.",
+        quiz: [
+          { q: "When performing thoracocentesis, where should the needle enter relative to the rib?", options: ["Below the upper rib (superior margin)", "Over the upper border of the lower rib", "Through the middle of the intercostal space", "Below the lower rib (inferior margin)"], correct: 1, explanation: "Insert over the upper border of the lower rib to avoid the VAN bundle (Vein, Artery, Nerve) that lies in the costal groove on the inferior aspect of each rib." },
+          { q: "Which ribs are classified as floating ribs?", options: ["1–7", "8–10", "11–12", "7–10"], correct: 2, explanation: "Ribs 11 and 12 are floating (vertebral) ribs — no anterior attachment. Ribs 1–7: true ribs (direct costal cartilage to sternum). Ribs 8–10: false ribs (share costal cartilage of rib 7)." },
+          { q: "Rib notching on a chest X-ray is a classic sign of:", options: ["Pulmonary hypertension", "Coarctation of the aorta", "Marfan syndrome", "Rheumatoid arthritis"], correct: 1, explanation: "In coarctation of the aorta, collateral blood flows via the intercostal arteries (which enlarge), eroding the inferior borders of ribs 3–8. This produces the classic 'rib notching' on CXR (bilateral, posterior, ribs 3–8)." },
+        ],
+        labels: [
+          { id: "manubrium", name: "Manubrium", pos: [0.0, 1.1, 0.9], description: "Superior part of sternum. Sternal angle (angle of Louis) = manubrio-sternal junction = T4 level = carina, aortic arch, 2nd rib.", layer: "bone" },
+          { id: "true-ribs", name: "True Ribs (1–7)", pos: [0.8, 0.6, 0.4], description: "Directly attached to sternum via individual costal cartilage. Rib 1 articulates with manubrium.", layer: "bone" },
+          { id: "false-ribs", name: "False Ribs (8–10)", pos: [0.9, -0.1, 0.3], description: "Attach to sternum indirectly via the cartilage of rib 7.", layer: "bone" },
+          { id: "floating-ribs", name: "Floating Ribs (11–12)", pos: [0.85, -0.8, 0.1], description: "No anterior attachment. Posterior attachment only to T11–T12 vertebrae.", layer: "bone" },
+          { id: "xiphisternum", name: "Xiphisternum", pos: [0.0, -0.2, 0.9], description: "Inferior part of sternum. Ossifies ~40 years. T9 level. Origin of diaphragm.", layer: "bone" },
+        ],
+        mnemonics: [
+          { mnemonic: "VAN — Vein, Artery, Nerve (superior to inferior in costal groove)", meaning: "Order of intercostal neurovascular bundle under each rib", tip: "Go OVER the upper border of the rib below — 'V-A-N runs away from you if you go below'" },
+          { mnemonic: "True 7, False 3, Floating 2", meaning: "7 true ribs (1–7), 3 false ribs (8–10), 2 floating ribs (11–12)", tip: "Total = 12 pairs. All attach posteriorly to thoracic vertebrae." },
+        ],
+        relations: [
+          "Superiorly: thoracic inlet — trachea, oesophagus, subclavian vessels, brachial plexus roots",
+          "Inferiorly: diaphragm (muscular dome, T8/T10/T12 openings for IVC/oesophagus/aorta)",
+          "Internal: parietal pleura lines thoracic wall; visceral pleura covers lung surface",
+          "Intercostal spaces: external, internal, innermost intercostal muscles + VAN bundle",
+        ],
+        bloodSupply: "Posterior intercostal arteries (branches of thoracic aorta, T3–T11); anterior intercostal arteries (internal thoracic artery). Internal thoracic → superior epigastric → inferior epigastric (continuous anterior chain).",
+        nerveSupply: "Intercostal nerves T1–T11 (anterior rami of thoracic spinal nerves) in costal grooves. Dermatomal levels: T4 = nipple; T10 = umbilicus.",
+      },
+      {
+        id: "vertebral-column",
+        name: "Vertebral Column",
+        regions: ["trunk"],
+        cardLabel: "VERTEBRAL COLUMN",
+        icon: "🦴",
+        description: "The vertebral column consists of 33 vertebrae: 7 cervical, 12 thoracic, 5 lumbar, 5 fused sacral (sacrum), and 4 coccygeal. Primary curvatures (kyphosis): thoracic + sacral (concave anteriorly — present at birth). Secondary curvatures (lordosis): cervical + lumbar (convex anteriorly — develop after birth with head control and walking).",
+        clinicalPoints: [
+          "Lumbar disc prolapse: L4-L5 most common (L5 root: great toe extension via EHL, dorsum of foot sensation); L5-S1 (S1: plantar flexion via gastrocnemius, absent ankle reflex, lateral foot sensation)",
+          "Spinal stenosis: degenerative narrowing → neurogenic claudication (bilateral leg pain on walking, relieved by forward flexion/sitting)",
+          "Cauda equina syndrome: bilateral root compression (L2-S5) → saddle anaesthesia, urinary retention, faecal incontinence — surgical emergency",
+          "Vertebral compression fracture: osteoporotic, wedge-shaped, T12-L1 junction most common → acute kyphosis",
+          "Scoliosis: lateral curvature >10°; idiopathic (80%, adolescent girls); structural vs postural; Adam's forward bend test reveals rib hump",
+          "Ankylosing spondylitis: HLA-B27 (90%+); sacroiliitis → ascending bamboo spine; Schober test <5 cm increase; uveitis + aortic regurgitation",
+        ],
+        studyNotes: "Vertebral level landmarks: C6 = cricoid cartilage + larynx begins; T4 = sternal angle + carina + aortic arch; T10 = oesophageal hiatus; T12 = aortic hiatus; L1 = transpyloric plane; L4 = iliac crest + aortic bifurcation; S2 = end of subarachnoid space (LP safe at L3-4 or L4-5, below conus medullaris at L1-2).",
+        quiz: [
+          { q: "Lumbar puncture is performed between which vertebral levels to safely avoid the spinal cord?", options: ["T12–L1", "L1–L2", "L3–L4 or L4–L5", "L5–S1"], correct: 2, explanation: "The spinal cord (conus medullaris) ends at L1–L2. The subarachnoid space extends to S2. LP at L3–4 or L4–5 enters the subarachnoid space below the cord — only cauda equina nerve roots are present, which are pushed aside rather than pierced." },
+          { q: "A patient with L5 nerve root compression will most likely show:", options: ["Absent ankle jerk reflex", "Weakness of plantar flexion", "Weakness of great toe extension", "Medial calf numbness"], correct: 2, explanation: "L5 root: extensor hallucis longus (great toe extension, MOST specific), dorsiflexion (tibialis anterior, L4+L5 overlap), sensation on dorsum of foot. No single reflex is L5-specific (ankle reflex = S1; knee jerk = L3-4)." },
+          { q: "The aorta bifurcates into common iliac arteries at which vertebral level?", options: ["L1", "L2", "L4", "L5"], correct: 2, explanation: "The aorta bifurcates at L4 (approximately at the level of the iliac crest — used for LP landmark). Clinically, a pulsatile midline abdominal mass that bifurcates at L4 = AAA until proven otherwise." },
+        ],
+        labels: [
+          { id: "cervical", name: "Cervical (C1–C7)", pos: [0.0, 1.8, 0.0], description: "7 vertebrae. C1 (atlas) — ring bone, no body, rotates with skull. C2 (axis) — dens/odontoid process. C7 — vertebra prominens (longest spinous process, palpable). Cervical lordosis.", layer: "bone" },
+          { id: "thoracic", name: "Thoracic (T1–T12)", pos: [0.0, 0.5, 0.0], description: "12 vertebrae. Articulate with ribs via costovertebral joints. Heart-shaped bodies. Thoracic kyphosis.", layer: "bone" },
+          { id: "lumbar", name: "Lumbar (L1–L5)", pos: [0.0, -0.8, 0.0], description: "5 largest vertebrae (bear most axial load). Kidney-shaped bodies. Lumbar lordosis. L4-5 most common disc prolapse.", layer: "bone" },
+          { id: "sacrum", name: "Sacrum (S1–S5)", pos: [0.0, -1.6, 0.0], description: "5 fused vertebrae. Articulates with L5 above, ilium laterally (SI joints). Sacral canal: cauda equina. Subarachnoid space ends at S2.", layer: "bone" },
+        ],
+        mnemonics: [
+          { mnemonic: "7 Cervical, 12 Thoracic, 5 Lumbar (C7H12L5 — like a padlock combination)", meaning: "Vertebral column segments: 7-12-5, then sacrum (5 fused) + coccyx (4 fused) = 33 total", tip: "Curvatures: primary = thoracic + sacral (kyphosis); secondary = cervical + lumbar (lordosis — develop postnatally)" },
+          { mnemonic: "I 2 Leave School At 4: Intercostal (T2), Lateral cutaneous (T4) — dermatomal landmarks", meaning: "T4 = nipple; T10 = umbilicus; T12 = inguinal ligament", tip: "Shingles (herpes zoster) follows dermatomal distribution — rash does not cross midline" },
+        ],
+        relations: [
+          "Anteriorly: prevertebral fascia, cervical viscera (C), thoracic aorta/oesophagus (T), abdominal aorta/IVC (L)",
+          "Posteriorly: erector spinae, multifidus, semispinalis",
+          "Spinal cord: cervical and thoracic. Conus medullaris at L1–L2. Cauda equina: L2–S5 roots in subarachnoid space",
+          "IVDs (intervertebral discs): nucleus pulposus (gelatinous centre) + annulus fibrosus (fibrocartilage rings); posterolateral herniation most common",
+        ],
+        bloodSupply: "Segmental arteries (posterior intercostal + lumbar from aorta). Spinal cord: anterior spinal artery (1 vessel from vertebrals) + 2 posterior spinal arteries. Artery of Adamkiewicz (T9–T12, left 80%): largest radicular feeder to lower cord — at risk in thoracoabdominal aortic aneurysm repair.",
+        nerveSupply: "Sinuvertebral nerve (recurrent meningeal branch of spinal nerve): innervates posterior annulus fibrosus, PLL, periosteum — source of discogenic back pain. Facet joints: medial branches of posterior rami.",
+      },
+      {
+        id: "pelvis-bones",
+        name: "Pelvis",
+        regions: ["trunk"],
+        cardLabel: "PELVIS",
+        icon: "🦴",
+        description: "The bony pelvis consists of two hip bones (os coxae: ilium + ischium + pubis fused at the triradiate cartilage by ~16 years) joined to the sacrum. Divided into greater pelvis (false pelvis, above pelvic brim) and lesser pelvis (true pelvis, below pelvic brim). Pelvic inlet (brim): promontory of sacrum → arcuate line → pubic symphysis.",
+        clinicalPoints: [
+          "Female gynecoid pelvis: wide round inlet, sub-pubic angle >90°, allows vaginal delivery — vs android (male-type, angle <70°, obstructed labour risk)",
+          "Pelvic fractures: high-energy; open book injury (symphysis pubis diastasis) → massive haemorrhage from presacral venous plexus",
+          "Urethral injury in pelvic fracture: blood at meatus = do NOT catheterise — perform retrograde urethrogram, then suprapubic catheter",
+          "Acetabular fracture: Judet-Letournel classification; CT essential; risk of post-traumatic OA and sciatic nerve injury",
+          "Obstetric conjugate: S1 promontory to posterior superior pubic symphysis = minimum 10 cm for vaginal delivery",
+          "Hip dislocation: posterior (90%) — limb in flexion, adduction, internal rotation; associated sciatic nerve injury",
+        ],
+        studyNotes: "Contents of the TRUE pelvis (below pelvic brim): bladder, uterus/prostate, rectum, pelvic vessels and nerves. Internal iliac artery divides into anterior (obturator, inferior vesical, uterine, internal pudendal) and posterior (superior gluteal, lateral sacral, iliolumbar) divisions. Pudendal nerve (S2,3,4) exits via greater sciatic foramen, re-enters via lesser foramen.",
+        quiz: [
+          { q: "Blood at the urethral meatus after pelvic trauma indicates:", options: ["Bladder rupture", "Rectal injury", "Urethral injury — do NOT catheterise", "Scrotal haematoma only"], correct: 2, explanation: "Blood at the urethral meatus is a sign of urethral injury. Blind urethral catheterisation can convert a partial tear into a complete one. Perform a retrograde urethrogram first; if confirmed, insert a suprapubic catheter." },
+          { q: "The sub-pubic angle is widest in which pelvic type?", options: ["Android", "Anthropoid", "Platypelloid", "Gynecoid"], correct: 3, explanation: "Gynecoid pelvis (commonest female type): wide round inlet, sub-pubic angle >90°, transverse diameter > AP diameter. Favourable for vaginal delivery. Android (male-type): narrow, heart-shaped, angle <70° — most common cause of obstructed labour." },
+        ],
+        labels: [
+          { id: "ilium", name: "Ilium", pos: [0.8, 0.5, 0.0], description: "Superior 2/5 of acetabulum. Iliac crest = L4 level. ASIS: attachment of inguinal ligament + sartorius. PSIS: dimples of Venus, S2 level.", layer: "bone" },
+          { id: "ischium", name: "Ischium", pos: [0.7, -0.5, -0.1], description: "Posterior-inferior 2/5 of acetabulum. Ischial tuberosity: weight-bearing in sitting; hamstring origin. Ischial spine: sacrospinous ligament; pudendal nerve landmark.", layer: "bone" },
+          { id: "pubis", name: "Pubis", pos: [0.3, -0.2, 0.8], description: "Anterior 1/5 of acetabulum. Pubic symphysis: secondary cartilaginous joint; widens in pregnancy. Pubic tubercle: attachment of inguinal ligament medially.", layer: "bone" },
+          { id: "sacrum-pelvis", name: "Sacrum", pos: [0.0, 0.0, -0.9], description: "Fused S1–S5 vertebrae. S1 promontory = posterior limit of pelvic inlet. Sacroiliac joints: strongest in body (interlocking surfaces + powerful ligaments).", layer: "bone" },
+        ],
+        mnemonics: [
+          { mnemonic: "IIP — Ilium, Ischium, Pubis fuse at the acetabulum", meaning: "Three bones of hip fuse at triradiate cartilage by ~16 years. Proportions: Ilium 2/5, Ischium 2/5, Pubis 1/5 of acetabulum.", tip: "'I Sit in Puberty' — Ilium (top), Ischium (sit on), Pubis (front)" },
+          { mnemonic: "S2,3,4 keeps the erection off the floor (pelvic splanchnic nerves)", meaning: "Pelvic parasympathetics arise from S2, S3, S4 anterior rami — motor to detrusor, erectile tissue, distal bowel", tip: "Same nerve roots as pudendal (S2,3,4) — sensory to perineum, motor to external sphincters" },
+        ],
+        relations: [
+          "Anteriorly: pubic symphysis, bladder/urethra, prostate (male) or uterus/vagina (female)",
+          "Posteriorly: sacrum, coccyx, rectum and anal canal",
+          "Laterally: hip joints (femoral head in acetabulum)",
+          "Floor: pelvic diaphragm — levator ani (pubococcygeus, iliococcygeus, puborectalis) + coccygeus",
+        ],
+        bloodSupply: "Internal iliac artery (hypogastric). Anterior division: superior + inferior vesical, uterine/deferential, middle rectal, obturator, internal pudendal. Posterior division: iliolumbar, lateral sacral, superior gluteal.",
+        nerveSupply: "Lumbosacral plexus (L1–S4). Pudendal nerve (S2,3,4): perineum + external sphincters. Pelvic splanchnics (S2,3,4): parasympathetics to bladder (detrusor), rectum, erectile tissue. Presacral nerve (superior hypogastric plexus): sympathetics.",
+      },
     ],
   },
 
@@ -478,6 +605,48 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
         bloodSupply: "Cranial nerves supplied by adjacent arteries: CN III by PCom aneurysm territory; CN VII by AICA in internal acoustic meatus; CN VIII by labyrinthine artery.",
         nerveSupply: "These ARE the nerves.",
       },
+      {
+        id: "spinal-cord",
+        name: "Spinal Cord",
+        regions: ["trunk"],
+        cardLabel: "TRUNK",
+        cardSubtitle: "Nerves",
+        icon: "⚡",
+        description: "The spinal cord extends from the medulla oblongata (foramen magnum) to the conus medullaris at L1–L2. It is enveloped by three meninges (pia mater directly covering cord, arachnoid mater, dura mater). 31 pairs of spinal nerves arise from it: 8 cervical, 12 thoracic, 5 lumbar, 5 sacral, 1 coccygeal. Below L2, the spinal canal contains only the cauda equina (L2–S5 nerve roots) floating in CSF.",
+        clinicalPoints: [
+          "Brown-Séquard syndrome (hemisection): ipsilateral motor loss + vibration/proprioception loss; contralateral pain/temperature loss (spinothalamic crosses 2 segments above)",
+          "Anterior cord syndrome (anterior spinal artery infarct): bilateral motor paralysis + pain/temperature loss; vibration/proprioception PRESERVED (posterior columns spared)",
+          "Central cord syndrome: arms > legs weakness (cervical spondylosis, hyperextension injury); bladder dysfunction; commonest incomplete SCI",
+          "Subacute combined degeneration (B12 deficiency): posterior columns + lateral corticospinal tracts; ataxia + spasticity + peripheral neuropathy",
+          "Syringomyelia: central canal cyst; cape distribution sensory loss (pain/temp) + LMN signs at level; associated with Arnold-Chiari malformation",
+          "Tabes dorsalis (tertiary syphilis): posterior column degeneration; Romberg's sign +ve; Charcot joints; lightning pains; Argyll Robertson pupil",
+        ],
+        studyNotes: "Spinal cord tracts: Dorsal columns (posterior): ipsilateral vibration, proprioception, fine touch (crosses in medulla). Spinothalamic (anterolateral): contralateral pain + temperature (crosses 2 segments above in cord). Corticospinal (lateral): ipsilateral motor (crosses in medullary decussation). Mnemonic: 'DCML goes up the same side and crosses at medulla; spinothalamic crosses in cord 2 segments up.'",
+        quiz: [
+          { q: "In Brown-Séquard syndrome (right hemisection at T6), which finding is expected?", options: ["Right-sided loss of pain/temperature below T6", "Left-sided motor paralysis below T6", "Right-sided motor weakness + left-sided pain/temperature loss below T6", "Bilateral loss of all modalities"], correct: 2, explanation: "Right cord hemisection: (1) Right ipsilateral motor paralysis (corticospinal tract, already crossed above) + right vibration/proprioception loss (dorsal columns, cross at medulla). (2) Left contralateral pain/temperature loss (spinothalamic, crossed 2 segments above in cord). Classic incomplete spinal cord injury pattern." },
+          { q: "Which spinal cord syndrome is associated with cervical hyperextension injury in elderly patients with spondylosis?", options: ["Anterior cord syndrome", "Posterior cord syndrome", "Central cord syndrome", "Brown-Séquard syndrome"], correct: 2, explanation: "Central cord syndrome: most common incomplete SCI. Hyperextension in cervical spondylosis compresses central cord (contains cervical arm fibres). Pattern: disproportionate arm > leg weakness (central = arm, peripheral = leg in somatotopic map). Bladder dysfunction (urinary retention) is common." },
+          { q: "The conus medullaris (end of spinal cord) lies at approximately which vertebral level in adults?", options: ["T10–T11", "T12–L1", "L1–L2", "L3–L4"], correct: 2, explanation: "In adults, the spinal cord ends at L1–L2 (conus medullaris). At birth it is at L3. This is why LP is performed at L3–4 or L4–5 (below cord terminus). Below L2, only cauda equina nerve roots are present in the subarachnoid space." },
+        ],
+        labels: [
+          { id: "cervical-enlargement", name: "Cervical Enlargement (C5–T1)", pos: [0.0, 1.2, 0.0], description: "Supplies upper limbs via brachial plexus. Larger grey matter (more motor neurons). Level of shoulder, arm, forearm, hand.", layer: "nerve" },
+          { id: "thoracic-cord", name: "Thoracic Cord (T2–T12)", pos: [0.0, 0.3, 0.0], description: "Smallest diameter cord. Supplies intercostals, thoracic muscles, upper abdominal muscles. Preganglionic sympathetics (intermediolateral column).", layer: "nerve" },
+          { id: "lumbar-enlargement", name: "Lumbar Enlargement (L1–S3)", pos: [0.0, -0.5, 0.0], description: "Supplies lower limbs via lumbar and sacral plexuses. Contains motor neurons for hip flexors, quadriceps, hamstrings, leg and foot muscles.", layer: "nerve" },
+          { id: "conus-medullaris", name: "Conus Medullaris", pos: [0.0, -1.0, 0.0], description: "Tapered end of spinal cord at L1–L2. Below this, only cauda equina roots float in CSF. Lesions here cause mixed UMN + LMN signs.", layer: "nerve" },
+          { id: "cauda-equina", name: "Cauda Equina", pos: [0.0, -1.5, 0.0], description: "L2–S5 nerve roots (horse's tail). Float in CSF below conus. Lesion → LMN signs: flaccid paralysis, areflexia, saddle anaesthesia, bladder/bowel incontinence.", layer: "nerve" },
+        ],
+        mnemonics: [
+          { mnemonic: "DCML ipsilateral, crosses at medulla; STT contralateral, crosses 2 levels above in cord", meaning: "Dorsal column–medial lemniscus (vibration, proprioception, fine touch) vs spinothalamic tract (pain, temperature)", tip: "Brown-Séquard: motor + DCML = same side as lesion; STT = opposite side" },
+          { mnemonic: "S2,3,4 keeps the gut, bladder, and sex off the floor (pelvic parasympathetics)", meaning: "Sacral parasympathetics from cord segments S2,3,4 → pelvic splanchnic nerves → bladder detrusor, rectum, erectile tissue", tip: "Cauda equina lesion at S2,3,4 → urinary retention, faecal incontinence, erectile dysfunction" },
+        ],
+        relations: [
+          "Surrounded by: pia mater (inner) → subarachnoid space (CSF) → arachnoid mater → subdural space → dura mater → epidural space (fat + Batson's venous plexus)",
+          "Filum terminale: fibrous strand from conus to coccyx (pia component = internal; dura/arachnoid = external/coccygeal ligament)",
+          "Spinal nerve roots: dorsal (sensory) + ventral (motor) roots join at intervertebral foramen",
+          "Clinically: lumbar puncture at L3–4 or L4–5; epidural at L3–4 or L4–5; myelogram contrast fills subarachnoid space",
+        ],
+        bloodSupply: "Anterior spinal artery (1 vessel, from bilateral vertebral arteries) — supplies anterior 2/3 of cord (motor tracts). 2 posterior spinal arteries (from PICA or vertebrals) — posterior 1/3 (sensory dorsal columns). Supplemented by radicular arteries; largest = Artery of Adamkiewicz (T9–L2, left side 80%) — critical for lower cord. Anterior spinal artery infarct → anterior cord syndrome.",
+        nerveSupply: "Spinal cord itself is not innervated (no proprioception from the cord itself). Meninges and dura: sinuvertebral (recurrent meningeal) nerve.",
+      },
     ],
   },
 
@@ -511,6 +680,8 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
       {
         id: "right-lung",
         name: "Right Lung",
+        cardLabel: "RESPIRATORY SYSTEM",
+        icon: "🫁",
         description: "The right lung has three lobes (upper, middle, lower) separated by the oblique fissure (UL/ML from LL) and horizontal fissure (UL from ML). It is shorter and wider than the left lung due to the liver below. The right main bronchus is more vertical (25° from trachea vs 45° left).",
         clinicalPoints: [
           "Right lung aspiration pneumonia: more common as right main bronchus is more vertical — food/vomit preferentially enters",
@@ -647,6 +818,8 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
       {
         id: "stomach",
         name: "Stomach",
+        cardLabel: "DIGESTIVE SYSTEM",
+        icon: "🫃",
         description: "The stomach is a J-shaped muscular organ in the left upper quadrant, capable of expanding to hold ~1L. Four regions: cardia (where oesophagus enters), fundus (dome above cardia), body, and pylorus (antrum → canal → sphincter).",
         clinicalPoints: [
           "Peptic ulcer disease: H. pylori (80% duodenal, 60% gastric ulcers) — CLO test/urea breath test for diagnosis",
@@ -822,6 +995,9 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
       {
         id: "kidney",
         name: "Kidney",
+        cardLabel: "KIDNEY",
+        cardSubtitle: "Section",
+        icon: "🫘",
         description: "Bean-shaped retroperitoneal organs (T12–L3). Right kidney is lower than the left (liver pushes it down). Each weighs 150g. The hilum faces anteromedially and contains (anterior to posterior): renal vein, renal artery, renal pelvis (VAP). The renal cortex (outer) contains glomeruli and proximal/distal tubules. The medulla (inner) contains loops of Henle and collecting ducts arranged in pyramids.",
         clinicalPoints: [
           "Renal calculi: calcium oxalate most common (80%), uric acid (radiolucent on plain X-ray, visible on CT), struvite (staghorn, infection-related)",
@@ -889,6 +1065,8 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
       {
         id: "spleen",
         name: "Spleen",
+        cardLabel: "SPLEEN",
+        icon: "🫐",
         description: "The spleen is the largest lymphoid organ (200g in adults, fist-sized). Located in the left hypochondrium (LHC) between the 9th–11th ribs, in the midaxillary line. Has two surfaces: diaphragmatic (smooth) and visceral (shows impressions of surrounding organs). Composed of red pulp (filters blood, destroys old RBCs, stores 1/3 of platelets) and white pulp (lymphoid tissue, immune responses).",
         clinicalPoints: [
           "Splenomegaly: massive (CML, malaria, kala-azar, Gaucher's), moderate (lymphoma, haemolytic anaemia, portal hypertension), mild (viral illness)",
@@ -987,6 +1165,9 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
       {
         id: "uterus",
         name: "Uterus",
+        cardLabel: "UROGENITAL SYSTEM",
+        cardSubtitle: "Female",
+        icon: "🧬",
         description: "The uterus is a thick-walled, pear-shaped muscular organ lying in the lesser pelvis between the bladder (anteriorly) and rectum (posteriorly). Normally anteverted (body tilted forward relative to vagina) and anteflexed (body bent forward on itself). Parts: fundus (above fallopian tube insertions), body (corpus, main part), isthmus (narrow junction between body and cervix), cervix (projects into vagina as the portio vaginalis/ectocervix).",
         clinicalPoints: [
           "Uterine artery crosses ABOVE the ureter ('water under the bridge') at the lateral fornix → risk of ureteric injury during hysterectomy",
