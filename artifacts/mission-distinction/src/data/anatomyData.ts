@@ -62,6 +62,10 @@ export type AnatomySystem = {
   ctNote: string;
   mriNote: string;
   sketchfabId?: string;
+  /** Path to a GLB file in /public/models/ e.g. "/models/heart.glb" */
+  glbPath?: string;
+  /** Mesh-name → layer mapping overrides for this system's GLB */
+  glbLayers?: Record<string, "bone" | "muscle" | "vessel" | "nerve" | "organ">;
 };
 
 export const ANATOMY_SYSTEMS: AnatomySystem[] = [
@@ -90,6 +94,17 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
     crossSectionDescription: "Axial CT section through the thorax at T5 level showing the four chambers, great vessels, and surrounding mediastinal structures.",
     ctNote: "CT angiography: coronary artery assessment. Requires IV contrast. Calcium score for CAD risk.",
     mriNote: "Cardiac MRI (CMR): gold standard for myocardial viability, cardiomyopathy, and congenital heart disease.",
+    glbPath: "/models/heart.glb",
+    glbLayers: {
+      "right_atrium": "organ", "left_atrium": "organ",
+      "right_ventricle": "organ", "left_ventricle": "organ",
+      "pericardium": "organ", "epicardium": "organ", "myocardium": "organ",
+      "aorta": "vessel", "ascending_aorta": "vessel", "aortic_arch": "vessel",
+      "pulmonary_trunk": "vessel", "pulmonary_artery": "vessel",
+      "svc": "vessel", "ivc": "vessel", "superior_vena_cava": "vessel", "inferior_vena_cava": "vessel",
+      "coronary": "vessel", "lad": "vessel", "rca": "vessel", "lcx": "vessel",
+      "cardiac_vein": "vessel", "coronary_sinus": "vessel",
+    },
     structures: [
       {
         id: "left-ventricle",

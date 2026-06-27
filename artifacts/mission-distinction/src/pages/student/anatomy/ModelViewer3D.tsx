@@ -1,8 +1,8 @@
-import React, { Suspense, useRef, useState, useMemo } from "react";
+import React, { Suspense, useRef, useState, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Environment, ContactShadows, Html } from "@react-three/drei";
+import { OrbitControls, Environment, ContactShadows, Html, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { Eye, EyeOff, Layers, Crosshair, RotateCcw, SlidersHorizontal, X, ChevronDown } from "lucide-react";
+import { Eye, EyeOff, Layers, Crosshair, RotateCcw, SlidersHorizontal, X, Download } from "lucide-react";
 import type { AnatomySystem, StructureLabel } from "@/data/anatomyData";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -23,13 +23,194 @@ interface MRP { globalOp: number; isolated: string | null; hidden: Set<string> }
 
 function lo(layer: string, p: MRP): number {
   if (p.hidden.has(layer)) return 0;
-  if (p.isolated && p.isolated !== layer) return Math.min(p.globalOp, 0.07);
+  if (p.isolated && p.isolated !== layer) return Math.min(p.globalOp, 0.06);
   return p.globalOp;
 }
 function lv(layer: string, p: MRP): boolean { return !p.hidden.has(layer); }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// VesselTube — CatmullRom spline tube for realistic vessels / ducts
+// GLB mesh auto-classification by name keywords
+// ─────────────────────────────────────────────────────────────────────────────
+type LayerId = "bone" | "muscle" | "vessel" | "nerve" | "organ";
+
+function classifyMeshByName(
+  name: string,
+  overrides?: Record<string, LayerId>
+): LayerId {
+  const key = name.toLowerCase().replace(/[\s\-_.]/g, "");
+  // Check explicit overrides first
+  if (overrides) {
+    for (const [k, v] of Object.entries(overrides)) {
+      if (key.includes(k.toLowerCase().replace(/[\s\-_.]/g, ""))) return v;
+    }
+  }
+  // Vessel keywords
+  if (/aort|coron|lad|rca|lcx|circumflex|marginal|arteri|pulmonar.*(trunk|art)|svc|ivc|venacava|cardiac.?vein|coronary.?sinus|great.?vessel|venous|vascular|pulm/.test(key)) return "vessel";
+  // Nerve keywords
+  if (/nerve|vagus|plexus|sympathet|parasympath|ganglion|neural/.test(key)) return "nerve";
+  // Muscle keywords
+  if (/myocard|cardiac.?muscle|papillary|trabecula/.test(key)) return "muscle";
+  // Bone keywords
+  if (/bone|sternum|rib|costal|vertebr|clavicl|scapul|pelvis|skull|mandib/.test(key)) return "bone";
+  // Default: organ (chambers, valves, pericardium, etc.)
+  return "organ";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Error boundary — catches useGLTF load failures, renders fallback
+// ─────────────────────────────────────────────────────────────────────────────
+interface EBState { hasError: boolean }
+interface EBProps { children: React.ReactNode; fallback: React.ReactNode }
+
+class GLBErrorBoundary extends React.Component<EBProps, EBState> {
+  constructor(props: EBProps) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError(): EBState { return { hasError: true }; }
+  componentDidCatch(err: Error) { console.warn("[ModelViewer3D] GLB load error:", err.message); }
+  render() { return this.state.hasError ? this.props.fallback : this.props.children; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GLBModel — loads any anatomy GLB, auto-classifies meshes, applies MRP
+// ─────────────────────────────────────────────────────────────────────────────
+function GLBModel({ glbPath, p, overrides }: {
+  glbPath: string;
+  p: MRP;
+  overrides?: Record<string, LayerId>;
+}) {
+  const { scene } = useGLTF(glbPath);
+
+  // Clone the scene + clone all materials so we can mutate them safely
+  const clonedScene = useMemo(() => {
+    const clone = scene.clone(true);
+    clone.traverse(child => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      if (Array.isArray(mesh.material)) {
+        mesh.material = mesh.material.map((m: THREE.Material) => m.clone());
+      } else if (mesh.material) {
+        mesh.material = (mesh.material as THREE.Material).clone();
+      }
+    });
+    return clone;
+  }, [scene]);
+
+  // Build mesh→layer map once
+  const meshLayerMap = useMemo(() => {
+    const map = new Map<THREE.Mesh, LayerId>();
+    clonedScene.traverse(child => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const name = mesh.name || mesh.parent?.name || "";
+      map.set(mesh, classifyMeshByName(name, overrides));
+    });
+    return map;
+  }, [clonedScene, overrides]);
+
+  // Normalise bounding box to ~2 units centred at origin
+  const [normScale, normOffset] = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(clonedScene);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+    const s = 2.2 / maxDim;
+    return [s, center.clone().multiplyScalar(-s)];
+  }, [clonedScene]);
+
+  // Apply MRP opacity every frame (lightweight per-material update)
+  useFrame(() => {
+    meshLayerMap.forEach((layer, mesh) => {
+      const op = lo(layer, p);
+      const applyToMat = (mat: THREE.Material) => {
+        mat.transparent = op < 0.999;
+        (mat as THREE.MeshStandardMaterial).opacity = op;
+        mat.needsUpdate = false; // only flag on change
+      };
+      const wasVisible = mesh.visible;
+      mesh.visible = op > 0.005;
+      if (mesh.visible !== wasVisible) {
+        // Force material update when visibility flips
+        (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach(applyToMat);
+      } else if (mesh.visible) {
+        (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach(applyToMat);
+      }
+    });
+  });
+
+  return (
+    <group
+      scale={[normScale, normScale, normScale]}
+      position={[normOffset.x, normOffset.y, normOffset.z]}
+    >
+      <primitive object={clonedScene} castShadow receiveShadow />
+    </group>
+  );
+}
+
+// Dev-mode mesh inspector — logs all mesh names from the GLB to console
+function GLBInspector({ glbPath }: { glbPath: string }) {
+  const { scene } = useGLTF(glbPath);
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const names: string[] = [];
+      scene.traverse(c => { if ((c as THREE.Mesh).isMesh) names.push(c.name || "(unnamed)"); });
+      console.log(`[AnatomyHub] GLB mesh names for ${glbPath}:`, names);
+    }
+  }, [scene, glbPath]);
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// "No GLB yet" placeholder — shows inside the 3D canvas
+// ─────────────────────────────────────────────────────────────────────────────
+function NoGLBPlaceholder({ system }: { system: AnatomySystem }) {
+  return (
+    <Html center zIndexRange={[10, 100]}>
+      <div style={{
+        textAlign: "center", padding: "24px 28px", borderRadius: 16,
+        background: "rgba(10,6,30,0.92)", border: "1px solid rgba(124,58,237,0.35)",
+        backdropFilter: "blur(12px)", maxWidth: 260,
+      }}>
+        <div style={{ fontSize: 40, marginBottom: 10 }}>{system.icon}</div>
+        <p style={{ color: "#c4b5fd", fontWeight: 800, fontSize: 13, marginBottom: 6 }}>
+          GLB Model Not Found
+        </p>
+        <p style={{ color: "#6b7280", fontSize: 11, lineHeight: 1.5, marginBottom: 14 }}>
+          Place <code style={{ background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 4 }}>heart.glb</code> in{" "}
+          <code style={{ background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 4 }}>public/models/</code>
+        </p>
+        <a
+          href="https://sketchfab.com/search?q=human+heart+anatomy&downloadable=true&sort_by=-likeCount"
+          target="_blank" rel="noopener noreferrer"
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            background: "rgba(124,58,237,0.3)", border: "1px solid rgba(124,58,237,0.5)",
+            color: "#c4b5fd", padding: "7px 14px", borderRadius: 20,
+            fontSize: 11, fontWeight: 700, textDecoration: "none",
+          }}
+        >
+          Get free model ↗
+        </a>
+      </div>
+    </Html>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GLB availability check (fetch HEAD before rendering Canvas)
+// ─────────────────────────────────────────────────────────────────────────────
+function useGLBExists(path: string | undefined): boolean | null {
+  const [exists, setExists] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!path) { setExists(false); return; }
+    fetch(path, { method: "HEAD" })
+      .then(r => setExists(r.ok))
+      .catch(() => setExists(false));
+  }, [path]);
+  return exists;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VesselTube — CatmullRom spline for procedural fallback models
 // ─────────────────────────────────────────────────────────────────────────────
 function VesselTube({ pts, r = 0.022, color, op = 1, seg = 22 }: {
   pts: [number, number, number][];
@@ -50,8 +231,9 @@ function VesselTube({ pts, r = 0.022, color, op = 1, seg = 22 }: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HEART MODEL — anatomically detailed with real coronary vessel paths
+// PROCEDURAL FALLBACK MODELS (shown while GLB loads / when GLB absent)
 // ─────────────────────────────────────────────────────────────────────────────
+
 function HeartModel({ p }: { p: MRP }) {
   const oOp = lo("organ", p); const vOp = lo("vessel", p);
   const oVis = lv("organ", p); const vVis = lv("vessel", p);
@@ -70,53 +252,22 @@ function HeartModel({ p }: { p: MRP }) {
         <mesh position={[0.56, 0.5, 0.04]} scale={[0.3, 0.26, 0.26]}><sphereGeometry args={[0.38, 16, 16]} />{atM(oOp)}</mesh>
         <mesh position={[-0.36, -0.72, 0.04]} scale={[0.36, 0.24, 0.28]}><sphereGeometry args={[0.6, 16, 16]} />{lvM(oOp)}</mesh>
         <mesh position={[0.05, -0.1, 0.42]} scale={[0.54, 0.2, 0.26]}><sphereGeometry args={[0.38, 12, 12]} />{ftM(oOp)}</mesh>
-        <mesh position={[0.22, -0.36, 0.36]} scale={[0.34, 0.16, 0.2]}><sphereGeometry args={[0.3, 12, 12]} />{ftM(oOp)}</mesh>
       </>}
       {vVis && <>
-        {/* Ascending aorta + arch */}
         <VesselTube pts={[[-0.1, 0.52, 0.18], [-0.06, 0.82, 0.1], [0.06, 1.06, -0.02], [0.22, 1.15, -0.12]]} r={0.1} color="#CC0000" op={vOp} />
         <VesselTube pts={[[0.22, 1.15, -0.12], [0.38, 1.18, -0.22], [0.44, 1.1, -0.32], [0.4, 0.88, -0.38]]} r={0.09} color="#CC0000" op={vOp} />
-        {/* Brachiocephalic branches */}
-        <VesselTube pts={[[0.22, 1.15, -0.12], [0.3, 1.3, -0.05], [0.28, 1.5, 0.02]]} r={0.052} color="#CC0000" op={vOp} />
-        <VesselTube pts={[[0.3, 1.18, -0.18], [0.2, 1.32, -0.15]]} r={0.038} color="#CC0000" op={vOp} />
-        {/* Pulmonary trunk */}
         <VesselTube pts={[[0.14, 0.56, 0.22], [0.14, 0.84, 0.3], [0.04, 1.02, 0.28]]} r={0.09} color="#2040C0" op={vOp} />
         <VesselTube pts={[[0.04, 1.02, 0.28], [-0.26, 1.04, 0.22], [-0.52, 0.88, 0.08]]} r={0.058} color="#2040C0" op={vOp} />
         <VesselTube pts={[[0.04, 1.02, 0.28], [0.4, 1.02, 0.2], [0.62, 0.88, 0.06]]} r={0.058} color="#2040C0" op={vOp} />
-        {/* SVC + IVC */}
-        <VesselTube pts={[[0.44, 1.22, -0.18], [0.42, 0.88, -0.2], [0.38, 0.65, -0.12]]} r={0.08} color="#1020A0" op={vOp} />
-        <VesselTube pts={[[0.38, -0.28, -0.38], [0.36, 0.1, -0.3], [0.32, 0.42, -0.12]]} r={0.088} color="#1020A0" op={vOp} />
-        {/* Pulmonary veins into LA */}
-        <VesselTube pts={[[-0.74, 0.5, -0.34], [-0.52, 0.52, -0.28], [-0.3, 0.48, -0.22]]} r={0.052} color="#1020A0" op={vOp} />
-        <VesselTube pts={[[-0.72, 0.3, -0.38], [-0.52, 0.38, -0.3], [-0.3, 0.42, -0.25]]} r={0.048} color="#1020A0" op={vOp} />
-        <VesselTube pts={[[0.72, 0.5, -0.28], [0.52, 0.5, -0.22], [0.32, 0.44, -0.1]]} r={0.048} color="#1020A0" op={vOp} />
-        {/* LAD — anterior interventricular groove */}
         <VesselTube pts={[[-0.14, 0.34, 0.52], [-0.2, 0.12, 0.56], [-0.26, -0.1, 0.54], [-0.31, -0.32, 0.48], [-0.34, -0.56, 0.34], [-0.36, -0.72, 0.2]]} r={0.018} color="#CC1010" op={vOp} seg={28} />
-        {/* LAD diagonal branch */}
-        <VesselTube pts={[[-0.22, 0.04, 0.54], [-0.38, -0.08, 0.42], [-0.5, -0.22, 0.22]]} r={0.012} color="#CC1010" op={vOp} />
-        {/* Septal perforators */}
-        <VesselTube pts={[[-0.24, -0.02, 0.52], [-0.22, -0.05, 0.3]]} r={0.009} color="#CC1010" op={vOp} />
-        <VesselTube pts={[[-0.28, -0.18, 0.48], [-0.26, -0.22, 0.28]]} r={0.009} color="#CC1010" op={vOp} />
-        {/* RCA — right AV groove */}
-        <VesselTube pts={[[0.1, 0.4, 0.36], [0.38, 0.22, 0.3], [0.52, -0.04, 0.14], [0.5, -0.3, -0.06], [0.38, -0.56, -0.2], [0.18, -0.72, -0.3]]} r={0.016} color="#CC1010" op={vOp} seg={28} />
-        {/* RCA marginal branch */}
-        <VesselTube pts={[[0.52, -0.04, 0.14], [0.58, -0.2, 0.25], [0.52, -0.4, 0.3]]} r={0.010} color="#CC1010" op={vOp} />
-        {/* LCx — left AV groove */}
         <VesselTube pts={[[-0.14, 0.34, 0.52], [-0.32, 0.38, 0.36], [-0.5, 0.22, 0.1], [-0.52, -0.06, -0.1], [-0.44, -0.3, -0.25]]} r={0.015} color="#CC1010" op={vOp} seg={24} />
-        {/* LCx obtuse marginal */}
-        <VesselTube pts={[[-0.5, 0.22, 0.1], [-0.6, 0.05, 0.2], [-0.62, -0.18, 0.22]]} r={0.011} color="#CC1010" op={vOp} />
-        {/* Coronary sinus (vein) */}
+        <VesselTube pts={[[0.1, 0.4, 0.36], [0.38, 0.22, 0.3], [0.52, -0.04, 0.14], [0.5, -0.3, -0.06], [0.38, -0.56, -0.2], [0.18, -0.72, -0.3]]} r={0.016} color="#CC1010" op={vOp} seg={28} />
         <VesselTube pts={[[-0.36, -0.72, 0.2], [-0.28, -0.42, 0.38], [-0.18, -0.16, 0.44], [-0.04, 0.1, 0.38], [0.04, 0.32, -0.22]]} r={0.013} color="#0A1A80" op={vOp} seg={22} />
-        {/* Great cardiac vein */}
-        <VesselTube pts={[[-0.14, 0.34, 0.52], [-0.28, 0.24, 0.44], [-0.38, 0.06, 0.32]]} r={0.011} color="#0A1A80" op={vOp} />
       </>}
     </group>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SKELETAL MODEL
-// ─────────────────────────────────────────────────────────────────────────────
 function SkeletalModel({ p }: { p: MRP }) {
   const op = lo("bone", p); const vis = lv("bone", p);
   const tr = op < 0.999;
@@ -127,11 +278,8 @@ function SkeletalModel({ p }: { p: MRP }) {
     <group>
       <mesh position={[0, 2.0, 0]} castShadow><sphereGeometry args={[0.62, 32, 32]} />{bM}</mesh>
       <mesh position={[0, 1.72, 0.28]} scale={[0.9, 0.65, 0.85]}><sphereGeometry args={[0.44, 20, 20]} />{bM}</mesh>
-      <mesh position={[0, 1.52, 0.38]} scale={[0.72, 0.28, 0.55]}><sphereGeometry args={[0.42, 16, 16]} />{bM}</mesh>
       {[-0.1,-0.3,-0.5,-0.7,-0.9,-1.08,-1.25,-1.42,-1.58,-1.72,-1.86,-1.98].map((y, i) => (
-        <mesh key={i} position={[0, y + 1.25, -0.05]} scale={[i<5?0.24:0.28, 0.14, 0.18]} castShadow>
-          <boxGeometry args={[1, 1, 1]} />{bM}
-        </mesh>
+        <mesh key={i} position={[0, y + 1.25, -0.05]} scale={[i<5?0.24:0.28, 0.14, 0.18]} castShadow><boxGeometry args={[1, 1, 1]} />{bM}</mesh>
       ))}
       {[-0.05,-0.2,-0.38,-0.55,-0.72,-0.88,-1.04,-1.18,-1.3,-1.42,-1.5,-1.56].map((y, i) => (
         <React.Fragment key={i}>
@@ -139,22 +287,12 @@ function SkeletalModel({ p }: { p: MRP }) {
           <VesselTube pts={[[-0.12, y+1.15, 0.08],[-0.5, y+1.1, 0.28],[-0.7, y+1.0, 0.1],[-0.6, y+0.92, -0.12]]} r={0.038} color="#EDEAC8" op={op} seg={14}/>
         </React.Fragment>
       ))}
-      <mesh position={[0, 0.7, 0.3]} scale={[0.14, 1.0, 0.18]}><boxGeometry args={[1,1,1]} />{bM}</mesh>
       <mesh position={[0, -1.05, -0.02]} scale={[1.0, 0.38, 0.78]} castShadow><sphereGeometry args={[0.62, 24, 24]} />{bM}</mesh>
       <mesh position={[0, -1.18, -0.32]} scale={[0.34, 0.5, 0.22]} castShadow><sphereGeometry args={[0.5, 16, 16]} />{cM}</mesh>
-      <VesselTube pts={[[0.06, 1.3, 0.22],[0.38, 1.38, 0.14],[0.65, 1.28, 0.02]]} r={0.055} color="#F2EACC" op={op}/>
-      <VesselTube pts={[[-0.06, 1.3, 0.22],[-0.38, 1.38, 0.14],[-0.65, 1.28, 0.02]]} r={0.055} color="#F2EACC" op={op}/>
-      <mesh position={[0.72, 1.12, -0.32]} scale={[0.36, 0.45, 0.1]} castShadow><boxGeometry args={[1,1,1]} />{cM}</mesh>
-      <mesh position={[-0.72, 1.12, -0.32]} scale={[0.36, 0.45, 0.1]} castShadow><boxGeometry args={[1,1,1]} />{cM}</mesh>
-      <mesh position={[0.42, -1.32, -0.02]} castShadow><sphereGeometry args={[0.2, 16, 16]} />{bM}</mesh>
-      <mesh position={[-0.42, -1.32, -0.02]} castShadow><sphereGeometry args={[0.2, 16, 16]} />{bM}</mesh>
     </group>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BRAIN MODEL
-// ─────────────────────────────────────────────────────────────────────────────
 function BrainModel({ p }: { p: MRP }) {
   const nOp = lo("nerve", p); const nVis = lv("nerve", p);
   const oOp = lo("organ", p); const oVis = lv("organ", p);
@@ -162,28 +300,14 @@ function BrainModel({ p }: { p: MRP }) {
   const cxM = (op: number) => <meshPhysicalMaterial color="#D4A8A0" roughness={0.62} metalness={0} clearcoat={0.06} transparent={tr(op)} opacity={op} />;
   const cbM = (op: number) => <meshPhysicalMaterial color="#C09898" roughness={0.7} metalness={0} transparent={tr(op)} opacity={op} />;
   const bsM = (op: number) => <meshPhysicalMaterial color="#B88888" roughness={0.65} metalness={0} transparent={tr(op)} opacity={op} />;
-  const gyri: [number,number,number][] = [
-    [-0.38,0.62,0.4],[-0.55,0.3,0.4],[-0.62,0.0,0.3],[-0.5,-0.28,0.2],
-    [0.38,0.62,0.4],[0.55,0.3,0.4],[0.62,0.0,0.3],[0.5,-0.28,0.2],
-    [-0.3,0.82,-0.1],[0.3,0.82,-0.1],[-0.5,0.48,-0.42],[0.5,0.48,-0.42],
-    [-0.48,-0.1,-0.48],[0.48,-0.1,-0.48],
-  ];
   return (
     <group>
       {oVis && <>
         <mesh position={[-0.3, 0.12, 0]} scale={[0.78, 0.88, 0.98]} castShadow><sphereGeometry args={[0.75, 32, 32]} />{cxM(oOp)}</mesh>
         <mesh position={[0.3, 0.12, 0]} scale={[0.78, 0.88, 0.98]} castShadow><sphereGeometry args={[0.75, 32, 32]} />{cxM(oOp)}</mesh>
-        <mesh position={[0, 0.35, 0.12]} scale={[0.06, 0.72, 0.85]}><sphereGeometry args={[0.6, 12, 12]} /><meshPhysicalMaterial color="#C89898" roughness={0.7} transparent={tr(oOp)} opacity={oOp} /></mesh>
-        {gyri.map(([x,y,z], i) => (
-          <mesh key={i} position={[x,y,z]} scale={[0.22,0.12,0.18]}><sphereGeometry args={[0.45,10,10]} />{cxM(oOp)}</mesh>
-        ))}
         <mesh position={[0,-0.52,-0.58]} scale={[0.82,0.52,0.72]} castShadow><sphereGeometry args={[0.58,24,24]} />{cbM(oOp)}</mesh>
-        <mesh position={[-0.32,-0.5,-0.55]} scale={[0.55,0.38,0.5]}><sphereGeometry args={[0.48,18,18]} />{cbM(oOp)}</mesh>
-        <mesh position={[0.32,-0.5,-0.55]} scale={[0.55,0.38,0.5]}><sphereGeometry args={[0.48,18,18]} />{cbM(oOp)}</mesh>
         <mesh position={[0,-0.55,-0.32]} scale={[0.32,0.55,0.32]}><sphereGeometry args={[0.45,16,16]} />{bsM(oOp)}</mesh>
         <mesh position={[0,-0.88,-0.2]} scale={[0.25,0.38,0.25]}><sphereGeometry args={[0.42,14,14]} />{bsM(oOp)}</mesh>
-        <mesh position={[-0.85,-0.18,0.08]} scale={[0.42,0.38,0.55]}><sphereGeometry args={[0.55,20,20]} />{cxM(oOp)}</mesh>
-        <mesh position={[0.85,-0.18,0.08]} scale={[0.42,0.38,0.55]}><sphereGeometry args={[0.55,20,20]} />{cxM(oOp)}</mesh>
       </>}
       {nVis && [
         { pts: [[0,-0.92,-0.08],[0,-1.3,0.1]] as [number,number,number][], c: "#F0D050" },
@@ -194,9 +318,6 @@ function BrainModel({ p }: { p: MRP }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LUNGS MODEL
-// ─────────────────────────────────────────────────────────────────────────────
 function LungsModel({ p }: { p: MRP }) {
   const op = lo("organ", p); const vis = lv("organ", p);
   const vOp = lo("vessel", p); const vVis = lv("vessel", p);
@@ -209,27 +330,17 @@ function LungsModel({ p }: { p: MRP }) {
         <mesh position={[-0.68, -0.62, 0.04]} scale={[0.6, 0.78, 0.65]} castShadow><sphereGeometry args={[0.58, 24, 24]} />{lM(op)}</mesh>
         <mesh position={[0.72, 0.22, 0]} scale={[0.72, 1.28, 0.78]} castShadow><sphereGeometry args={[0.65, 28, 28]} />{lM(op)}</mesh>
         <mesh position={[0.68, -0.55, 0.04]} scale={[0.62, 0.75, 0.65]} castShadow><sphereGeometry args={[0.58, 24, 24]} />{lM(op)}</mesh>
-        <mesh position={[0.88, -0.08, 0.22]} scale={[0.38, 0.55, 0.42]}><sphereGeometry args={[0.52, 18, 18]} />{lM(op)}</mesh>
-        <mesh position={[0, 1.08, -0.05]} scale={[0.14, 0.45, 0.14]} castShadow>
-          <cylinderGeometry args={[1, 1, 1, 12]} />
-          <meshPhysicalMaterial color="#D0C080" roughness={0.7} transparent={op < 0.999} opacity={op} />
-        </mesh>
         <VesselTube pts={[[0, 0.65, -0.05],[-0.2, 0.48, -0.06],[-0.55, 0.38, -0.05]]} r={0.065} color="#D0C080" op={op} />
         <VesselTube pts={[[0, 0.65, -0.05],[0.2, 0.48, -0.06],[0.58, 0.38, -0.05]]} r={0.07} color="#D0C080" op={op} />
       </>}
       {vVis && <>
         <VesselTube pts={[[-0.28, 0.38, 0.18],[-0.52, 0.28, 0.1],[-0.72, 0.15, 0]]} r={0.06} color="#CC0000" op={vOp} />
         <VesselTube pts={[[0.28, 0.38, 0.18],[0.52, 0.28, 0.1],[0.72, 0.22, 0]]} r={0.065} color="#CC0000" op={vOp} />
-        <VesselTube pts={[[-0.72, 0.15, 0],[-0.82, -0.15, 0],[-0.78, -0.55, 0.08]]} r={0.048} color="#1020A0" op={vOp} />
-        <VesselTube pts={[[0.72, 0.22, 0],[0.82, -0.12, 0],[0.78, -0.52, 0.08]]} r={0.048} color="#1020A0" op={vOp} />
       </>}
     </group>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MUSCULAR MODEL
-// ─────────────────────────────────────────────────────────────────────────────
 function MuscleModel({ p }: { p: MRP }) {
   const op = lo("muscle", p); const vis = lv("muscle", p);
   const tr = op < 0.999;
@@ -239,193 +350,69 @@ function MuscleModel({ p }: { p: MRP }) {
     <group>
       <mesh position={[-0.42, 0.55, 0.28]} scale={[0.62, 0.72, 0.32]} castShadow><sphereGeometry args={[0.55, 20, 20]} />{mM}</mesh>
       <mesh position={[0.42, 0.55, 0.28]} scale={[0.62, 0.72, 0.32]} castShadow><sphereGeometry args={[0.55, 20, 20]} />{mM}</mesh>
-      <mesh position={[-0.88, 0.85, 0.08]} scale={[0.4, 0.5, 0.42]} castShadow><sphereGeometry args={[0.48, 16, 16]} />{mM}</mesh>
-      <mesh position={[0.88, 0.85, 0.08]} scale={[0.4, 0.5, 0.42]} castShadow><sphereGeometry args={[0.48, 16, 16]} />{mM}</mesh>
-      <mesh position={[-1.0, 0.38, 0.12]} scale={[0.28, 0.55, 0.28]} castShadow><sphereGeometry args={[0.45, 16, 16]} />{mM}</mesh>
-      <mesh position={[1.0, 0.38, 0.12]} scale={[0.28, 0.55, 0.28]} castShadow><sphereGeometry args={[0.45, 16, 16]} />{mM}</mesh>
       <mesh position={[-0.15, -0.08, 0.32]} scale={[0.2, 0.85, 0.2]}><boxGeometry args={[1, 1, 1]} />{mM}</mesh>
       <mesh position={[0.15, -0.08, 0.32]} scale={[0.2, 0.85, 0.2]}><boxGeometry args={[1, 1, 1]} />{mM}</mesh>
-      <mesh position={[-0.45, -0.12, 0.22]} scale={[0.28, 0.65, 0.22]}><sphereGeometry args={[0.5, 14, 14]} />{mM}</mesh>
-      <mesh position={[0.45, -0.12, 0.22]} scale={[0.28, 0.65, 0.22]}><sphereGeometry args={[0.5, 14, 14]} />{mM}</mesh>
       <mesh position={[0, 0.98, -0.22]} scale={[0.92, 0.45, 0.18]} castShadow><sphereGeometry args={[0.52, 18, 18]} />{mM}</mesh>
-      <mesh position={[-0.38, -1.0, -0.35]} scale={[0.55, 0.55, 0.48]} castShadow><sphereGeometry args={[0.5, 16, 16]} />{mM}</mesh>
-      <mesh position={[0.38, -1.0, -0.35]} scale={[0.55, 0.55, 0.48]} castShadow><sphereGeometry args={[0.5, 16, 16]} />{mM}</mesh>
-      <mesh position={[-0.35, -1.55, 0.15]} scale={[0.38, 0.65, 0.35]} castShadow><sphereGeometry args={[0.5, 16, 16]} />{mM}</mesh>
-      <mesh position={[0.35, -1.55, 0.15]} scale={[0.38, 0.65, 0.35]} castShadow><sphereGeometry args={[0.5, 16, 16]} />{mM}</mesh>
-      <VesselTube pts={[[-0.15,-0.85,0.32],[-0.15,-1.05,0.22]]} r={0.04} color="#C8A868" op={op}/>
-      <VesselTube pts={[[0.15,-0.85,0.32],[0.15,-1.05,0.22]]} r={0.04} color="#C8A868" op={op}/>
     </group>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DIGESTIVE MODEL
-// ─────────────────────────────────────────────────────────────────────────────
-function DigestiveModel({ p }: { p: MRP }) {
-  const op = lo("organ", p); const vis = lv("organ", p);
-  const vOp = lo("vessel", p); const vVis = lv("vessel", p);
-  const tr = (o: number) => o < 0.999;
-  if (!vis && !vVis) return null;
-  return (
-    <group>
-      {vis && <>
-        <mesh position={[0.52, 0.42, 0.08]} scale={[0.82, 0.55, 0.62]} castShadow><sphereGeometry args={[0.62, 24, 24]} /><meshPhysicalMaterial color="#8B3A1A" roughness={0.6} metalness={0.05} clearcoat={0.12} transparent={tr(op)} opacity={op} /></mesh>
-        <mesh position={[0.58, 0.12, 0.22]} scale={[0.18, 0.28, 0.18]}><sphereGeometry args={[0.5, 12, 12]} /><meshPhysicalMaterial color="#6B8040" roughness={0.6} transparent={tr(op)} opacity={op} /></mesh>
-        <mesh position={[-0.28, 0.22, 0.12]} scale={[0.58, 0.62, 0.45]} castShadow><sphereGeometry args={[0.55, 20, 20]} /><meshPhysicalMaterial color="#C06040" roughness={0.58} metalness={0.04} transparent={tr(op)} opacity={op} /></mesh>
-        <mesh position={[0.08, -0.02, -0.15]} scale={[0.55, 0.18, 0.22]}><sphereGeometry args={[0.42, 14, 14]} /><meshPhysicalMaterial color="#D09060" roughness={0.65} transparent={tr(op)} opacity={op} /></mesh>
-        <VesselTube pts={[[-0.1,-0.3,0.22],[-0.35,-0.45,0.18],[-0.45,-0.65,0.08],[-0.22,-0.78,0],[0.12,-0.8,0.06],[0.38,-0.65,0.16],[0.42,-0.45,0.22],[0.2,-0.32,0.28],[-0.05,-0.35,0.3]]} r={0.065} color="#E8A888" op={op}/>
-        <VesselTube pts={[[0.52,-0.92,0.1],[0.55,-0.55,0.1],[0.52,-0.22,0.1],[0.42,0.02,0.08],[0.12,0.18,0.08],[-0.18,0.18,0.08],[-0.42,0.08,0.08],[-0.52,-0.22,0.08],[-0.5,-0.55,0.08],[-0.45,-0.9,0.08],[0,-1.05,0.05]]} r={0.085} color="#C07858" op={op}/>
-        <VesselTube pts={[[0,0.95,0.05],[-0.1,0.6,0.1],[-0.2,0.3,0.1],[-0.28,0.22,0.12]]} r={0.045} color="#C87858" op={op}/>
-        <mesh position={[-0.78, 0.15, -0.15]} scale={[0.32, 0.38, 0.28]} castShadow><sphereGeometry args={[0.48, 16, 16]} /><meshPhysicalMaterial color="#6B3070" roughness={0.58} metalness={0.05} transparent={tr(op)} opacity={op} /></mesh>
-      </>}
-      {vVis && <>
-        <VesselTube pts={[[0.52,0.0,0.0],[0.32,0.15,0.0],[0.12,0.28,-0.02]]} r={0.06} color="#8B4513" op={vOp}/>
-        <VesselTube pts={[[-0.78,0.15,-0.15],[-0.5,0.1,-0.08],[-0.2,0.15,0.0],[0.12,0.28,-0.02]]} r={0.04} color="#8B4513" op={vOp}/>
-      </>}
-    </group>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ENDOCRINE MODEL
-// ─────────────────────────────────────────────────────────────────────────────
-function EndocrineModel({ p }: { p: MRP }) {
-  const op = lo("organ", p); const vis = lv("organ", p);
+function GenericOrganModel({ p }: { p: MRP }) {
+  const op = lo("organ", p);
   const tr = op < 0.999;
-  const gM = <meshPhysicalMaterial color="#C0A0D0" roughness={0.55} metalness={0.06} clearcoat={0.18} transparent={tr} opacity={op} />;
-  if (!vis) return null;
   return (
-    <group>
-      <mesh position={[0, 1.02, -0.08]} castShadow><sphereGeometry args={[0.14, 14, 14]} />{gM}</mesh>
-      <mesh position={[0.06, 0.78, -0.18]}><sphereGeometry args={[0.08, 10, 10]} />{gM}</mesh>
-      <mesh position={[0, 0.82, -0.08]} scale={[0.28, 0.14, 0.22]}><sphereGeometry args={[0.45, 14, 14]} />{gM}</mesh>
-      <mesh position={[-0.12, 0.42, 0.32]} scale={[0.22, 0.28, 0.18]} castShadow><sphereGeometry args={[0.42, 14, 14]} />{gM}</mesh>
-      <mesh position={[0.12, 0.42, 0.32]} scale={[0.22, 0.28, 0.18]} castShadow><sphereGeometry args={[0.42, 14, 14]} />{gM}</mesh>
-      <mesh position={[0, 0.42, 0.3]} scale={[0.1, 0.14, 0.12]}><sphereGeometry args={[0.4, 12, 12]} />{gM}</mesh>
-      {[[-0.14,0.48,0.25],[0.14,0.48,0.25],[-0.14,0.36,0.24],[0.14,0.36,0.24]].map(([x,y,z],i) => (
-        <mesh key={i} position={[x,y,z]}><sphereGeometry args={[0.045, 8, 8]} />{gM}</mesh>
-      ))}
-      <mesh position={[0, 0.72, 0.22]} scale={[0.35, 0.45, 0.18]}><sphereGeometry args={[0.5, 14, 14]} />{gM}</mesh>
-      <mesh position={[0.52, -0.05, -0.22]} scale={[0.22, 0.18, 0.16]} castShadow><sphereGeometry args={[0.35, 14, 14]} />{gM}</mesh>
-      <mesh position={[-0.52, -0.05, -0.22]} scale={[0.22, 0.18, 0.16]} castShadow><sphereGeometry args={[0.35, 14, 14]} />{gM}</mesh>
-      <mesh position={[0.0, -0.15, -0.12]} scale={[0.5, 0.15, 0.2]}><sphereGeometry args={[0.38, 14, 14]} />{gM}</mesh>
-      <mesh position={[-0.22, -0.82, 0.08]} castShadow><sphereGeometry args={[0.18, 14, 14]} />{gM}</mesh>
-      <mesh position={[0.22, -0.82, 0.08]} castShadow><sphereGeometry args={[0.18, 14, 14]} />{gM}</mesh>
-      <VesselTube pts={[[0,1.02,-0.08],[0,0.42,0.32],[0,0.0,0.22],[0.52,-0.05,-0.22]]} r={0.012} color="#D0A0E0" op={op*0.5}/>
-    </group>
+    <mesh castShadow>
+      <sphereGeometry args={[1.0, 32, 32]} />
+      <meshPhysicalMaterial color="#A855F7" roughness={0.5} metalness={0.1} clearcoat={0.2} transparent={tr} opacity={op} />
+    </mesh>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// URINARY MODEL
+// ProceduralModel — selects the right procedural fallback per system
 // ─────────────────────────────────────────────────────────────────────────────
-function UrinaryModel({ p }: { p: MRP }) {
-  const op = lo("organ", p); const vis = lv("organ", p);
-  const vOp = lo("vessel", p); const vVis = lv("vessel", p);
-  const tr = (o: number) => o < 0.999;
-  if (!vis && !vVis) return null;
-  const kM = (o: number) => <meshPhysicalMaterial color="#8B4513" roughness={0.6} metalness={0.04} clearcoat={0.1} transparent={tr(o)} opacity={o} />;
-  return (
-    <group>
-      {vis && <>
-        <mesh position={[0.5, 0.02, -0.22]} scale={[0.32, 0.5, 0.38]} castShadow><sphereGeometry args={[0.55, 20, 20]} />{kM(op)}</mesh>
-        <mesh position={[-0.5, 0.02, -0.22]} scale={[0.32, 0.5, 0.38]} castShadow><sphereGeometry args={[0.55, 20, 20]} />{kM(op)}</mesh>
-        <mesh position={[0.42, 0.02, -0.1]} scale={[0.14, 0.22, 0.14]}><sphereGeometry args={[0.4, 12, 12]} /><meshPhysicalMaterial color="#C08060" roughness={0.65} transparent={tr(op)} opacity={op} /></mesh>
-        <mesh position={[-0.42, 0.02, -0.1]} scale={[0.14, 0.22, 0.14]}><sphereGeometry args={[0.4, 12, 12]} /><meshPhysicalMaterial color="#C08060" roughness={0.65} transparent={tr(op)} opacity={op} /></mesh>
-        <VesselTube pts={[[0.42,0.0,-0.12],[0.38,-0.38,-0.08],[0.3,-0.72,0.02],[0.22,-1.0,0.08]]} r={0.038} color="#D09060" op={op}/>
-        <VesselTube pts={[[-0.42,0.0,-0.12],[-0.38,-0.38,-0.08],[-0.3,-0.72,0.02],[-0.22,-1.0,0.08]]} r={0.038} color="#D09060" op={op}/>
-        <mesh position={[0, -1.12, 0.08]} scale={[0.55, 0.48, 0.5]} castShadow><sphereGeometry args={[0.55, 20, 20]} /><meshPhysicalMaterial color="#C0A060" roughness={0.62} transparent={tr(op)} opacity={op} /></mesh>
-        <mesh position={[0.5, 0.42, -0.18]} scale={[0.22, 0.15, 0.16]}><sphereGeometry args={[0.35, 12, 12]} /><meshPhysicalMaterial color="#C0A0D0" roughness={0.55} transparent={tr(op)} opacity={op} /></mesh>
-        <mesh position={[-0.5, 0.42, -0.18]} scale={[0.22, 0.15, 0.16]}><sphereGeometry args={[0.35, 12, 12]} /><meshPhysicalMaterial color="#C0A0D0" roughness={0.55} transparent={tr(op)} opacity={op} /></mesh>
-      </>}
-      {vVis && <>
-        <VesselTube pts={[[0.08,0.04,0],[0.32,0.04,-0.12],[0.5,0.02,-0.22]]} r={0.055} color="#CC0000" op={vOp}/>
-        <VesselTube pts={[[-0.08,0.04,0],[-0.32,0.04,-0.12],[-0.5,0.02,-0.22]]} r={0.055} color="#CC0000" op={vOp}/>
-        <VesselTube pts={[[0.5,0.02,-0.22],[0.32,0.04,-0.08],[0.08,0.04,-0.02]]} r={0.048} color="#1020A0" op={vOp}/>
-        <VesselTube pts={[[-0.5,0.02,-0.22],[-0.32,0.04,-0.08],[-0.08,0.04,-0.02]]} r={0.048} color="#1020A0" op={vOp}/>
-      </>}
-    </group>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LYMPHATIC MODEL
-// ─────────────────────────────────────────────────────────────────────────────
-function LymphaticModel({ p }: { p: MRP }) {
-  const op = lo("organ", p); const vis = lv("organ", p);
-  const tr = op < 0.999;
-  const lnM = <meshPhysicalMaterial color="#48BB78" roughness={0.5} metalness={0.04} clearcoat={0.12} transparent={tr} opacity={op} />;
-  if (!vis) return null;
-  return (
-    <group>
-      <mesh position={[-0.72, 0.18, -0.18]} scale={[0.35, 0.42, 0.3]} castShadow><sphereGeometry args={[0.52, 18, 18]} />{lnM}</mesh>
-      <mesh position={[0, 0.68, 0.22]} scale={[0.38, 0.5, 0.2]}><sphereGeometry args={[0.5, 16, 16]} />{lnM}</mesh>
-      {[[-0.28,1.12,0.12],[0.28,1.12,0.12],[-0.2,0.95,0.18],[0.2,0.95,0.18]].map(([x,y,z],i) => (
-        <mesh key={i} position={[x,y,z]}><sphereGeometry args={[0.075, 10, 10]} />{lnM}</mesh>
-      ))}
-      {[[-0.82,0.7,0.1],[-0.78,0.55,0.12],[0.82,0.7,0.1],[0.78,0.55,0.12]].map(([x,y,z],i) => (
-        <mesh key={i} position={[x,y,z]}><sphereGeometry args={[0.07, 10, 10]} />{lnM}</mesh>
-      ))}
-      <VesselTube pts={[[0,-1.0,-0.12],[0,-0.5,-0.1],[0.05,0.0,-0.1],[0.05,0.5,-0.08],[0.02,0.88,0.0],[-0.08,1.08,0.12]]} r={0.028} color="#38A169" op={op}/>
-      <mesh position={[0, -1.05, -0.12]} scale={[0.12, 0.2, 0.12]}><sphereGeometry args={[0.45, 10, 10]} />{lnM}</mesh>
-      {[[-0.38,-1.12,0.08],[0.38,-1.12,0.08],[-0.28,-1.22,0.06],[0.28,-1.22,0.06]].map(([x,y,z],i) => (
-        <mesh key={i} position={[x,y,z]}><sphereGeometry args={[0.07, 10, 10]} />{lnM}</mesh>
-      ))}
-      {[[0,0.4,-0.08],[0.15,0.3,-0.1],[-0.15,0.3,-0.1]].map(([x,y,z],i) => (
-        <mesh key={i} position={[x,y,z]}><sphereGeometry args={[0.065, 10, 10]} />{lnM}</mesh>
-      ))}
-    </group>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// REPRODUCTIVE MODEL
-// ─────────────────────────────────────────────────────────────────────────────
-function ReproductiveModel({ p }: { p: MRP }) {
-  const op = lo("organ", p); const vis = lv("organ", p);
-  const vOp = lo("vessel", p); const vVis = lv("vessel", p);
-  const tr = (o: number) => o < 0.999;
-  if (!vis && !vVis) return null;
-  return (
-    <group>
-      {vis && <>
-        <mesh position={[0, -0.2, 0.05]} scale={[0.42, 0.55, 0.35]} castShadow><sphereGeometry args={[0.55, 20, 20]} /><meshPhysicalMaterial color="#C06080" roughness={0.55} metalness={0.04} clearcoat={0.12} transparent={tr(op)} opacity={op} /></mesh>
-        <mesh position={[0, -0.58, 0.0]} scale={[0.25, 0.3, 0.22]}><sphereGeometry args={[0.45, 14, 14]} /><meshPhysicalMaterial color="#B05070" roughness={0.6} transparent={tr(op)} opacity={op} /></mesh>
-        <VesselTube pts={[[0.22,-0.1,0.08],[0.52,-0.05,0.12],[0.72,-0.12,0.05],[0.78,-0.32,-0.02]]} r={0.035} color="#D08090" op={op}/>
-        <VesselTube pts={[[-0.22,-0.1,0.08],[-0.52,-0.05,0.12],[-0.72,-0.12,0.05],[-0.78,-0.32,-0.02]]} r={0.035} color="#D08090" op={op}/>
-        <mesh position={[0.78,-0.32,-0.02]} castShadow><sphereGeometry args={[0.16, 14, 14]} /><meshPhysicalMaterial color="#D09060" roughness={0.58} transparent={tr(op)} opacity={op} /></mesh>
-        <mesh position={[-0.78,-0.32,-0.02]} castShadow><sphereGeometry args={[0.16, 14, 14]} /><meshPhysicalMaterial color="#D09060" roughness={0.58} transparent={tr(op)} opacity={op} /></mesh>
-        <mesh position={[0, -0.78, 0.22]} scale={[0.42, 0.38, 0.38]} castShadow><sphereGeometry args={[0.48, 16, 16]} /><meshPhysicalMaterial color="#C0A060" roughness={0.62} transparent={tr(op)} opacity={op} /></mesh>
-      </>}
-      {vVis && <>
-        <VesselTube pts={[[0.38,-0.05,0],[0.28,-0.18,0.04],[0.22,-0.32,0.06]]} r={0.04} color="#CC0000" op={vOp}/>
-        <VesselTube pts={[[-0.38,-0.05,0],[-0.28,-0.18,0.04],[-0.22,-0.32,0.06]]} r={0.04} color="#CC0000" op={vOp}/>
-      </>}
-    </group>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// System model router
-// ─────────────────────────────────────────────────────────────────────────────
-function SystemModel({ system, p }: { system: AnatomySystem; p: MRP }) {
+function ProceduralModel({ system, p }: { system: AnatomySystem; p: MRP }) {
   switch (system.id) {
     case "cardiovascular": return <HeartModel p={p} />;
     case "skeletal":       return <SkeletalModel p={p} />;
     case "nervous":        return <BrainModel p={p} />;
     case "respiratory":    return <LungsModel p={p} />;
     case "muscular":       return <MuscleModel p={p} />;
-    case "digestive":      return <DigestiveModel p={p} />;
-    case "endocrine":      return <EndocrineModel p={p} />;
-    case "urinary":        return <UrinaryModel p={p} />;
-    case "lymphatic":      return <LymphaticModel p={p} />;
-    case "reproductive":   return <ReproductiveModel p={p} />;
-    default:               return <HeartModel p={p} />;
+    default:               return <GenericOrganModel p={p} />;
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Label3D — only renders when its label IS selected (zero overlap)
+// SystemModel — tries GLB first, falls back to procedural
+// ─────────────────────────────────────────────────────────────────────────────
+function SystemModel({ system, p, glbExists }: {
+  system: AnatomySystem; p: MRP; glbExists: boolean | null;
+}) {
+  const procedural = <ProceduralModel system={system} p={p} />;
+
+  // No GLB configured or confirmed absent
+  if (!system.glbPath || glbExists === false) return procedural;
+
+  // Still checking (null) → show procedural while loading
+  if (glbExists === null) return procedural;
+
+  // GLB confirmed present
+  return (
+    <GLBErrorBoundary fallback={procedural}>
+      <Suspense fallback={procedural}>
+        <GLBModel
+          glbPath={system.glbPath}
+          p={p}
+          overrides={system.glbLayers as Record<string, LayerId> | undefined}
+        />
+        {import.meta.env.DEV && <GLBInspector glbPath={system.glbPath} />}
+      </Suspense>
+    </GLBErrorBoundary>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Label3D — only renders when selected
 // ─────────────────────────────────────────────────────────────────────────────
 function Label3D({ label, selected, onSelect }: {
   label: StructureLabel; selected: boolean; onSelect: (l: StructureLabel) => void;
@@ -457,7 +444,7 @@ function Label3D({ label, selected, onSelect }: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Camera reset (inside Canvas)
+// Camera controller
 // ─────────────────────────────────────────────────────────────────────────────
 function CameraController({ resetTrigger, isInteracting, onInteract }: {
   resetTrigger: number; isInteracting: boolean; onInteract: (v: boolean) => void;
@@ -473,7 +460,7 @@ function CameraController({ resetTrigger, isInteracting, onInteract }: {
     <OrbitControls
       ref={controlsRef}
       enableDamping dampingFactor={0.08}
-      minDistance={1.5} maxDistance={12}
+      minDistance={1.2} maxDistance={12}
       onStart={() => onInteract(true)}
       onEnd={() => onInteract(false)}
     />
@@ -483,29 +470,36 @@ function CameraController({ resetTrigger, isInteracting, onInteract }: {
 // ─────────────────────────────────────────────────────────────────────────────
 // Scene
 // ─────────────────────────────────────────────────────────────────────────────
-function Scene({ system, selectedLabel, onLabelSelect, mrp, resetTrigger, isInteracting, onInteract }: {
+function Scene({ system, selectedLabel, onLabelSelect, mrp, resetTrigger,
+  isInteracting, onInteract, glbExists }: {
   system: AnatomySystem; selectedLabel: string | null;
   onLabelSelect: (l: StructureLabel) => void; mrp: MRP;
-  resetTrigger: number; isInteracting: boolean; onInteract: (v: boolean) => void;
+  resetTrigger: number; isInteracting: boolean;
+  onInteract: (v: boolean) => void; glbExists: boolean | null;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   useFrame(() => {
     if (groupRef.current && !isInteracting) groupRef.current.rotation.y += 0.003;
   });
   const allLabels = useMemo(() => system.structures.flatMap(s => s.labels), [system]);
+
   return (
     <>
-      <ambientLight intensity={0.45} />
-      <directionalLight position={[5, 8, 5]} intensity={1.5} castShadow shadow-mapSize={[2048, 2048]} />
-      <directionalLight position={[-4, 3, -3]} intensity={0.65} color="#a0c8ff" />
-      <pointLight position={[0, -3, 3]} intensity={0.45} color="#ff8060" />
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[5, 8, 5]} intensity={1.6} castShadow shadow-mapSize={[2048, 2048]} />
+      <directionalLight position={[-4, 3, -3]} intensity={0.7} color="#a0c8ff" />
+      <pointLight position={[0, -3, 3]} intensity={0.5} color="#ff8060" />
       <Environment preset="city" />
       <ContactShadows position={[0, -2.2, 0]} opacity={0.5} scale={7} blur={2.5} far={5} />
       <group ref={groupRef}>
-        <SystemModel system={system} p={mrp} />
+        <SystemModel system={system} p={mrp} glbExists={glbExists} />
         {allLabels.map(label => (
           <Label3D key={label.id} label={label} selected={selectedLabel === label.id} onSelect={onLabelSelect} />
         ))}
+        {/* Show "no GLB" prompt inside 3D if glbPath set but file absent */}
+        {system.glbPath && glbExists === false && (
+          <NoGLBPlaceholder system={system} />
+        )}
       </group>
       <CameraController resetTrigger={resetTrigger} isInteracting={isInteracting} onInteract={onInteract} />
     </>
@@ -523,7 +517,7 @@ function SketchfabViewer({ modelId, title }: { modelId: string; title: string })
       {!loaded && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10">
           <div className="w-10 h-10 rounded-full border-[3px] border-violet-500 border-t-transparent animate-spin" />
-          <p className="text-xs text-slate-400 font-medium">Loading 3D Model…</p>
+          <p className="text-xs text-slate-400 font-medium">Loading HD Model…</p>
         </div>
       )}
       <iframe title={title} src={src}
@@ -531,6 +525,25 @@ function SketchfabViewer({ modelId, title }: { modelId: string; title: string })
         className="w-full h-full border-0"
         onLoad={() => setLoaded(true)}
       />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GLB Status Indicator (top-right corner badge when GLB is active)
+// ─────────────────────────────────────────────────────────────────────────────
+function GLBBadge({ status }: { status: "loading" | "loaded" | "fallback" | "none" }) {
+  if (status === "none") return null;
+  const cfg = {
+    loading:  { bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.35)", text: "#fbbf24", label: "Loading GLB…", dot: "bg-amber-400 animate-pulse" },
+    loaded:   { bg: "rgba(34,197,94,0.15)",  border: "rgba(34,197,94,0.35)",  text: "#4ade80", label: "GLB Model",    dot: "bg-green-400" },
+    fallback: { bg: "rgba(239,68,68,0.15)",  border: "rgba(239,68,68,0.35)",  text: "#f87171", label: "Schematic",   dot: "bg-red-400" },
+  }[status];
+  return (
+    <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border pointer-events-none"
+      style={{ background: cfg.bg, borderColor: cfg.border, color: cfg.text }}>
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+      {cfg.label}
     </div>
   );
 }
@@ -554,8 +567,16 @@ export default function ModelViewer3D({
   const [resetTrigger, setResetTrigger] = useState(0);
   const [showLayerPanel, setShowLayerPanel] = useState(false);
 
+  // Check whether the GLB file actually exists
+  const glbExists = useGLBExists(system.glbPath);
+  const glbStatus: "loading" | "loaded" | "fallback" | "none" =
+    !system.glbPath ? "none" :
+    glbExists === null ? "loading" :
+    glbExists ? "loaded" : "fallback";
+
   React.useEffect(() => {
-    setViewMode("3d"); setIsolated(null); setHidden(new Set()); setGlobalOp(1.0); setShowOpSlider(false); setShowLayerPanel(false);
+    setViewMode("3d"); setIsolated(null); setHidden(new Set());
+    setGlobalOp(1.0); setShowOpSlider(false); setShowLayerPanel(false);
   }, [system.id]);
 
   const mrp: MRP = useMemo(() => ({ globalOp, isolated, hidden }), [globalOp, isolated, hidden]);
@@ -572,9 +593,10 @@ export default function ModelViewer3D({
   }
 
   return (
-    <div className="w-full h-full relative overflow-hidden select-none" style={{ background: "linear-gradient(160deg,#060314 0%,#0b0822 55%,#060218 100%)" }}>
+    <div className="w-full h-full relative overflow-hidden select-none"
+      style={{ background: "linear-gradient(160deg,#060314 0%,#0b0822 55%,#060218 100%)" }}>
 
-      {/* View mode toggle — top center pill */}
+      {/* View mode toggle */}
       {system.sketchfabId && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex bg-black/75 backdrop-blur-md rounded-full p-0.5 border border-white/12 shadow-xl">
           {(["3d", "sketchfab"] as const).map(m => (
@@ -583,11 +605,14 @@ export default function ModelViewer3D({
                 viewMode === m ? "bg-violet-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-200"
               }`}
             >
-              {m === "3d" ? "⬡ Schematic" : "✦ HD Model"}
+              {m === "3d" ? "⬡ Interactive" : "✦ HD View"}
             </button>
           ))}
         </div>
       )}
+
+      {/* GLB status badge */}
+      <GLBBadge status={glbStatus} />
 
       {/* Layer panel */}
       {showLayerPanel && viewMode === "3d" && (
@@ -619,13 +644,21 @@ export default function ModelViewer3D({
               </div>
             );
           })}
-          {/* Reset layers */}
           {(isolated || hidden.size > 0) && (
             <button onClick={() => { setIsolated(null); setHidden(new Set()); }}
               className="mt-1.5 text-[10px] text-violet-400 hover:text-violet-200 font-semibold text-center py-1 border-t border-white/8 transition-colors"
             >
               ↺ Reset Layers
             </button>
+          )}
+          {/* GLB mesh download hint */}
+          {system.glbPath && glbExists === false && (
+            <a href="https://sketchfab.com/search?q=human+heart+anatomy&downloadable=true&sort_by=-likeCount"
+              target="_blank" rel="noopener noreferrer"
+              className="mt-1.5 flex items-center gap-1.5 text-[10px] text-amber-400 hover:text-amber-200 font-semibold text-center py-1 border-t border-white/8 transition-colors"
+            >
+              <Download size={10} /> Get GLB model
+            </a>
           )}
         </div>
       )}
@@ -637,21 +670,20 @@ export default function ModelViewer3D({
         <Canvas
           camera={{ position: [0, 0, 5.2], fov: 40 }}
           shadows gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-          style={{ background: "transparent" }} dpr={[1, 2]}
+          style={{ background: "transparent" }} dpr={[1, 1.5]}
         >
           <Suspense fallback={null}>
             <Scene
               system={system} selectedLabel={selectedLabel} onLabelSelect={onLabelSelect}
               mrp={mrp} resetTrigger={resetTrigger} isInteracting={isInteracting}
-              onInteract={setIsInteracting}
+              onInteract={setIsInteracting} glbExists={glbExists}
             />
           </Suspense>
         </Canvas>
       )}
 
-      {/* Bottom control bar — matching Anatomy Learning style */}
+      {/* Bottom control bar */}
       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-0.5 bg-black/80 backdrop-blur-xl rounded-2xl px-1.5 py-1.5 border border-white/12 shadow-2xl">
-        {/* Layers */}
         <button onClick={() => { setShowLayerPanel(p => !p); setShowOpSlider(false); }}
           className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-wide transition-all ${showLayerPanel ? "bg-violet-700/60 text-violet-200" : "text-slate-400 hover:bg-white/8 hover:text-white"}`}
         >
@@ -659,7 +691,6 @@ export default function ModelViewer3D({
           <span>Layers</span>
         </button>
         <div className="w-px h-7 bg-white/8 mx-0.5" />
-        {/* Opacity */}
         <div className="relative">
           <button onClick={() => { setShowOpSlider(p => !p); setShowLayerPanel(false); }}
             className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-wide transition-all ${showOpSlider || globalOp < 1 ? "bg-violet-700/60 text-violet-200" : "text-slate-400 hover:bg-white/8 hover:text-white"}`}
@@ -684,7 +715,6 @@ export default function ModelViewer3D({
             </div>
           )}
         </div>
-        {/* Center */}
         <button onClick={() => setResetTrigger(t => t + 1)}
           className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-wide text-slate-400 hover:bg-white/8 hover:text-white transition-all"
         >
@@ -692,7 +722,6 @@ export default function ModelViewer3D({
           <span>Center</span>
         </button>
         <div className="w-px h-7 bg-white/8 mx-0.5" />
-        {/* Reset */}
         <button onClick={handleReset}
           className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-wide text-slate-400 hover:bg-white/8 hover:text-white transition-all"
         >
@@ -701,30 +730,17 @@ export default function ModelViewer3D({
         </button>
       </div>
 
-      {/* Active filter pill indicators */}
+      {/* Active filter pills */}
       {(isolated || hidden.size > 0 || globalOp < 1) && (
         <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 pointer-events-none">
-          {isolated && (
-            <span className="text-[9px] font-bold bg-violet-900/70 border border-violet-400/40 text-violet-200 px-2 py-0.5 rounded-full backdrop-blur">
-              ISO: {LAYERS.find(l => l.id === isolated)?.label}
-            </span>
-          )}
-          {hidden.size > 0 && (
-            <span className="text-[9px] font-bold bg-slate-900/70 border border-white/20 text-slate-300 px-2 py-0.5 rounded-full backdrop-blur">
-              {hidden.size} hidden
-            </span>
-          )}
-          {globalOp < 1 && (
-            <span className="text-[9px] font-bold bg-slate-900/70 border border-white/20 text-slate-300 px-2 py-0.5 rounded-full backdrop-blur">
-              {Math.round(globalOp * 100)}% opacity
-            </span>
-          )}
+          {isolated && <span className="text-[9px] font-bold bg-violet-900/70 border border-violet-400/40 text-violet-200 px-2 py-0.5 rounded-full backdrop-blur">ISO: {LAYERS.find(l => l.id === isolated)?.label}</span>}
+          {hidden.size > 0 && <span className="text-[9px] font-bold bg-slate-900/70 border border-white/20 text-slate-300 px-2 py-0.5 rounded-full backdrop-blur">{hidden.size} hidden</span>}
+          {globalOp < 1 && <span className="text-[9px] font-bold bg-slate-900/70 border border-white/20 text-slate-300 px-2 py-0.5 rounded-full backdrop-blur">{Math.round(globalOp * 100)}% opacity</span>}
         </div>
       )}
 
-      {/* Drag hint */}
       {viewMode === "3d" && (
-        <p className="absolute top-3 right-3 text-[10px] text-slate-700 pointer-events-none select-none hidden md:block">
+        <p className="absolute top-3 right-16 text-[10px] text-slate-700 pointer-events-none select-none hidden md:block">
           Drag · Scroll · Pinch
         </p>
       )}
