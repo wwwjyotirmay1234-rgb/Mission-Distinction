@@ -196,15 +196,25 @@ function NoGLBPlaceholder({ system }: { system: AnatomySystem }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GLB availability check (fetch HEAD before rendering Canvas)
+// GLB availability check — robust against Vite SPA fallback
+// Vite serves index.html (text/html, 200) for unknown paths in dev mode.
+// We detect this by checking Content-Type: a real GLB will never be text/html.
 // ─────────────────────────────────────────────────────────────────────────────
 function useGLBExists(path: string | undefined): boolean | null {
   const [exists, setExists] = useState<boolean | null>(null);
   useEffect(() => {
     if (!path) { setExists(false); return; }
+    let cancelled = false;
     fetch(path, { method: "HEAD" })
-      .then(r => setExists(r.ok))
-      .catch(() => setExists(false));
+      .then(r => {
+        if (cancelled) return;
+        if (!r.ok) { setExists(false); return; }
+        const ct = r.headers.get("content-type") ?? "";
+        // If Vite returned the SPA HTML fallback, the file doesn't really exist
+        setExists(!ct.startsWith("text/html") && !ct.startsWith("text/htm"));
+      })
+      .catch(() => { if (!cancelled) setExists(false); });
+    return () => { cancelled = true; };
   }, [path]);
   return exists;
 }
