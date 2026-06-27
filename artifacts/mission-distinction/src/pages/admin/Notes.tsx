@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useListNotes, useDeleteNote, getListNotesQueryKey, customFetch } from "@workspace/api-client-react";
-import { Search, Plus, MoreVertical, Trash2, FileText, Pencil, Upload, Image, FileIcon, Presentation, X, Loader2 } from "lucide-react";
+import { Search, Plus, MoreVertical, Trash2, FileText, Pencil, Upload, Image, FileIcon, Link, X, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -28,19 +28,19 @@ type NoteItem = {
   createdAt: string | Date;
 };
 
-type NoteMode = "text" | "file";
+type NoteMode = "text" | "file" | "link";
 
 function fileTypeIcon(ft: string | null | undefined) {
   if (ft === "image") return <Image size={14} />;
   if (ft === "pdf") return <FileIcon size={14} />;
-  if (ft === "ppt") return <Presentation size={14} />;
+  if (ft === "link") return <Link size={14} />;
   return <FileText size={14} />;
 }
 
 function fileTypeBadge(ft: string | null | undefined) {
   if (ft === "image") return <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400 text-xs">Photo</Badge>;
   if (ft === "pdf") return <Badge variant="outline" className="bg-orange-500/10 border-orange-500/30 text-orange-400 text-xs">PDF</Badge>;
-  if (ft === "ppt") return <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30 text-purple-400 text-xs">PPT</Badge>;
+  if (ft === "link") return <Badge variant="outline" className="bg-blue-500/10 border-blue-500/30 text-blue-400 text-xs">Link</Badge>;
   return <Badge variant="outline" className="bg-blue-500/10 border-blue-500/30 text-blue-400 text-xs">Text</Badge>;
 }
 
@@ -110,34 +110,55 @@ function NoteForm({ mode, setMode, form, setForm, uploading, setUploading, fileR
         <div className="flex gap-1 p-1 bg-muted/30 rounded-lg w-fit">
           <button
             type="button"
-            onClick={() => setMode("text")}
+            onClick={() => { setMode("text"); setForm((f: any) => ({ ...f, fileUrl: "", fileType: "" })); }}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${mode === "text" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
           >
             Write Text
           </button>
           <button
             type="button"
-            onClick={() => setMode("file")}
+            onClick={() => { setMode("file"); setForm((f: any) => ({ ...f, content: "" })); }}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${mode === "file" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
           >
             Upload File
           </button>
+          <button
+            type="button"
+            onClick={() => { setMode("link"); setForm((f: any) => ({ ...f, content: "", fileUrl: "", fileType: "link" })); }}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${mode === "link" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Drive Link
+          </button>
         </div>
 
-        {mode === "text" ? (
+        {mode === "text" && (
           <Textarea
             placeholder="Enter the note content here..."
             className="bg-background/50 min-h-[120px] resize-none"
             value={form.content}
             onChange={(e) => setForm({ ...form, content: e.target.value })}
           />
-        ) : (
+        )}
+
+        {mode === "link" && (
+          <div className="space-y-1.5">
+            <Input
+              placeholder="https://drive.google.com/file/d/... or any HTTPS link"
+              className="bg-background/50"
+              value={form.fileUrl}
+              onChange={(e) => setForm({ ...form, fileUrl: e.target.value, fileType: "link" })}
+            />
+            <p className="text-xs text-muted-foreground">Paste a Google Drive, OneDrive, or any public document link. Students will open it in their browser.</p>
+          </div>
+        )}
+
+        {mode === "file" && (
           <div className="space-y-2">
             {form.fileUrl ? (
               <div className="flex items-center gap-3 p-3 bg-background/50 border border-border/50 rounded-lg">
                 <div className="shrink-0 text-primary">{fileTypeIcon(form.fileType)}</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{form.fileType === "image" ? "Image uploaded" : form.fileType === "pdf" ? "PDF uploaded" : "PPT uploaded"}</p>
+                  <p className="text-sm font-medium truncate">{form.fileType === "image" ? "Image uploaded" : "PDF uploaded"}</p>
                   <a href={form.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View file ↗</a>
                 </div>
                 <button
@@ -163,14 +184,14 @@ function NoteForm({ mode, setMode, form, setForm, uploading, setUploading, fileR
                 <span className="text-sm text-muted-foreground">
                   {uploading ? "Uploading…" : "Click to upload"}
                 </span>
-                <span className="text-xs text-muted-foreground/70">Photo (JPG/PNG/WebP) · PDF · PPT/PPTX · up to 100 MB</span>
+                <span className="text-xs text-muted-foreground/70">Photo (JPG/PNG/WebP) · PDF · up to 100 MB</span>
               </button>
             )}
             <input
               ref={fileRef}
               type="file"
               className="hidden"
-              accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+              accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
@@ -221,6 +242,8 @@ export default function AdminNotes() {
     if (!addForm.title || !addForm.subject) { toast.error("Title and subject are required."); return; }
     if (addMode === "text" && !addForm.content) { toast.error("Please enter some content."); return; }
     if (addMode === "file" && !addForm.fileUrl) { toast.error("Please upload a file first."); return; }
+    if (addMode === "link" && !addForm.fileUrl) { toast.error("Please enter a link."); return; }
+    if (addMode === "link" && !addForm.fileUrl.startsWith("https://")) { toast.error("Link must start with https://"); return; }
 
     setAddPending(true);
     try {
@@ -230,15 +253,15 @@ export default function AdminNotes() {
           title: addForm.title,
           subject: addForm.subject,
           content: addMode === "text" ? addForm.content : undefined,
-          fileUrl: addMode === "file" ? addForm.fileUrl : undefined,
-          fileType: addMode === "file" ? addForm.fileType : "text",
+          fileUrl: addMode !== "text" ? addForm.fileUrl : undefined,
+          fileType: addMode === "text" ? "text" : addForm.fileType || addMode,
         }),
       });
       toast.success("Note added successfully!");
       queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
       resetAdd();
     } catch {
-      toast.error("Failed to add note.");
+      toast.error("Failed to add note. Check your connection and try again.");
     } finally {
       setAddPending(false);
     }
@@ -246,8 +269,9 @@ export default function AdminNotes() {
 
   const openEdit = (note: NoteItem) => {
     setEditTarget(note);
-    const hasFile = !!note.fileUrl;
-    setEditMode(hasFile ? "file" : "text");
+    const ft = note.fileType;
+    const mode: NoteMode = ft === "link" ? "link" : note.fileUrl ? "file" : "text";
+    setEditMode(mode);
     setEditForm({
       title: note.title,
       subject: note.subject,
@@ -262,6 +286,8 @@ export default function AdminNotes() {
     if (!editTarget || !editForm.title || !editForm.subject) { toast.error("Title and subject are required."); return; }
     if (editMode === "text" && !editForm.content) { toast.error("Please enter some content."); return; }
     if (editMode === "file" && !editForm.fileUrl) { toast.error("Please upload a file first."); return; }
+    if (editMode === "link" && !editForm.fileUrl) { toast.error("Please enter a link."); return; }
+    if (editMode === "link" && !editForm.fileUrl.startsWith("https://")) { toast.error("Link must start with https://"); return; }
 
     setEditPending(true);
     try {
@@ -271,8 +297,8 @@ export default function AdminNotes() {
           title: editForm.title,
           subject: editForm.subject,
           content: editMode === "text" ? editForm.content : null,
-          fileUrl: editMode === "file" ? editForm.fileUrl : null,
-          fileType: editMode === "file" ? editForm.fileType : "text",
+          fileUrl: editMode !== "text" ? editForm.fileUrl : null,
+          fileType: editMode === "text" ? "text" : editForm.fileType || editMode,
         }),
       });
       toast.success("Note updated!");
