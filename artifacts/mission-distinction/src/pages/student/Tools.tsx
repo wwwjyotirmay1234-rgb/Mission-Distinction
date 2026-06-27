@@ -115,6 +115,44 @@ let _alarmAudio: { el: HTMLAudioElement; url: string } | null = null;
 // or when React defers the state update and the next interval tick sees fired=false again.
 const _firedIds = new Set<string>();
 
+// ─── Silent audio loop ─────────────────────────────────────────────────────────
+// Chrome throttles hidden-tab setInterval to ≥1 minute unless the page has an
+// active AudioContext.  Keeping a looping silent buffer alive prevents that
+// throttling, so the 1-second alarm check stays precise in the background —
+// just like a real alarm clock app.
+let _silentCtx: AudioContext | null = null;
+let _silentSrc: AudioBufferSourceNode | null = null;
+
+function startSilentAudio() {
+  try {
+    if (_silentCtx && _silentCtx.state !== "closed") {
+      if (_silentCtx.state === "suspended") _silentCtx.resume().catch(() => {});
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ACtx: typeof AudioContext = window.AudioContext ?? (window as any).webkitAudioContext;
+    _silentCtx = new ACtx();
+    // 1-second buffer of zeros, looped — keeps the context marked "active"
+    const buf = _silentCtx.createBuffer(1, _silentCtx.sampleRate, _silentCtx.sampleRate);
+    _silentSrc = _silentCtx.createBufferSource();
+    _silentSrc.buffer = buf;
+    _silentSrc.loop = true;
+    _silentSrc.connect(_silentCtx.destination);
+    _silentSrc.start(0);
+  } catch {}
+}
+
+function stopSilentAudio() {
+  try { _silentSrc?.stop(); } catch {}
+  _silentSrc = null;
+  try { _silentCtx?.close(); } catch {}
+  _silentCtx = null;
+}
+
+function resumeSilentAudio() {
+  if (_silentCtx?.state === "suspended") _silentCtx.resume().catch(() => {});
+}
+
 function stopCurrentAlarmAudio() {
   if (_alarmAudio) {
     try { _alarmAudio.el.pause(); _alarmAudio.el.currentTime = 0; } catch {}
@@ -492,6 +530,38 @@ function AlarmClock_() {
     syncAllAlarmsToSW(loadAlarms());
   }, []);
 
+  // Start/stop silent audio loop based on whether any alarm is active.
+  // This prevents Chrome from throttling the setInterval when the tab is in
+  // the background, giving the same precision as a native alarm clock app.
+  useEffect(() => {
+    const hasActive = alarms.some(a => a.active && !a.fired);
+    if (hasActive) {
+      startSilentAudio();
+    } else {
+      stopSilentAudio();
+    }
+  }, [alarms]);
+
+  // Resume the silent AudioContext whenever the tab becomes visible again —
+  // browsers suspend it when the page is hidden.
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === "visible") resumeSilentAudio(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
+  // SW keep-alive ping: when alarms are active, message the SW every 25 s so
+  // it doesn't get killed before the alarm time.
+  useEffect(() => {
+    const hasActive = alarms.some(a => a.active && !a.fired);
+    if (!hasActive) return;
+    const id = setInterval(async () => {
+      const sw = await getSwActive();
+      sw?.postMessage({ type: "PING" });
+    }, 25_000);
+    return () => clearInterval(id);
+  }, [alarms]);
+
   // SW message listener: ALARM_FIRED (fired in background) + ALARM_DISMISS (user tapped Dismiss)
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -619,6 +689,8 @@ function AlarmClock_() {
       setNotifGranted(ok);
       if (!ok) toast("Notifications blocked — alarm will still play in the app.", { icon: "ℹ️" });
     }
+    // Start silent loop inside user gesture so AudioContext is allowed immediately
+    startSilentAudio();
     const id = crypto.randomUUID();
     const alarm: Alarm = {
       id, time: newTime, label: newLabel.trim(), active: true, fired: false,
@@ -640,8 +712,12 @@ function AlarmClock_() {
       const next = prev.map(a => a.id === id ? { ...a, active: !a.active, fired: false } : a);
       const toggled = next.find(a => a.id === id);
       if (toggled) {
-        if (toggled.active) scheduleAlarmInSW(toggled);
-        else cancelAlarmInSW(id);
+        if (toggled.active) {
+          startSilentAudio(); // user gesture — safe to start AudioContext here
+          scheduleAlarmInSW(toggled);
+        } else {
+          cancelAlarmInSW(id);
+        }
       }
       return next;
     });
@@ -747,6 +823,17 @@ function AlarmClock_() {
             </Button>
           </div>
         </div>
+
+        {/* Background alarm status */}
+        {alarms.some(a => a.active && !a.fired) && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-xs text-green-400">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
+            </span>
+            Background alarm active — keep browser open for sound to play
+          </div>
+        )}
 
         {/* Alarm list */}
         {alarms.length === 0 ? (

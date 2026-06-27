@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v15"; // bumped — alarm double-fire fix + missed-alarm recovery
+const CACHE_VERSION = "v16"; // silent audio loop + SW keep-alive ping
 
 const BASE = new URL("./", self.location).pathname;
 
@@ -170,6 +170,10 @@ self.addEventListener("message", event => {
       alarmTimers.delete(data.alarmId);
     }
     deleteAlarmRecord(data.alarmId).catch(() => {});
+
+  } else if (data.type === "PING") {
+    // Keep-alive from the page — no-op, just receiving the message keeps the SW alive
+    event.source?.postMessage({ type: "PONG" });
 
   } else if (data.type === "ALARM_RESCHEDULE_ALL") {
     // Full sync: page is the source of truth; SW clears and rebuilds its schedule

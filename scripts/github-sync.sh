@@ -21,7 +21,7 @@ push_to_github() {
   CRED_FILE=$(mktemp)
   chmod 600 "$CRED_FILE"
   echo "$AUTH_URL" > "$CRED_FILE"
-  git -c credential.helper="store --file=$CRED_FILE" push "$AUTH_URL" main:main --quiet 2>&1
+  git -c credential.helper="store --file=$CRED_FILE" push "$AUTH_URL" main:main --force --quiet 2>&1
   local EXIT_CODE=$?
   rm -f "$CRED_FILE"
   return $EXIT_CODE
