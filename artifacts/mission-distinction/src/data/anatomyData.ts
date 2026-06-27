@@ -119,6 +119,7 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
       {
         id: "left-ventricle",
         name: "Left Ventricle",
+        regions: ["trunk"],
         cardLabel: "HEART",
         cardSubtitle: "External view",
         icon: "🫀",
@@ -161,9 +162,9 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
       },
       {
         id: "head-vasculature",
-        name: "Head Vasculature",
-        regions: ["head"],
-        cardLabel: "HEAD",
+        name: "Head & Neck Vasculature",
+        regions: ["trunk"],
+        cardLabel: "HEAD & NECK",
         cardSubtitle: "Arteries & Veins",
         icon: "🩸",
         description: "The head and neck receive their arterial supply primarily from the common carotid arteries (internal and external branches) and the vertebral arteries. The venous drainage is via the internal and external jugular veins. This rich vascular network supplies the brain, face, scalp, and neck structures.",
@@ -200,6 +201,7 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
       {
         id: "coronary-arteries",
         name: "Coronary Arteries",
+        regions: ["trunk"],
         cardLabel: "HEART",
         cardSubtitle: "Arteries",
         icon: "🫀",

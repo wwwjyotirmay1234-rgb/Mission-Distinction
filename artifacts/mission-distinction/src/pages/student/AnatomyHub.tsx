@@ -75,7 +75,7 @@ const REGION_ACCENT: Record<RegionId, string> = {
 };
 
 const REGION_SYSTEM_IDS: Record<RegionId, string[]> = {
-  head:       ["skeletal", "cardiovascular", "nervous", "lymphatic", "sensory"],
+  head:       ["skeletal", "nervous", "lymphatic", "sensory"],
   trunk:      ["skeletal", "cardiovascular", "nervous", "respiratory", "digestive", "urinary", "reproductive", "lymphatic"],
   upper_limb: ["skeletal", "muscular"],
   lower_limb: [],
@@ -84,7 +84,6 @@ const REGION_SYSTEM_IDS: Record<RegionId, string[]> = {
 // Section heading overrides when viewing the Head region — mirrors the reference app labels
 const HEAD_SECTION_LABELS: Partial<Record<string, string>> = {
   skeletal:      "Musculoskeletal system",
-  cardiovascular:"Cardiovascular system",
   nervous:       "Nervous system",
   lymphatic:     "Lymphatic system",
   sensory:       "Sense organs",
