@@ -41,6 +41,8 @@ export type AnatomyStructure = {
   origin?: string;
   insertion?: string;
   action?: string;
+  /** Optional per-structure GLB override (takes precedence over system glbPath) */
+  glbPath?: string;
 };
 
 export type AnatomySystem = {
@@ -182,7 +184,7 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
     color: "#f59e0b",
     darkColor: "#78350f",
     modelCount: 126,
-    icon: "🦴",
+    icon: "💀",
     cadavericTitle: "Skull – Lateral View",
     cadavericSide: "Lateral",
     cadavericDescription: "Lateral view of the human skull showing the cranial bones, sutures, and foramina. The pterion (H-shaped junction of frontal, parietal, temporal, and sphenoid bones) is a vulnerable point — the middle meningeal artery lies deep to it.",
@@ -199,6 +201,49 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
     ctNote: "CT: investigation of choice for bone detail, fractures, calcification, and haematoma (blood hyperdense: 40–80 HU).",
     mriNote: "MRI: superior for soft tissue (brain, meninges, CSF, cranial nerves). T1: fat bright, CSF dark. T2: CSF bright.",
     structures: [
+      {
+        id: "skull",
+        name: "Skull",
+        glbPath: "/models/skull.glb",
+        description: "The skull is a bony structure that forms the head in vertebrates, protecting the brain and supporting the face. It consists of 22 bones — 8 cranial bones forming the neurocranium (protecting the brain) and 14 facial bones forming the viscerocranium.",
+        clinicalPoints: [
+          "Pterion: H-shaped junction of frontal, parietal, temporal, and sphenoid bones — thinnest part of skull; middle meningeal artery lies deep to it; blow → extradural haematoma",
+          "Fracture of petrous temporal bone → CSF otorrhoea, Battle's sign (bruising behind ear), haemotympanum",
+          "Anterior cranial fossa fracture → CSF rhinorrhoea (cribriform plate), 'raccoon eyes' (periorbital ecchymosis), anosmia (olfactory nerve shear)",
+          "Depressed skull fracture → risks dural tear, intracranial infection, focal neurological deficit",
+          "Sagittal suture early fusion (scaphocephaly) → narrow elongated head; coronal craniosynostosis → plagiocephaly",
+          "Fontanelles: anterior (bregma, closes 18 months); posterior (lambda, closes 3 months). Bulging = raised ICP; sunken = dehydration",
+        ],
+        studyNotes: "Cranial bones (8): Frontal (1), Parietal (2), Temporal (2), Occipital (1), Sphenoid (1), Ethmoid (1). Mnemonic: 'PEST OF 6' → Parietal×2, Ethmoid, Sphenoid, Temporal×2, Occipital, Frontal. Sutures: Coronal (frontal–parietal), Sagittal (parietal–parietal), Lambdoid (parietal–occipital), Squamosal (temporal–parietal).",
+        quiz: [
+          { q: "Which area of the skull is thinnest and overlies the middle meningeal artery?", options: ["Bregma", "Pterion", "Asterion", "Inion"], correct: 1, explanation: "The pterion is the H-shaped junction of the frontal, parietal, temporal, and sphenoid bones — the thinnest and weakest part of the skull. A blow here can rupture the anterior division of the middle meningeal artery, causing an extradural haematoma (lens-shaped on CT)." },
+          { q: "A patient has CSF rhinorrhoea and periorbital haematomas after a head injury. Which cranial fossa is fractured?", options: ["Middle cranial fossa", "Posterior cranial fossa", "Anterior cranial fossa", "Petrous temporal"], correct: 2, explanation: "Anterior cranial fossa fractures involve the cribriform plate → CSF rhinorrhoea (CSF in nose). 'Raccoon eyes' (periorbital ecchymosis) result from blood tracking into the periorbital region. Posterior fossa → Battle's sign (mastoid bruising)." },
+          { q: "At what age does the anterior fontanelle normally close?", options: ["3 months", "6 months", "12 months", "18 months"], correct: 3, explanation: "The anterior fontanelle (at the bregma — junction of coronal and sagittal sutures) normally closes by 18 months. The posterior fontanelle (at lambda) closes by 3 months. A bulging fontanelle suggests raised intracranial pressure; sunken = dehydration." },
+        ],
+        labels: [
+          { id: "frontal-bone", name: "Frontal Bone", pos: [-0.05, 0.9, 0.7], description: "Forms the forehead and roof of the orbits. Contains the frontal sinuses. Unites with the parietal bones at the coronal suture.", layer: "bone" },
+          { id: "parietal-bone", name: "Parietal Bone", pos: [0.75, 0.6, 0.1], description: "Paired bones forming the roof and sides of the skull. Separated by the sagittal suture in the midline.", layer: "bone" },
+          { id: "temporal-bone", name: "Temporal Bone", pos: [1.05, 0.1, 0.1], description: "Contains the external acoustic meatus, middle ear, inner ear (cochlea and semicircular canals), and mastoid air cells. The petrous part forms part of the skull base.", clinicalNote: "Fracture → haemotympanum, Battle's sign, facial nerve palsy", layer: "bone" },
+          { id: "occipital-bone", name: "Occipital Bone", pos: [0.0, 0.3, -1.0], description: "Forms the posterior and inferior cranial fossa. Contains the foramen magnum (transmits brainstem, vertebral arteries, accessory nerve). External occipital protuberance (inion) is a palpable landmark.", layer: "bone" },
+          { id: "sphenoid", name: "Sphenoid Bone", pos: [0.7, 0.0, 0.4], description: "Butterfly-shaped bone at the skull base. Greater and lesser wings, sella turcica (houses pituitary), pterygoid plates, and numerous foramina (superior orbital fissure, foramen rotundum, foramen ovale).", layer: "bone" },
+          { id: "zygomatic", name: "Zygomatic Bone", pos: [0.95, 0.0, 0.7], description: "Forms the cheekbone and part of the orbital wall. The zygomatic arch (with temporal bone) is a key facial landmark. 'Tripod' or 'malar' fracture = detachment at three sutures.", clinicalNote: "Malar fracture: flattened cheek, trismus, enophthalmos", layer: "bone" },
+          { id: "mandible", name: "Mandible", pos: [0.0, -0.7, 0.8], description: "Only movable bone of the skull. Has a body, two rami, condylar processes (TMJ), and coronoid processes. Mental foramen: exit of mental nerve (V3). Inferior alveolar nerve runs within the mandibular canal.", clinicalNote: "Dental block targets inferior alveolar nerve at mandibular foramen", layer: "bone" },
+          { id: "pterion", name: "Pterion", pos: [1.0, 0.35, 0.5], description: "H-shaped junction of 4 bones: frontal, parietal, temporal (squamous), and sphenoid (greater wing). Thinnest part of skull vault. Middle meningeal artery anterior division lies deep here.", clinicalNote: "Blow → extradural haematoma; lens-shaped (biconvex) on CT", layer: "bone" },
+        ],
+        mnemonics: [
+          { mnemonic: "PEST OF 6", meaning: "Parietal×2, Ethmoid, Sphenoid, Temporal×2, Occipital, Frontal — the 8 cranial bones", tip: "'PEST' = 4 distinct bones, 'OF' bridge, then Occipital + Frontal; pairs count as one each in the mnemonic" },
+          { mnemonic: "Cranial fossae foramina: 'Oh, Osama Really Ousted Fanatic Jihadis Verily Heeding Salient Goals'", meaning: "Olfactory (cribriform), Optic canal, Superior orbital fissure, Foramen rotundum, Foramen ovale, Foramen spinosum, Jugular foramen, Vertebral artery (foramen magnum), Hypoglossal canal, Stylomastoid, Groove for sigmoid sinus", tip: "Follow the path from ACF → MCF → PCF" },
+        ],
+        relations: [
+          "Superiorly: scalp (5 layers: Skin, subCutaneous tissue, Aponeurosis, loose connective tissue, Pericranium — SCALP)",
+          "Inferiorly: dura mater, venous sinuses, then brain",
+          "Anteriorly: orbital plates of frontal bone, ethmoid",
+          "Posteriorly: external occipital protuberance, superior nuchal lines, trapezius and sternocleidomastoid attachments",
+          "Laterally: temporalis muscle and fascia, pterion region, parotid gland and duct below zygomatic arch",
+        ],
+        bloodSupply: "Skull vault: middle meningeal artery (from maxillary a., branch of ECA) — grooves the inner table of temporal bone. Scalp: 5 arteries each side — STA (superficial temporal), OA (occipital), PA (posterior auricular), SuOA (supraorbital), SupraTrochlear — rich anastomosis so scalp lacerations bleed profusely.",
+        nerveSupply: "Scalp sensory: V1 (ophthalmic — supraorbital, supratrochlear), V2 (zygomatic), V3 (auriculotemporal), C2 (greater occipital), C2/3 (lesser occipital, great auricular). No sensory nerves in bone itself.",
+      },
       {
         id: "humerus",
         name: "Humerus",

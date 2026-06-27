@@ -73,7 +73,7 @@ const REGION_ACCENT: Record<RegionId, string> = {
 };
 
 const REGION_SYSTEM_IDS: Record<RegionId, string[]> = {
-  head:       ["nervous", "endocrine"],
+  head:       ["skeletal", "nervous", "endocrine"],
   trunk:      ["cardiovascular", "respiratory", "digestive", "urinary", "reproductive", "lymphatic"],
   upper_limb: ["skeletal", "muscular"],
   lower_limb: [],
@@ -700,6 +700,7 @@ function SystemView({ system, onBack, initialStructure }: {
             system={system}
             selectedLabel={selectedLabel}
             onLabelSelect={handleLabelSelect}
+            structureGlbPath={selectedStructure?.glbPath}
           />
 
           {selectedLabel && (() => {

@@ -395,13 +395,15 @@ function ProceduralModel({ system, p }: { system: AnatomySystem; p: MRP }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // SystemModel — tries GLB first, falls back to procedural
 // ─────────────────────────────────────────────────────────────────────────────
-function SystemModel({ system, p, glbExists }: {
-  system: AnatomySystem; p: MRP; glbExists: boolean | null;
+function SystemModel({ system, p, glbExists, structureGlbPath }: {
+  system: AnatomySystem; p: MRP; glbExists: boolean | null; structureGlbPath?: string;
 }) {
   const procedural = <ProceduralModel system={system} p={p} />;
+  // Effective GLB: per-structure override takes priority over system-level
+  const effectivePath = structureGlbPath ?? system.glbPath;
 
   // No GLB configured or confirmed absent
-  if (!system.glbPath || glbExists === false) return procedural;
+  if (!effectivePath || glbExists === false) return procedural;
 
   // Still checking (null) → show procedural while loading
   if (glbExists === null) return procedural;
@@ -411,11 +413,11 @@ function SystemModel({ system, p, glbExists }: {
     <GLBErrorBoundary fallback={procedural}>
       <Suspense fallback={procedural}>
         <GLBModel
-          glbPath={system.glbPath}
+          glbPath={effectivePath}
           p={p}
           overrides={system.glbLayers as Record<string, LayerId> | undefined}
         />
-        {import.meta.env.DEV && <GLBInspector glbPath={system.glbPath} />}
+        {import.meta.env.DEV && <GLBInspector glbPath={effectivePath} />}
       </Suspense>
     </GLBErrorBoundary>
   );
@@ -481,17 +483,19 @@ function CameraController({ resetTrigger, isInteracting, onInteract }: {
 // Scene
 // ─────────────────────────────────────────────────────────────────────────────
 function Scene({ system, selectedLabel, onLabelSelect, mrp, resetTrigger,
-  isInteracting, onInteract, glbExists }: {
+  isInteracting, onInteract, glbExists, structureGlbPath }: {
   system: AnatomySystem; selectedLabel: string | null;
   onLabelSelect: (l: StructureLabel) => void; mrp: MRP;
   resetTrigger: number; isInteracting: boolean;
   onInteract: (v: boolean) => void; glbExists: boolean | null;
+  structureGlbPath?: string;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   useFrame(() => {
     if (groupRef.current && !isInteracting) groupRef.current.rotation.y += 0.003;
   });
   const allLabels = useMemo(() => system.structures.flatMap(s => s.labels), [system]);
+  const effectivePath = structureGlbPath ?? system.glbPath;
 
   return (
     <>
@@ -501,12 +505,12 @@ function Scene({ system, selectedLabel, onLabelSelect, mrp, resetTrigger,
       <pointLight position={[0, -3, 3]} intensity={0.5} color="#ff8060" />
       <Environment preset="city" />
       <group ref={groupRef}>
-        <SystemModel system={system} p={mrp} glbExists={glbExists} />
+        <SystemModel system={system} p={mrp} glbExists={glbExists} structureGlbPath={structureGlbPath} />
         {allLabels.map(label => (
           <Label3D key={label.id} label={label} selected={selectedLabel === label.id} onSelect={onLabelSelect} />
         ))}
-        {/* Show "no GLB" prompt inside 3D if glbPath set but file absent */}
-        {system.glbPath && glbExists === false && (
+        {/* Show "no GLB" prompt inside 3D if effective path set but file absent */}
+        {effectivePath && glbExists === false && (
           <NoGLBPlaceholder system={system} />
         )}
       </group>
@@ -561,11 +565,13 @@ function GLBBadge({ status }: { status: "loading" | "loaded" | "fallback" | "non
 // Main export
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ModelViewer3D({
-  system, selectedLabel, onLabelSelect,
+  system, selectedLabel, onLabelSelect, structureGlbPath,
 }: {
   system: AnatomySystem;
   selectedLabel: string | null;
   onLabelSelect: (l: StructureLabel) => void;
+  /** Per-structure GLB override — loaded instead of system.glbPath when present */
+  structureGlbPath?: string;
 }) {
   const [isInteracting, setIsInteracting] = useState(false);
   const [viewMode, setViewMode] = useState<"3d" | "sketchfab">("3d");
@@ -576,17 +582,20 @@ export default function ModelViewer3D({
   const [resetTrigger, setResetTrigger] = useState(0);
   const [showLayerPanel, setShowLayerPanel] = useState(false);
 
-  // Check whether the GLB file actually exists
-  const glbExists = useGLBExists(system.glbPath);
+  // Effective GLB path: per-structure takes priority over system-level
+  const effectiveGlbPath = structureGlbPath ?? system.glbPath;
+
+  // Check whether the effective GLB file actually exists
+  const glbExists = useGLBExists(effectiveGlbPath);
   const glbStatus: "loading" | "loaded" | "fallback" | "none" =
-    !system.glbPath ? "none" :
+    !effectiveGlbPath ? "none" :
     glbExists === null ? "loading" :
     glbExists ? "loaded" : "fallback";
 
   React.useEffect(() => {
     setViewMode("3d"); setIsolated(null); setHidden(new Set());
     setGlobalOp(1.0); setShowOpSlider(false); setShowLayerPanel(false);
-  }, [system.id]);
+  }, [system.id, structureGlbPath]);
 
   const mrp: MRP = useMemo(() => ({ globalOp, isolated, hidden }), [globalOp, isolated, hidden]);
 
@@ -661,7 +670,7 @@ export default function ModelViewer3D({
             </button>
           )}
           {/* GLB mesh download hint */}
-          {system.glbPath && glbExists === false && (
+          {effectiveGlbPath && glbExists === false && (
             <a href="https://sketchfab.com/search?q=human+heart+anatomy&downloadable=true&sort_by=-likeCount"
               target="_blank" rel="noopener noreferrer"
               className="mt-1.5 flex items-center gap-1.5 text-[10px] text-amber-400 hover:text-amber-200 font-semibold text-center py-1 border-t border-white/8 transition-colors"
@@ -686,6 +695,7 @@ export default function ModelViewer3D({
               system={system} selectedLabel={selectedLabel} onLabelSelect={onLabelSelect}
               mrp={mrp} resetTrigger={resetTrigger} isInteracting={isInteracting}
               onInteract={setIsInteracting} glbExists={glbExists}
+              structureGlbPath={structureGlbPath}
             />
           </Suspense>
         </Canvas>
