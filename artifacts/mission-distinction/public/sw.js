@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v13"; // bumped — anatomy UI full rewrite
+const CACHE_VERSION = "v14"; // bumped — Android WebGL canvas fix
 
 const BASE = new URL("./", self.location).pathname;
 

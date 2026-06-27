@@ -1,6 +1,6 @@
 import React, { Suspense, useRef, useState, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Environment, ContactShadows, Html, useGLTF } from "@react-three/drei";
+import { OrbitControls, Environment, Html, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { Eye, EyeOff, Layers, Crosshair, RotateCcw, SlidersHorizontal, X, Download } from "lucide-react";
 import type { AnatomySystem, StructureLabel } from "@/data/anatomyData";
@@ -495,12 +495,11 @@ function Scene({ system, selectedLabel, onLabelSelect, mrp, resetTrigger,
 
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 8, 5]} intensity={1.6} castShadow shadow-mapSize={[2048, 2048]} />
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[5, 8, 5]} intensity={1.6} />
       <directionalLight position={[-4, 3, -3]} intensity={0.7} color="#a0c8ff" />
       <pointLight position={[0, -3, 3]} intensity={0.5} color="#ff8060" />
       <Environment preset="city" />
-      <ContactShadows position={[0, -2.2, 0]} opacity={0.5} scale={7} blur={2.5} far={5} />
       <group ref={groupRef}>
         <SystemModel system={system} p={mrp} glbExists={glbExists} />
         {allLabels.map(label => (
@@ -679,8 +678,8 @@ export default function ModelViewer3D({
       ) : (
         <Canvas
           camera={{ position: [0, 0, 5.2], fov: 40 }}
-          shadows gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-          style={{ background: "transparent" }} dpr={[1, 1.5]}
+          gl={{ antialias: true, alpha: true }}
+          style={{ background: "transparent" }} dpr={[1, 1.2]}
         >
           <Suspense fallback={null}>
             <Scene
