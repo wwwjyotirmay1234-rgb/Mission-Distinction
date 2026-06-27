@@ -805,7 +805,7 @@ function SystemView({ system, onBack, initialStructure }: {
   const [selectedStructure, setSelectedStructure] = useState<AnatomyStructure>(initialStructure ?? system.structures[0]);
   const [activeTab, setActiveTab] = useState<TabId>("labels");
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
-  const [sheetState, setSheetState] = useState<SheetState>("peek");
+  const [sheetState, setSheetState] = useState<SheetState>("closed");
   const [showSearch, setShowSearch] = useState(false);
   const [structSearch, setStructSearch] = useState("");
   const [showStructList, setShowStructList] = useState(false);
@@ -968,17 +968,19 @@ function SystemView({ system, onBack, initialStructure }: {
           </button>
         </div>
 
-        {/* ─── Desktop right panel ─── */}
-        <aside className="w-72 xl:w-[300px] shrink-0 hidden md:flex flex-col border-l border-white/8 bg-black/25 overflow-hidden">
-          <StructureInfoPanel
-            system={system}
-            structure={selectedStructure}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            selectedLabel={selectedLabel}
-            onLabelSelect={handleLabelSelect}
-          />
-        </aside>
+        {/* ─── Desktop right panel — only when a label is selected ─── */}
+        {selectedLabel && (
+          <aside className="w-72 xl:w-[300px] shrink-0 hidden md:flex flex-col border-l border-white/8 bg-black/25 overflow-hidden animate-in slide-in-from-right duration-200">
+            <StructureInfoPanel
+              system={system}
+              structure={selectedStructure}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              selectedLabel={selectedLabel}
+              onLabelSelect={handleLabelSelect}
+            />
+          </aside>
+        )}
       </div>
 
       {/* ─── Bottom structure strip ─── */}
