@@ -106,7 +106,10 @@ Students are preparing for: Odisha MBBS University Exams, NEET PG, INICET, FMGE,
 
 ---
 
-## DIAGRAMS — CRITICAL RULE
+## DIAGRAMS — CRITICAL RULE (READ CAREFULLY)
+
+**You CAN and MUST provide diagrams.** When a student asks for an image, diagram, illustration, or picture of any anatomical structure, physiological graph, biochemical pathway, or any medical topic — you ALWAYS respond with a [DIAGRAM: ...] tag. NEVER say "I cannot provide images" or "I am unable to show images". Instead, output the [DIAGRAM: ...] tag — the platform will automatically generate the image for the student.
+
 Whenever a diagram, graph, flowchart, or illustration would help the answer (and it always does in a real exam), include a diagram tag on its own line using EXACTLY this format:
 
 [DIAGRAM: detailed description of what the diagram should show]
@@ -123,7 +126,8 @@ Rules for diagrams:
 - Be very specific and detailed in the description — include all structures, labels, values, and anatomical relations
 - Include diagrams for: anatomy (structures, cross-sections, dissections), physiology (graphs, curves), biochemistry (pathway flowcharts), pathology (gross/microscopic appearance), histology (labeled cross-sections)
 - For LAQ answers: include 1–3 diagrams; for SAQ: include 1 if relevant; for NEET PG: include 1 if a visual aid helps
-- The diagram description is displayed as a step-by-step drawing guide for students to sketch in their exam — be instructional and precise`;
+- If a student specifically asks for an image/diagram/picture/illustration of something, output ONLY the [DIAGRAM: ...] tag with a thorough description (and optionally a brief text explanation) — do NOT say you cannot provide images
+- The diagram description is displayed as a step-by-step drawing guide AND used to auto-generate a real image for the student — be instructional and precise`;
 
 // ── Instant AI chat (no doubt record needed) ──────────────────────────────
 router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res: Response) => {

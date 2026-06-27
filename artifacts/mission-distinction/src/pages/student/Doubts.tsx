@@ -80,7 +80,7 @@ function TypingDots() {
   );
 }
 
-// ─── Diagram block — styled drawing guide card ────────────────────────────────
+// ─── Diagram block — styled drawing guide card + AI image generation ──────────
 
 function DiagramBlock({ description }: { description: string }) {
   const sentences = description
@@ -88,12 +88,82 @@ function DiagramBlock({ description }: { description: string }) {
     .map(s => s.trim())
     .filter(Boolean);
 
+  const [imgState, setImgState] = React.useState<"idle" | "loading" | "done" | "error">("idle");
+  const [imgUrl, setImgUrl] = React.useState<string | null>(null);
+  const [errMsg, setErrMsg] = React.useState<string>("");
+
+  const generateImage = async () => {
+    setImgState("loading");
+    setErrMsg("");
+    try {
+      const token = localStorage.getItem("mission_token");
+      const res = await fetch("/api/ai-tools/generate-diagram", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ description }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Generation failed");
+      setImgUrl(data.url);
+      setImgState("done");
+    } catch (e: any) {
+      setErrMsg(e.message || "Image generation failed");
+      setImgState("error");
+    }
+  };
+
   return (
     <div className="my-3 rounded-xl border border-primary/30 bg-primary/5 overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-primary/15 bg-primary/10">
-        <ImageIcon size={13} className="text-primary shrink-0" />
-        <span className="text-xs text-primary font-semibold tracking-wide uppercase">Diagram to Draw in Exam</span>
+      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-primary/15 bg-primary/10">
+        <div className="flex items-center gap-2">
+          <ImageIcon size={13} className="text-primary shrink-0" />
+          <span className="text-xs text-primary font-semibold tracking-wide uppercase">Diagram to Draw in Exam</span>
+        </div>
+        {imgState === "idle" && (
+          <button
+            onClick={generateImage}
+            className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-md bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
+          >
+            <Sparkles size={10} /> Generate Image
+          </button>
+        )}
+        {imgState === "error" && (
+          <button
+            onClick={generateImage}
+            className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-md bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors"
+          >
+            <RotateCcw size={10} /> Retry
+          </button>
+        )}
       </div>
+
+      {/* Generated image */}
+      {imgState === "loading" && (
+        <div className="px-4 py-6 flex flex-col items-center gap-2 text-primary/60">
+          <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+          <p className="text-xs text-muted-foreground">Generating diagram with AI… (~10 sec)</p>
+        </div>
+      )}
+      {imgState === "done" && imgUrl && (
+        <div className="p-2">
+          <img
+            src={imgUrl}
+            alt={description.slice(0, 100)}
+            className="w-full rounded-lg border border-border/30"
+            style={{ maxHeight: "480px", objectFit: "contain", background: "#fff" }}
+          />
+          <p className="text-[10px] text-muted-foreground/50 text-center pt-1.5 italic">AI-generated illustration — verify labels with your textbook</p>
+        </div>
+      )}
+      {imgState === "error" && (
+        <div className="px-4 py-2 text-xs text-destructive/80">{errMsg}</div>
+      )}
+
+      {/* Text description — always shown */}
       <div className="px-4 py-3 space-y-1.5">
         {sentences.length > 1 ? (
           <ul className="space-y-1.5">

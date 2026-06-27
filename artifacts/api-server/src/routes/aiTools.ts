@@ -221,4 +221,30 @@ Return JSON array only:
   }
 });
 
+// ── Generate a medical diagram image via DALL-E 3 ─────────────────────────────
+router.post("/generate-diagram", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
+  try {
+    const description = sanitizePromptInput(req.body.description, 800);
+    if (!description) { res.status(400).json({ error: "description required (max 800 chars)" }); return; }
+
+    const imagePrompt = `Medical textbook illustration, clean white background, black ink line art style. Accurate anatomical/physiological diagram: ${description}. Include clear labels with leader lines for every structure. Style: professional medical textbook, similar to Gray's Anatomy illustrations. High detail, exam-quality diagram, no color fills except light grey for depth, no decorative borders or text boxes outside the diagram.`;
+
+    const response = await openai.images.generate({
+      model: "dall-e-3",
+      prompt: imagePrompt,
+      n: 1,
+      size: "1024x1024",
+      quality: "standard",
+      response_format: "url",
+    });
+
+    const url = response.data[0]?.url;
+    if (!url) { res.status(500).json({ error: "Image generation failed" }); return; }
+    res.json({ url });
+  } catch (err: any) {
+    console.error("DALL-E diagram generation error:", err);
+    res.status(500).json({ error: err?.message || "Image generation failed. Please try again." });
+  }
+});
+
 export { router as aiToolsRouter };
