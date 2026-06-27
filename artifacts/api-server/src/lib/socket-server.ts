@@ -362,12 +362,18 @@ export function initSocketServer(httpServer: HttpServer) {
 
     socket.on("call:approve", ({ roomKey, requesterSocketId }: { roomKey: string; requesterSocketId: string }) => {
       if (typeof roomKey !== "string" || typeof requesterSocketId !== "string") return;
+      const pending = callJoinRequests.get(roomKey)?.get(requesterSocketId);
+      // Only the intended host may approve
+      if (!pending || pending.hostUserId !== user.id) return;
       callJoinRequests.get(roomKey)?.delete(requesterSocketId);
       io.to(requesterSocketId).emit("call:approved", { roomKey });
     });
 
     socket.on("call:deny", ({ roomKey, requesterSocketId }: { roomKey: string; requesterSocketId: string }) => {
       if (typeof roomKey !== "string" || typeof requesterSocketId !== "string") return;
+      const pending = callJoinRequests.get(roomKey)?.get(requesterSocketId);
+      // Only the intended host may deny
+      if (!pending || pending.hostUserId !== user.id) return;
       callJoinRequests.get(roomKey)?.delete(requesterSocketId);
       io.to(requesterSocketId).emit("call:denied", { roomKey });
     });

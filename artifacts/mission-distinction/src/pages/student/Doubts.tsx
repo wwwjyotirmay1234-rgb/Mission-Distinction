@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import DOMPurify from "dompurify";
 import ReactMarkdown from "react-markdown";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -105,7 +106,8 @@ function DiagramBlock({ description }: { description: string }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Generation failed");
       if (!data.svg || !data.svg.startsWith("<svg")) throw new Error("Invalid diagram returned");
-      setSvgData(data.svg);
+      const clean = DOMPurify.sanitize(data.svg, { USE_PROFILES: { svg: true }, FORCE_BODY: false });
+      setSvgData(clean);
       setState("done");
     } catch (e: any) {
       setErrMsg(e.message || "Diagram generation failed");
