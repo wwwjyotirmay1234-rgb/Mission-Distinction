@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middlewares/auth";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openai, generateImageBuffer } from "@workspace/integrations-openai-ai-server";
 import rateLimit from "express-rate-limit";
 
 const router = Router();
@@ -241,7 +241,7 @@ Return JSON array only:
   }
 });
 
-// ── Generate a medical diagram image via DALL-E 3 ─────────────────────────────
+// ── Generate a medical diagram image via gpt-image-1 ──────────────────────────
 router.post("/generate-diagram", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
   try {
     const description = sanitizePromptInput(req.body.description, 800);
@@ -249,20 +249,10 @@ router.post("/generate-diagram", authMiddleware, aiLimiter, async (req: Request,
 
     const imagePrompt = `Medical textbook illustration, clean white background, black ink line art style. Accurate anatomical/physiological diagram: ${description}. Include clear labels with leader lines for every structure. Style: professional medical textbook, similar to Gray's Anatomy illustrations. High detail, exam-quality diagram, no color fills except light grey for depth, no decorative borders or text boxes outside the diagram.`;
 
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: imagePrompt,
-      n: 1,
-      size: "1024x1024",
-      quality: "standard",
-      response_format: "url",
-    });
-
-    const url = (response.data ?? [])[0]?.url;
-    if (!url) { res.status(500).json({ error: "Image generation failed" }); return; }
-    res.json({ url });
+    const buffer = await generateImageBuffer(imagePrompt, "1024x1024");
+    res.json({ b64_json: buffer.toString("base64") });
   } catch (err: any) {
-    console.error("DALL-E diagram generation error:", err);
+    console.error("Image generation error:", err);
     res.status(500).json({ error: err?.message || "Image generation failed. Please try again." });
   }
 });

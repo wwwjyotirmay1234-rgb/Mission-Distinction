@@ -104,7 +104,7 @@ function DiagramBlock({ description }: { description: string }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Generation failed");
-      setImgUrl(data.url);
+      setImgUrl(`data:image/png;base64,${data.b64_json}`);
       setImgState("done");
     } catch (e: any) {
       setErrMsg(e.message || "Image generation failed");
