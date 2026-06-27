@@ -103,6 +103,17 @@ Return valid JSON array only (no markdown):
   }
 });
 
+const SUMMARISE_SYSTEM_PROMPT = `You are an expert Indian medical educator helping MBBS/NEET PG students revise.
+Reference gold-standard textbooks (Gray's Anatomy, Ganong's Physiology, Harper's Biochemistry, Robbins Pathology, KD Tripathi Pharmacology, etc.).
+All content must be factually accurate and at NEET PG examination standard.
+Respond ONLY in clean Markdown. Rules:
+- Use ## for section headings
+- Use - for bullet lists (never use * for bullets)
+- Use | tables | like | this | for structured data (key terms, comparisons)
+- Use **bold** only for the most critical facts or terms
+- Never output raw JSON, code blocks, or asterisk-only formatting
+- Keep language concise and exam-focused`;
+
 // Summarise text / notes
 router.post("/summarise", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
   try {
@@ -114,17 +125,26 @@ router.post("/summarise", authMiddleware, aiLimiter, async (req: Request, res: R
     const subjectPrefix = p.subject ? `Subject: ${p.subject}\n` : "";
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.5,
+      temperature: 0.4,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: SUMMARISE_SYSTEM_PROMPT },
         {
           role: "user",
-          content: `${subjectPrefix}Summarise the following notes for MBBS/NEET PG revision. Provide:
-1. A concise bullet-point summary of key exam-relevant points (max 10 bullets)
-2. 3 high-yield NEET PG type questions with brief answers
-3. Key terms and their clinical significance
+          content: `${subjectPrefix}Summarise the following notes for MBBS/NEET PG revision using this exact structure:
 
-Notes:
+## Key Points
+(8-10 concise bullet points of the most exam-relevant facts)
+
+## High-Yield Questions
+(3 NEET PG style Q&A pairs, each as: **Q:** … followed by **A:** …)
+
+## Key Terms
+
+| Term | Definition / Clinical Significance |
+|------|--------------------------------------|
+(5-8 rows, one term per row)
+
+Notes to summarise:
 ${p.text}`,
         },
       ],

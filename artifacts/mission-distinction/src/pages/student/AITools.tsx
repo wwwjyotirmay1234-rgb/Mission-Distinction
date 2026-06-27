@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -190,8 +191,52 @@ function NoteSummariser() {
               <Bot size={16} className="text-primary" />
               <p className="text-sm font-semibold text-primary">AI Summary</p>
             </div>
-            <div className="text-sm leading-relaxed text-foreground prose prose-invert prose-sm max-w-none">
-              <ReactMarkdown>{summary}</ReactMarkdown>
+            <div className="text-sm leading-relaxed text-foreground summary-markdown">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h2: ({ children }) => (
+                    <h2 className="text-base font-bold text-primary mt-5 mb-2 first:mt-0 border-b border-primary/20 pb-1">{children}</h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-sm font-semibold text-foreground mt-4 mb-1.5">{children}</h3>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="space-y-1.5 my-2 ml-1">{children}</ul>
+                  ),
+                  li: ({ children }) => (
+                    <li className="flex gap-2 text-sm leading-relaxed">
+                      <span className="text-primary mt-1 shrink-0">›</span>
+                      <span>{children}</span>
+                    </li>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="font-semibold text-foreground">{children}</strong>
+                  ),
+                  p: ({ children }) => (
+                    <p className="text-sm leading-relaxed my-2">{children}</p>
+                  ),
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto my-3 rounded-lg border border-border/40">
+                      <table className="w-full text-sm border-collapse">{children}</table>
+                    </div>
+                  ),
+                  thead: ({ children }) => (
+                    <thead className="bg-primary/10">{children}</thead>
+                  ),
+                  th: ({ children }) => (
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-primary border-b border-border/40">{children}</th>
+                  ),
+                  td: ({ children }) => (
+                    <td className="px-3 py-2 text-xs border-b border-border/20 align-top">{children}</td>
+                  ),
+                  tr: ({ children }) => (
+                    <tr className="hover:bg-white/5 transition-colors">{children}</tr>
+                  ),
+                }}
+              >
+                {summary}
+              </ReactMarkdown>
             </div>
             <p className="text-xs text-muted-foreground/50 mt-4">AI summaries may contain errors. Always verify with your textbooks.</p>
           </CardContent>
