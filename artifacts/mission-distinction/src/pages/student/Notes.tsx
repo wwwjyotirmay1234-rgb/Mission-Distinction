@@ -13,7 +13,9 @@ type Note = {
   id: number;
   title: string;
   subject: string;
-  content: string;
+  content?: string | null;
+  fileUrl?: string | null;
+  fileType?: string | null;
   author?: string | null;
   downloadCount?: number;
 };
@@ -36,8 +38,21 @@ const SUBJECT_COLORS: Record<string, string> = {
 };
 const DEFAULT_COLOR = "border-purple-500/30 text-purple-400 bg-purple-500/10";
 
+function getServeUrlWithToken(url: string): string {
+  if (!url.includes("/api/upload/pdf/serve/")) return url;
+  const token = localStorage.getItem("mission_token");
+  if (!token) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}token=${encodeURIComponent(token)}`;
+}
+
 function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void }) {
   const color = SUBJECT_COLORS[note.subject] || DEFAULT_COLOR;
+  const isFile = note.fileType && note.fileType !== "text" && note.fileType !== "link";
+  const isLink = note.fileType === "link";
+  const isPdf = note.fileUrl && (note.fileUrl.endsWith(".pdf") || note.fileUrl.includes("/pdf/serve/"));
+  const embedUrl = note.fileUrl ? getServeUrlWithToken(note.fileUrl) : null;
+
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-3xl w-full max-h-[90vh] flex flex-col bg-card border-border/50 p-0 gap-0">
@@ -58,20 +73,52 @@ function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void })
           </Button>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          <article className="prose prose-invert prose-sm max-w-none">
-            <div
-              className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap font-sans"
-              style={{ lineHeight: "1.8" }}
-            >
-              {note.content}
+        <div className="flex-1 overflow-y-auto px-6 py-5 min-h-0">
+          {isLink ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+              <ExternalLink size={40} className="text-primary/60" />
+              <p className="text-muted-foreground text-sm">This note links to an external resource.</p>
+              <Button
+                onClick={() => { window.open(note.fileUrl!, "_blank", "noopener,noreferrer"); onClose(); }}
+                className="gap-2"
+              >
+                <ExternalLink size={14} /> Open Link
+              </Button>
             </div>
-          </article>
+          ) : isFile && embedUrl ? (
+            isPdf ? (
+              <iframe
+                src={embedUrl}
+                className="w-full rounded border border-border/40"
+                style={{ height: "60vh" }}
+                title={note.title}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+                <FileText size={40} className="text-primary/60" />
+                <p className="text-muted-foreground text-sm">File attached to this note.</p>
+                <a href={embedUrl} target="_blank" rel="noopener noreferrer" download>
+                  <Button className="gap-2">
+                    <Download size={14} /> Download File
+                  </Button>
+                </a>
+              </div>
+            )
+          ) : (
+            <article className="prose prose-invert prose-sm max-w-none">
+              <div
+                className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap font-sans"
+                style={{ lineHeight: "1.8" }}
+              >
+                {note.content || <span className="text-muted-foreground italic">No content available.</span>}
+              </div>
+            </article>
+          )}
         </div>
 
         <div className="px-6 py-3 border-t border-border/50 flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            {Math.ceil(note.content.length / 1000)} pages · {note.downloadCount || 0} downloads
+            {note.content ? `${Math.ceil(note.content.length / 1000)} pages · ` : ""}{note.downloadCount || 0} downloads
           </span>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={onClose}>
@@ -104,6 +151,7 @@ function trackBookRead(bookId: number) {
 
 function BookCard({ book }: { book: Book }) {
   const color = SUBJECT_COLORS[book.subject] || DEFAULT_COLOR;
+  const openUrl = getServeUrlWithToken(book.url);
   return (
     <Card className="bg-card/40 border-border/40 hover:border-primary/40 transition-all group flex flex-col overflow-hidden">
       {book.coverUrl ? (
@@ -136,7 +184,7 @@ function BookCard({ book }: { book: Book }) {
           size="sm"
           onClick={() => {
             trackBookRead(book.id);
-            window.open(book.url, "_blank", "noopener,noreferrer");
+            window.open(openUrl, "_blank", "noopener,noreferrer");
           }}
         >
           <ExternalLink size={12} /> Read Book
@@ -271,14 +319,22 @@ export default function StudentNotes() {
                       {note.title}
                     </h3>
                     <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">
-                      {note.content.substring(0, 120)}...
+                      {note.fileType === "link"
+                        ? "External link — click to open"
+                        : note.fileType && note.fileType !== "text"
+                          ? "Attached file — click to view"
+                          : note.content
+                            ? `${note.content.substring(0, 120)}...`
+                            : "No preview available"}
                     </p>
                     <p className="text-xs text-muted-foreground mb-4 flex items-center gap-4">
-                      <span className="flex items-center gap-1"><FileText size={12} /> {Math.ceil(note.content.length / 1000)} pages</span>
-                      <span className="flex items-center gap-1"><Download size={12} /> {note.downloadCount} dl</span>
+                      {note.content
+                        ? <span className="flex items-center gap-1"><FileText size={12} /> {Math.ceil(note.content.length / 1000)} pages</span>
+                        : <span className="flex items-center gap-1"><FileText size={12} /> {note.fileType || "text"}</span>}
+                      <span className="flex items-center gap-1"><Download size={12} /> {note.downloadCount ?? 0} dl</span>
                     </p>
                     <Button className="w-full text-xs" variant="secondary" size="sm">
-                      Read Note
+                      {note.fileType === "link" ? "Open Link" : note.fileType && note.fileType !== "text" ? "View File" : "Read Note"}
                     </Button>
                   </CardContent>
                 </Card>
