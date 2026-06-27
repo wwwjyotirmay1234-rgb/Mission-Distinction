@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -189,7 +190,9 @@ function NoteSummariser() {
               <Bot size={16} className="text-primary" />
               <p className="text-sm font-semibold text-primary">AI Summary</p>
             </div>
-            <div className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">{summary}</div>
+            <div className="text-sm leading-relaxed text-foreground prose prose-invert prose-sm max-w-none">
+              <ReactMarkdown>{summary}</ReactMarkdown>
+            </div>
             <p className="text-xs text-muted-foreground/50 mt-4">AI summaries may contain errors. Always verify with your textbooks.</p>
           </CardContent>
         </Card>
