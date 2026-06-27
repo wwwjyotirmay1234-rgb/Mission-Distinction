@@ -1,7 +1,6 @@
 #!/bin/bash
 # Watches for new git commits and automatically pushes them to GitHub.
-# Uses a direct authenticated URL because Replit's sandbox prevents
-# persisting named remotes in .git/config.
+# Uses a temp credential helper so the token is never stored in .git/config.
 # Runs as a background workflow — no manual pushes needed.
 
 REPO_URL="${GITHUB_REPO_URL}"
@@ -18,10 +17,14 @@ BARE_URL="${REPO_URL#https://}"
 AUTH_URL="https://x-access-token:${TOKEN}@${BARE_URL}"
 
 push_to_github() {
+  # Use a short-lived credential file so the token is not embedded in remote URLs
+  local CRED_FILE
   CRED_FILE=$(mktemp)
   chmod 600 "$CRED_FILE"
-  echo "$AUTH_URL" > "$CRED_FILE"
-  git -c credential.helper="store --file=$CRED_FILE" push "$AUTH_URL" main:main --force --quiet 2>&1
+  echo "https://x-access-token:${TOKEN}@${BARE_URL}" > "$CRED_FILE"
+
+  # Push without --force to avoid accidental history rewrites
+  git -c credential.helper="store --file=$CRED_FILE" push "$AUTH_URL" main:main --quiet 2>&1
   local EXIT_CODE=$?
   rm -f "$CRED_FILE"
   return $EXIT_CODE
@@ -30,8 +33,12 @@ push_to_github() {
 verify_sha_parity() {
   local LOCAL_SHA
   local REMOTE_SHA
+  CRED_FILE=$(mktemp)
+  chmod 600 "$CRED_FILE"
+  echo "https://x-access-token:${TOKEN}@${BARE_URL}" > "$CRED_FILE"
   LOCAL_SHA=$(git rev-parse main 2>/dev/null)
-  REMOTE_SHA=$(git ls-remote "$AUTH_URL" refs/heads/main 2>/dev/null | awk '{print $1}')
+  REMOTE_SHA=$(git -c credential.helper="store --file=$CRED_FILE" ls-remote "$AUTH_URL" refs/heads/main 2>/dev/null | awk '{print $1}')
+  rm -f "$CRED_FILE"
   if [ -n "$LOCAL_SHA" ] && [ "$LOCAL_SHA" = "$REMOTE_SHA" ]; then
     echo "[github-sync] ✓ SHA parity confirmed: local=remote=${LOCAL_SHA:0:8}"
   elif [ -n "$REMOTE_SHA" ]; then
@@ -40,9 +47,9 @@ verify_sha_parity() {
 }
 
 # Perform initial push on startup to ensure remote is in sync
-echo "[github-sync] Performing initial push to GitHub..."
+echo "[github-sync] Performing initial push to GitHub (target: ${REPO_URL})..."
 if push_to_github; then
-  echo "[github-sync] ✓ Initial push successful (target: ${REPO_URL})"
+  echo "[github-sync] ✓ Initial push successful"
   verify_sha_parity
 else
   echo "[github-sync] Initial push failed — will retry on next commit."
