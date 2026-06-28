@@ -53,7 +53,8 @@ const studentLoginSchema = z.object({
 const studentRegisterSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   email: z.string().email("Invalid email address"),
-  mobileNumber: z.string().optional(),
+  mobileNumber: z.string()
+    .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number"),
   password: z.string()
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
@@ -599,9 +600,29 @@ export default function LandingPage() {
                           name="email"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Email</FormLabel>
+                              <FormLabel>Email <span className="text-destructive">*</span></FormLabel>
                               <FormControl>
                                 <Input placeholder="john@example.com" autoComplete="email" {...field} className="bg-background/50" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={studentRegisterForm.control}
+                          name="mobileNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Mobile Number <span className="text-destructive">*</span></FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="10-digit mobile number"
+                                  autoComplete="tel"
+                                  inputMode="numeric"
+                                  maxLength={10}
+                                  {...field}
+                                  className="bg-background/50"
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
