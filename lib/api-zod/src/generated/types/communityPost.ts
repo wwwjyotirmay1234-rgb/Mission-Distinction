@@ -13,8 +13,16 @@ export interface CommunityPost {
   author: string;
   /** @nullable */
   authorAvatarUrl?: string | null;
-  groupName: string;
+  /** @nullable */
+  authorId?: number | null;
+  /** @nullable */
+  groupName?: string | null;
+  /** @nullable */
+  mediaUrl?: string | null;
+  /** @nullable */
+  mediaType?: string | null;
   likeCount: number;
+  likedByMe: boolean;
   /** @nullable */
   replyCount?: number | null;
   createdAt: string;

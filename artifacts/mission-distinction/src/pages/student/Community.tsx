@@ -17,7 +17,8 @@ import {
   Search, Edit3, Heart, MessageSquare, Share2, Clock, Users, PlusCircle, Send,
   MessageCircle, ArrowLeft, Loader2, Paperclip, ImageIcon, FileText, X, Download,
   UserPlus, Crown, UserMinus, BookOpen, Lightbulb, Youtube, ExternalLink, Plus,
-  Shield, Brain, Play, Check, CheckCheck, MoreVertical, Trash2, Pencil, Bell, Video
+  Shield, Brain, Play, Check, CheckCheck, MoreVertical, Trash2, Pencil, Bell, Video,
+  Camera, Link
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -261,7 +262,12 @@ export default function StudentCommunity() {
   const [sendingMsg, setSendingMsg] = useState(false);
   const [postOpen, setPostOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
-  const [postForm, setPostForm] = useState({ title: "", content: "", groupName: "" });
+  const [postForm, setPostForm] = useState({ title: "", content: "" });
+  const [postMediaUrl, setPostMediaUrl] = useState("");
+  const [postMediaType, setPostMediaType] = useState<"image" | "video" | "">("");
+  const [postYouTubeUrl, setPostYouTubeUrl] = useState("");
+  const [postUploading, setPostUploading] = useState(false);
+  const [postMediaMode, setPostMediaMode] = useState<"none" | "photo" | "youtube">("none");
   const [groupForm, setGroupForm] = useState({ name: "", subject: "", description: "" });
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([]);
@@ -294,6 +300,7 @@ export default function StudentCommunity() {
   const socketRef = useRef<Socket | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const postFileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { user, token } = useAuth();
 
@@ -584,20 +591,67 @@ export default function StudentCommunity() {
     });
   };
 
+  const handlePostPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) { toast.error("Photo must be under 20 MB."); return; }
+    setPostUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await apiFetch("/api/upload/community-file", { method: "POST", body: formData });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || "Upload failed"); }
+      const data = await res.json();
+      setPostMediaUrl(data.url);
+      setPostMediaType("image");
+    } catch (err: any) { toast.error(err?.message || "Upload failed."); }
+    finally { setPostUploading(false); if (postFileInputRef.current) postFileInputRef.current.value = ""; }
+  };
+
+  const handlePostYouTubeConfirm = () => {
+    const vid = extractYouTubeId(postYouTubeUrl.trim());
+    if (!vid) { toast.error("Not a valid YouTube URL."); return; }
+    setPostMediaUrl(postYouTubeUrl.trim());
+    setPostMediaType("video");
+  };
+
+  const clearPostMedia = () => {
+    setPostMediaUrl("");
+    setPostMediaType("");
+    setPostYouTubeUrl("");
+    setPostMediaMode("none");
+  };
+
+  const handleLikePost = async (postId: number) => {
+    try {
+      const res = await apiFetch(`/api/community/posts/${postId}/like`, { method: "POST" });
+      if (!res.ok) return;
+      const data = await res.json();
+      queryClient.setQueryData(getListCommunityPostsQueryKey({ search: search || undefined }), (old: any) => {
+        if (!old) return old;
+        const arr = Array.isArray(old) ? old : (old?.posts ?? []);
+        return arr.map((p: any) => p.id === postId ? { ...p, likeCount: data.likeCount, likedByMe: data.likedByMe } : p);
+      });
+    } catch {}
+  };
+
   const handleCreatePost = () => {
-    // Auto-use the only group if user didn't explicitly pick one
-    const resolvedGroup = postForm.groupName || (groupsList.length === 1 ? groupsList[0].name : "");
-    if (!postForm.title || !postForm.content || !resolvedGroup) {
-      if (!resolvedGroup) toast.error("Please select a group, or create one first.");
-      else toast.error("All fields are required.");
+    if (!postForm.title || !postForm.content) {
+      toast.error("Title and content are required.");
       return;
     }
-    createPost.mutate({ data: { ...postForm, groupName: resolvedGroup } }, {
+    const payload: any = { title: postForm.title, content: postForm.content };
+    if (postMediaUrl && postMediaType) {
+      payload.mediaUrl = postMediaUrl;
+      payload.mediaType = postMediaType;
+    }
+    createPost.mutate({ data: payload }, {
       onSuccess: () => {
-        toast.success("Post created!");
+        toast.success("Post shared!");
         queryClient.invalidateQueries({ queryKey: getListCommunityPostsQueryKey() });
         setPostOpen(false);
-        setPostForm({ title: "", content: "", groupName: "" });
+        setPostForm({ title: "", content: "" });
+        clearPostMedia();
       },
       onError: () => toast.error("Failed to create post."),
     });
@@ -899,37 +953,67 @@ export default function StudentCommunity() {
                       ? (a: any, b: any) => (b.likeCount || 0) - (a.likeCount || 0)
                       : (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
                     )
-                    .map((post: any) => (
-                      <Card key={post.id} className="bg-card/40 border-border/40 hover:bg-card/60 transition-colors">
-                        <CardContent className="p-5">
-                          <div className="flex items-start gap-4">
-                            <Avatar>
-                              <AvatarImage src={post.authorAvatarUrl || ""} />
-                              <AvatarFallback className="bg-primary/20 text-primary">{post.author.substring(0, 2).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex justify-between items-start mb-1 flex-wrap gap-2">
-                                <div>
-                                  <span className="font-semibold text-sm">{post.author}</span>
-                                  <span className="text-muted-foreground text-xs ml-2">in</span>
-                                  <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 border-primary/30 text-primary bg-primary/5">{post.groupName}</Badge>
-                                </div>
-                                <div className="flex items-center text-xs text-muted-foreground">
-                                  <Clock size={12} className="mr-1" /> {new Date(post.createdAt).toLocaleDateString()}
+                    .map((post: any) => {
+                      const ytId = post.mediaType === "video" ? extractYouTubeId(post.mediaUrl || "") : null;
+                      return (
+                        <Card key={post.id} className="bg-card/40 border-border/40 hover:bg-card/60 transition-colors overflow-hidden">
+                          <CardContent className="p-0">
+                            {/* Media */}
+                            {post.mediaUrl && post.mediaType === "image" && (
+                              <a href={post.mediaUrl} target="_blank" rel="noopener noreferrer">
+                                <img src={post.mediaUrl} alt={post.title} className="w-full max-h-[420px] object-cover" loading="lazy" />
+                              </a>
+                            )}
+                            {post.mediaUrl && post.mediaType === "video" && ytId && (
+                              <div className="relative w-full aspect-video bg-black">
+                                <iframe
+                                  src={`https://www.youtube.com/embed/${ytId}`}
+                                  title={post.title}
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  className="absolute inset-0 w-full h-full"
+                                />
+                              </div>
+                            )}
+
+                            <div className="p-5">
+                              {/* Author row */}
+                              <div className="flex items-center gap-3 mb-3">
+                                <Avatar className="h-9 w-9">
+                                  <AvatarImage src={post.authorAvatarUrl || ""} />
+                                  <AvatarFallback className="bg-primary/20 text-primary text-sm">{post.author.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-sm leading-tight">{post.author}</p>
+                                  <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                    <Clock size={10} /> {new Date(post.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                  </p>
                                 </div>
                               </div>
-                              <h3 className="font-bold text-base mt-2 mb-1">{post.title}</h3>
-                              <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{post.content}</p>
-                              <div className="flex items-center gap-6">
-                                <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-500 transition-colors"><Heart size={16} /> {post.likeCount}</button>
-                                <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-blue-500 transition-colors"><MessageSquare size={16} /> {post.replyCount || 0}</button>
-                                <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-green-500 transition-colors"><Share2 size={16} /> Share</button>
+
+                              {/* Content */}
+                              <h3 className="font-bold text-base mb-1 leading-snug">{post.title}</h3>
+                              <p className="text-sm text-muted-foreground mb-4 leading-relaxed line-clamp-4">{post.content}</p>
+
+                              {/* Actions */}
+                              <div className="flex items-center gap-5 pt-2 border-t border-border/30">
+                                <button
+                                  onClick={() => handleLikePost(post.id)}
+                                  className={`flex items-center gap-1.5 text-sm font-medium transition-all hover:scale-105 active:scale-95 ${post.likedByMe ? "text-red-400" : "text-muted-foreground hover:text-red-400"}`}
+                                >
+                                  <Heart size={16} fill={post.likedByMe ? "currentColor" : "none"} />
+                                  <span>{post.likeCount || 0}</span>
+                                </button>
+                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                  <MessageSquare size={16} />
+                                  <span>{post.replyCount || 0}</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
+                          </CardContent>
+                        </Card>
+                      );
+                    })
                 )}
               </div>
             </Tabs>
@@ -1017,76 +1101,106 @@ export default function StudentCommunity() {
       </div>
 
       {/* Dialogs */}
-      <Dialog open={postOpen} onOpenChange={setPostOpen}>
+      <Dialog open={postOpen} onOpenChange={(v) => { setPostOpen(v); if (!v) { setPostForm({ title: "", content: "" }); clearPostMedia(); } }}>
         <DialogContent className="bg-card border-border/50 max-w-lg">
-          <DialogHeader><DialogTitle>Create a Post</DialogTitle></DialogHeader>
-          {groupsList.length === 0 ? (
-            /* ── No groups exist yet — guide user to create one first ── */
-            <div className="py-6 flex flex-col items-center gap-4 text-center px-4">
-              <div className="rounded-full bg-primary/10 p-4">
-                <Users size={32} className="text-primary" />
-              </div>
-              <div>
-                <p className="font-semibold text-base">You need a group first</p>
-                <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-                  Posts live inside study groups. Create your first group — then you can post, chat, and invite classmates.
-                </p>
-              </div>
-              <div className="flex gap-3 w-full max-w-xs">
-                <Button variant="outline" className="flex-1" onClick={() => setPostOpen(false)}>Cancel</Button>
-                <Button className="flex-1 gap-2" onClick={() => { setPostOpen(false); setGroupOpen(true); }}>
-                  <PlusCircle size={15} /> Create a Group
-                </Button>
-              </div>
+          <DialogHeader><DialogTitle>Share with the Community</DialogTitle></DialogHeader>
+          <input ref={postFileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handlePostPhotoUpload} />
+          <div className="space-y-4 py-1">
+            <div className="space-y-1.5">
+              <Label>Title <span className="text-destructive">*</span></Label>
+              <Input placeholder="What's on your mind?" className="bg-background/50" value={postForm.title}
+                onChange={(e) => setPostForm({ ...postForm, title: e.target.value })} maxLength={200} />
             </div>
-          ) : (
-            <>
-              <div className="space-y-4 py-2">
-                <div className="space-y-1.5">
-                  <Label>Title <span className="text-destructive">*</span></Label>
-                  <Input placeholder="What's on your mind?" className="bg-background/50" value={postForm.title}
-                    onChange={(e) => setPostForm({ ...postForm, title: e.target.value })} />
+            <div className="space-y-1.5">
+              <Label>Caption / Content <span className="text-destructive">*</span></Label>
+              <Textarea placeholder="Share your thoughts, doubts, notes, or resources..."
+                className="bg-background/50 min-h-[100px] resize-none" value={postForm.content}
+                onChange={(e) => setPostForm({ ...postForm, content: e.target.value })} maxLength={5000} />
+            </div>
+
+            {/* Media attachment */}
+            {!postMediaUrl && (
+              <div className="space-y-2">
+                <Label className="text-muted-foreground text-xs">Attach media (optional)</Label>
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" variant={postMediaMode === "photo" ? "default" : "outline"}
+                    className="gap-1.5 h-8 text-xs" onClick={() => { setPostMediaMode(m => m === "photo" ? "none" : "photo"); }}>
+                    <Camera size={13} /> Photo
+                  </Button>
+                  <Button type="button" size="sm" variant={postMediaMode === "youtube" ? "default" : "outline"}
+                    className="gap-1.5 h-8 text-xs" onClick={() => { setPostMediaMode(m => m === "youtube" ? "none" : "youtube"); }}>
+                    <Youtube size={13} className="text-red-400" /> YouTube
+                  </Button>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Group <span className="text-destructive">*</span></Label>
-                  <Select
-                    value={postForm.groupName || (groupsList.length === 1 ? groupsList[0].name : "")}
-                    onValueChange={(v) => {
-                      if (v === "__create__") { setPostOpen(false); setGroupOpen(true); return; }
-                      setPostForm({ ...postForm, groupName: v });
-                    }}
-                  >
-                    <SelectTrigger className="bg-background/50">
-                      <SelectValue placeholder="Select a group" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {groupsList.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
-                      <SelectItem value="__create__" className="text-primary font-medium border-t border-border/50 mt-1">
-                        <span className="flex items-center gap-1.5"><PlusCircle size={13} /> Create new group…</span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {groupsList.length === 1 && !postForm.groupName && (
-                    <p className="text-xs text-muted-foreground">
-                      Will post to <strong>{groupsList[0].name}</strong> (your only group)
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Content <span className="text-destructive">*</span></Label>
-                  <Textarea placeholder="Share your thoughts, doubts, or resources..."
-                    className="bg-background/50 min-h-[120px] resize-none" value={postForm.content}
-                    onChange={(e) => setPostForm({ ...postForm, content: e.target.value })} />
-                </div>
+
+                {postMediaMode === "photo" && (
+                  <div className="border border-dashed border-border/60 rounded-lg p-4 text-center">
+                    {postUploading ? (
+                      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 size={16} className="animate-spin" /> Uploading…
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => postFileInputRef.current?.click()}
+                        className="flex flex-col items-center gap-1.5 w-full text-muted-foreground hover:text-foreground transition-colors">
+                        <ImageIcon size={24} className="text-primary/50" />
+                        <span className="text-sm">Click to upload a photo</span>
+                        <span className="text-xs">JPG, PNG, WebP, GIF · max 20 MB</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {postMediaMode === "youtube" && (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input placeholder="https://youtube.com/watch?v=..." className="bg-background/50 flex-1 text-sm"
+                        value={postYouTubeUrl} onChange={e => setPostYouTubeUrl(e.target.value)} />
+                      <Button type="button" size="sm" className="shrink-0 h-9" onClick={handlePostYouTubeConfirm}>
+                        <Link size={13} />
+                      </Button>
+                    </div>
+                    {postYouTubeUrl && !extractYouTubeId(postYouTubeUrl) && (
+                      <p className="text-xs text-destructive">Not a valid YouTube URL</p>
+                    )}
+                    {extractYouTubeId(postYouTubeUrl) && (
+                      <div className="rounded-lg overflow-hidden border border-border/40">
+                        <img src={`https://i.ytimg.com/vi/${extractYouTubeId(postYouTubeUrl)}/mqdefault.jpg`} alt="Preview" className="w-full aspect-video object-cover" />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setPostOpen(false)}>Cancel</Button>
-                <Button onClick={handleCreatePost} disabled={createPost.isPending}>
-                  {createPost.isPending ? "Posting..." : "Post"}
-                </Button>
-              </DialogFooter>
-            </>
-          )}
+            )}
+
+            {/* Media preview with remove */}
+            {postMediaUrl && postMediaType === "image" && (
+              <div className="relative rounded-lg overflow-hidden border border-border/40">
+                <img src={postMediaUrl} alt="Preview" className="w-full max-h-[200px] object-cover" />
+                <button onClick={clearPostMedia} className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 rounded-full p-1 transition-colors">
+                  <X size={14} className="text-white" />
+                </button>
+              </div>
+            )}
+            {postMediaUrl && postMediaType === "video" && extractYouTubeId(postMediaUrl) && (
+              <div className="relative rounded-lg overflow-hidden border border-border/40">
+                <img src={`https://i.ytimg.com/vi/${extractYouTubeId(postMediaUrl)}/mqdefault.jpg`} alt="YouTube preview" className="w-full aspect-video object-cover" />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                  <div className="w-10 h-10 rounded-full bg-red-600/90 flex items-center justify-center">
+                    <Play size={16} className="text-white ml-0.5" fill="white" />
+                  </div>
+                </div>
+                <button onClick={clearPostMedia} className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 rounded-full p-1 transition-colors">
+                  <X size={14} className="text-white" />
+                </button>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPostOpen(false); setPostForm({ title: "", content: "" }); clearPostMedia(); }}>Cancel</Button>
+            <Button onClick={handleCreatePost} disabled={createPost.isPending || postUploading}>
+              {createPost.isPending ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Sharing...</> : "Share Post"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

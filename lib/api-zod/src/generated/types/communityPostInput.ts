@@ -9,5 +9,7 @@
 export interface CommunityPostInput {
   title: string;
   content: string;
-  groupName: string;
+  groupName?: string | null;
+  mediaUrl?: string | null;
+  mediaType?: string | null;
 }

@@ -522,8 +522,12 @@ export const ListCommunityPostsResponseItem = zod.object({
   "content": zod.string(),
   "author": zod.string(),
   "authorAvatarUrl": zod.string().nullish(),
-  "groupName": zod.string(),
+  "authorId": zod.number().nullish(),
+  "groupName": zod.string().nullish(),
+  "mediaUrl": zod.string().nullish(),
+  "mediaType": zod.string().nullish(),
   "likeCount": zod.number(),
+  "likedByMe": zod.boolean().optional(),
   "replyCount": zod.number().nullish(),
   "createdAt": zod.string()
 })
@@ -536,7 +540,9 @@ export const ListCommunityPostsResponse = zod.array(ListCommunityPostsResponseIt
 export const CreateCommunityPostBody = zod.object({
   "title": zod.string(),
   "content": zod.string(),
-  "groupName": zod.string()
+  "groupName": zod.string().nullish(),
+  "mediaUrl": zod.string().nullish(),
+  "mediaType": zod.string().nullish()
 })
 
 

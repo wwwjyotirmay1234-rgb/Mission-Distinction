@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
-import { communityPostsTable, communityGroupsTable, communityMessagesTable, groupMembersTable, groupInvitesTable, usersTable } from "@workspace/db";
+import { communityPostsTable, communityGroupsTable, communityMessagesTable, groupMembersTable, groupInvitesTable, usersTable, postLikesTable } from "@workspace/db";
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
@@ -39,33 +39,94 @@ function parseSeenBy(raw: string | null | undefined): number[] {
 
 router.get("/posts", authMiddleware, async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
     const { group, search } = req.query;
     let posts = await db.select().from(communityPostsTable).orderBy(desc(communityPostsTable.createdAt)).limit(500);
-    if (group) posts = posts.filter(p => p.groupName.toLowerCase().includes((group as string).toLowerCase()));
+    if (group) posts = posts.filter(p => p.groupName?.toLowerCase().includes((group as string).toLowerCase()));
     if (search) posts = posts.filter(p => p.title.toLowerCase().includes((search as string).toLowerCase()) || p.content.toLowerCase().includes((search as string).toLowerCase()));
-    res.json(posts);
+
+    // Fetch which posts the current user has liked
+    const likedRows = await db.select({ postId: postLikesTable.postId }).from(postLikesTable)
+      .where(eq(postLikesTable.userId, user.id));
+    const likedSet = new Set(likedRows.map(r => r.postId));
+
+    const result = posts.map(p => ({ ...p, likedByMe: likedSet.has(p.id) }));
+    res.json(result);
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.post("/posts", authMiddleware, postCreateLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const { title, content, groupName } = req.body;
-    if (!title || !content || !groupName) { res.status(400).json({ error: "Missing fields" }); return; }
+    const { title, content, mediaUrl, mediaType } = req.body;
+    if (!title || !content) { res.status(400).json({ error: "Title and content are required" }); return; }
     const safeTitle = stripHtml(title);
     const safeContent = stripHtml(content);
     if (!safeTitle || !safeContent) { res.status(400).json({ error: "Invalid content" }); return; }
     if (safeTitle.length > 200) { res.status(400).json({ error: "Title too long" }); return; }
     if (safeContent.length > 5000) { res.status(400).json({ error: "Content too long" }); return; }
-    const groups = await db.select({ id: communityGroupsTable.id, name: communityGroupsTable.name, isAdminCreated: communityGroupsTable.isAdminCreated }).from(communityGroupsTable);
-    const validGroup = groups.find(g => g.name === groupName);
-    if (!validGroup) { res.status(400).json({ error: "Invalid group" }); return; }
-    if (!validGroup.isAdminCreated && !(await isMember(validGroup.id, user.id))) {
-      res.status(403).json({ error: "You must be a member of this group to post" }); return;
+
+    // Validate media URL if provided
+    let safeMediaUrl: string | null = null;
+    let safeMediaType: string | null = null;
+    if (mediaUrl) {
+      try { new URL(mediaUrl); } catch { res.status(400).json({ error: "Invalid media URL" }); return; }
+      if (!mediaUrl.startsWith("https://res.cloudinary.com/") && !mediaUrl.startsWith("https://www.youtube.com/") && !mediaUrl.startsWith("https://youtu.be/")) {
+        res.status(400).json({ error: "Invalid media URL" }); return;
+      }
+      safeMediaUrl = mediaUrl;
+      safeMediaType = mediaType === "video" ? "video" : "image";
     }
-    const [post] = await db.insert(communityPostsTable).values({ title: safeTitle, content: safeContent, groupName: validGroup.name, author: user.fullName, authorId: user.id, authorAvatarUrl: user.avatarUrl || null }).returning();
+
+    const insertValues: any = {
+      title: safeTitle,
+      content: safeContent,
+      author: user.fullName,
+      authorId: user.id,
+      authorAvatarUrl: user.avatarUrl || null,
+    };
+    if (safeMediaUrl) {
+      insertValues.mediaUrl = safeMediaUrl;
+      insertValues.mediaType = safeMediaType;
+    }
+    const [post] = await db.insert(communityPostsTable).values(insertValues).returning();
     awardXp(user.id, XP_VALUES.COMMUNITY_POST, "community_post", `Posted in community: ${safeTitle.slice(0, 60)}`).catch(() => {});
-    res.status(201).json(post);
+    res.status(201).json({ ...post, likedByMe: false });
+  } catch { res.status(500).json({ error: "Internal server error" }); }
+});
+
+// ─── Post likes ───────────────────────────────────────────────────────────────
+
+router.post("/posts/:id/like", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const postId = parseId(req.params.id);
+    if (!postId) { res.status(400).json({ error: "Invalid post ID" }); return; }
+    const [post] = await db.select({ id: communityPostsTable.id, likeCount: communityPostsTable.likeCount })
+      .from(communityPostsTable).where(eq(communityPostsTable.id, postId));
+    if (!post) { res.status(404).json({ error: "Post not found" }); return; }
+
+    const existing = await db.select({ id: postLikesTable.id }).from(postLikesTable)
+      .where(and(eq(postLikesTable.postId, postId), eq(postLikesTable.userId, user.id)));
+
+    let likedByMe: boolean;
+    let newCount: number;
+
+    if (existing.length > 0) {
+      // Unlike
+      await db.delete(postLikesTable).where(and(eq(postLikesTable.postId, postId), eq(postLikesTable.userId, user.id)));
+      newCount = Math.max(0, (post.likeCount || 0) - 1);
+      await db.update(communityPostsTable).set({ likeCount: newCount }).where(eq(communityPostsTable.id, postId));
+      likedByMe = false;
+    } else {
+      // Like
+      await db.insert(postLikesTable).values({ postId, userId: user.id }).onConflictDoNothing();
+      newCount = (post.likeCount || 0) + 1;
+      await db.update(communityPostsTable).set({ likeCount: newCount }).where(eq(communityPostsTable.id, postId));
+      likedByMe = true;
+    }
+
+    res.json({ likedByMe, likeCount: newCount });
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -395,47 +456,35 @@ router.delete("/messages/:messageId", authMiddleware, async (req: Request, res: 
       res.json(updated);
     } else {
       const deletedBy = parseSeenBy(msg.deletedBy);
-      if (!deletedBy.includes(user.id)) deletedBy.push(user.id);
-      const [updated] = await db.update(communityMessagesTable)
-        .set({ deletedBy: JSON.stringify(deletedBy) })
-        .where(eq(communityMessagesTable.id, messageId))
-        .returning();
-      res.json({ messageId, forEveryone: false, deletedBy: updated.deletedBy });
+      if (!deletedBy.includes(user.id)) {
+        deletedBy.push(user.id);
+        await db.update(communityMessagesTable).set({ deletedBy: JSON.stringify(deletedBy) }).where(eq(communityMessagesTable.id, messageId));
+      }
+      res.json({ message: "Deleted for you" });
     }
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });
 
-// Mark all messages in a group as seen by the current user
+// Mark messages as seen
 router.post("/groups/:groupId/mark-seen", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const groupId = parseId(req.params.groupId);
     if (!groupId) { res.status(400).json({ error: "Invalid group ID" }); return; }
 
-    // Get all messages in this group not sent by this user that don't have this user in seenBy
-    const messages = await db.select({ id: communityMessagesTable.id, seenBy: communityMessagesTable.seenBy })
+    const messages = await db.select({ id: communityMessagesTable.id, seenBy: communityMessagesTable.seenBy, senderId: communityMessagesTable.senderId })
       .from(communityMessagesTable)
-      .where(and(eq(communityMessagesTable.groupId, groupId), ne(communityMessagesTable.senderId!, user.id)));
+      .where(and(eq(communityMessagesTable.groupId, groupId), ne(communityMessagesTable.senderId, user.id)));
 
-    const toUpdate: number[] = [];
-    for (const m of messages) {
-      const seen = parseSeenBy(m.seenBy);
-      if (!seen.includes(user.id)) toUpdate.push(m.id);
-    }
-
-    if (toUpdate.length > 0) {
-      // Update each in a batch — update seen_by by adding userId
-      for (const msgId of toUpdate) {
-        const [m] = await db.select({ seenBy: communityMessagesTable.seenBy }).from(communityMessagesTable).where(eq(communityMessagesTable.id, msgId));
-        const seen = parseSeenBy(m?.seenBy);
-        if (!seen.includes(user.id)) {
-          seen.push(user.id);
-          await db.update(communityMessagesTable).set({ seenBy: JSON.stringify(seen) }).where(eq(communityMessagesTable.id, msgId));
-        }
+    for (const msg of messages) {
+      const seenBy = parseSeenBy(msg.seenBy);
+      if (!seenBy.includes(user.id)) {
+        seenBy.push(user.id);
+        await db.update(communityMessagesTable).set({ seenBy: JSON.stringify(seenBy) }).where(eq(communityMessagesTable.id, msg.id));
       }
-      try { getIO().to(`chat:${groupId}`).emit("group-seen", { groupId, userId: user.id }); } catch { }
     }
 
+    try { getIO().to(`chat:${groupId}`).emit("group-seen", { groupId, userId: user.id }); } catch { }
     res.json({ ok: true });
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });
