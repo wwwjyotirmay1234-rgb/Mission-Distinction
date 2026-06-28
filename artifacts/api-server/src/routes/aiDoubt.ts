@@ -196,8 +196,8 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
       model: "gpt-4o",
       max_completion_tokens: 8192,
       stream: true,
-      messages,
-    } as Parameters<typeof openai.chat.completions.create>[0]);
+      messages: messages as any,
+    });
 
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content;

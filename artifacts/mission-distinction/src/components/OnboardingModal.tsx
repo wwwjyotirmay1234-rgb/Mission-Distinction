@@ -128,6 +128,7 @@ function BotStepView({
       const t = setTimeout(() => setFeaturesVisible(true), 120);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [done]);
 
   return (
