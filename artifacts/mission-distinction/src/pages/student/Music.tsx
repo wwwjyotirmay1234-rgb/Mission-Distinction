@@ -90,7 +90,6 @@ function AmbientSounds(){
   const toggle=(sound:typeof AMBIENT[0])=>{
     const isOn=active[sound.id];
     if(isOn){
-      /* Always update state — even if audio teardown fails */
       try {
         const node=nodesRef.current.get(sound.id);
         if(node){
@@ -115,15 +114,36 @@ function AmbientSounds(){
         gain.gain.setTargetAtTime((volumes[sound.id]/100)*0.7,ctx.currentTime,0.3);
         nodesRef.current.set(sound.id,{source,gain});
         setActive(a=>({...a,[sound.id]:true}));
-      } catch { /* Audio API unavailable — don't mark active */ }
+      } catch {}
     }
   };
   const setVol=(id:string,val:number)=>{setVolumes(v=>({...v,[id]:val}));const node=nodesRef.current.get(id);if(node&&ctxRef.current)node.gain.gain.setTargetAtTime((val/100)*0.7,ctxRef.current.currentTime,0.05);};
   useEffect(()=>()=>{nodesRef.current.forEach(n=>{try{n.source.stop();}catch{}});ctxRef.current?.close();},[]);
   return(
-    <div className="px-4 py-4">
-      <div className="flex items-center gap-2 mb-3"><Volume2 size={13} className="text-violet-400"/><span className="text-xs font-bold text-white/80 tracking-wide uppercase">Ambient Sounds</span><span className="text-[10px] text-white/30 ml-1">Mix simultaneously</span></div>
-      <div className="grid grid-cols-3 gap-2">{AMBIENT.map(s=>{const on=!!active[s.id];return(<div key={s.id} className="rounded-2xl border transition-all duration-300 overflow-hidden" style={{background:on?`${s.color}18`:"rgba(255,255,255,0.04)",borderColor:on?`${s.color}55`:"rgba(255,255,255,0.07)",boxShadow:on?`0 0 16px ${s.color}33`:"none"}}><button aria-pressed={on} className="w-full p-3 flex flex-col items-center gap-1.5" onClick={()=>toggle(s)}><div className="relative text-2xl">{s.icon}{on&&<div className="absolute -inset-1 rounded-full opacity-40 blur-sm pointer-events-none" style={{background:s.color,animation:"gp 1.5s ease-in-out infinite"}}/>}</div><span className="text-[11px] font-semibold text-white/70">{s.label}</span>{on&&<div className="flex items-end gap-0.5 h-3.5">{[...Array(5)].map((_,i)=><div key={i} className="w-[3px] rounded-full" style={{background:s.color,height:"50%",animation:`wf ${.4+i*.12}s ease-in-out ${i*.08}s infinite`}}/>)}</div>}</button>{on&&<div className="px-3 pb-3"><input type="range" min={0} max={100} value={volumes[s.id]} onChange={e=>setVol(s.id,+e.target.value)} className="w-full h-1 rounded-full appearance-none cursor-pointer" style={{accentColor:s.color}}/></div>}</div>);})}</div>
+    <div className="px-4 py-4 bg-background">
+      <div className="flex items-center gap-2 mb-3">
+        <Volume2 size={13} className="text-violet-400"/>
+        <span className="text-xs font-bold text-foreground/80 tracking-wide uppercase">Ambient Sounds</span>
+        <span className="text-[10px] text-muted-foreground ml-1">Mix simultaneously</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {AMBIENT.map(s=>{
+          const on=!!active[s.id];
+          return(
+            <div key={s.id} className="rounded-2xl border transition-all duration-300 overflow-hidden bg-card border-border"
+              style={on?{background:`${s.color}18`,borderColor:`${s.color}55`,boxShadow:`0 0 16px ${s.color}33`}:{}}>
+              <button aria-pressed={on} className="w-full p-3 flex flex-col items-center gap-1.5" onClick={()=>toggle(s)}>
+                <div className="relative text-2xl">{s.icon}
+                  {on&&<div className="absolute -inset-1 rounded-full opacity-40 blur-sm pointer-events-none" style={{background:s.color,animation:"gp 1.5s ease-in-out infinite"}}/>}
+                </div>
+                <span className="text-[11px] font-semibold text-foreground/70">{s.label}</span>
+                {on&&<div className="flex items-end gap-0.5 h-3.5">{[...Array(5)].map((_,i)=><div key={i} className="w-[3px] rounded-full" style={{background:s.color,height:"50%",animation:`wf ${.4+i*.12}s ease-in-out ${i*.08}s infinite`}}/>)}</div>}
+              </button>
+              {on&&<div className="px-3 pb-3"><input type="range" min={0} max={100} value={volumes[s.id]} onChange={e=>setVol(s.id,+e.target.value)} className="w-full h-1 rounded-full appearance-none cursor-pointer" style={{accentColor:s.color}}/></div>}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -158,47 +178,45 @@ function YouTubeTab({ externalSearch }: { externalSearch: string }) {
     } finally { setLoading(false); }
   }, []);
 
-  /* Trigger search when hero bar fires (without remounting the component) */
   useEffect(() => {
     if (externalSearch) { setQuery(externalSearch); search(externalSearch); }
   }, [externalSearch]);
 
   return (
-    <div className="px-4 pt-3 space-y-3">
+    <div className="px-4 pt-3 space-y-3 bg-background">
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"/>
-          <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")search(query);}} placeholder="Search YouTube…" className="w-full h-10 pl-9 pr-3 rounded-xl text-xs text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/40" style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)"}}/>
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"/>
+          <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")search(query);}} placeholder="Search YouTube…" className="w-full h-10 pl-9 pr-3 rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-red-500/40 bg-muted/50 border border-border"/>
         </div>
         <button onClick={()=>search(query)} disabled={loading||!query.trim()} className="h-10 px-4 rounded-xl text-white text-xs font-bold shrink-0 disabled:opacity-40 transition-all hover:scale-105" style={{background:"linear-gradient(135deg,#dc2626,#b91c1c)",boxShadow:"0 2px 10px #dc262644"}}>{loading?<Loader2 size={14} className="animate-spin"/>:<Youtube size={14}/>}</button>
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        {YT_CHIPS.map(c=><button key={c} onClick={()=>{setQuery(c);search(c);}} className="text-[11px] px-2.5 py-1 rounded-full border border-red-500/20 bg-red-500/8 text-red-300 hover:bg-red-500/15 transition-colors whitespace-nowrap">{c}</button>)}
+        {YT_CHIPS.map(c=><button key={c} onClick={()=>{setQuery(c);search(c);}} className="text-[11px] px-2.5 py-1 rounded-full border border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors whitespace-nowrap">{c}</button>)}
       </div>
 
-      {error && <p className="text-xs text-red-400 bg-red-500/10 rounded-xl p-2">{error}</p>}
+      {error && <p className="text-xs text-red-500 bg-red-500/10 rounded-xl p-2">{error}</p>}
 
-      {/* Now Playing — no iframe here; PersistentPlayer owns the single iframe */}
       {ctxPlaying?.type === "youtube" && (
-        <div className="rounded-2xl border border-red-500/25 flex items-center gap-3 px-3 py-2.5" style={{background:"rgba(220,38,38,0.07)"}}>
+        <div className="rounded-2xl border border-red-500/25 bg-red-500/5 flex items-center gap-3 px-3 py-2.5">
           <img src={ctxPlaying.thumbnail} alt="" className="w-14 h-10 rounded-xl object-cover shrink-0"/>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white/85 truncate">{ctxPlaying.title}</p>
-            <p className="text-[10px] text-white/40 truncate">{ctxPlaying.channel}</p>
+            <p className="text-xs font-semibold text-foreground/90 truncate">{ctxPlaying.title}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{ctxPlaying.channel}</p>
             <div className="flex items-center gap-1.5 mt-1">
               <div className="flex items-end gap-0.5 h-3">{[...Array(4)].map((_,i)=><div key={i} className="w-[2px] rounded-full bg-red-400" style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}}/>)}</div>
-              <p className="text-[10px] text-violet-400">Playing in player below ↓</p>
+              <p className="text-[10px] text-violet-500">Playing in player below ↓</p>
             </div>
           </div>
-          <button onClick={ctxStop} className="p-1.5 rounded-lg hover:bg-white/10 shrink-0"><X size={12} className="text-white/40"/></button>
+          <button onClick={ctxStop} className="p-1.5 rounded-lg hover:bg-muted shrink-0"><X size={12} className="text-muted-foreground"/></button>
         </div>
       )}
 
-      {loading && <div className="flex items-center justify-center py-10 gap-2 text-white/30"><Loader2 size={18} className="animate-spin text-red-400"/><span className="text-sm">Searching YouTube…</span></div>}
+      {loading && <div className="flex items-center justify-center py-10 gap-2 text-muted-foreground"><Loader2 size={18} className="animate-spin text-red-400"/><span className="text-sm">Searching YouTube…</span></div>}
       {!loading && !searched && (
-        <div className="flex flex-col items-center py-10 gap-2 text-white/20">
-          <Youtube size={36} className="text-red-500/20"/>
+        <div className="flex flex-col items-center py-10 gap-2 text-muted-foreground">
+          <Youtube size={36} className="text-red-500/30"/>
           <p className="text-sm">Search or tap a chip above</p>
           <p className="text-xs opacity-60">Full videos — free, no login</p>
         </div>
@@ -208,23 +226,28 @@ function YouTubeTab({ externalSearch }: { externalSearch: string }) {
           {results.map(v=>{
             const isNow=ctxPlaying?.type==="youtube"&&ctxPlaying.videoId===v.videoId;
             return(
-              <button key={v.videoId} onClick={()=>ctxPlay({type:"youtube",videoId:v.videoId,title:v.title,channel:v.channel,thumbnail:v.thumbnail})} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border text-left transition-all hover:scale-[1.005] group" style={{background:isNow?"rgba(220,38,38,0.1)":"rgba(255,255,255,0.02)",borderColor:isNow?"rgba(220,38,38,0.35)":"rgba(255,255,255,0.05)",boxShadow:isNow?"0 0 14px rgba(220,38,38,.1)":"none"}}>
-                <div className="relative shrink-0 w-[72px] h-[54px] rounded-xl overflow-hidden bg-black/40">
+              <button key={v.videoId} onClick={()=>ctxPlay({type:"youtube",videoId:v.videoId,title:v.title,channel:v.channel,thumbnail:v.thumbnail})}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border text-left transition-all hover:scale-[1.005] group ${isNow?"border-red-500/35 bg-red-500/8":"border-border bg-card hover:bg-muted/40"}`}
+                style={isNow?{boxShadow:"0 0 14px rgba(220,38,38,.08)"}:{}}>
+                <div className="relative shrink-0 w-[72px] h-[54px] rounded-xl overflow-hidden bg-muted">
                   <img src={v.thumbnail} alt="" className="w-full h-full object-cover"/>
-                  {isNow?(<div className="absolute inset-0 bg-red-500/30 flex items-center justify-center"><div className="flex items-end gap-0.5 h-4">{[...Array(4)].map((_,i)=><div key={i} className="w-[3px] rounded-full bg-white" style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}}/>)}</div></div>):(<div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Play size={18} className="text-white" fill="white"/></div>)}
+                  {isNow
+                    ?<div className="absolute inset-0 bg-red-500/30 flex items-center justify-center"><div className="flex items-end gap-0.5 h-4">{[...Array(4)].map((_,i)=><div key={i} className="w-[3px] rounded-full bg-white" style={{height:"60%",animation:`wf ${.3+i*.1}s ease-in-out ${i*.05}s infinite`}}/>)}</div></div>
+                    :<div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Play size={18} className="text-white" fill="white"/></div>
+                  }
                   {v.duration&&<span className="absolute bottom-1 right-1 text-[9px] font-bold text-white bg-black/70 px-1 rounded">{v.duration}</span>}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-semibold leading-snug line-clamp-2 ${isNow?"text-red-300":"text-white/85"}`}>{v.title}</p>
-                  <p className="text-[10px] text-white/35 mt-1 truncate">{v.channel}</p>
-                  {v.views&&<p className="text-[9px] text-white/20 mt-0.5">{v.views}</p>}
+                  <p className={`text-xs font-semibold leading-snug line-clamp-2 ${isNow?"text-red-500":"text-foreground/85"}`}>{v.title}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1 truncate">{v.channel}</p>
+                  {v.views&&<p className="text-[9px] text-muted-foreground/60 mt-0.5">{v.views}</p>}
                 </div>
               </button>
             );
           })}
         </div>
       )}
-      {!loading&&searched&&results.length===0&&<p className="text-center py-6 text-white/30 text-sm">No results. Try a different search.</p>}
+      {!loading&&searched&&results.length===0&&<p className="text-center py-6 text-muted-foreground text-sm">No results. Try a different search.</p>}
     </div>
   );
 }
@@ -234,12 +257,28 @@ function SpotifyTab() {
   const [input,setInput]=useState(""),[embed,setEmbed]=useState<string|null>(null),[error,setError]=useState("");
   const load=(url:string)=>{setError("");const e=extractSpotifyEmbed(url);if(!e){setError("Paste a valid Spotify link.");return;}setEmbed(e);setInput(url);};
   return(
-    <div className="px-4 pt-3 space-y-4">
-      <div className="p-3 rounded-2xl border border-green-500/15 bg-green-500/5 flex items-start gap-2"><Music2 size={14} className="text-green-400 mt-0.5 shrink-0"/><p className="text-[11px] text-white/60 leading-relaxed">Paste any Spotify link. <span className="text-white/80 font-semibold">Spotify Premium</span> → full songs. Free Spotify → 30-sec previews + shuffle radio.</p></div>
-      <div className="flex gap-2"><input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")load(input);}} placeholder="https://open.spotify.com/playlist/…" className="flex-1 h-10 rounded-xl px-3 text-xs text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-green-500/40" style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)"}}/><button onClick={()=>load(input)} className="h-10 px-4 rounded-xl text-white text-xs font-semibold shrink-0 hover:scale-105 transition-all" style={{background:"linear-gradient(135deg,#16a34a,#15803d)",boxShadow:"0 2px 10px #16a34a44"}}>Load</button></div>
-      {error&&<p className="text-xs text-red-400">{error}</p>}
-      {embed&&<div className="space-y-2"><iframe src={embed} width="100%" height="352" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" className="rounded-2xl border-0" title="Spotify"/><button onClick={()=>{setEmbed(null);setInput("");}} className="w-full text-xs text-white/20 hover:text-white/40 transition-colors py-1">✕ Close</button></div>}
-      <div><p className="text-[11px] font-bold text-white/30 uppercase tracking-wider mb-2">Study playlists</p><div className="grid grid-cols-2 gap-2">{SPOTIFY_SUGGESTIONS.map(s=><button key={s.label} onClick={()=>load(s.url)} className="text-[11px] px-3 py-2.5 rounded-xl border border-green-500/15 bg-green-500/8 text-green-400 hover:bg-green-500/15 transition-all hover:scale-[1.02] text-left font-semibold">{s.label}</button>)}</div></div>
+    <div className="px-4 pt-3 space-y-4 bg-background">
+      <div className="p-3 rounded-2xl border border-green-500/20 bg-green-500/5 flex items-start gap-2">
+        <Music2 size={14} className="text-green-500 mt-0.5 shrink-0"/>
+        <p className="text-[11px] text-foreground/60 leading-relaxed">Paste any Spotify link. <span className="text-foreground/80 font-semibold">Spotify Premium</span> → full songs. Free Spotify → 30-sec previews + shuffle radio.</p>
+      </div>
+      <div className="flex gap-2">
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")load(input);}} placeholder="https://open.spotify.com/playlist/…" className="flex-1 h-10 rounded-xl px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-500/40 bg-muted/50 border border-border"/>
+        <button onClick={()=>load(input)} className="h-10 px-4 rounded-xl text-white text-xs font-semibold shrink-0 hover:scale-105 transition-all" style={{background:"linear-gradient(135deg,#16a34a,#15803d)",boxShadow:"0 2px 10px #16a34a44"}}>Load</button>
+      </div>
+      {error&&<p className="text-xs text-red-500">{error}</p>}
+      {embed&&(
+        <div className="space-y-2">
+          <iframe src={embed} width="100%" height="352" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" className="rounded-2xl border-0" title="Spotify"/>
+          <button onClick={()=>{setEmbed(null);setInput("");}} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1">✕ Close</button>
+        </div>
+      )}
+      <div>
+        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Study playlists</p>
+        <div className="grid grid-cols-2 gap-2">
+          {SPOTIFY_SUGGESTIONS.map(s=><button key={s.label} onClick={()=>load(s.url)} className="text-[11px] px-3 py-2.5 rounded-xl border border-green-500/20 bg-green-500/5 text-green-600 dark:text-green-400 hover:bg-green-500/15 transition-all hover:scale-[1.02] text-left font-semibold">{s.label}</button>)}
+        </div>
+      </div>
     </div>
   );
 }
@@ -269,13 +308,17 @@ export default function StudentMusic() {
     <div className="flex flex-col min-h-[calc(100vh-4rem)] -mx-4 -mt-4" style={{paddingBottom:bottomPad}}>
       <HeroSection active={true} query={query} setQuery={setQuery} onSearch={handleSearch} tab={tab}/>
       <AmbientSounds/>
-      <div className="mx-4 my-1 h-px" style={{background:"linear-gradient(90deg,transparent,rgba(124,58,237,.25),transparent)"}}/>
+      <div className="mx-4 my-1 h-px bg-border/50"/>
 
-      <div className="flex gap-1.5 px-4 pt-3 pb-1">
+      <div className="flex gap-1.5 px-4 pt-3 pb-1 bg-background">
         {tabs.map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)}
             className="flex items-center px-4 py-2 rounded-xl text-xs font-semibold transition-all flex-1 justify-center"
-            style={tab===t.id?{background:`${t.color}cc`,boxShadow:`0 2px 12px ${t.color}55`,color:"white"}:{background:"rgba(255,255,255,0.05)",color:"rgba(255,255,255,.4)"}}>
+            style={tab===t.id
+              ? {background:`${t.color}cc`,boxShadow:`0 2px 12px ${t.color}55`,color:"white"}
+              : undefined
+            }
+            {...(tab!==t.id?{className:"flex items-center px-4 py-2 rounded-xl text-xs font-semibold transition-all flex-1 justify-center bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"}:{})}>
             {t.label}
           </button>
         ))}
