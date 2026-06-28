@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { StudentSidebar } from "./StudentSidebar";
 import { Header } from "./Header";
 import { PersistentPlayer } from "./PersistentPlayer";
-import { SidebarProvider } from "@/contexts/SidebarContext";
+import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
 import { MusicPlayerProvider } from "@/contexts/MusicPlayerContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -95,26 +95,37 @@ function EmailVerificationBanner() {
   );
 }
 
+function StudentLayoutInner({ children }: { children: React.ReactNode }) {
+  const { collapsed } = useSidebar();
+  return (
+    <div
+      className="min-h-screen bg-background text-foreground flex"
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <StudentSidebar />
+      <div
+        id="md-capture-area"
+        className="relative flex-1 flex flex-col min-w-0 transition-[margin] duration-200 ease-in-out"
+        style={{ marginLeft: collapsed ? 60 : 220 }}
+      >
+        <Watermark />
+        <Header />
+        <PinnedBanner />
+        <EmailVerificationBanner />
+        <WarningBanner />
+        <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+
 export function StudentLayout({ children }: { children: React.ReactNode }) {
   return (
     <MusicPlayerProvider>
       <SidebarProvider>
-        <div
-          className="min-h-screen bg-background text-foreground flex"
-          onContextMenu={(e) => e.preventDefault()}
-        >
-          <StudentSidebar />
-          <div id="md-capture-area" className="relative flex-1 flex flex-col md:ml-64 min-w-0">
-            <Watermark />
-            <Header />
-            <PinnedBanner />
-            <EmailVerificationBanner />
-            <WarningBanner />
-            <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
-              {children}
-            </main>
-          </div>
-        </div>
+        <StudentLayoutInner>{children}</StudentLayoutInner>
         <PersistentPlayer />
         <OnboardingModal />
       </SidebarProvider>
