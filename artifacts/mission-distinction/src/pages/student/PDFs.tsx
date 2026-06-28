@@ -429,20 +429,11 @@ export default function StudentPDFs() {
                       <HardDrive size={10} />
                     </div>
                   )}
-                  {/* Desktop hover overlay */}
-                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex flex-col items-center justify-center gap-2 p-4">
-                    <Button size="sm" className="w-full" onClick={() => setViewingPdf(pdf as Pdf)}>
-                      <BookOpen className="mr-2 h-4 w-4" /> Read
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="w-full"
-                      onClick={() => { trackDownload(pdf.id); autoSaveOffline(pdf); window.open(getDownloadUrl(pdf.url), "_blank", "noopener,noreferrer"); }}
-                    >
-                      <Download className="mr-2 h-4 w-4" /> Download
-                    </Button>
-                  </div>
+                  {/* Hover overlay — desktop only, opens modal */}
+                  <div
+                    className="absolute inset-0 cursor-pointer hidden md:block"
+                    onClick={() => setViewingPdf(pdf as Pdf)}
+                  />
                 </div>
                 <div className="mt-3">
                   <h3 className="font-semibold text-sm line-clamp-1 group-hover:text-primary transition-colors">{pdf.title}</h3>
@@ -451,8 +442,8 @@ export default function StudentPDFs() {
                     <Badge variant="outline" className="text-[9px] px-1 py-0 bg-card">{pdf.subject}</Badge>
                     {pdf.pages && <span className="text-[10px] text-muted-foreground">{pdf.pages} pages</span>}
                   </div>
-                  {/* Mobile action buttons — always visible, no hover needed */}
-                  <div className="flex gap-2 mt-2 md:hidden">
+                  {/* Action buttons — always visible on all screen sizes */}
+                  <div className="flex gap-2 mt-2">
                     <Button
                       size="sm"
                       className="flex-1 h-8 text-xs gap-1.5"
