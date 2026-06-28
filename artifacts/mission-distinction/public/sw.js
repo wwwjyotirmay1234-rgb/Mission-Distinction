@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v16"; // silent audio loop + SW keep-alive ping
+const CACHE_VERSION = "v17"; // relative manifest paths for production PWA install fix
 
 const BASE = new URL("./", self.location).pathname;
 
@@ -329,8 +329,8 @@ self.addEventListener("push", event => {
   let data = {
     title: "Mission Distinction",
     body: "You have a new notification",
-    url: "/",
-    icon: "/logo.jpeg",
+    url: BASE,
+    icon: BASE + "icon-192.png",
   };
   if (event.data) {
     try { data = { ...data, ...event.data.json() }; } catch {}
