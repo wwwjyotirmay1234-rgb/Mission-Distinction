@@ -405,14 +405,16 @@ export default function LandingPage() {
           <div className="absolute" style={{top:48,left:"9%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
           <div className="absolute" style={{top:48,right:"9%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
 
-          {/* ── Caduceus hero image ── */}
-          <img
+          {/* ── Caduceus hero image — slow continuous rotation ── */}
+          <motion.img
             src="/caduceus-hero-nobg.png"
             alt="Medical Caduceus"
             width={220}
             height={220}
             className="relative z-10"
             style={{ filter: "drop-shadow(0 0 18px rgba(124,58,237,0.65))" }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           />
         </motion.div>
 
