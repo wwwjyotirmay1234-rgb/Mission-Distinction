@@ -84,16 +84,26 @@ function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void })
 
         <div className="flex-1 overflow-y-auto px-6 py-5 min-h-0">
           {isLink ? (
-            <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
-              <ExternalLink size={40} className="text-primary/60" />
-              <p className="text-muted-foreground text-sm">This note links to an external resource.</p>
-              <Button
-                onClick={() => { window.open(note.fileUrl!, "_blank", "noopener,noreferrer"); onClose(); }}
-                className="gap-2"
-              >
-                <ExternalLink size={14} /> Open Link
-              </Button>
-            </div>
+            note.fileUrl && isDriveUrl(note.fileUrl) ? (
+              <iframe
+                src={getEmbedUrl(note.fileUrl)}
+                className="w-full rounded border border-border/40"
+                style={{ height: "60vh" }}
+                title={note.title}
+                allow="autoplay"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+                <ExternalLink size={40} className="text-primary/60" />
+                <p className="text-muted-foreground text-sm">This note links to an external resource.</p>
+                <Button
+                  onClick={() => { window.open(note.fileUrl!, "_blank", "noopener,noreferrer"); onClose(); }}
+                  className="gap-2"
+                >
+                  <ExternalLink size={14} /> Open Link
+                </Button>
+              </div>
+            )
           ) : isFile && embedUrl ? (
             isPdf ? (
               <iframe
@@ -176,6 +186,15 @@ function getDriveEmbedUrl(url: string): string {
   return url;
 }
 
+function getEmbedUrl(url: string): string {
+  if (url.includes("drive.google.com")) return getDriveEmbedUrl(url);
+  return getServeUrlWithToken(url);
+}
+
+function isDriveUrl(url: string): boolean {
+  return url.includes("drive.google.com");
+}
+
 function PYQCard({ pyq }: { pyq: PYQ }) {
   const color = SUBJECT_COLORS[pyq.subject] || DEFAULT_COLOR;
   const isDrive = pyq.url.includes("drive.google.com");
@@ -237,16 +256,9 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
             </div>
             <div className="px-6 py-3 border-t border-border/50 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">{pyq.downloadCount ?? 0} views</span>
-              <div className="flex gap-2">
-                <a href={pyq.url} target="_blank" rel="noopener noreferrer">
-                  <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
-                    <ExternalLink size={12} /> Open in new tab
-                  </Button>
-                </a>
-                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => setViewing(false)}>
-                  <ChevronLeft size={13} /> Back
-                </Button>
-              </div>
+              <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => setViewing(false)}>
+                <ChevronLeft size={13} /> Back
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -257,46 +269,81 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
 
 function BookCard({ book }: { book: Book }) {
   const color = SUBJECT_COLORS[book.subject] || DEFAULT_COLOR;
-  const openUrl = getServeUrlWithToken(book.url);
+  const embedUrl = getEmbedUrl(book.url);
+  const [viewing, setViewing] = React.useState(false);
+
+  const open = () => {
+    trackBookRead(book.id);
+    setViewing(true);
+  };
+
   return (
-    <Card className="bg-card/40 border-border/40 hover:border-primary/40 transition-all group flex flex-col overflow-hidden">
-      {book.coverUrl ? (
-        <div className="h-40 overflow-hidden bg-muted/30">
-          <img
-            src={book.coverUrl}
-            alt={book.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        </div>
-      ) : (
-        <div className="h-40 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-          <BookText size={48} className="text-primary/30" />
-        </div>
-      )}
-      <CardContent className="p-4 flex-1 flex flex-col">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <Badge variant="outline" className={`text-[10px] uppercase tracking-wider px-2 border shrink-0 ${color}`}>
-            {book.subject}
-          </Badge>
-        </div>
-        <h3 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors flex-1">
-          {book.title}
-        </h3>
-        {book.author && (
-          <p className="text-xs text-muted-foreground mb-3">by {book.author}</p>
+    <>
+      <Card className="bg-card/40 border-border/40 hover:border-primary/40 transition-all group flex flex-col overflow-hidden">
+        {book.coverUrl ? (
+          <div className="h-40 overflow-hidden bg-muted/30">
+            <img
+              src={book.coverUrl}
+              alt={book.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        ) : (
+          <div className="h-40 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+            <BookText size={48} className="text-primary/30" />
+          </div>
         )}
-        <Button
-          className="w-full text-xs gap-1.5 mt-auto"
-          size="sm"
-          onClick={() => {
-            trackBookRead(book.id);
-            window.open(openUrl, "_blank", "noopener,noreferrer");
-          }}
-        >
-          <ExternalLink size={12} /> Read Book
-        </Button>
-      </CardContent>
-    </Card>
+        <CardContent className="p-4 flex-1 flex flex-col">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <Badge variant="outline" className={`text-[10px] uppercase tracking-wider px-2 border shrink-0 ${color}`}>
+              {book.subject}
+            </Badge>
+          </div>
+          <h3 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors flex-1">
+            {book.title}
+          </h3>
+          {book.author && (
+            <p className="text-xs text-muted-foreground mb-3">by {book.author}</p>
+          )}
+          <Button className="w-full text-xs gap-1.5 mt-auto" size="sm" onClick={open}>
+            <BookOpen size={12} /> Read Book
+          </Button>
+        </CardContent>
+      </Card>
+
+      {viewing && (
+        <Dialog open onOpenChange={v => { if (!v) setViewing(false); }}>
+          <DialogContent className="max-w-3xl w-full max-h-[90vh] flex flex-col bg-card border-border/50 p-0 gap-0">
+            <DialogHeader className="px-6 py-4 border-b border-border/50 flex-row items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <Badge variant="outline" className={`text-[10px] uppercase tracking-wider px-2 border ${color}`}>{book.subject}</Badge>
+                  {book.author && <span className="text-xs text-muted-foreground">by {book.author}</span>}
+                </div>
+                <DialogTitle className="text-lg font-bold leading-tight">{book.title}</DialogTitle>
+              </div>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 shrink-0 ml-2" onClick={() => setViewing(false)}>
+                <X size={16} />
+              </Button>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden min-h-0">
+              <iframe
+                src={embedUrl}
+                className="w-full h-full border-0"
+                style={{ minHeight: "60vh" }}
+                title={book.title}
+                allow="autoplay"
+              />
+            </div>
+            <div className="px-6 py-3 border-t border-border/50 flex justify-end">
+              <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => setViewing(false)}>
+                <ChevronLeft size={13} /> Back
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }
 
