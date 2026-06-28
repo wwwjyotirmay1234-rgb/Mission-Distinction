@@ -24,6 +24,7 @@ import { PinnedBanner } from "@/components/PinnedBanner";
 import { WarningBanner } from "@/components/WarningBanner";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { Watermark } from "@/components/Watermark";
+import { CompleteProfileModal } from "@/components/CompleteProfileModal";
 
 function EmailVerificationBanner() {
   const { user, token } = useAuth();
@@ -140,6 +141,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
       <SidebarProvider>
         <StudentLayoutInner>{children}</StudentLayoutInner>
         <PersistentPlayer />
+        <CompleteProfileModal />
         <OnboardingModal />
       </SidebarProvider>
     </MusicPlayerProvider>

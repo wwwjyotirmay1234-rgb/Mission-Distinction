@@ -90,10 +90,16 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    const { fullName, year, college, avatarUrl } = req.body;
+    const { fullName, year, college, avatarUrl, mobileNumber } = req.body;
 
     if (fullName !== undefined && (typeof fullName !== "string" || fullName.trim().length < 2)) {
       res.status(400).json({ error: "Name must be at least 2 characters" }); return;
+    }
+
+    if (mobileNumber !== undefined && mobileNumber !== null && mobileNumber !== "") {
+      if (!/^[6-9]\d{9}$/.test(mobileNumber)) {
+        res.status(400).json({ error: "Enter a valid 10-digit Indian mobile number" }); return;
+      }
     }
 
     if (avatarUrl !== undefined && avatarUrl !== null && avatarUrl !== "") {
@@ -117,6 +123,7 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
         fullName: fullName?.trim(),
         year: year?.trim(),
         college: college?.trim(),
+        ...(mobileNumber !== undefined ? { mobileNumber: mobileNumber?.trim() || null } : {}),
         ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl?.trim() || null } : {}),
       })
       .where(eq(usersTable.id, id))

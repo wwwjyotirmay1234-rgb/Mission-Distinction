@@ -20,26 +20,7 @@ import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChan
 import { auth, googleProvider } from "@/lib/firebase";
 
 
-const ODISHA_GOVT_COLLEGES = [
-  "AIIMS Bhubaneswar",
-  "SCB Medical College and Hospital, Cuttack",
-  "MKCG Medical College and Hospital, Berhampur",
-  "VSS Institute of Medical Sciences & Research (VIMSAR), Burla",
-  "Pandit Raghunath Murmu Medical College & Hospital, Baripada",
-  "Saheed Laxman Nayak Medical College & Hospital, Koraput",
-  "Shri Jagannath Medical College & Research Institute, Puri",
-  "Government Medical College, Bolangir",
-  "Government Medical College, Balasore",
-  "Government Medical College, Puri",
-  "Government Medical College, Phulbani",
-  "Government Medical College, Sundargarh",
-];
-
-const ODISHA_PRIVATE_COLLEGES = [
-  "Hi-Tech Medical College & Hospital, Bhubaneswar",
-  "IMS & SUM Hospital (SOA University), Bhubaneswar",
-  "Kalinga Institute of Medical Sciences (KIMS), Bhubaneswar",
-];
+import { ODISHA_GOVT_COLLEGES, ODISHA_PRIVATE_COLLEGES } from "@/lib/colleges";
 
 function getRouteByYear(year: string | undefined) {
   return (year === "1st Year" || year === "1st Year MBBS") ? "/student/dashboard" : "/coming-soon";
