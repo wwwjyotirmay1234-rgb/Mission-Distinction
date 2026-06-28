@@ -309,6 +309,27 @@ export async function runStartupMigrations() {
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS post_likes (
+        id SERIAL PRIMARY KEY,
+        post_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        emoji TEXT NOT NULL DEFAULT '❤️',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(post_id, user_id)
+      );
+
+      ALTER TABLE post_likes ADD COLUMN IF NOT EXISTS emoji TEXT NOT NULL DEFAULT '❤️';
+
+      CREATE TABLE IF NOT EXISTS post_comments (
+        id SERIAL PRIMARY KEY,
+        post_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        author TEXT NOT NULL,
+        author_avatar_url TEXT,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS app_settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,

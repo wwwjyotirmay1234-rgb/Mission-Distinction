@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
-import { communityPostsTable, communityGroupsTable, communityMessagesTable, groupMembersTable, groupInvitesTable, usersTable, postLikesTable } from "@workspace/db";
+import { communityPostsTable, communityGroupsTable, communityMessagesTable, groupMembersTable, groupInvitesTable, usersTable, postLikesTable, postCommentsTable } from "@workspace/db";
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
@@ -45,12 +45,28 @@ router.get("/posts", authMiddleware, async (req: Request, res: Response) => {
     if (group) posts = posts.filter(p => p.groupName?.toLowerCase().includes((group as string).toLowerCase()));
     if (search) posts = posts.filter(p => p.title.toLowerCase().includes((search as string).toLowerCase()) || p.content.toLowerCase().includes((search as string).toLowerCase()));
 
-    // Fetch which posts the current user has liked
-    const likedRows = await db.select({ postId: postLikesTable.postId }).from(postLikesTable)
-      .where(eq(postLikesTable.userId, user.id));
-    const likedSet = new Set(likedRows.map(r => r.postId));
+    // Fetch all reactions for these posts
+    const allReactions = await db.select({ postId: postLikesTable.postId, userId: postLikesTable.userId, emoji: postLikesTable.emoji }).from(postLikesTable);
+    const reactionsByPost = new Map<number, { emoji: string; userId: number }[]>();
+    for (const r of allReactions) {
+      if (!reactionsByPost.has(r.postId)) reactionsByPost.set(r.postId, []);
+      reactionsByPost.get(r.postId)!.push({ emoji: r.emoji, userId: r.userId });
+    }
 
-    const result = posts.map(p => ({ ...p, likedByMe: likedSet.has(p.id) }));
+    const result = posts.map(p => {
+      const reactions = reactionsByPost.get(p.id) || [];
+      const myReaction = reactions.find(r => r.userId === user.id);
+      // Group by emoji
+      const emojiCounts: Record<string, number> = {};
+      for (const r of reactions) emojiCounts[r.emoji] = (emojiCounts[r.emoji] || 0) + 1;
+      return {
+        ...p,
+        likedByMe: !!myReaction,
+        myEmoji: myReaction?.emoji || null,
+        reactions: emojiCounts,
+        likeCount: reactions.length,
+      };
+    });
     res.json(result);
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });
@@ -102,31 +118,94 @@ router.post("/posts/:id/like", authMiddleware, async (req: Request, res: Respons
     const user = (req as any).user;
     const postId = parseId(req.params.id);
     if (!postId) { res.status(400).json({ error: "Invalid post ID" }); return; }
-    const [post] = await db.select({ id: communityPostsTable.id, likeCount: communityPostsTable.likeCount })
-      .from(communityPostsTable).where(eq(communityPostsTable.id, postId));
+    const [post] = await db.select({ id: communityPostsTable.id }).from(communityPostsTable).where(eq(communityPostsTable.id, postId));
     if (!post) { res.status(404).json({ error: "Post not found" }); return; }
 
-    const existing = await db.select({ id: postLikesTable.id }).from(postLikesTable)
-      .where(and(eq(postLikesTable.postId, postId), eq(postLikesTable.userId, user.id)));
+    const rawEmoji = req.body?.emoji;
+    const emoji = typeof rawEmoji === "string" && rawEmoji.trim() ? rawEmoji.trim().slice(0, 8) : "❤️";
+
+    const existing = await db.select({ id: postLikesTable.id, emoji: postLikesTable.emoji })
+      .from(postLikesTable).where(and(eq(postLikesTable.postId, postId), eq(postLikesTable.userId, user.id)));
 
     let likedByMe: boolean;
-    let newCount: number;
+    let myEmoji: string | null;
 
     if (existing.length > 0) {
-      // Unlike
-      await db.delete(postLikesTable).where(and(eq(postLikesTable.postId, postId), eq(postLikesTable.userId, user.id)));
-      newCount = Math.max(0, (post.likeCount || 0) - 1);
-      await db.update(communityPostsTable).set({ likeCount: newCount }).where(eq(communityPostsTable.id, postId));
-      likedByMe = false;
+      if (existing[0].emoji === emoji) {
+        // Same emoji → toggle off
+        await db.delete(postLikesTable).where(and(eq(postLikesTable.postId, postId), eq(postLikesTable.userId, user.id)));
+        likedByMe = false; myEmoji = null;
+      } else {
+        // Different emoji → update
+        await db.update(postLikesTable).set({ emoji }).where(and(eq(postLikesTable.postId, postId), eq(postLikesTable.userId, user.id)));
+        likedByMe = true; myEmoji = emoji;
+      }
     } else {
-      // Like
-      await db.insert(postLikesTable).values({ postId, userId: user.id }).onConflictDoNothing();
-      newCount = (post.likeCount || 0) + 1;
-      await db.update(communityPostsTable).set({ likeCount: newCount }).where(eq(communityPostsTable.id, postId));
-      likedByMe = true;
+      await db.insert(postLikesTable).values({ postId, userId: user.id, emoji }).onConflictDoNothing();
+      likedByMe = true; myEmoji = emoji;
     }
 
-    res.json({ likedByMe, likeCount: newCount });
+    // Re-fetch reaction counts
+    const reactions = await db.select({ emoji: postLikesTable.emoji }).from(postLikesTable).where(eq(postLikesTable.postId, postId));
+    const emojiCounts: Record<string, number> = {};
+    for (const r of reactions) emojiCounts[r.emoji] = (emojiCounts[r.emoji] || 0) + 1;
+    await db.update(communityPostsTable).set({ likeCount: reactions.length }).where(eq(communityPostsTable.id, postId));
+
+    res.json({ likedByMe, myEmoji, reactions: emojiCounts, likeCount: reactions.length });
+  } catch (err) { console.error("[Like]", err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// ─── Comments ─────────────────────────────────────────────────────────────────
+
+const commentLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: { error: "Commenting too fast." }, standardHeaders: true, legacyHeaders: false });
+
+router.get("/posts/:id/comments", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const postId = parseId(req.params.id);
+    if (!postId) { res.status(400).json({ error: "Invalid post ID" }); return; }
+    const comments = await db.select().from(postCommentsTable)
+      .where(eq(postCommentsTable.postId, postId))
+      .orderBy(postCommentsTable.createdAt);
+    res.json(comments);
+  } catch { res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.post("/posts/:id/comments", authMiddleware, commentLimiter, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const postId = parseId(req.params.id);
+    if (!postId) { res.status(400).json({ error: "Invalid post ID" }); return; }
+    const [post] = await db.select({ id: communityPostsTable.id }).from(communityPostsTable).where(eq(communityPostsTable.id, postId));
+    if (!post) { res.status(404).json({ error: "Post not found" }); return; }
+    const { content } = req.body;
+    if (!content?.trim()) { res.status(400).json({ error: "Comment cannot be empty" }); return; }
+    const safe = stripHtml(content.trim());
+    if (!safe) { res.status(400).json({ error: "Invalid content" }); return; }
+    if (safe.length > 1000) { res.status(400).json({ error: "Comment too long (max 1000 chars)" }); return; }
+    const [comment] = await db.insert(postCommentsTable).values({
+      postId, userId: user.id, author: user.fullName, authorAvatarUrl: user.avatarUrl || null, content: safe,
+    }).returning();
+    // Increment reply count
+    await db.update(communityPostsTable).set({ replyCount: post.id }).where(eq(communityPostsTable.id, postId)); // placeholder, recalculate below
+    const [{ cnt }] = await db.select({ cnt: count() }).from(postCommentsTable).where(eq(postCommentsTable.postId, postId));
+    await db.update(communityPostsTable).set({ replyCount: Number(cnt) }).where(eq(communityPostsTable.id, postId));
+    res.status(201).json(comment);
+  } catch (err) { console.error("[Comment POST]", err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.delete("/posts/:id/comments/:commentId", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const postId = parseId(req.params.id);
+    const commentId = parseId(req.params.commentId);
+    if (!postId || !commentId) { res.status(400).json({ error: "Invalid IDs" }); return; }
+    const [comment] = await db.select().from(postCommentsTable).where(eq(postCommentsTable.id, commentId));
+    if (!comment) { res.status(404).json({ error: "Comment not found" }); return; }
+    if (comment.userId !== user.id && user.role !== "admin") { res.status(403).json({ error: "Not authorised" }); return; }
+    await db.delete(postCommentsTable).where(eq(postCommentsTable.id, commentId));
+    const [{ cnt }] = await db.select({ cnt: count() }).from(postCommentsTable).where(eq(postCommentsTable.postId, postId));
+    await db.update(communityPostsTable).set({ replyCount: Number(cnt) }).where(eq(communityPostsTable.id, postId));
+    res.json({ message: "Deleted" });
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });
 

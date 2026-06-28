@@ -295,6 +295,13 @@ export default function StudentCommunity() {
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const [msgCtxMenu, setMsgCtxMenu] = useState<{ msgId: number; isMe: boolean } | null>(null);
+  // Emoji reactions & comments
+  const [emojiPickerPostId, setEmojiPickerPostId] = useState<number | null>(null);
+  const [expandedComments, setExpandedComments] = useState<Set<number>>(new Set());
+  const [commentTexts, setCommentTexts] = useState<Record<number, string>>({});
+  const [commentsData, setCommentsData] = useState<Record<number, any[]>>({});
+  const [commentLoading, setCommentLoading] = useState<Record<number, boolean>>({});
+  const [submittingComment, setSubmittingComment] = useState<Record<number, boolean>>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -622,15 +629,84 @@ export default function StudentCommunity() {
     setPostMediaMode("none");
   };
 
-  const handleLikePost = async (postId: number) => {
+  const QUICK_EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🔥", "🙏", "👏"];
+
+  const handleReact = async (postId: number, emoji: string) => {
+    setEmojiPickerPostId(null);
     try {
-      const res = await apiFetch(`/api/community/posts/${postId}/like`, { method: "POST" });
+      const res = await apiFetch(`/api/community/posts/${postId}/like`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emoji }),
+      });
       if (!res.ok) return;
       const data = await res.json();
       queryClient.setQueryData(getListCommunityPostsQueryKey({ search: search || undefined }), (old: any) => {
         if (!old) return old;
         const arr = Array.isArray(old) ? old : (old?.posts ?? []);
-        return arr.map((p: any) => p.id === postId ? { ...p, likeCount: data.likeCount, likedByMe: data.likedByMe } : p);
+        return arr.map((p: any) => p.id === postId
+          ? { ...p, likeCount: data.likeCount, likedByMe: data.likedByMe, myEmoji: data.myEmoji, reactions: data.reactions }
+          : p);
+      });
+    } catch {}
+  };
+
+  const loadComments = async (postId: number) => {
+    setCommentLoading(prev => ({ ...prev, [postId]: true }));
+    try {
+      const res = await apiFetch(`/api/community/posts/${postId}/comments`);
+      if (res.ok) {
+        const data = await res.json();
+        setCommentsData(prev => ({ ...prev, [postId]: data }));
+      }
+    } catch {} finally {
+      setCommentLoading(prev => ({ ...prev, [postId]: false }));
+    }
+  };
+
+  const toggleComments = (postId: number) => {
+    setExpandedComments(prev => {
+      const next = new Set(prev);
+      if (next.has(postId)) { next.delete(postId); }
+      else { next.add(postId); loadComments(postId); }
+      return next;
+    });
+  };
+
+  const handleSubmitComment = async (postId: number) => {
+    const text = commentTexts[postId]?.trim();
+    if (!text) return;
+    setSubmittingComment(prev => ({ ...prev, [postId]: true }));
+    try {
+      const res = await apiFetch(`/api/community/posts/${postId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: text }),
+      });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.error || "Failed to comment"); return; }
+      const comment = await res.json();
+      setCommentsData(prev => ({ ...prev, [postId]: [...(prev[postId] || []), comment] }));
+      setCommentTexts(prev => ({ ...prev, [postId]: "" }));
+      // Increment replyCount in posts cache
+      queryClient.setQueryData(getListCommunityPostsQueryKey({ search: search || undefined }), (old: any) => {
+        if (!old) return old;
+        const arr = Array.isArray(old) ? old : (old?.posts ?? []);
+        return arr.map((p: any) => p.id === postId ? { ...p, replyCount: (p.replyCount || 0) + 1 } : p);
+      });
+    } catch {} finally {
+      setSubmittingComment(prev => ({ ...prev, [postId]: false }));
+    }
+  };
+
+  const handleDeleteComment = async (postId: number, commentId: number) => {
+    try {
+      const res = await apiFetch(`/api/community/posts/${postId}/comments/${commentId}`, { method: "DELETE" });
+      if (!res.ok) return;
+      setCommentsData(prev => ({ ...prev, [postId]: (prev[postId] || []).filter((c: any) => c.id !== commentId) }));
+      queryClient.setQueryData(getListCommunityPostsQueryKey({ search: search || undefined }), (old: any) => {
+        if (!old) return old;
+        const arr = Array.isArray(old) ? old : (old?.posts ?? []);
+        return arr.map((p: any) => p.id === postId ? { ...p, replyCount: Math.max(0, (p.replyCount || 1) - 1) } : p);
       });
     } catch {}
   };
@@ -995,20 +1071,119 @@ export default function StudentCommunity() {
                               <h3 className="font-bold text-base mb-1 leading-snug">{post.title}</h3>
                               <p className="text-sm text-muted-foreground mb-4 leading-relaxed line-clamp-4">{post.content}</p>
 
-                              {/* Actions */}
-                              <div className="flex items-center gap-5 pt-2 border-t border-border/30">
+                              {/* Reaction summary bar */}
+                              {post.reactions && Object.keys(post.reactions).length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                  {Object.entries(post.reactions as Record<string, number>)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .map(([emoji, cnt]) => (
+                                      <button
+                                        key={emoji}
+                                        onClick={() => handleReact(post.id, emoji)}
+                                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-all hover:scale-105 active:scale-95 ${post.myEmoji === emoji ? "border-primary/50 bg-primary/10 text-primary" : "border-border/40 bg-muted/20 text-muted-foreground hover:border-primary/30"}`}
+                                      >
+                                        <span>{emoji}</span>
+                                        <span className="font-medium">{cnt}</span>
+                                      </button>
+                                    ))}
+                                </div>
+                              )}
+
+                              {/* Actions row */}
+                              <div className="flex items-center gap-4 pt-2 border-t border-border/30">
+                                {/* Emoji reaction button */}
+                                <div className="relative">
+                                  <button
+                                    onClick={() => setEmojiPickerPostId(emojiPickerPostId === post.id ? null : post.id)}
+                                    className={`flex items-center gap-1.5 text-sm font-medium transition-all hover:scale-105 active:scale-95 ${post.likedByMe ? "text-red-400" : "text-muted-foreground hover:text-red-400"}`}
+                                  >
+                                    <span className="text-base leading-none">{post.myEmoji || "🤍"}</span>
+                                    <span>{post.likeCount || 0}</span>
+                                  </button>
+                                  {/* Emoji picker popover */}
+                                  {emojiPickerPostId === post.id && (
+                                    <div className="absolute bottom-8 left-0 z-50 flex gap-1 p-2 rounded-2xl bg-card border border-border/50 shadow-xl">
+                                      {QUICK_EMOJIS.map(e => (
+                                        <button
+                                          key={e}
+                                          onClick={() => handleReact(post.id, e)}
+                                          className={`text-xl leading-none p-1.5 rounded-full transition-all hover:scale-125 hover:bg-muted/40 ${post.myEmoji === e ? "bg-primary/15 scale-110" : ""}`}
+                                        >
+                                          {e}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Comment button */}
                                 <button
-                                  onClick={() => handleLikePost(post.id)}
-                                  className={`flex items-center gap-1.5 text-sm font-medium transition-all hover:scale-105 active:scale-95 ${post.likedByMe ? "text-red-400" : "text-muted-foreground hover:text-red-400"}`}
+                                  onClick={() => toggleComments(post.id)}
+                                  className={`flex items-center gap-1.5 text-sm font-medium transition-all hover:scale-105 active:scale-95 ${expandedComments.has(post.id) ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
                                 >
-                                  <Heart size={16} fill={post.likedByMe ? "currentColor" : "none"} />
-                                  <span>{post.likeCount || 0}</span>
-                                </button>
-                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                                   <MessageSquare size={16} />
                                   <span>{post.replyCount || 0}</span>
-                                </div>
+                                </button>
                               </div>
+
+                              {/* Comments section */}
+                              {expandedComments.has(post.id) && (
+                                <div className="mt-3 space-y-3 border-t border-border/20 pt-3">
+                                  {commentLoading[post.id] ? (
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                                      <Loader2 size={12} className="animate-spin" /> Loading comments…
+                                    </div>
+                                  ) : (commentsData[post.id] || []).length === 0 ? (
+                                    <p className="text-xs text-muted-foreground py-1">No comments yet. Be the first!</p>
+                                  ) : (
+                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                      {(commentsData[post.id] || []).map((c: any) => (
+                                        <div key={c.id} className="flex items-start gap-2 group">
+                                          <Avatar className="h-6 w-6 shrink-0 mt-0.5">
+                                            <AvatarImage src={c.authorAvatarUrl || ""} />
+                                            <AvatarFallback className="text-[9px] bg-primary/20 text-primary">{c.author?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                          </Avatar>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-baseline gap-1.5 flex-wrap">
+                                              <span className="text-xs font-semibold leading-tight">{c.author}</span>
+                                              <span className="text-[10px] text-muted-foreground">{new Date(c.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+                                              {(user as any)?.id === c.userId && (
+                                                <button onClick={() => handleDeleteComment(post.id, c.id)} className="text-[10px] text-destructive/60 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity ml-auto">Delete</button>
+                                              )}
+                                            </div>
+                                            <p className="text-xs text-foreground/80 leading-relaxed mt-0.5">{c.content}</p>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {/* Comment input */}
+                                  <div className="flex gap-2 items-center">
+                                    <Avatar className="h-6 w-6 shrink-0">
+                                      <AvatarImage src={(user as any)?.avatarUrl || ""} />
+                                      <AvatarFallback className="text-[9px] bg-primary/20 text-primary">{((user as any)?.fullName || "U").substring(0, 2).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 flex gap-1.5">
+                                      <Input
+                                        className="h-7 text-xs bg-muted/20 border-border/30 flex-1"
+                                        placeholder="Write a comment…"
+                                        value={commentTexts[post.id] || ""}
+                                        onChange={e => setCommentTexts(prev => ({ ...prev, [post.id]: e.target.value }))}
+                                        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmitComment(post.id); } }}
+                                        maxLength={1000}
+                                      />
+                                      <Button
+                                        size="sm"
+                                        className="h-7 px-2"
+                                        disabled={!commentTexts[post.id]?.trim() || submittingComment[post.id]}
+                                        onClick={() => handleSubmitComment(post.id)}
+                                      >
+                                        {submittingComment[post.id] ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </CardContent>
                         </Card>

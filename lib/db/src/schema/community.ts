@@ -52,10 +52,21 @@ export const postLikesTable = pgTable("post_likes", {
   id: serial("id").primaryKey(),
   postId: integer("post_id").notNull(),
   userId: integer("user_id").notNull(),
+  emoji: text("emoji").notNull().default("❤️"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => ({
   unique: uniqueIndex("post_likes_post_user_idx").on(t.postId, t.userId),
 }));
+
+export const postCommentsTable = pgTable("post_comments", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  userId: integer("user_id").notNull(),
+  author: text("author").notNull(),
+  authorAvatarUrl: text("author_avatar_url"),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const communityMessagesTable = pgTable("community_messages", {
   id: serial("id").primaryKey(),
@@ -85,3 +96,4 @@ export type CommunityMessage = typeof communityMessagesTable.$inferSelect;
 export type GroupMember = typeof groupMembersTable.$inferSelect;
 export type GroupInvite = typeof groupInvitesTable.$inferSelect;
 export type PostLike = typeof postLikesTable.$inferSelect;
+export type PostComment = typeof postCommentsTable.$inferSelect;
