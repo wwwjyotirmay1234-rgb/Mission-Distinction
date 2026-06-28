@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "NEET PG", "General"];
+const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "General"];
 
 const SUGGESTED = [
   "Write a short note on Brachial plexus (SAQ)",

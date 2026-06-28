@@ -140,7 +140,7 @@ function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void })
   );
 }
 
-const CATEGORIES = ["All Subjects", "Anatomy", "Physiology", "Biochemistry", "Pharmacology", "Pathology"];
+const CATEGORIES = ["All Subjects", "Anatomy", "Physiology", "Biochemistry"];
 
 function trackNoteRead(noteId: number) {
   customFetch(`/api/notes/${noteId}/read`, { method: "POST" }).catch(() => {});

@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "General", "University"];
+const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "General", "University"];
 
 interface Exam {
   id: number; userId: number | null; title: string; subject: string;
