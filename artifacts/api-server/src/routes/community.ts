@@ -260,12 +260,12 @@ router.get("/groups", authMiddleware, async (req: Request, res: Response) => {
 router.post("/groups", authMiddleware, groupCreateLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const { name, subject, description } = req.body;
-    if (!name?.trim() || !subject?.trim()) { res.status(400).json({ error: "Group name and subject are required" }); return; }
+    const { name, description } = req.body;
+    if (!name?.trim()) { res.status(400).json({ error: "Group name is required" }); return; }
     const safeName = stripHtml(name.trim());
-    const safeSubject = stripHtml(subject.trim());
+    const safeSubject = "General";
     const safeDesc = description ? stripHtml(description.trim()) : null;
-    if (!safeName || !safeSubject) { res.status(400).json({ error: "Invalid content" }); return; }
+    if (!safeName) { res.status(400).json({ error: "Invalid content" }); return; }
     if (safeName.length > 80) { res.status(400).json({ error: "Group name too long" }); return; }
     const existing = await db.select({ id: communityGroupsTable.id }).from(communityGroupsTable).where(eq(communityGroupsTable.name, safeName));
     if (existing.length > 0) { res.status(409).json({ error: "A group with that name already exists" }); return; }

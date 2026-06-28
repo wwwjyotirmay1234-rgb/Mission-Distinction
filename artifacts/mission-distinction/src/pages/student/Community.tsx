@@ -268,7 +268,7 @@ export default function StudentCommunity() {
   const [postYouTubeUrl, setPostYouTubeUrl] = useState("");
   const [postUploading, setPostUploading] = useState(false);
   const [postMediaMode, setPostMediaMode] = useState<"none" | "photo" | "youtube">("none");
-  const [groupForm, setGroupForm] = useState({ name: "", subject: "", description: "" });
+  const [groupForm, setGroupForm] = useState({ name: "", description: "" });
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([]);
   const [typingUser, setTypingUser] = useState<string | null>(null);
@@ -758,7 +758,7 @@ export default function StudentCommunity() {
   };
 
   const handleCreateGroup = async () => {
-    if (!groupForm.name.trim() || !groupForm.subject.trim()) { toast.error("Group name and subject are required."); return; }
+    if (!groupForm.name.trim()) { toast.error("Group name is required."); return; }
     setCreatingGroup(true);
     try {
       const res = await apiFetch(`/api/community/groups`, {
@@ -770,7 +770,7 @@ export default function StudentCommunity() {
       toast.success("Group created!");
       queryClient.invalidateQueries({ queryKey: getListCommunityGroupsQueryKey() });
       setGroupOpen(false);
-      setGroupForm({ name: "", subject: "", description: "" });
+      setGroupForm({ name: "", description: "" });
     } catch (err: any) { toast.error(err?.message || "Failed to create group."); }
     finally { setCreatingGroup(false); }
   };
@@ -1488,23 +1488,11 @@ export default function StudentCommunity() {
           <DialogHeader><DialogTitle>Create a Group</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5"><Label>Group Name <span className="text-destructive">*</span></Label><Input placeholder="e.g. Anatomy Study Circle" className="bg-background/50" value={groupForm.name} onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })} maxLength={80} /></div>
-            <div className="space-y-1.5"><Label>Subject <span className="text-destructive">*</span></Label>
-              <Select value={groupForm.subject} onValueChange={(v) => setGroupForm({ ...groupForm, subject: v })}>
-                <SelectTrigger className="bg-background/50"><SelectValue placeholder="Select subject" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Anatomy">Anatomy</SelectItem>
-                  <SelectItem value="Physiology">Physiology</SelectItem>
-                  <SelectItem value="Biochemistry">Biochemistry</SelectItem>
-                  <SelectItem value="NEET PG">NEET PG</SelectItem>
-                  <SelectItem value="General">General</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <div className="space-y-1.5"><Label>Description <span className="text-muted-foreground text-xs">(optional)</span></Label><Textarea placeholder="What is this group about?" className="bg-background/50 resize-none min-h-[80px]" value={groupForm.description} onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })} maxLength={300} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setGroupOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateGroup} disabled={creatingGroup || !groupForm.name.trim() || !groupForm.subject}>
+            <Button onClick={handleCreateGroup} disabled={creatingGroup || !groupForm.name.trim()}>
               {creatingGroup ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creating...</> : "Create Group"}
             </Button>
           </DialogFooter>
