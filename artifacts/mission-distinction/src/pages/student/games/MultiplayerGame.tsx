@@ -7,8 +7,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Users, Crown, Trophy, Copy, LogOut, Zap, Timer, CheckCircle2, XCircle } from "lucide-react";
+import { Users, Crown, Trophy, Copy, LogOut, Zap, Timer, CheckCircle2, XCircle, Share2, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+const QB_SESSION_KEY = "qb_active_room";
+
+function saveRoomSession(code: string, subject: string) {
+  try { sessionStorage.setItem(QB_SESSION_KEY, JSON.stringify({ code, subject, ts: Date.now() })); } catch {}
+}
+function clearRoomSession() {
+  try { sessionStorage.removeItem(QB_SESSION_KEY); } catch {}
+}
+function loadRoomSession(): { code: string; subject: string } | null {
+  try {
+    const raw = sessionStorage.getItem(QB_SESSION_KEY);
+    if (!raw) return null;
+    const { code, subject, ts } = JSON.parse(raw);
+    if (Date.now() - ts > 3 * 3600 * 1000) { clearRoomSession(); return null; } // expire after 3h
+    return { code, subject };
+  } catch { return null; }
+}
+
+function copyInviteMessage(code: string) {
+  const msg = `Join my Quiz Battle on Mission Distinction! 🎓\nRoom Code: ${code}\n(Medical Games → Quiz Battle → Join Room)`;
+  navigator.clipboard.writeText(msg).then(() => toast.success("Invite message copied! Paste it in Community chat 💬")).catch(() => toast.info(`Room Code: ${code}`));
+}
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"];
 
@@ -42,6 +65,10 @@ export default function MultiplayerGame({ onBack }: { onBack: () => void }) {
   const [connecting, setConnecting] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Recover room code if user navigated away
+  const [savedSession, setSavedSession] = useState<{ code: string; subject: string } | null>(null);
+  useEffect(() => { setSavedSession(loadRoomSession()); }, []);
 
   const stopTimer = () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; } };
 
@@ -80,6 +107,10 @@ export default function MultiplayerGame({ onBack }: { onBack: () => void }) {
       setMyId(ps[0]?.id ?? null);
       setPhase("lobby");
       setConnecting(false);
+      saveRoomSession(code, subject);
+      setSavedSession(null);
+      // Auto-toast with code so they can note it even before sharing
+      toast.success(`Room created! Code: ${code}`, { duration: 8000, description: "Tap Copy Invite to share without leaving this page." });
     });
 
     socket.on("game:joined", ({ code, players: ps, hostId: hid }: { code: string; players: Player[]; hostId: number }) => {
@@ -90,6 +121,8 @@ export default function MultiplayerGame({ onBack }: { onBack: () => void }) {
       setConnecting(false);
       const meIdx = ps.length - 1;
       setMyId(ps[meIdx]?.id ?? null);
+      saveRoomSession(code, subject);
+      setSavedSession(null);
     });
 
     socket.on("game:player-joined", ({ players: ps, name }: { players: Player[]; name: string }) => {
@@ -192,6 +225,8 @@ export default function MultiplayerGame({ onBack }: { onBack: () => void }) {
     socketRef.current?.emit("game:leave", { code: roomCode });
     socketRef.current?.disconnect();
     socketRef.current = null;
+    clearRoomSession();
+    setSavedSession(null);
     setPhase("setup");
     setPlayers([]);
     setRoomCode("");
@@ -199,6 +234,20 @@ export default function MultiplayerGame({ onBack }: { onBack: () => void }) {
     setSelectedAnswer(null);
     setCorrectOption(null);
     setMyScore(0);
+  };
+
+  // Rejoin a room after navigating away
+  const handleRejoin = () => {
+    if (!savedSession) return;
+    setJoinCode(savedSession.code);
+    setMode("join");
+    // Auto-fill join code and trigger join
+    setConnecting(true);
+    const socket = connect();
+    if (!socket) return;
+    socket.on("connect", () => {
+      socket.emit("game:join", { code: savedSession.code });
+    });
   };
 
   useEffect(() => {
@@ -214,6 +263,39 @@ export default function MultiplayerGame({ onBack }: { onBack: () => void }) {
   if (phase === "setup") {
     return (
       <div className="space-y-6">
+        {/* ── Saved room recovery banner ── */}
+        {savedSession && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 space-y-3"
+          >
+            <div className="flex items-start gap-3">
+              <span className="text-xl">⚠️</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-amber-300">You left an active room</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Room <span className="font-mono font-bold text-amber-300 tracking-widest">{savedSession.code}</span>
+                  {" "}· {savedSession.subject}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" className="flex-1 gap-1.5 bg-amber-500 hover:bg-amber-600 text-black font-bold"
+                onClick={handleRejoin} disabled={connecting}>
+                <RefreshCw size={13} /> {connecting ? "Rejoining…" : "Rejoin Room"}
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 border-amber-500/40"
+                onClick={() => copyInviteMessage(savedSession.code)}>
+                <Copy size={13} /> Copy Code
+              </Button>
+              <Button size="sm" variant="ghost" className="text-muted-foreground"
+                onClick={() => { clearRoomSession(); setSavedSession(null); }}>
+                Dismiss
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
         <div className="flex gap-2">
           <Button variant={mode === "create" ? "default" : "outline"} className="flex-1" onClick={() => setMode("create")}>
             Create Room
@@ -268,20 +350,31 @@ export default function MultiplayerGame({ onBack }: { onBack: () => void }) {
   if (phase === "lobby") {
     return (
       <div className="space-y-5">
-        <div className="text-center space-y-2">
-          <p className="text-sm text-muted-foreground">Room Code</p>
+        {/* ── Room code card ── */}
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Your Room Code</p>
           <div className="flex items-center justify-center gap-3">
-            <span className="text-3xl font-black tracking-widest text-primary font-mono">{roomCode}</span>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+            <span className="text-4xl font-black tracking-[0.2em] text-primary font-mono">{roomCode}</span>
+          </div>
+          <Badge variant="outline" className="block text-center mx-auto w-fit bg-primary/10 text-primary border-primary/20 text-xs">
+            {subject} · {players.length} player{players.length !== 1 ? "s" : ""}
+          </Badge>
+          {/* Share buttons */}
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" size="sm" className="flex-1 gap-2 border-primary/30 text-primary hover:bg-primary/10"
+              onClick={() => copyInviteMessage(roomCode)}>
+              <Share2 size={14} /> Copy Invite Message
+            </Button>
+            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={() => {
               navigator.clipboard.writeText(roomCode);
               toast.success("Code copied!");
             }}>
-              <Copy size={15} />
+              <Copy size={13} /> Code only
             </Button>
           </div>
-          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
-            {players[0] && `${subject} · ${players.length} player${players.length !== 1 ? "s" : ""}`}
-          </Badge>
+          <p className="text-[11px] text-muted-foreground text-center">
+            💡 Use <strong>Copy Invite Message</strong> — paste it in Community chat without leaving this page
+          </p>
         </div>
 
         <div className="space-y-2">
