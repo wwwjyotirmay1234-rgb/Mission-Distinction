@@ -5,6 +5,7 @@ import { db } from "@workspace/db";
 import { doubtsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { anthropic } from "@workspace/integrations-anthropic-ai";
 
 const router = Router();
 
@@ -160,6 +161,7 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
   const question = sanitize(req.body.question, 3000) ?? "";
   const imageBase64: string | undefined = typeof req.body.imageBase64 === "string" && req.body.imageBase64.startsWith("data:image/") ? req.body.imageBase64 : undefined;
   const rawHistory: { role: string; content: string }[] = Array.isArray(req.body.history) ? req.body.history : [];
+  const useClaude = req.body.model === "claude";
 
   if (!question && !imageBase64) {
     res.status(400).json({ error: "Question or image is required" });
@@ -171,38 +173,79 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  type OAIMsg = { role: "system" | "user" | "assistant"; content: string | { type: string; text?: string; image_url?: { url: string; detail: string } }[] };
-
-  const historyMessages: OAIMsg[] = rawHistory
+  const history = rawHistory
     .slice(-10)
-    .filter(h => (h.role === "user" || h.role === "assistant") && h.content?.trim())
-    .map(h => ({ role: h.role as "user" | "assistant", content: h.content.slice(0, 3000) }));
-
-  const userContent: OAIMsg["content"] = imageBase64
-    ? [
-        { type: "image_url", image_url: { url: imageBase64, detail: "high" } },
-        ...(question ? [{ type: "text", text: question }] : []),
-      ]
-    : question;
-
-  const messages: OAIMsg[] = [
-    { role: "system", content: SYSTEM_PROMPT },
-    ...historyMessages,
-    { role: "user", content: userContent },
-  ];
+    .filter(h => (h.role === "user" || h.role === "assistant") && h.content?.trim());
 
   try {
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o",
-      max_completion_tokens: 8192,
-      stream: true,
-      messages: messages as any,
-    });
+    if (useClaude) {
+      // ── Claude (Anthropic) path ────────────────────────────────────────
+      type AnthropicContent = { type: "text"; text: string } | { type: "image"; source: { type: "base64"; media_type: string; data: string } };
+      type AnthropicMsg = { role: "user" | "assistant"; content: string | AnthropicContent[] };
 
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+      const claudeHistory: AnthropicMsg[] = history.map(h => ({
+        role: h.role as "user" | "assistant",
+        content: h.content.slice(0, 3000),
+      }));
+
+      const userContent: AnthropicContent[] = [];
+      if (imageBase64) {
+        const match = imageBase64.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+        if (match) {
+          userContent.push({ type: "image", source: { type: "base64", media_type: match[1], data: match[2] } });
+        }
+      }
+      if (question) userContent.push({ type: "text", text: question });
+
+      const claudeMessages: AnthropicMsg[] = [
+        ...claudeHistory,
+        { role: "user", content: userContent.length === 1 && userContent[0].type === "text" ? userContent[0].text : userContent },
+      ];
+
+      const stream = anthropic.messages.stream({
+        model: "claude-sonnet-4-6",
+        max_tokens: 8192,
+        system: SYSTEM_PROMPT,
+        messages: claudeMessages as any,
+      });
+
+      for await (const event of stream) {
+        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+          res.write(`data: ${JSON.stringify({ content: event.delta.text })}\n\n`);
+        }
+      }
+    } else {
+      // ── GPT-4o (OpenAI) path ───────────────────────────────────────────
+      type OAIMsg = { role: "system" | "user" | "assistant"; content: string | { type: string; text?: string; image_url?: { url: string; detail: string } }[] };
+
+      const historyMessages: OAIMsg[] = history.map(h => ({
+        role: h.role as "user" | "assistant",
+        content: h.content.slice(0, 3000),
+      }));
+
+      const userContent: OAIMsg["content"] = imageBase64
+        ? [
+            { type: "image_url", image_url: { url: imageBase64, detail: "high" } },
+            ...(question ? [{ type: "text", text: question }] : []),
+          ]
+        : question;
+
+      const messages: OAIMsg[] = [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...historyMessages,
+        { role: "user", content: userContent },
+      ];
+
+      const stream = await openai.chat.completions.create({
+        model: "gpt-4o",
+        max_completion_tokens: 8192,
+        stream: true,
+        messages: messages as any,
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) res.write(`data: ${JSON.stringify({ content })}\n\n`);
       }
     }
 

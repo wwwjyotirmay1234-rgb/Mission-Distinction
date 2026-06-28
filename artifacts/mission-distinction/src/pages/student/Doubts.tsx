@@ -374,6 +374,7 @@ function AiChatTab() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [model, setModel] = useState<"gpt-4o" | "claude">("gpt-4o");
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -431,7 +432,7 @@ function AiChatTab() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ question: q, imageBase64: img ?? undefined, history }),
+        body: JSON.stringify({ question: q, imageBase64: img ?? undefined, history, model }),
         signal: abortRef.current.signal,
       });
 
@@ -508,17 +509,40 @@ function AiChatTab() {
 
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 220px)", minHeight: "420px" }}>
-      {/* Clear chat button */}
-      {msgs.length > 0 && (
-        <div className="flex justify-end mb-2">
+      {/* Toolbar: model toggle + clear */}
+      <div className="flex items-center justify-between mb-2">
+        {/* Model toggle */}
+        <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg">
+          <button
+            onClick={() => setModel("gpt-4o")}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+              model === "gpt-4o"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Sparkles size={11} /> GPT-4o
+          </button>
+          <button
+            onClick={() => setModel("claude")}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+              model === "claude"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Bot size={11} /> Claude
+          </button>
+        </div>
+        {msgs.length > 0 && (
           <button
             onClick={clearChat}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted/40 transition-colors"
           >
             <Trash2 size={12} /> New Chat
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto space-y-5 pr-1">
