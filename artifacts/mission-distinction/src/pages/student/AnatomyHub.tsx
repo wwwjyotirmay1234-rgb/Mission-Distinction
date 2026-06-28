@@ -3,6 +3,7 @@ import ModelViewer3D from "./anatomy/ModelViewer3D";
 import CadavericViewer from "./anatomy/CadavericViewer";
 import CrossSectionViewer from "./anatomy/CrossSectionViewer";
 import AnatomyQuizPanel from "./anatomy/AnatomyQuizPanel";
+import CadavericGallery from "./anatomy/CadavericGallery";
 import {
   ANATOMY_SYSTEMS,
   searchStructures,
@@ -1252,11 +1253,14 @@ function SystemView({ system, onBack, initialStructure }: {
   );
 }
 
+type HubMode = "3d" | "cadaveric";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Root
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AnatomyHub() {
   const [page, setPage] = useState<HubPage>("landing");
+  const [hubMode, setHubMode] = useState<HubMode>("3d");
   const [selectedSystem, setSelectedSystem] = useState<AnatomySystem | null>(null);
   const [initialStructure, setInitialStructure] = useState<AnatomyStructure | null>(null);
   const [globalSearch, setGlobalSearch] = useState("");
@@ -1268,28 +1272,59 @@ export default function AnatomyHub() {
     setPage("landing"); setSelectedSystem(null); setInitialStructure(null);
   }
 
+  const MODE_TABS: { id: HubMode; label: string; icon: string }[] = [
+    { id: "3d",        label: "3D Models", icon: "⬡" },
+    { id: "cadaveric", label: "Cadaveric", icon: "🔬" },
+  ];
+
   return (
     <div className="flex flex-col w-full h-full overflow-hidden" style={{ background: "linear-gradient(135deg,#060414 0%,#0a0520 50%,#060318 100%)" }}>
       <nav className="flex items-center justify-between px-4 py-2.5 border-b border-white/8 bg-black/50 backdrop-blur-md shrink-0 z-10">
         <div className="flex items-center gap-2.5">
+          {page === "system" && (
+            <button onClick={handleBack} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors mr-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+          )}
           <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black text-white select-none" style={{ background: "linear-gradient(135deg,#7c3aed,#a21caf)" }}>A</div>
           <span className="font-black text-white text-sm tracking-tight">Anatomy Hub</span>
-          <span className="text-[9px] text-slate-600 uppercase tracking-wider hidden sm:inline ml-1">1st Year MBBS</span>
         </div>
-        <div className="flex items-center gap-3 text-[10px] text-slate-500">
-          <span className="text-violet-400 font-bold">{ANATOMY_SYSTEMS.length} Systems</span>
-          <span>·</span>
-          <span>{ANATOMY_SYSTEMS.reduce((a, s) => a + s.structures.length, 0)} Topics</span>
+
+        {/* Mode toggle — only on landing */}
+        {page === "landing" && (
+          <div className="flex items-center gap-1 p-0.5 rounded-lg" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            {MODE_TABS.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setHubMode(t.id)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all"
+                style={hubMode === t.id
+                  ? { background: "#7c3aed", color: "#fff" }
+                  : { color: "#6b7280" }
+                }
+              >
+                <span className="text-sm leading-none">{t.icon}</span>
+                <span className="hidden sm:inline">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 text-[10px] text-slate-500">
+          <span className="text-violet-400 font-bold hidden sm:inline">{ANATOMY_SYSTEMS.length} Systems</span>
         </div>
       </nav>
 
-      {page === "landing" && (
+      {page === "landing" && hubMode === "3d" && (
         <HubLanding
           onSelectSystem={handleSelectSystem}
           onSelectResult={(sys, struct) => handleSelectSystem(sys, struct)}
           globalSearch={globalSearch}
           setGlobalSearch={setGlobalSearch}
         />
+      )}
+      {page === "landing" && hubMode === "cadaveric" && (
+        <CadavericGallery />
       )}
       {page === "system" && selectedSystem && (
         <SystemView system={selectedSystem} onBack={handleBack} initialStructure={initialStructure} />
