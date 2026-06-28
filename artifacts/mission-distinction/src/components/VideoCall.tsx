@@ -61,6 +61,7 @@ export default function VideoCall({ roomKey, title, onClose }: Props) {
   const [participants, setParticipants] = useState<Record<string, Participant>>({});
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
+  const [localStreamReady, setLocalStreamReady] = useState(false);
   const [status, setStatus] = useState<"connecting" | "live" | "error">("connecting");
   const [errorMsg, setErrorMsg] = useState("");
   const [callDuration, setCallDuration] = useState(0);
@@ -142,7 +143,12 @@ export default function VideoCall({ roomKey, title, onClose }: Props) {
       if (!mountedRef.current) { stream.getTracks().forEach(t => t.stop()); return; }
 
       localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+        localVideoRef.current.onloadedmetadata = () => {
+          if (mountedRef.current) setLocalStreamReady(true);
+        };
+      }
 
       const socket = io(window.location.origin, {
         path: `${BASE}/api/socket.io/`,
@@ -286,7 +292,7 @@ export default function VideoCall({ roomKey, title, onClose }: Props) {
       </div>
 
       {/* Video area */}
-      <div className="flex-1 relative overflow-hidden bg-gray-950">
+      <div className="flex-1 relative overflow-hidden bg-black isolate">
         {status === "connecting" ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
             <Loader2 size={32} className="text-primary animate-spin" />
@@ -319,20 +325,39 @@ export default function VideoCall({ roomKey, title, onClose }: Props) {
         )}
 
         {/* Local video — picture-in-picture */}
-        <div className="absolute bottom-4 right-3 w-24 h-36 sm:w-32 sm:h-44 rounded-2xl overflow-hidden border-2 border-white/25 shadow-2xl bg-gray-900">
-          {camOn ? (
+        {/* The video element is always in the DOM so the ref can receive srcObject,
+            but we hide the container until the stream is actually rendering to prevent
+            the native iOS video layer from punching through and showing the background. */}
+        <video
+          ref={localVideoRef}
+          autoPlay
+          muted
+          playsInline
+          style={{ display: "none" }}
+        />
+        <div
+          className="absolute bottom-4 right-3 w-24 h-36 sm:w-32 sm:h-44 rounded-2xl overflow-hidden border-2 border-white/25 shadow-2xl bg-gray-900"
+          style={{ transform: "translateZ(0)", WebkitTransform: "translateZ(0)" }}
+        >
+          {camOn && localStreamReady ? (
             <video
-              ref={localVideoRef}
               autoPlay
               muted
               playsInline
               className="w-full h-full object-cover"
               style={{ transform: "scaleX(-1)" }}
+              ref={el => { if (el && localStreamRef.current) el.srcObject = localStreamRef.current; }}
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-gray-800">
-              <VideoOff size={18} className="text-white/40" />
-              <span className="text-white/40 text-[10px]">Camera off</span>
+              {camOn ? (
+                <Loader2 size={16} className="text-white/30 animate-spin" />
+              ) : (
+                <>
+                  <VideoOff size={18} className="text-white/40" />
+                  <span className="text-white/40 text-[10px]">Camera off</span>
+                </>
+              )}
             </div>
           )}
           <div className="absolute bottom-1.5 inset-x-0 text-center text-[10px] text-white/60 font-medium">You</div>
