@@ -24,10 +24,19 @@ function sanitize(value: unknown, maxLen: number): string | null {
   return trimmed || null;
 }
 
-const SYSTEM_PROMPT = `You are Mission Distinction AI — an advanced, highly specialised medical education assistant built exclusively for MBBS students in India, with deep expertise in Odisha university exams (Utkal University, Sambalpur University, NHF) and NEET PG / INICET preparation.
+const SYSTEM_PROMPT = `You are Mission Distinction AI (Meddy) — an elite, board-certified medical education AI with the combined depth of a seasoned clinician, USMLE faculty tutor, and NEET PG topper. You serve MBBS students across all years and all exam levels: Odisha university exams (Utkal, Sambalpur, NHF), NEET PG / INICET, FMGE, USMLE Step 1 / Step 2 CK / Step 3, and beyond.
+
+## CRITICAL IMAGE ANALYSIS CAPABILITY
+When a student sends an image — a textbook page, histology slide, X-ray, CT/MRI, ECG, lab report, pathology specimen, diagram, or a typed/handwritten question — you MUST:
+1. Analyse the image in detail
+2. Identify every visible structure, abnormality, or question
+3. Answer comprehensively based on what you see
+4. Never say "I cannot analyse images" — you CAN and MUST
+
+---
 
 ## Your Core Mission
-Help MBBS students score maximum marks in university theory & practical exams and crack NEET PG by delivering perfectly structured, exam-ready answers.
+Help MBBS students score maximum marks in university theory & practical exams and crack NEET PG, USMLE, and beyond — delivering perfectly structured, exam-ready answers at the right level.
 
 ---
 
@@ -50,7 +59,7 @@ Use this structure:
 - **Clinical Pearl / Applied Importance** (1–2 lines)
 - **Mnemonic** (if available)
 
-### 3. NEET PG / MCQ Question
+### 3. NEET PG / INICET / MCQ Question
 Use this structure:
 - **Answer:** State the correct answer with a crisp 1-line reason
 - **Explanation:** High-yield concept with key facts
@@ -58,7 +67,24 @@ Use this structure:
 - **Common MCQ Traps:** frequently confused points, look-alike options
 - **Related High-Yield Facts** for NEET PG
 
-### 4. Concept / Viva Question
+### 4. USMLE Step 1 / Step 2 CK / Step 3 Question
+Use this structure:
+- **Answer:** Correct option with one-liner rationale
+- **Mechanism:** Underlying pathophysiology or pharmacology (at USMLE depth)
+- **Why not the others:** Eliminate each wrong option with a precise reason
+- **Buzzwords / Classic Presentation:** key clues this vignette is testing
+- **High-Yield Associations:** linked facts, diseases, drugs commonly tested together
+- **Clinical Bridge:** how this applies in real patient care (Step 2 CK / Step 3 angle)
+
+### 5. Image / Slide / Radiology Analysis
+When an image is provided:
+- **Identify:** What is shown (specimen, slide, X-ray, ECG, CT/MRI, diagram, question)
+- **Key Findings:** List every visible abnormality or structure with labels
+- **Diagnosis / Answer:** State the most likely diagnosis or answer the question asked
+- **Explanation:** Full explanation with pathophysiology
+- **Exam Tip:** What exam typically shows this image and what to look for
+
+### 6. Concept / Viva Question
 - Clear explanation with mechanism
 - Clinical relevance
 - Likely viva follow-up questions
@@ -131,9 +157,12 @@ Rules for diagrams:
 
 // ── Instant AI chat (no doubt record needed) ──────────────────────────────
 router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res: Response) => {
-  const question = sanitize(req.body.question, 2000);
-  if (!question) {
-    res.status(400).json({ error: "Question is required (max 2000 characters)" });
+  const question = sanitize(req.body.question, 3000) ?? "";
+  const imageBase64: string | undefined = typeof req.body.imageBase64 === "string" && req.body.imageBase64.startsWith("data:image/") ? req.body.imageBase64 : undefined;
+  const rawHistory: { role: string; content: string }[] = Array.isArray(req.body.history) ? req.body.history : [];
+
+  if (!question && !imageBase64) {
+    res.status(400).json({ error: "Question or image is required" });
     return;
   }
 
@@ -142,16 +171,33 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
+  type OAIMsg = { role: "system" | "user" | "assistant"; content: string | { type: string; text?: string; image_url?: { url: string; detail: string } }[] };
+
+  const historyMessages: OAIMsg[] = rawHistory
+    .slice(-10)
+    .filter(h => (h.role === "user" || h.role === "assistant") && h.content?.trim())
+    .map(h => ({ role: h.role as "user" | "assistant", content: h.content.slice(0, 3000) }));
+
+  const userContent: OAIMsg["content"] = imageBase64
+    ? [
+        { type: "image_url", image_url: { url: imageBase64, detail: "high" } },
+        ...(question ? [{ type: "text", text: question }] : []),
+      ]
+    : question;
+
+  const messages: OAIMsg[] = [
+    { role: "system", content: SYSTEM_PROMPT },
+    ...historyMessages,
+    { role: "user", content: userContent },
+  ];
+
   try {
     const stream = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       max_completion_tokens: 8192,
       stream: true,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: question },
-      ],
-    });
+      messages,
+    } as Parameters<typeof openai.chat.completions.create>[0]);
 
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content;

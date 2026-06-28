@@ -18,10 +18,11 @@ const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmac
 const SUGGESTED = [
   "Write a short note on Brachial plexus (SAQ)",
   "Describe the cardiac cycle with diagrams (LAQ)",
-  "What is Krebs cycle? Add its clinical significance",
   "NEET PG: Which nerve is damaged in Saturday night palsy?",
-  "Write a short note on Blood-brain barrier",
+  "USMLE: A 45-yr-old presents with chest pain, diaphoresis. ECG shows ST elevation in V1-V4. Diagnosis?",
+  "What is Krebs cycle? Clinical significance + pathway diagram",
   "Describe the histology of kidney cortex with diagram",
+  "📷 Send me an image of a slide / X-ray / question to analyse it",
 ];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -30,6 +31,7 @@ type ChatMsg = {
   id: string;
   role: "user" | "ai";
   content: string;
+  imageBase64?: string;
   streaming?: boolean;
   error?: boolean;
 };
@@ -339,33 +341,81 @@ function renderMessageContent(text: string) {
   );
 }
 
+// ─── AI Chat Tab helpers ──────────────────────────────────────────────────────
+
+async function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 1024;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+        else { width = Math.round(width * MAX / height); height = MAX; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("canvas ctx")); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 // ─── AI Chat Tab ──────────────────────────────────────────────────────────────
 
 function AiChatTab() {
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs]);
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please select an image file"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Image too large (max 10 MB)"); return; }
+    try {
+      const compressed = await compressImage(file);
+      setPendingImage(compressed);
+    } catch {
+      toast.error("Could not process image. Please try another.");
+    }
+    e.target.value = "";
+  };
+
   const send = async (question: string) => {
     const q = question.trim();
-    if (!q || busy) return;
+    const img = pendingImage;
+    if (!q && !img || busy) return;
 
     const userId = `u-${Date.now()}`;
     const aiId = `a-${Date.now()}`;
 
+    const history = msgs
+      .filter(m => !m.streaming && !m.error && m.content)
+      .map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content }));
+
     setMsgs(prev => [
       ...prev,
-      { id: userId, role: "user", content: q },
+      { id: userId, role: "user", content: q, imageBase64: img ?? undefined },
       { id: aiId, role: "ai", content: "", streaming: true },
     ]);
     setInput("");
+    setPendingImage(null);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -381,7 +431,7 @@ function AiChatTab() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ question: q }),
+        body: JSON.stringify({ question: q, imageBase64: img ?? undefined, history }),
         signal: abortRef.current.signal,
       });
 
@@ -439,6 +489,7 @@ function AiChatTab() {
     abortRef.current?.abort();
     setMsgs([]);
     setBusy(false);
+    setPendingImage(null);
     setTimeout(() => textareaRef.current?.focus(), 50);
   };
 
@@ -483,7 +534,10 @@ function AiChatTab() {
             <div>
               <h2 className="text-xl font-bold text-foreground">Mission Distinction AI</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Your personal MBBS exam assistant — university exams &amp; NEET PG
+                MBBS · NEET PG · USMLE · Image Analysis
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-0.5">
+                📷 Attach a textbook page, ECG, X-ray, or histology slide for instant AI analysis
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
@@ -519,7 +573,16 @@ function AiChatTab() {
                 }`}
               >
                 {msg.role === "user" ? (
-                  msg.content ? <p className="whitespace-pre-wrap">{msg.content}</p> : null
+                  <>
+                    {msg.imageBase64 && (
+                      <img
+                        src={msg.imageBase64}
+                        alt="Attached"
+                        className="max-w-[220px] rounded-xl mb-2 object-cover border border-white/20"
+                      />
+                    )}
+                    {msg.content ? <p className="whitespace-pre-wrap">{msg.content}</p> : null}
+                  </>
                 ) : msg.streaming ? (
                   // While streaming: render markdown but strip partial [DIAGRAM:...] tags
                   msg.content ? (
@@ -545,13 +608,56 @@ function AiChatTab() {
 
       {/* Input bar */}
       <div className="shrink-0 pt-3 border-t border-border/40">
-        <div className="flex gap-2 items-end bg-card border border-border/60 rounded-2xl px-4 py-3 focus-within:border-primary/50 transition-colors">
+        {/* Pending image preview strip */}
+        {pendingImage && (
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <div className="relative">
+              <img
+                src={pendingImage}
+                alt="Attached"
+                className="h-14 w-20 object-cover rounded-xl border border-primary/40"
+              />
+              <button
+                onClick={() => setPendingImage(null)}
+                className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive rounded-full flex items-center justify-center"
+                aria-label="Remove image"
+              >
+                <X size={9} className="text-white" />
+              </button>
+            </div>
+            <span className="text-[10px] text-muted-foreground">Image ready to send</span>
+          </div>
+        )}
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
+        <div className="flex gap-2 items-end bg-card border border-border/60 rounded-2xl px-3 py-3 focus-within:border-primary/50 transition-colors">
+          {/* Attach image button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={busy}
+            title="Attach image (textbook page, ECG, X-ray, histology…)"
+            className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+              pendingImage
+                ? "bg-primary/20 text-primary"
+                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            <ImageIcon size={15} />
+          </button>
           <textarea
             ref={textareaRef}
             value={input}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder="Ask any medical question… (Enter to send, Shift+Enter for newline)"
+            placeholder={pendingImage ? "Add a question about this image… (optional)" : "Ask any medical question… (Enter to send, Shift+Enter for newline)"}
             rows={1}
             disabled={busy}
             className="flex-1 bg-transparent resize-none outline-none text-sm placeholder:text-muted-foreground disabled:opacity-60"
@@ -559,14 +665,14 @@ function AiChatTab() {
           />
           <button
             onClick={() => send(input)}
-            disabled={!input.trim() || busy}
+            disabled={(!input.trim() && !pendingImage) || busy}
             className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
           >
             <Send size={15} className="text-white" />
           </button>
         </div>
         <p className="text-center text-[10px] text-muted-foreground/50 mt-1.5">
-          Mission Distinction AI · Specialised for MBBS university exams &amp; NEET PG · Always cross-verify with standard textbooks.
+          Mission Distinction AI · MBBS · NEET PG · USMLE · Send images for analysis · Always cross-verify with textbooks.
         </p>
       </div>
     </div>
