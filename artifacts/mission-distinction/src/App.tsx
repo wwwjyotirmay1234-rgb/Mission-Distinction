@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
+import { ThemeProvider, useTheme, ForceDark } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -130,13 +130,27 @@ function Router() {
     <>
     <PageTracker />
     <Switch>
-      <Route path="/" component={LandingPage} />
-      <Route path="/coming-soon" component={ComingSoon} />
-      <Route path="/forgot-password" component={ForgotPassword} />
-      <Route path="/reset-password" component={ResetPassword} />
-      <Route path="/verify-email" component={VerifyEmail} />
-      <Route path="/privacy-policy" component={PrivacyPolicy} />
-      <Route path="/terms" component={TermsOfService} />
+      <Route path="/">
+        <ForceDark><LandingPage /></ForceDark>
+      </Route>
+      <Route path="/coming-soon">
+        <ForceDark><ComingSoon /></ForceDark>
+      </Route>
+      <Route path="/forgot-password">
+        <ForceDark><ForgotPassword /></ForceDark>
+      </Route>
+      <Route path="/reset-password">
+        <ForceDark><ResetPassword /></ForceDark>
+      </Route>
+      <Route path="/verify-email">
+        <ForceDark><VerifyEmail /></ForceDark>
+      </Route>
+      <Route path="/privacy-policy">
+        <ForceDark><PrivacyPolicy /></ForceDark>
+      </Route>
+      <Route path="/terms">
+        <ForceDark><TermsOfService /></ForceDark>
+      </Route>
       
       {/* Student Routes */}
       <Route path="/student/*">
