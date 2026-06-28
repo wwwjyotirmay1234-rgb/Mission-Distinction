@@ -50,9 +50,48 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Dark background prevents white/black flash while JS loads -->
+    <style>html,body{background:#0d0f1a;margin:0;padding:0;min-height:100vh;}</style>
   </head>
   <body>
     <div id="root"></div>
+
+    <!--
+      CRITICAL: This inline script runs BEFORE any React bundle.
+      If stale service-worker chunks cause main.tsx to never execute,
+      the controllerchange listener in main.tsx is never registered.
+      This script is the safety net — it fires regardless of React.
+    -->
+    <script>
+      (function () {
+        // 1. Reload the moment a new SW takes control (clears stale chunk cache)
+        if ('serviceWorker' in navigator) {
+          var _reloading = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            if (!_reloading) { _reloading = true; window.location.reload(); }
+          });
+        }
+
+        // 2. If any JS module chunk 404s / fails, do a hard reload to get fresh chunks
+        window.addEventListener('error', function (e) {
+          var src = (e && e.target && e.target.src) || '';
+          if (src && src.includes('/assets/')) {
+            console.warn('[MD] Chunk load failed, hard-reloading:', src);
+            window.location.reload(true);
+          }
+        }, true);
+
+        // 3. Safety timeout: if #root is still empty after 10 s, hard-reload
+        setTimeout(function () {
+          var root = document.getElementById('root');
+          if (root && !root.firstChild) {
+            console.warn('[MD] Root empty after 10 s — hard-reloading');
+            window.location.reload(true);
+          }
+        }, 10000);
+      })();
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
