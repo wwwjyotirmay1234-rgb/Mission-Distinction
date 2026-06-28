@@ -21,10 +21,14 @@ initAnalytics();
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
-      await navigator.serviceWorker.register("/sw.js", {
+      // Use BASE_URL so the path is correct in dev (/mission-distinction/sw.js)
+      // and in production (/sw.js). A hardcoded /sw.js fails in dev because
+      // Vite serves the public folder under the configured base path.
+      await navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, {
         scope: import.meta.env.BASE_URL,
       });
-    } catch {
+    } catch (err) {
+      console.warn("[SW] Registration failed:", err);
     }
   });
 }
