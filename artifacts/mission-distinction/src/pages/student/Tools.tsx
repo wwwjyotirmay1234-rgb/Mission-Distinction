@@ -575,12 +575,26 @@ function AlarmClock_() {
         const target = currentAlarms.find(a => a.id === alarmId);
         if (target) {
           if (document.visibilityState === "visible") {
+            // App is open — play immediately
             playAlarmSound(target);
+            toast(`⏰ ${target.label || `Alarm at ${target.time}`}`, {
+              duration: 60_000,
+              action: { label: "Dismiss", onClick: () => stopCurrentAlarmAudio() },
+            });
+          } else {
+            // App is in background — the SW notification already alerted the user.
+            // Play audio + show toast the moment they return to the app (e.g. by tapping the notification).
+            const playOnReturn = () => {
+              if (document.visibilityState !== "visible") return;
+              document.removeEventListener("visibilitychange", playOnReturn);
+              playAlarmSound(target);
+              toast(`⏰ ${target.label || `Alarm at ${target.time}`}`, {
+                duration: 60_000,
+                action: { label: "Dismiss", onClick: () => stopCurrentAlarmAudio() },
+              });
+            };
+            document.addEventListener("visibilitychange", playOnReturn);
           }
-          toast(`⏰ ${target.label || `Alarm at ${target.time}`}`, {
-            duration: 60_000,
-            action: { label: "Dismiss", onClick: () => stopCurrentAlarmAudio() },
-          });
           awardActivityXP("alarm_used");
           setAlarms(prev => prev.map(a => a.id === alarmId ? { ...a, fired: true, active: false } : a));
         }
