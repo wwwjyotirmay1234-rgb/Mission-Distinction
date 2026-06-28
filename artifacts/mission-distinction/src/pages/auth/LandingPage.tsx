@@ -390,14 +390,14 @@ export default function LandingPage() {
           <div className="absolute" style={{top:48,left:"9%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
           <div className="absolute" style={{top:48,right:"9%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
 
-          {/* ── Mission Distinction hero logo ── */}
+          {/* ── Caduceus hero image ── */}
           <img
-            src="/md-logo-new.png"
-            alt="Mission Distinction"
+            src="/caduceus-hero-nobg.png"
+            alt="Medical Caduceus"
             width={220}
             height={220}
-            className="relative z-10 rounded-2xl"
-            style={{ objectFit: "contain", boxShadow: "0 8px 40px rgba(124,58,237,0.35)" }}
+            className="relative z-10"
+            style={{ filter: "drop-shadow(0 0 18px rgba(124,58,237,0.65))" }}
           />
         </motion.div>
 
