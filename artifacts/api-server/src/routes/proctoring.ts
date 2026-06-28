@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
-import { db } from "@workspace/db";
+import { db, pool } from "@workspace/db";
 import { proctoringLogsTable, quizAttemptsTable } from "@workspace/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
@@ -123,6 +123,40 @@ router.post("/link", authMiddleware, async (req: Request, res: Response) => {
       .where(eq(quizAttemptsTable.id, attempt.id));
 
     res.json({ ok: true, violationCount: seriousViolations });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/all-attempts", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(
+        `SELECT
+          qa.id AS attempt_id,
+          qa.quiz_title,
+          qa.subject,
+          qa.score,
+          qa.total,
+          qa.percentage,
+          qa.violation_count,
+          qa.is_flagged,
+          qa.proctoring_flagged_at,
+          qa.created_at,
+          u.id AS user_id,
+          u.full_name AS student_name,
+          u.email AS student_email
+        FROM quiz_attempts qa
+        LEFT JOIN users u ON u.id = qa.user_id
+        WHERE qa.proctoring_session_id IS NOT NULL
+        ORDER BY qa.is_flagged DESC, qa.created_at DESC
+        LIMIT 200`
+      );
+      res.json(result.rows);
+    } finally {
+      client.release();
+    }
   } catch {
     res.status(500).json({ error: "Internal server error" });
   }

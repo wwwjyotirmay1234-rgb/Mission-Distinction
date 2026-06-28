@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { customFetch } from "@workspace/api-client-react";
+import { apiFetch } from "@/lib/apiFetch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import {
   Brain, CheckCircle, Clock, Eye, FileText, RefreshCw,
   User, BookOpen, AlertCircle, ChevronDown, ChevronUp, Image as ImageIcon,
+  ShieldAlert, ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -262,17 +265,124 @@ function SubmissionCard({ sub, onGraded }: { sub: Submission; onGraded: () => vo
   );
 }
 
+type ProctoredAttempt = {
+  attempt_id: number;
+  quiz_title: string;
+  subject: string;
+  score: number;
+  total: number;
+  percentage: number;
+  violation_count: number;
+  is_flagged: boolean;
+  proctoring_flagged_at: string | null;
+  created_at: string;
+  user_id: number;
+  student_name: string;
+  student_email: string;
+};
+
+function ProctoredAttemptsList() {
+  const [, navigate] = useLocation();
+
+  const { data, isLoading, refetch } = useQuery<ProctoredAttempt[]>({
+    queryKey: ["admin-proctored-attempts"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/proctoring/all-attempts");
+      if (!res.ok) throw new Error("Failed to load");
+      return res.json();
+    },
+  });
+
+  const attempts = data ?? [];
+  const flaggedCount = attempts.filter(a => a.is_flagged).length;
+
+  if (isLoading) {
+    return <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full" />)}</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {flaggedCount > 0 && (
+        <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-sm">
+          <ShieldAlert size={14} className="text-red-400 shrink-0" />
+          <span className="text-red-300">
+            <strong>{flaggedCount}</strong> flagged attempt{flaggedCount !== 1 ? "s" : ""} detected — review immediately.
+          </span>
+        </div>
+      )}
+
+      {attempts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
+          <ShieldCheck className="w-10 h-10 opacity-20" />
+          <div className="text-center">
+            <p className="font-medium">No proctored attempts yet</p>
+            <p className="text-sm mt-1">Attempts from proctored quizzes will appear here.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {attempts.map(a => (
+            <Card
+              key={a.attempt_id}
+              className={`border-border/40 cursor-pointer hover:border-primary/40 transition-colors ${a.is_flagged ? "border-red-500/30 bg-red-500/5" : "bg-card/30"}`}
+              onClick={() => navigate(`/admin/proctoring/${a.attempt_id}`)}
+            >
+              <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3 min-w-0">
+                  {a.is_flagged
+                    ? <ShieldAlert size={18} className="text-red-400 shrink-0" />
+                    : <ShieldCheck size={18} className="text-green-400 shrink-0" />}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-sm truncate">{a.quiz_title}</p>
+                      <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 shrink-0">{a.subject}</Badge>
+                      {a.is_flagged && <Badge variant="outline" className="text-[10px] border-red-500/30 text-red-400 bg-red-500/10 shrink-0">FLAGGED</Badge>}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{a.student_name} · {a.student_email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 shrink-0 text-right">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Score</p>
+                    <p className="text-sm font-semibold">{a.percentage}%</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Violations</p>
+                    <p className={`text-sm font-semibold ${a.violation_count === 0 ? "text-green-400" : a.violation_count < 3 ? "text-amber-400" : "text-red-400"}`}>
+                      {a.violation_count}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" className="text-xs h-8 gap-1.5">
+                    <Eye size={12} /> Report
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <div className="flex justify-end">
+        <Button variant="ghost" size="sm" onClick={() => refetch()} className="gap-2 text-muted-foreground">
+          <RefreshCw size={13} /> Refresh
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function QuizSubmissions() {
+  const [tab, setTab] = useState("scripts");
   const [status, setStatus] = useState("pending");
   const queryClient = useQueryClient();
 
   const { data, isLoading, refetch } = useQuery<Submission[]>({
     queryKey: ["admin-quiz-submissions", status],
     queryFn: () => customFetch(`/api/quiz-submissions/admin/all${status !== "all" ? `?status=${status}` : ""}`),
+    enabled: tab === "scripts",
   });
 
   const submissions = data ?? [];
-
   const pendingCount = submissions.filter(s => s.status === "pending").length;
   const aiGradedCount = submissions.filter(s => s.status === "ai_graded").length;
 
@@ -281,64 +391,79 @@ export default function QuizSubmissions() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FileText className="text-primary" /> Answer Scripts
+            <FileText className="text-primary" /> Submissions
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Review and grade SAQ / LAQ submissions from students
+            Review answer scripts and proctored exam reports
           </p>
         </div>
-        <Button variant="outline" onClick={() => refetch()} size="sm" className="gap-2">
-          <RefreshCw size={14} /> Refresh
-        </Button>
+        {tab === "scripts" && (
+          <Button variant="outline" onClick={() => refetch()} size="sm" className="gap-2">
+            <RefreshCw size={14} /> Refresh
+          </Button>
+        )}
       </div>
 
-      {pendingCount > 0 && (
-        <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm">
-          <AlertCircle size={14} className="text-amber-400 shrink-0" />
-          <span className="text-amber-300">
-            <strong>{pendingCount}</strong> answer{pendingCount !== 1 ? "s" : ""} awaiting review
-            {aiGradedCount > 0 && `, ${aiGradedCount} AI-graded (confirm with final marks)`}
-          </span>
-        </div>
-      )}
-
-      <Tabs value={status} onValueChange={setStatus}>
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="bg-card/50">
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="ai_graded">AI Graded</TabsTrigger>
-          <TabsTrigger value="graded">Graded</TabsTrigger>
-          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="scripts" className="gap-1.5"><FileText size={13} />Answer Scripts</TabsTrigger>
+          <TabsTrigger value="proctored" className="gap-1.5"><ShieldCheck size={13} />Proctored Exams</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {isLoading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 w-full" />)}
-        </div>
-      ) : submissions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
-          <CheckCircle className="w-10 h-10 opacity-20" />
-          <div className="text-center">
-            <p className="font-medium">No submissions here</p>
-            <p className="text-sm mt-1">
-              {status === "pending"
-                ? "All caught up — no pending answer scripts."
-                : "No submissions with this status yet."}
-            </p>
-          </div>
-        </div>
+      {tab === "proctored" ? (
+        <ProctoredAttemptsList />
       ) : (
-        <div className="space-y-3">
-          {submissions.map(sub => (
-            <SubmissionCard
-              key={sub.id}
-              sub={sub}
-              onGraded={() => {
-                queryClient.invalidateQueries({ queryKey: ["admin-quiz-submissions"] });
-              }}
-            />
-          ))}
-        </div>
+        <>
+          {pendingCount > 0 && (
+            <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm">
+              <AlertCircle size={14} className="text-amber-400 shrink-0" />
+              <span className="text-amber-300">
+                <strong>{pendingCount}</strong> answer{pendingCount !== 1 ? "s" : ""} awaiting review
+                {aiGradedCount > 0 && `, ${aiGradedCount} AI-graded (confirm with final marks)`}
+              </span>
+            </div>
+          )}
+
+          <Tabs value={status} onValueChange={setStatus}>
+            <TabsList className="bg-card/50">
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="ai_graded">AI Graded</TabsTrigger>
+              <TabsTrigger value="graded">Graded</TabsTrigger>
+              <TabsTrigger value="all">All</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 w-full" />)}
+            </div>
+          ) : submissions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
+              <CheckCircle className="w-10 h-10 opacity-20" />
+              <div className="text-center">
+                <p className="font-medium">No submissions here</p>
+                <p className="text-sm mt-1">
+                  {status === "pending"
+                    ? "All caught up — no pending answer scripts."
+                    : "No submissions with this status yet."}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {submissions.map(sub => (
+                <SubmissionCard
+                  key={sub.id}
+                  sub={sub}
+                  onGraded={() => {
+                    queryClient.invalidateQueries({ queryKey: ["admin-quiz-submissions"] });
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
