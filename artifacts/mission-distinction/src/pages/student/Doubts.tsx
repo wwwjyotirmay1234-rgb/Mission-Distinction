@@ -369,12 +369,11 @@ async function compressImage(file: File): Promise<string> {
 
 // ─── AI Chat Tab ──────────────────────────────────────────────────────────────
 
-function AiChatTab() {
+function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
-  const [model, setModel] = useState<"gpt-4o" | "claude">("gpt-4o");
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -509,31 +508,8 @@ function AiChatTab() {
 
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 220px)", minHeight: "420px" }}>
-      {/* Toolbar: model toggle + clear */}
-      <div className="flex items-center justify-between mb-2">
-        {/* Model toggle */}
-        <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg">
-          <button
-            onClick={() => setModel("gpt-4o")}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-              model === "gpt-4o"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Sparkles size={11} /> GPT-4o
-          </button>
-          <button
-            onClick={() => setModel("claude")}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-              model === "claude"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Bot size={11} /> Claude
-          </button>
-        </div>
+      {/* Toolbar: clear only */}
+      <div className="flex items-center justify-end mb-2">
         {msgs.length > 0 && (
           <button
             onClick={clearChat}
@@ -1098,43 +1074,53 @@ function LegacyAiPanel({ doubtId, onClose }: { doubtId: number; onClose: () => v
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+const TAB_META = [
+  { id: "gpt",       label: "GPT-4o",    icon: <Sparkles size={14} />,     desc: "OpenAI GPT-4o · Fast & structured · Best for SAQs, MCQs & quick revision" },
+  { id: "claude",    label: "Claude",    icon: <Bot size={14} />,           desc: "Anthropic Claude · Deep reasoning · Best for LAQs, case discussions & concepts" },
+  { id: "community", label: "Community", icon: <Users size={14} />,         desc: "Questions & answers from your batchmates" },
+] as const;
+
+type TabId = typeof TAB_META[number]["id"];
+
 export default function StudentDoubts() {
-  const [tab, setTab] = useState<"ai" | "community">("ai");
+  const [tab, setTab] = useState<TabId>("gpt");
+  const currentMeta = TAB_META.find(t => t.id === tab)!;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Bot size={22} className="text-primary" /> Mission Distinction AI
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {tab === "ai"
-              ? "Exam-ready answers for university exams & NEET PG"
-              : "Questions & answers from your batchmates"}
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <Bot size={22} className="text-primary" /> Mission Distinction AI
+        </h1>
+        <p className="text-muted-foreground text-sm mt-0.5">{currentMeta.desc}</p>
       </div>
 
       {/* Tab switcher */}
       <div className="flex gap-1 p-1 bg-muted/30 border border-border/40 rounded-xl w-fit">
-        {(["ai", "community"] as const).map((t) => (
+        {TAB_META.map((t) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={t.id}
+            onClick={() => setTab(t.id)}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              tab === t
+              tab === t.id
                 ? "bg-background shadow-sm text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t === "ai" ? <><Bot size={14} /> AI Chat</> : <><Users size={14} /> Community</>}
+            {t.icon} {t.label}
           </button>
         ))}
       </div>
 
-      {tab === "ai" ? <AiChatTab /> : <CommunityTab />}
+      {/* Render both AI chats always (hidden when inactive) to preserve history */}
+      <div style={{ display: tab === "gpt" ? "block" : "none" }}>
+        <AiChatTab model="gpt-4o" />
+      </div>
+      <div style={{ display: tab === "claude" ? "block" : "none" }}>
+        <AiChatTab model="claude" />
+      </div>
+      {tab === "community" && <CommunityTab />}
     </div>
   );
 }
