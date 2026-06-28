@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { usersTable, quizAttemptsTable } from "@workspace/db";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, and } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { getCache, setCache } from "../lib/cache";
 import { logger } from "../lib/logger";
@@ -19,6 +19,11 @@ router.get("/", authMiddleware, async (_req: Request, res: Response) => {
       res.json(cached);
       return;
     }
+
+    const visibleStudents = and(
+      eq(usersTable.role, "student"),
+      eq(usersTable.isSuperAdmin, false),
+    );
 
     const [scoreStats, streakStats] = await Promise.all([
       db
@@ -41,7 +46,7 @@ router.get("/", authMiddleware, async (_req: Request, res: Response) => {
           studyStreak: usersTable.studyStreak,
         })
         .from(usersTable)
-        .where(eq(usersTable.role, "student"))
+        .where(visibleStudents)
         .orderBy(desc(usersTable.studyStreak))
         .limit(20),
     ]);
@@ -58,7 +63,7 @@ router.get("/", authMiddleware, async (_req: Request, res: Response) => {
               studyStreak: usersTable.studyStreak,
             })
             .from(usersTable)
-            .where(eq(usersTable.role, "student"))
+            .where(visibleStudents)
             .limit(50)
         : [];
 
