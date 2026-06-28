@@ -1,6 +1,8 @@
-const CACHE_VERSION = "v17"; // relative manifest paths for production PWA install fix
+const CACHE_VERSION = "v18"; // absolute icon/manifest paths + registration-scope BASE fix
 
-const BASE = new URL("./", self.location).pathname;
+// Derive the app base from the SW registration scope, not the SW script URL.
+// This is correct regardless of where sw.js itself is served (root vs sub-path).
+const BASE = new URL(self.registration.scope).pathname;
 
 const CACHE_NAME = `mission-distinction-${CACHE_VERSION}`;
 const API_CACHE_NAME = `mission-distinction-api-${CACHE_VERSION}`;

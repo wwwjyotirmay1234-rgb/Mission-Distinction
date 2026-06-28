@@ -20,13 +20,10 @@ initAnalytics();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
-    const swUrl = `${import.meta.env.BASE_URL}sw.js`;
     try {
-      if (import.meta.env.DEV) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((r) => r.unregister()));
-      }
-      await navigator.serviceWorker.register(swUrl);
+      await navigator.serviceWorker.register("/sw.js", {
+        scope: import.meta.env.BASE_URL,
+      });
     } catch {
     }
   });
