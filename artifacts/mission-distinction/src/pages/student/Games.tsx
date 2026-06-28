@@ -124,14 +124,14 @@ type GameId = SoloId | MultiId;
 
 const GAME_REQUIRED_LEVELS: Record<string, number> = {
   "word-scramble": 1,
-  "memory-match": 1,
-  "spelling-bee": 1,
-  "diagnosis": 1,
-  "crossword": 1,
-  "multiplayer": 1,
-  "chess": 1,
-  "ludo": 1,
-  "snl": 1,
+  "memory-match": 2,
+  "spelling-bee": 2,
+  "diagnosis": 3,
+  "crossword": 4,
+  "multiplayer": 2,
+  "chess": 3,
+  "ludo": 4,
+  "snl": 5,
 };
 
 const GAME_POSTERS: Record<string, string> = {
