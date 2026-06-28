@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Plus, ChevronLeft, Play, Clock, BookOpen, LogOut, Video, UserCheck, UserX, Bell, Loader2, XCircle } from "lucide-react";
+import { Users, Plus, ChevronLeft, Play, Clock, BookOpen, LogOut, Video, UserCheck, UserX, Bell, Loader2, XCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -68,6 +68,13 @@ function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
   const leaveMutation = useMutation({
     mutationFn: () => apiFetch(`/api/study-rooms/${roomId}/leave`, { method: "POST" }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["study-rooms"] }); onBack(); },
+  });
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const deleteMutation = useMutation({
+    mutationFn: () => apiFetch(`/api/study-rooms/${roomId}`, { method: "DELETE" }).then(r => r.json()),
+    onSuccess: () => { toast.success("Room deleted."); queryClient.invalidateQueries({ queryKey: ["study-rooms"] }); onBack(); },
+    onError: () => toast.error("Failed to delete room."),
   });
 
   // Heartbeat
@@ -253,9 +260,16 @@ function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
                   {videoOpen ? "End Call" : isHost ? "Video Call" : "Request Call"}
                 </Button>
               )}
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => leaveMutation.mutate()}>
-                <LogOut size={13} /> Leave
-              </Button>
+              {isHost && (
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs border-destructive/40 text-destructive hover:bg-destructive/10" onClick={() => setShowDeleteConfirm(true)}>
+                  <Trash2 size={13} /> Delete Room
+                </Button>
+              )}
+              {!isHost && (
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => leaveMutation.mutate()}>
+                  <LogOut size={13} /> Leave
+                </Button>
+              )}
             </div>
           </div>
 
@@ -360,6 +374,30 @@ function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
           onClose={() => setVideoOpen(false)}
         />
       )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="bg-card border-border/60 max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 size={18} /> Delete Room
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-1">
+            Are you sure you want to delete <span className="font-semibold text-foreground">"{data.name}"</span>? All members will be removed and this cannot be undone.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate()}
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete Room"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

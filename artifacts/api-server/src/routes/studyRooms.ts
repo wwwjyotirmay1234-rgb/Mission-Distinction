@@ -125,6 +125,21 @@ router.patch("/:id/start", authMiddleware, async (req: Request, res: Response) =
   } catch { res.status(500).json({ error: "Failed to start timer" }); }
 });
 
+// Delete room (host only)
+router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = ((req as any).user.id as number);
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid room ID" }); return; }
+    const [room] = await db.select().from(studyRoomsTable).where(eq(studyRoomsTable.id, id)).limit(1);
+    if (!room) { res.status(404).json({ error: "Room not found" }); return; }
+    if (room.hostId !== userId) { res.status(403).json({ error: "Only the host can delete this room" }); return; }
+    await db.delete(studyRoomMembersTable).where(eq(studyRoomMembersTable.roomId, id));
+    await db.delete(studyRoomsTable).where(eq(studyRoomsTable.id, id));
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: "Failed to delete room" }); }
+});
+
 // Leave room
 router.post("/:id/leave", authMiddleware, async (req: Request, res: Response) => {
   try {
