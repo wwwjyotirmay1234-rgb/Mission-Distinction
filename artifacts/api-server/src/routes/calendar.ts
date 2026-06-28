@@ -5,10 +5,19 @@ import { eq, and, count } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
 
 const MAX_EVENTS_PER_USER = 200;
+
+const calendarWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { error: "Too many calendar requests. Please wait before trying again." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 function parseDate(value: unknown): Date | null {
   if (!value || typeof value !== "string") return null;
@@ -35,7 +44,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-router.post("/", authMiddleware, async (req: Request, res: Response) => {
+router.post("/", authMiddleware, calendarWriteLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const { title, description, subject, startTime, endTime, color } = req.body;
@@ -84,7 +93,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
+router.patch("/:id", authMiddleware, calendarWriteLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const id = parseId(req.params.id);
@@ -117,7 +126,7 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
+router.delete("/:id", authMiddleware, calendarWriteLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const id = parseId(req.params.id);
