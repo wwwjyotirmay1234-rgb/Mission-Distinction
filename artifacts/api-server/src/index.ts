@@ -1,3 +1,13 @@
+import * as Sentry from "@sentry/node";
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || "development",
+    tracesSampleRate: 0.1,
+  });
+}
+
 import { createServer } from "http";
 import app from "./app";
 import { logger } from "./lib/logger";
@@ -49,10 +59,12 @@ httpServer.listen(port, (err?: Error) => {
 // ─── Structured monitoring — unhandled errors (A09) ──────────────────────────
 process.on("unhandledRejection", (reason, promise) => {
   logger.error({ reason, promise: String(promise) }, "[Monitor] Unhandled Promise Rejection — review stack and fix root cause");
+  Sentry.captureException(reason);
 });
 
 process.on("uncaughtException", (err) => {
   logger.fatal({ err }, "[Monitor] Uncaught Exception — server will exit");
+  Sentry.captureException(err);
   process.exit(1);
 });
 

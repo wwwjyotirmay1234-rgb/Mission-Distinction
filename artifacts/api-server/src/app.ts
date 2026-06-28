@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { csrfDefense } from "./middlewares/csrf";
+import * as Sentry from "@sentry/node";
 
 const app: Express = express();
 
@@ -78,5 +79,7 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use("/api", csrfDefense);
 
 app.use("/api", router);
+
+Sentry.setupExpressErrorHandler(app);
 
 export default app;
