@@ -88,13 +88,13 @@ function ReviewSession({ cards, deckId, onDone }: { cards: Flashcard[]; deckId: 
           {!flipped ? (
             <>
               <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider">Front</p>
-              <p className="text-lg font-semibold leading-relaxed">{card.front}</p>
+              <p className="text-lg font-semibold leading-relaxed select-text">{card.front}</p>
               <p className="text-xs text-muted-foreground mt-4">Tap to reveal answer</p>
             </>
           ) : (
             <>
               <p className="text-xs text-primary mb-3 uppercase tracking-wider">Answer</p>
-              <p className="text-base leading-relaxed">{card.back}</p>
+              <p className="text-base leading-relaxed select-text">{card.back}</p>
             </>
           )}
         </div>
@@ -143,9 +143,9 @@ function BrowseSession({ cards, onDone }: { cards: Flashcard[]; onDone: () => vo
       >
         <div className="p-8 flex flex-col items-center justify-center min-h-[220px] text-center">
           {!flipped ? (
-            <><p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider">Front</p><p className="text-lg font-semibold">{card.front}</p><p className="text-xs text-muted-foreground mt-4">Tap to reveal</p></>
+            <><p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider">Front</p><p className="text-lg font-semibold select-text">{card.front}</p><p className="text-xs text-muted-foreground mt-4">Tap to reveal</p></>
           ) : (
-            <><p className="text-xs text-primary mb-3 uppercase tracking-wider">Answer</p><p className="text-base">{card.back}</p></>
+            <><p className="text-xs text-primary mb-3 uppercase tracking-wider">Answer</p><p className="text-base select-text">{card.back}</p></>
           )}
         </div>
       </div>
