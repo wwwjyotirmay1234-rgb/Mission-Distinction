@@ -159,6 +159,164 @@ function ChessBoard({ fen, myColor, isMyTurn, onMove, isCheck, disabled }: Chess
   );
 }
 
+// ─── Chess AI ────────────────────────────────────────────────────────────────
+
+const CP: Record<string, number> = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+
+function evalBoard(chess: Chess, aiCol: "w" | "b"): number {
+  if (chess.isCheckmate()) return chess.turn() === aiCol ? -100000 : 100000;
+  if (chess.isDraw()) return 0;
+  let s = 0;
+  for (const row of chess.board())
+    for (const pc of row)
+      if (pc) s += pc.color === aiCol ? (CP[pc.type] ?? 0) : -(CP[pc.type] ?? 0);
+  return s;
+}
+
+function ab(chess: Chess, depth: number, alpha: number, beta: number, maxing: boolean, aiCol: "w" | "b"): number {
+  if (depth === 0 || chess.isGameOver()) return evalBoard(chess, aiCol);
+  const moves = chess.moves({ verbose: true });
+  if (maxing) {
+    let best = -Infinity;
+    for (const m of moves) {
+      chess.move(m); best = Math.max(best, ab(chess, depth - 1, alpha, beta, false, aiCol)); chess.undo();
+      alpha = Math.max(alpha, best); if (beta <= alpha) break;
+    }
+    return best;
+  } else {
+    let best = Infinity;
+    for (const m of moves) {
+      chess.move(m); best = Math.min(best, ab(chess, depth - 1, alpha, beta, true, aiCol)); chess.undo();
+      beta = Math.min(beta, best); if (beta <= alpha) break;
+    }
+    return best;
+  }
+}
+
+function getAIChessMove(chess: Chess, diff: "easy" | "medium" | "hard") {
+  const moves = chess.moves({ verbose: true });
+  if (!moves.length) return null;
+  if (diff === "easy") return moves[Math.floor(Math.random() * moves.length)];
+  const aiCol = chess.turn() as "w" | "b";
+  const depth = diff === "hard" ? 3 : 2;
+  const shuffled = [...moves].sort(() => Math.random() - 0.5);
+  let best = shuffled[0]; let bestScore = -Infinity;
+  for (const m of shuffled) {
+    chess.move(m);
+    const score = ab(chess, depth - 1, -Infinity, Infinity, false, aiCol);
+    chess.undo();
+    if (score > bestScore) { bestScore = score; best = m; }
+  }
+  return best;
+}
+
+function ChessAIGame({ onBack, difficulty, playerColor }: {
+  onBack: () => void;
+  difficulty: "easy" | "medium" | "hard";
+  playerColor: "white" | "black";
+}) {
+  const chessRef = useRef(new Chess());
+  const [fen, setFen] = useState(() => chessRef.current.fen());
+  const [aiThinking, setAIThinking] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [hist, setHist] = useState<string[]>([]);
+
+  const myCol = playerColor === "white" ? "w" : "b";
+  const aiCol = playerColor === "white" ? "b" : "w";
+  const chess = chessRef.current;
+  const isMyTurn = chess.turn() === myCol && !aiThinking && !result;
+
+  const checkOver = useCallback((c: Chess) => {
+    if (!c.isGameOver()) return false;
+    if (c.isCheckmate()) setResult(c.turn() === myCol ? "AI wins! 🤖" : "You win! 🎉");
+    else setResult("Draw!");
+    return true;
+  }, [myCol]);
+
+  useEffect(() => {
+    if (result || chess.turn() !== aiCol) return;
+    setAIThinking(true);
+    const delay = { easy: 400, medium: 700, hard: 1100 }[difficulty];
+    const t = setTimeout(() => {
+      const move = getAIChessMove(chess, difficulty);
+      if (move) {
+        chess.move(move);
+        setFen(chess.fen());
+        setHist(chess.history());
+        checkOver(chess);
+      }
+      setAIThinking(false);
+    }, delay);
+    return () => clearTimeout(t);
+  }, [fen, aiCol, difficulty, result, chess, checkOver]);
+
+  const handleMove = (from: string, to: string) => {
+    if (!isMyTurn) return;
+    try {
+      chess.move({ from: from as any, to: to as any, promotion: "q" });
+      setFen(chess.fen()); setHist(chess.history()); checkOver(chess);
+    } catch {}
+  };
+
+  const newGame = () => {
+    chessRef.current = new Chess();
+    setFen(chessRef.current.fen()); setAIThinking(false); setResult(null); setHist([]);
+  };
+
+  const aiLabel = { easy: "Meddy Easy 🤖", medium: "Meddy Pro 🤖", hard: "Meddy Master 🤖" }[difficulty];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{playerColor === "white" ? "♚" : "♔"}</span>
+          <span className="text-sm font-medium">{aiLabel}</span>
+          {aiThinking && <Badge className="text-[10px] animate-pulse bg-amber-500/20 text-amber-300 border-none">Thinking…</Badge>}
+        </div>
+        <span className="text-xs text-muted-foreground">{playerColor === "white" ? "Black" : "White"}</span>
+      </div>
+
+      <div className="flex justify-center">
+        <ChessBoard fen={fen} myColor={playerColor} isMyTurn={isMyTurn} onMove={handleMove}
+          isCheck={chess.inCheck()} disabled={!!result || aiThinking} />
+      </div>
+
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{playerColor === "white" ? "♔" : "♚"}</span>
+          <span className="text-sm font-medium">You</span>
+          {isMyTurn && !result && <Badge className="text-[10px] bg-green-500/20 text-green-300 border-none">Your turn</Badge>}
+        </div>
+        <span className="text-xs text-muted-foreground capitalize">{playerColor}</span>
+      </div>
+
+      {chess.inCheck() && !result && (
+        <div className="text-center text-sm text-red-400 font-semibold animate-pulse">⚠️ Check!</div>
+      )}
+
+      {result ? (
+        <div className="text-center p-4 rounded-xl bg-card/40 border border-border/40 space-y-3">
+          <p className="text-xl font-bold">🏁 {result}</p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={newGame} className="gap-2"><RotateCcw size={14} /> New Game</Button>
+            <Button variant="outline" onClick={onBack} className="gap-2"><LogOut size={14} /> Back</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <div className="flex-1 text-xs text-muted-foreground font-mono bg-card/30 rounded-lg p-2 overflow-hidden">
+            {hist.slice(-8).join(" ") || "Game started"}
+          </div>
+          <Button variant="outline" size="sm" onClick={onBack} className="gap-1.5 opacity-60 hover:opacity-100 shrink-0">
+            <LogOut size={13} /> Back
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Chess Multiplayer ─────────────────────────────────────────────────────────
 export default function ChessGame({ onBack }: { onBack: () => void }) {
   const [phase, setPhase] = useState<Phase>("setup");
   const [mode, setMode] = useState<Mode>("create");
@@ -168,6 +326,9 @@ export default function ChessGame({ onBack }: { onBack: () => void }) {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [connecting, setConnecting] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const [gameMode, setGameMode] = useState<"menu" | "ai">("menu");
+  const [aiDifficulty, setAIDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+  const [aiPlayerColor, setAIPlayerColor] = useState<"white" | "black">("white");
 
   const connect = useCallback(() => {
     const token = localStorage.getItem("mission_token");
@@ -244,8 +405,36 @@ export default function ChessGame({ onBack }: { onBack: () => void }) {
 
   // ── Setup ──────────────────────────────────────────────────────────────────
   if (phase === "setup") {
+    if (gameMode === "ai") {
+      return <ChessAIGame onBack={() => setGameMode("menu")} difficulty={aiDifficulty} playerColor={aiPlayerColor} />;
+    }
     return (
       <div className="space-y-5">
+        {/* vs AI */}
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🤖</span>
+            <p className="font-semibold text-sm">Play vs AI (Offline)</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant={aiPlayerColor === "white" ? "default" : "outline"} size="sm" className="flex-1"
+              onClick={() => setAIPlayerColor("white")}>♔ White</Button>
+            <Button variant={aiPlayerColor === "black" ? "default" : "outline"} size="sm" className="flex-1"
+              onClick={() => setAIPlayerColor("black")}>♚ Black</Button>
+          </div>
+          <div className="flex gap-2">
+            {(["easy", "medium", "hard"] as const).map(d => (
+              <Button key={d} variant={aiDifficulty === d ? "default" : "outline"} size="sm" className="flex-1"
+                onClick={() => setAIDifficulty(d)}>
+                {d === "easy" ? "😊 Easy" : d === "medium" ? "🧠 Medium" : "💀 Hard"}
+              </Button>
+            ))}
+          </div>
+          <Button onClick={() => setGameMode("ai")} className="w-full gap-2">🎮 Start vs AI</Button>
+        </div>
+
+        {/* Multiplayer */}
+        <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold text-center">Or play online</p>
         <div className="flex gap-2">
           <Button variant={mode === "create" ? "default" : "outline"} className="flex-1" onClick={() => setMode("create")}>
             Create Game

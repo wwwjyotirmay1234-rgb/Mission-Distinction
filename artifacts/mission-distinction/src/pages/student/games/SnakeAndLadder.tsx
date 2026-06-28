@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Copy, LogOut } from "lucide-react";
+import { Copy, LogOut, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Board constants
@@ -208,6 +208,163 @@ interface GameState {
   lastEvent: "snake" | "ladder" | null;
 }
 
+// ─── Snake & Ladder AI (Local) ───────────────────────────────────────────────
+
+interface LocalSNLPlayer { id: number; name: string; colorIdx: number; position: number; isAI: boolean; }
+interface LocalSNLState {
+  players: LocalSNLPlayer[];
+  currentPlayerIdx: number;
+  diceValue: number | null;
+  diceRolled: boolean;
+  status: string;
+  winner: LocalSNLPlayer | null;
+  lastMsg: string | null;
+}
+
+function snlApplyRoll(state: LocalSNLState, playerIdx: number): LocalSNLState {
+  const dice = Math.floor(Math.random() * 6) + 1;
+  const p = state.players[playerIdx];
+  let newPos = p.position + dice;
+  let msg = `${p.name.split(" ")[0]} rolled ${dice}`;
+  let event: string | null = null;
+
+  if (newPos > 100) {
+    newPos = p.position; msg += " — can't move past 100!";
+  } else if (SNAKES[newPos]) {
+    const tail = SNAKES[newPos];
+    msg += ` 🐍 Snake! ${newPos} → ${tail}`; event = "snake"; newPos = tail;
+  } else if (LADDERS[newPos]) {
+    const top = LADDERS[newPos];
+    msg += ` 🪜 Ladder! ${newPos} → ${top}`; event = "ladder"; newPos = top;
+  } else {
+    msg += ` → square ${newPos}`;
+  }
+
+  const newPlayers = state.players.map((pl, i) => i === playerIdx ? { ...pl, position: newPos } : pl);
+  const won = newPos === 100;
+  const nextIdx = won ? playerIdx : (playerIdx + 1) % state.players.length;
+
+  return {
+    ...state, players: newPlayers, currentPlayerIdx: nextIdx,
+    diceValue: dice, diceRolled: true,
+    status: won ? "ended" : "playing",
+    winner: won ? newPlayers[playerIdx] : null,
+    lastMsg: msg,
+  };
+}
+
+function SNLAIGame({ onBack, numAI }: { onBack: () => void; numAI: number }) {
+  const initState = (): LocalSNLState => ({
+    players: [
+      { id: 0, name: "You", colorIdx: 0, position: 0, isAI: false },
+      ...Array.from({ length: numAI }, (_, i) => ({ id: i + 1, name: `Meddy AI ${i + 1} 🤖`, colorIdx: i + 1, position: 0, isAI: true })),
+    ],
+    currentPlayerIdx: 0, diceValue: null, diceRolled: false,
+    status: "playing", winner: null, lastMsg: null,
+  });
+
+  const [state, setState] = useState<LocalSNLState>(initState);
+  const aiTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const currentPlayer = state.players[state.currentPlayerIdx];
+  const isMyTurn = !currentPlayer?.isAI && state.status === "playing";
+
+  // AI auto-roll
+  useEffect(() => {
+    if (state.status !== "playing" || !currentPlayer?.isAI) return;
+    aiTimer.current = setTimeout(() => {
+      setState(prev => snlApplyRoll(prev, prev.currentPlayerIdx));
+    }, 1100);
+    return () => { if (aiTimer.current) clearTimeout(aiTimer.current); };
+  }, [state.currentPlayerIdx, state.status, currentPlayer?.isAI]);
+
+  const handleRoll = () => {
+    if (!isMyTurn) return;
+    setState(prev => snlApplyRoll(prev, prev.currentPlayerIdx));
+  };
+
+  // Adapt for SNLBoard
+  const boardPlayers = state.players.map(p => ({ id: p.id, name: p.name, colorIdx: p.colorIdx, position: p.position }));
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2 flex-wrap">
+        {state.players.map((p, idx) => {
+          const isCurrent = state.currentPlayerIdx === idx;
+          return (
+            <div key={p.id} className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs transition-all ${
+              isCurrent ? "border-white/40 bg-white/10 font-semibold" : "border-border/30 opacity-70"
+            }`}>
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLOR_HEX[p.colorIdx] }} />
+              <span>{p.name.split(" ")[0]}</span>
+              <span className="text-muted-foreground">{p.position === 0 ? "Start" : `Sq ${p.position}`}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <SNLBoard positions={boardPlayers} currentPlayerId={currentPlayer?.id ?? null}
+        players={boardPlayers} lastEvent={null} />
+
+      {state.lastMsg && (
+        <div className="text-xs text-center text-muted-foreground bg-card/30 rounded-lg py-2 px-3 font-mono">
+          {state.lastMsg}
+        </div>
+      )}
+
+      {state.status === "playing" && (
+        <div className="flex items-center gap-4">
+          <div className="cursor-pointer" onClick={handleRoll}>
+            <AnimatePresence mode="wait">
+              <motion.div key={state.diceValue ?? "empty"} initial={{ scale: 0.7, rotate: -20 }}
+                animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", duration: 0.3 }}>
+                <DiceFace value={state.diceValue} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          <div className="flex-1">
+            {isMyTurn ? (
+              <Button onClick={handleRoll} className="w-full gap-2"
+                style={{ backgroundColor: COLOR_HEX[0] + "cc" }}>
+                🎲 Roll Dice
+              </Button>
+            ) : currentPlayer?.isAI ? (
+              <p className="text-sm text-center text-muted-foreground animate-pulse">
+                <span style={{ color: COLOR_HEX[currentPlayer.colorIdx] }} className="font-semibold">
+                  {currentPlayer.name.split(" ").slice(0, 3).join(" ")}
+                </span> rolling…
+              </p>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {state.status === "ended" && state.winner && (
+        <div className="text-center p-4 rounded-xl bg-card/40 border border-border/40 space-y-3">
+          <p className="text-3xl">🏆</p>
+          <p className="font-bold text-lg">{state.winner.name} wins!</p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={() => setState(initState())} className="gap-2"><RotateCcw size={14} /> Play Again</Button>
+            <Button variant="outline" onClick={onBack} className="gap-2"><LogOut size={14} /> Back</Button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-red-500/5 border border-red-500/20"><span>🐍</span><span>Snake = slide down</span></div>
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-green-500/5 border border-green-500/20"><span>🪜</span><span>Ladder = climb up</span></div>
+      </div>
+
+      {state.status === "playing" && (
+        <Button variant="outline" size="sm" onClick={onBack} className="w-full gap-2 opacity-60 hover:opacity-100">
+          <LogOut size={13} /> Leave
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// ─── Snake & Ladder Multiplayer ───────────────────────────────────────────────
 export default function SnakeAndLadder({ onBack }: { onBack: () => void }) {
   const [phase, setPhase] = useState<Phase>("setup");
   const [joinMode, setJoinMode] = useState<"create" | "join">("create");
@@ -218,6 +375,8 @@ export default function SnakeAndLadder({ onBack }: { onBack: () => void }) {
   const [connecting, setConnecting] = useState(false);
   const [lastMsg, setLastMsg] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  const [gameMode, setGameMode] = useState<"menu" | "ai">("menu");
+  const [numAI, setNumAI] = useState(1);
 
   const myPlayerIdx = gameState?.players.findIndex(p => p.id === myId) ?? -1;
   const isMyTurn = gameState?.currentPlayerId === myId;
@@ -293,8 +452,31 @@ export default function SnakeAndLadder({ onBack }: { onBack: () => void }) {
 
   // ── Setup ──
   if (phase === "setup") {
+    if (gameMode === "ai") {
+      return <SNLAIGame onBack={() => setGameMode("menu")} numAI={numAI} />;
+    }
     return (
       <div className="space-y-5">
+        {/* vs AI */}
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🤖</span>
+            <p className="font-semibold text-sm">Play vs AI (Offline)</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Number of AI opponents</p>
+            <div className="flex gap-2">
+              {[1, 2, 3].map(n => (
+                <Button key={n} variant={numAI === n ? "default" : "outline"} size="sm" className="flex-1"
+                  onClick={() => setNumAI(n)}>{n} AI</Button>
+              ))}
+            </div>
+          </div>
+          <Button onClick={() => setGameMode("ai")} className="w-full gap-2">🎮 Start vs AI</Button>
+        </div>
+
+        {/* Multiplayer */}
+        <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold text-center">Or play online</p>
         <div className="flex gap-2">
           <Button variant={joinMode === "create" ? "default" : "outline"} className="flex-1" onClick={() => setJoinMode("create")}>Create</Button>
           <Button variant={joinMode === "join" ? "default" : "outline"} className="flex-1" onClick={() => setJoinMode("join")}>Join</Button>

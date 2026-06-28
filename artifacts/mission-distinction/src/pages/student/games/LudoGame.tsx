@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Copy, LogOut } from "lucide-react";
+import { Copy, LogOut, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Board geometry
@@ -234,6 +234,245 @@ function LudoBoard({ state, myColorIdx, onTokenClick, validTokens }: {
   );
 }
 
+// ─── Ludo AI (Local) ─────────────────────────────────────────────────────────
+
+const LUDO_SAFE_ABS = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
+
+interface LocalLudoPlayer { id: number; name: string; colorIdx: number; isAI: boolean; }
+interface LocalLudoState {
+  players: LocalLudoPlayer[];
+  tokenPositions: number[][];  // [colorIdx][tokenIdx] = relPos (-1=home, 0-51=path, 52-56=stretch, 57=done)
+  currentPlayerIdx: number;
+  currentColorIdx: number;
+  diceValue: number | null;
+  diceRolled: boolean;
+  validTokens: number[];
+  status: string;
+  winner: LocalLudoPlayer | null;
+  extraTurn: boolean;
+}
+
+function ludoAbsPos(colorIdx: number, relPos: number): number {
+  return (ENTRY[colorIdx] + relPos) % 52;
+}
+
+function ludoValidTokens(positions: number[][], colorIdx: number, dice: number): number[] {
+  const valid: number[] = [];
+  for (let ti = 0; ti < 4; ti++) {
+    const rp = positions[colorIdx][ti];
+    if (rp === 57) continue;
+    if (rp === -1) { if (dice === 6) valid.push(ti); continue; }
+    if (rp + dice <= 57) valid.push(ti);
+  }
+  return valid;
+}
+
+function ludoApplyMove(state: LocalLudoState, colorIdx: number, ti: number, dice: number): LocalLudoState {
+  const pos = state.tokenPositions.map(r => [...r]);
+  const rp = pos[colorIdx][ti];
+  const newRp = rp === -1 ? 0 : rp + dice;
+  pos[colorIdx][ti] = newRp;
+
+  let killed = false;
+  if (newRp < 52) {
+    const abs = ludoAbsPos(colorIdx, newRp);
+    if (!LUDO_SAFE_ABS.has(abs)) {
+      for (const p of state.players) {
+        if (p.colorIdx === colorIdx) continue;
+        for (let oti = 0; oti < 4; oti++) {
+          const orp = pos[p.colorIdx][oti];
+          if (orp === -1 || orp >= 52) continue;
+          if (ludoAbsPos(p.colorIdx, orp) === abs) { pos[p.colorIdx][oti] = -1; killed = true; }
+        }
+      }
+    }
+  }
+
+  const allHome = pos[colorIdx].every(p => p === 57);
+  const extra = dice === 6 || killed;
+  const nextIdx = allHome || !extra ? (state.currentPlayerIdx + 1) % state.players.length : state.currentPlayerIdx;
+  const nextColorIdx = state.players[nextIdx].colorIdx;
+
+  return {
+    ...state, tokenPositions: pos, currentPlayerIdx: nextIdx, currentColorIdx: nextColorIdx,
+    diceValue: null, diceRolled: false, validTokens: [],
+    status: allHome ? "ended" : "playing",
+    winner: allHome ? state.players.find(p => p.colorIdx === colorIdx) ?? null : null,
+    extraTurn: extra && !allHome,
+  };
+}
+
+function ludoAIToken(state: LocalLudoState, colorIdx: number, validTokens: number[]): number {
+  if (validTokens.length === 1) return validTokens[0];
+  const pos = state.tokenPositions;
+  const dice = state.diceValue!;
+  // Priority 1: kill
+  for (const ti of validTokens) {
+    const rp = pos[colorIdx][ti];
+    const newRp = rp === -1 ? 0 : rp + dice;
+    if (newRp < 52 && !LUDO_SAFE_ABS.has(ludoAbsPos(colorIdx, newRp))) {
+      for (const p of state.players) {
+        if (p.colorIdx === colorIdx) continue;
+        for (let oti = 0; oti < 4; oti++) {
+          const orp = pos[p.colorIdx][oti];
+          if (orp !== -1 && orp < 52 && ludoAbsPos(p.colorIdx, orp) === ludoAbsPos(colorIdx, newRp)) return ti;
+        }
+      }
+    }
+  }
+  // Priority 2: furthest token
+  return validTokens.reduce((best, ti) => pos[colorIdx][ti] > pos[colorIdx][best] ? ti : best, validTokens[0]);
+}
+
+function LudoAIGame({ onBack, numAI }: { onBack: () => void; numAI: number }) {
+  const initState = (): LocalLudoState => {
+    const players: LocalLudoPlayer[] = [
+      { id: 0, name: "You", colorIdx: 0, isAI: false },
+      ...Array.from({ length: numAI }, (_, i) => ({ id: i + 1, name: `Meddy AI ${i + 1} 🤖`, colorIdx: i + 1, isAI: true })),
+    ];
+    const tokenPositions = [0, 1, 2, 3].map(() => [-1, -1, -1, -1]);
+    return {
+      players, tokenPositions, currentPlayerIdx: 0, currentColorIdx: 0,
+      diceValue: null, diceRolled: false, validTokens: [], status: "playing",
+      winner: null, extraTurn: false,
+    };
+  };
+
+  const [state, setState] = useState<LocalLudoState>(initState);
+  const aiTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const currentPlayer = state.players[state.currentPlayerIdx];
+  const isMyTurn = !currentPlayer?.isAI && state.status === "playing";
+
+  // AI auto-play
+  useEffect(() => {
+    if (state.status !== "playing" || !currentPlayer?.isAI) return;
+    aiTimer.current = setTimeout(() => {
+      setState(prev => {
+        if (!prev.diceRolled) {
+          // Roll dice
+          const dice = Math.floor(Math.random() * 6) + 1;
+          const valid = ludoValidTokens(prev.tokenPositions, prev.currentColorIdx, dice);
+          if (valid.length === 0) {
+            // No valid moves: pass turn
+            const nextIdx = (prev.currentPlayerIdx + 1) % prev.players.length;
+            return { ...prev, diceValue: dice, diceRolled: true, validTokens: [],
+              currentPlayerIdx: nextIdx, currentColorIdx: prev.players[nextIdx].colorIdx,
+              diceRolled: false, diceValue: null };
+          }
+          return { ...prev, diceValue: dice, diceRolled: true, validTokens: valid };
+        } else {
+          // Move token
+          const ti = ludoAIToken(prev, prev.currentColorIdx, prev.validTokens);
+          return ludoApplyMove(prev, prev.currentColorIdx, ti, prev.diceValue!);
+        }
+      });
+    }, state.diceRolled ? 600 : 900);
+    return () => { if (aiTimer.current) clearTimeout(aiTimer.current); };
+  }, [state.currentPlayerIdx, state.diceRolled, state.status, currentPlayer?.isAI]);
+
+  const handleRoll = () => {
+    if (!isMyTurn || state.diceRolled) return;
+    const dice = Math.floor(Math.random() * 6) + 1;
+    const valid = ludoValidTokens(state.tokenPositions, state.currentColorIdx, dice);
+    if (valid.length === 0) {
+      // No valid tokens: auto pass
+      const nextIdx = (state.currentPlayerIdx + 1) % state.players.length;
+      setState(prev => ({
+        ...prev, diceValue: dice, diceRolled: false, validTokens: [],
+        currentPlayerIdx: nextIdx, currentColorIdx: prev.players[nextIdx].colorIdx,
+      }));
+    } else {
+      setState(prev => ({ ...prev, diceValue: dice, diceRolled: true, validTokens: valid }));
+    }
+  };
+
+  const handleTokenClick = (_ci: number, ti: number) => {
+    if (!isMyTurn || !state.diceRolled || !state.validTokens.includes(ti)) return;
+    setState(prev => ludoApplyMove(prev, prev.currentColorIdx, ti, prev.diceValue!));
+  };
+
+  const myColorIdx = state.players[0].colorIdx;
+
+  // Adapt state for LudoBoard (needs GameState shape)
+  const boardState = {
+    ...state,
+    code: "LOCAL", hostId: -1, maxPlayers: state.players.length,
+    winner: state.winner ? state.winner.id : null,
+    winnerName: state.winner?.name ?? null,
+    players: state.players,
+  } as unknown as GameState;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 flex-wrap">
+        {state.players.map((p, idx) => {
+          const finished = state.tokenPositions[p.colorIdx]?.filter(pos => pos === 57).length ?? 0;
+          const isCurrent = state.currentPlayerIdx === idx;
+          return (
+            <div key={p.id} className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs transition-all ${
+              isCurrent ? "border-white/40 bg-white/10 font-semibold" : "border-border/30 opacity-70"
+            }`}>
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLOR_HEX[p.colorIdx] }} />
+              <span>{p.name.split(" ")[0]}</span>
+              <span className="text-muted-foreground">({finished}/4)</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <LudoBoard state={boardState} myColorIdx={myColorIdx}
+        onTokenClick={handleTokenClick} validTokens={isMyTurn ? state.validTokens : []} />
+
+      {state.status === "playing" && (
+        <div className="flex items-center gap-4">
+          <div className="cursor-pointer" onClick={handleRoll}>
+            <AnimatePresence mode="wait">
+              <motion.div key={state.diceValue ?? "empty"} initial={{ scale: 0.7, rotate: -20 }}
+                animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", duration: 0.3 }}>
+                <DiceFace value={state.diceValue} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          <div className="flex-1">
+            {isMyTurn && !state.diceRolled ? (
+              <Button onClick={handleRoll} className="w-full gap-2" style={{ backgroundColor: COLOR_HEX[myColorIdx] + "cc" }}>
+                🎲 Roll Dice
+              </Button>
+            ) : isMyTurn && state.diceRolled && state.validTokens.length > 0 ? (
+              <p className="text-sm text-center font-medium">Click a glowing token to move</p>
+            ) : currentPlayer?.isAI ? (
+              <p className="text-sm text-center text-muted-foreground animate-pulse">
+                <span style={{ color: COLOR_HEX[currentPlayer.colorIdx] }} className="font-semibold">
+                  {currentPlayer.name.split(" ").slice(0, 3).join(" ")}
+                </span> is thinking…
+              </p>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {state.status === "ended" && state.winner && (
+        <div className="text-center p-4 rounded-xl bg-card/40 border border-border/40 space-y-3">
+          <p className="text-2xl">🏆</p>
+          <p className="font-bold text-lg">{state.winner.name} wins!</p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={() => setState(initState())} className="gap-2"><RotateCcw size={14} /> Play Again</Button>
+            <Button variant="outline" onClick={onBack} className="gap-2"><LogOut size={14} /> Back</Button>
+          </div>
+        </div>
+      )}
+
+      {state.status === "playing" && (
+        <Button variant="outline" size="sm" onClick={onBack} className="w-full gap-2 opacity-60 hover:opacity-100">
+          <LogOut size={13} /> Leave
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// ─── Ludo Multiplayer ─────────────────────────────────────────────────────────
 export default function LudoGame({ onBack }: { onBack: () => void }) {
   const [phase, setPhase] = useState<Phase>("setup");
   const [joinMode, setJoinMode] = useState<"create" | "join">("create");
@@ -244,6 +483,8 @@ export default function LudoGame({ onBack }: { onBack: () => void }) {
   const [connecting, setConnecting] = useState(false);
   const [lastDice, setLastDice] = useState<number | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  const [gameMode, setGameMode] = useState<"menu" | "ai">("menu");
+  const [numAI, setNumAI] = useState(1);
 
   const myPlayerIdx = gameState?.players.findIndex(p => p.id === myId) ?? -1;
   const myColorIdx = myPlayerIdx >= 0 ? (gameState?.players[myPlayerIdx]?.colorIdx ?? 0) : 0;
@@ -324,8 +565,37 @@ export default function LudoGame({ onBack }: { onBack: () => void }) {
 
   // ── Setup ──
   if (phase === "setup") {
+    if (gameMode === "ai") {
+      return <LudoAIGame onBack={() => setGameMode("menu")} numAI={numAI} />;
+    }
     return (
       <div className="space-y-5">
+        {/* vs AI */}
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🤖</span>
+            <p className="font-semibold text-sm">Play vs AI (Offline)</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Number of AI opponents</p>
+            <div className="flex gap-2">
+              {[1, 2, 3].map(n => (
+                <Button key={n} variant={numAI === n ? "default" : "outline"} size="sm" className="flex-1"
+                  onClick={() => setNumAI(n)}>{n} AI</Button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2 text-sm p-3 rounded-lg bg-card/30 border border-border/30">
+            <span style={{ color: COLOR_HEX[0] }} className="font-semibold">You (Red)</span>
+            {Array.from({ length: numAI }, (_, i) => (
+              <span key={i} style={{ color: COLOR_HEX[i + 1] }} className="font-semibold">{COLOR_NAMES[i + 1]}</span>
+            ))}
+          </div>
+          <Button onClick={() => setGameMode("ai")} className="w-full gap-2">🎮 Start vs AI</Button>
+        </div>
+
+        {/* Multiplayer */}
+        <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold text-center">Or play online</p>
         <div className="flex gap-2">
           <Button variant={joinMode === "create" ? "default" : "outline"} className="flex-1" onClick={() => setJoinMode("create")}>Create</Button>
           <Button variant={joinMode === "join" ? "default" : "outline"} className="flex-1" onClick={() => setJoinMode("join")}>Join</Button>
