@@ -117,7 +117,7 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
         fullName: fullName?.trim(),
         year: year?.trim(),
         college: college?.trim(),
-        avatarUrl: avatarUrl?.trim() || null,
+        ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl?.trim() || null } : {}),
       })
       .where(eq(usersTable.id, id))
       .returning();
