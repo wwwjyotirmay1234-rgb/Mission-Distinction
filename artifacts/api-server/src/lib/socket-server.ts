@@ -314,6 +314,7 @@ export function initSocketServer(httpServer: HttpServer) {
       socket.join(`call:${roomKey}`);
       const room = callRooms.get(roomKey) ?? new Set<CallParticipant>();
       const existing = Array.from(room).filter(p => p.id !== user.id);
+      const isFirstJoiner = existing.length === 0;
       // Remove stale entry for this user (reconnect case)
       for (const p of room) { if (p.id === user.id) room.delete(p); }
       room.add({ id: user.id, name: user.fullName, socketId: socket.id });
@@ -322,6 +323,15 @@ export function initSocketServer(httpServer: HttpServer) {
       socket.to(`call:${roomKey}`).emit("call:user-joined", {
         userId: user.id, name: user.fullName, socketId: socket.id,
       });
+      // Notify group chat members that a call has started
+      if (isFirstJoiner && roomKey.startsWith("group-")) {
+        const groupId = parseInt(roomKey.replace("group-", ""), 10);
+        if (!isNaN(groupId)) {
+          socket.to(`chat:${groupId}`).emit("call:ringing", {
+            groupId, callerName: user.fullName, roomKey,
+          });
+        }
+      }
     });
 
     socket.on("call:offer", ({ to, offer }: { to: string; offer: object }) => {
@@ -340,7 +350,13 @@ export function initSocketServer(httpServer: HttpServer) {
       const room = callRooms.get(roomKey);
       if (room) {
         for (const p of room) { if (p.id === user.id) room.delete(p); }
-        if (room.size === 0) callRooms.delete(roomKey);
+        if (room.size === 0) {
+          callRooms.delete(roomKey);
+          if (roomKey.startsWith("group-")) {
+            const groupId = parseInt(roomKey.replace("group-", ""), 10);
+            if (!isNaN(groupId)) io.to(`chat:${groupId}`).emit("call:ended", { groupId, roomKey });
+          }
+        }
       }
       socket.leave(`call:${roomKey}`);
       socket.to(`call:${roomKey}`).emit("call:user-left", { socketId: socket.id, userId: user.id });
@@ -390,8 +406,15 @@ export function initSocketServer(httpServer: HttpServer) {
           const callRoom = callRooms.get(roomKey);
           if (callRoom) {
             for (const p of callRoom) { if (p.socketId === socket.id) callRoom.delete(p); }
-            if (callRoom.size === 0) callRooms.delete(roomKey);
-            else io.to(room).emit("call:user-left", { socketId: socket.id, userId: user.id });
+            if (callRoom.size === 0) {
+              callRooms.delete(roomKey);
+              if (roomKey.startsWith("group-")) {
+                const groupId = parseInt(roomKey.replace("group-", ""), 10);
+                if (!isNaN(groupId)) io.to(`chat:${groupId}`).emit("call:ended", { groupId, roomKey });
+              }
+            } else {
+              io.to(room).emit("call:user-left", { socketId: socket.id, userId: user.id });
+            }
           }
         }
         if (room.startsWith("game:")) {

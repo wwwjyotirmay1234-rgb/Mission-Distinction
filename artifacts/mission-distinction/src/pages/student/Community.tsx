@@ -289,6 +289,7 @@ export default function StudentCommunity() {
   const [videoPickerOpen, setVideoPickerOpen] = useState(false);
   // Video call state
   const [videoOpen, setVideoOpen] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<{ groupId: number; groupName: string; callerName: string } | null>(null);
   // Invite / edit / delete state
   const [pendingInvites, setPendingInvites] = useState<GroupInvite[]>([]);
   const [invitedUserIds, setInvitedUserIds] = useState<Set<number>>(new Set());
@@ -508,6 +509,16 @@ export default function StudentCommunity() {
     sock.on("new-invite", ({ invite, groupName }: { invite: GroupInvite; groupName: string }) => {
       setPendingInvites(prev => [{ ...invite, groupName }, ...prev]);
       toast.info(`${invite.inviterName} invited you to "${groupName}"`, { duration: 5000 });
+    });
+    sock.on("call:ringing", ({ groupId, callerName }: { groupId: number; callerName: string; roomKey: string }) => {
+      setIncomingCall(prev => {
+        if (prev?.groupId === groupId) return prev;
+        const grpName = (groups as any[])?.find((g: any) => g.id === groupId)?.name ?? "Group";
+        return { groupId, groupName: grpName, callerName };
+      });
+    });
+    sock.on("call:ended", ({ groupId }: { groupId: number }) => {
+      setIncomingCall(prev => prev?.groupId === groupId ? null : prev);
     });
     return () => { sock.disconnect(); socketRef.current = null; };
   }, [token]);
@@ -1504,6 +1515,42 @@ export default function StudentCommunity() {
       <FlashcardPicker open={flashcardPickerOpen} onClose={() => setFlashcardPickerOpen(false)} onShare={handleShareFlashcard} />
       <MnemonicPicker open={mnemonicPickerOpen} onClose={() => setMnemonicPickerOpen(false)} onShare={handleShareMnemonic} />
       <VideoPicker open={videoPickerOpen} onClose={() => setVideoPickerOpen(false)} onShare={handleShareVideo} />
+
+      {/* Incoming call banner */}
+      {incomingCall && !videoOpen && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm">
+          <div className="rounded-2xl bg-card border border-primary/30 shadow-2xl shadow-primary/20 p-4 flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-300">
+            <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center shrink-0">
+              <Video size={18} className="text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold leading-tight truncate">{incomingCall.callerName} started a call</p>
+              <p className="text-xs text-muted-foreground truncate">{incomingCall.groupName}</p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                size="sm"
+                className="h-8 px-3 text-xs bg-primary hover:bg-primary/90"
+                onClick={() => {
+                  setChatGroupId(incomingCall.groupId);
+                  setVideoOpen(true);
+                  setIncomingCall(null);
+                }}
+              >
+                Join
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 px-3 text-xs text-muted-foreground"
+                onClick={() => setIncomingCall(null)}
+              >
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Video Call */}
       {videoOpen && chatGroupId && activeGroup && (
