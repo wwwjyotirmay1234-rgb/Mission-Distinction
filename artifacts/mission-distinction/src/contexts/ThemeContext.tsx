@@ -17,7 +17,7 @@ function getInitialTheme(): Theme {
     const saved = localStorage.getItem("md_theme");
     if (saved === "light" || saved === "dark") return saved;
   } catch {}
-  return "dark";
+  return "light";
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
