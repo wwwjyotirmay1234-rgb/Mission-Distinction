@@ -31,6 +31,16 @@ if ("serviceWorker" in navigator) {
       console.warn("[SW] Registration failed:", err);
     }
   });
+
+  // When a new service worker takes control (after a deployment), reload once
+  // so the page fetches fresh JS chunks instead of serving stale cached ones.
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
 }
 
 // Request persistent storage so iOS/Android don't evict our token/session data
