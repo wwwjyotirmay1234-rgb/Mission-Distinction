@@ -566,6 +566,22 @@ function LudoAIGame({ onBack, numAI }: { onBack: () => void; numAI: number }) {
   );
 }
 
+// ─── Session persistence (survive navigation away) ───────────────────────────
+const LUDO_SESSION_KEY = "ludo_active_room";
+function saveLudoSession(code: string) {
+  try { localStorage.setItem(LUDO_SESSION_KEY, JSON.stringify({ code, ts: Date.now() })); } catch {}
+}
+function clearLudoSession() { try { localStorage.removeItem(LUDO_SESSION_KEY); } catch {} }
+function loadLudoSession(): { code: string } | null {
+  try {
+    const raw = localStorage.getItem(LUDO_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.ts > 3 * 3600 * 1000) { clearLudoSession(); return null; }
+    return parsed;
+  } catch { return null; }
+}
+
 // ─── Multiplayer ──────────────────────────────────────────────────────────────
 type Phase = "setup" | "lobby" | "game" | "ended";
 
@@ -581,6 +597,9 @@ export default function LudoGame({ onBack }: { onBack: () => void }) {
   const socketRef = useRef<Socket | null>(null);
   const [gameMode, setGameMode] = useState<"menu" | "ai">("menu");
   const [numAI, setNumAI] = useState(1);
+  const [savedSession, setSavedSession] = useState<{ code: string } | null>(null);
+
+  useEffect(() => { setSavedSession(loadLudoSession()); }, []);
 
   const myPlayerIdx = gameState?.players.findIndex(p => p.id === myId) ?? -1;
   const myColorIdx = myPlayerIdx >= 0 ? (gameState?.players[myPlayerIdx]?.colorIdx ?? 0) : 0;
@@ -593,11 +612,14 @@ export default function LudoGame({ onBack }: { onBack: () => void }) {
     const s = io({ path: "/api/socket.io/", auth: { token }, transports: ["websocket", "polling"] });
     s.on("connect_error", err => { toast.error("Connection failed: " + err.message); setConnecting(false); });
     s.on("ludo:error", ({ message }: { message: string }) => { toast.error(message); setConnecting(false); });
-    s.on("ludo:created", (state: GameState) => { setGameState(state); setPhase("lobby"); setConnecting(false); });
+    s.on("ludo:created", (state: GameState) => {
+      setGameState(state); setPhase("lobby"); setConnecting(false);
+      saveLudoSession(state.code);
+    });
     s.on("ludo:state", (state: GameState) => {
       setGameState(state);
       if (state.status === "playing") setPhase("game");
-      if (state.status === "ended") setPhase("ended");
+      if (state.status === "ended") { setPhase("ended"); clearLudoSession(); }
     });
     s.on("ludo:player-joined", ({ name }: { name: string }) => toast.success(`${name} joined!`));
     s.on("ludo:rolled", ({ dice }: { dice: number }) => setLastDice(dice));
@@ -612,18 +634,20 @@ export default function LudoGame({ onBack }: { onBack: () => void }) {
   }, []);
 
   const handleCreate = () => { setConnecting(true); const s = connect(); if (!s) return; s.on("connect", () => s.emit("ludo:create", { maxPlayers: parseInt(maxPlayers) })); };
-  const handleJoin = () => {
-    const code = joinCode.trim().toUpperCase();
+  const handleJoin = (codeOverride?: string) => {
+    const code = (codeOverride ?? joinCode).trim().toUpperCase();
     if (code.length !== 6) { toast.error("Enter a 6-character code."); return; }
     setConnecting(true); const s = connect(); if (!s) return;
-    s.on("connect", () => s.emit("ludo:join", { code }));
+    s.on("connect", () => { s.emit("ludo:join", { code }); saveLudoSession(code); });
   };
+  const handleRejoin = () => { if (!savedSession) return; setSavedSession(null); handleJoin(savedSession.code); };
   const handleStart = () => socketRef.current?.emit("ludo:start", { code: gameState?.code });
   const handleRoll = () => socketRef.current?.emit("ludo:roll", { code: gameState?.code });
   const handleTokenClick = (_ci: number, tokenIdx: number) => socketRef.current?.emit("ludo:move", { code: gameState?.code, tokenIdx });
   const handleLeave = () => {
     socketRef.current?.emit("ludo:leave", { code: gameState?.code });
     socketRef.current?.disconnect(); socketRef.current = null;
+    clearLudoSession(); setSavedSession(null);
     setPhase("setup"); setGameState(null); setLastDice(null);
   };
 
@@ -635,6 +659,22 @@ export default function LudoGame({ onBack }: { onBack: () => void }) {
     return (
       <div className="space-y-5">
         <h2 className="text-center text-lg font-black" style={{ color: "#1565C0" }}>🎲 LUDO</h2>
+
+        {savedSession && (
+          <div className="rounded-xl border-2 border-yellow-400 bg-yellow-50 p-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="font-bold text-sm text-yellow-800">🎲 Active room: <span className="font-mono tracking-widest">{savedSession.code}</span></p>
+              <p className="text-xs text-yellow-600">Tap Rejoin to return to your game</p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" disabled={connecting} onClick={handleRejoin} className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs h-8">
+                {connecting ? "Rejoining…" : "Rejoin"}
+              </Button>
+              <Button size="sm" variant="ghost" className="text-xs h-8" onClick={() => { clearLudoSession(); setSavedSession(null); }}>Dismiss</Button>
+            </div>
+          </div>
+        )}
+
         <div className="rounded-2xl border-2 p-4 space-y-3" style={{ borderColor: "#22c55e", backgroundColor: "#f0fdf4" }}>
           <p className="font-bold text-sm text-green-800 flex items-center gap-2">🤖 Play vs Meddy AI (Offline)</p>
           <div className="flex gap-2">
@@ -674,7 +714,7 @@ export default function LudoGame({ onBack }: { onBack: () => void }) {
             <Input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
               placeholder="6-character code" maxLength={6}
               className="text-center text-lg tracking-widest font-mono uppercase rounded-xl bg-card/40" />
-            <Button onClick={handleJoin} disabled={connecting || joinCode.trim().length !== 6} className="w-full rounded-xl">
+            <Button onClick={() => handleJoin()} disabled={connecting || joinCode.trim().length !== 6} className="w-full rounded-xl">
               {connecting ? "Joining…" : "Join Game"}
             </Button>
           </div>
@@ -694,6 +734,10 @@ export default function LudoGame({ onBack }: { onBack: () => void }) {
             <Button variant="ghost" size="icon" className="h-7 w-7"
               onClick={() => { navigator.clipboard.writeText(gameState.code); toast.success("Copied!"); }}>
               <Copy size={13} />
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs px-2"
+              onClick={() => { navigator.clipboard.writeText(`Join my Ludo game on Mission Distinction! 🎲\nRoom Code: ${gameState.code}\n(Games → Ludo → Multiplayer → Join Room)`); toast.success("Invite copied!"); }}>
+              Invite
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-1">{gameState.players.length}/{gameState.maxPlayers} players</p>

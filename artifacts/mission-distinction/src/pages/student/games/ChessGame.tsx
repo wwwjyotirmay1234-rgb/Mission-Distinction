@@ -543,6 +543,22 @@ function ChessAIGame({ onBack, difficulty, playerColor }: {
   );
 }
 
+// ─── Session persistence (survive navigation away) ───────────────────────────
+const CHESS_SESSION_KEY = "chess_active_room";
+function saveChessSession(code: string, myColor: "white" | "black") {
+  try { localStorage.setItem(CHESS_SESSION_KEY, JSON.stringify({ code, myColor, ts: Date.now() })); } catch {}
+}
+function clearChessSession() { try { localStorage.removeItem(CHESS_SESSION_KEY); } catch {} }
+function loadChessSession(): { code: string; myColor: "white" | "black" } | null {
+  try {
+    const raw = localStorage.getItem(CHESS_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.ts > 3 * 3600 * 1000) { clearChessSession(); return null; }
+    return parsed;
+  } catch { return null; }
+}
+
 // ─── Multiplayer ──────────────────────────────────────────────────────────────
 export default function ChessGame({ onBack }: { onBack: () => void }) {
   const [phase, setPhase] = useState<Phase>("setup");
@@ -556,6 +572,9 @@ export default function ChessGame({ onBack }: { onBack: () => void }) {
   const [gameMode, setGameMode] = useState<"menu" | "ai">("menu");
   const [aiDifficulty, setAIDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [aiPlayerColor, setAIPlayerColor] = useState<"white" | "black">("white");
+  const [savedSession, setSavedSession] = useState<{ code: string; myColor: "white" | "black" } | null>(null);
+
+  useEffect(() => { setSavedSession(loadChessSession()); }, []);
 
   const connect = useCallback(() => {
     const token = localStorage.getItem("mission_token");
@@ -563,22 +582,30 @@ export default function ChessGame({ onBack }: { onBack: () => void }) {
     const s = io({ path: "/api/socket.io/", auth: { token }, transports: ["websocket", "polling"] });
     s.on("connect_error", err => { toast.error("Connection failed: " + err.message); setConnecting(false); });
     s.on("chess:error", ({ message }: { message: string }) => { toast.error(message); setConnecting(false); });
-    s.on("chess:created", (state: GameState) => { setGameState(state); setMyColor("white"); setPhase("lobby"); setConnecting(false); });
+    s.on("chess:created", (state: GameState) => {
+      setGameState(state); setMyColor("white"); setPhase("lobby"); setConnecting(false);
+      saveChessSession(state.code, "white");
+    });
     s.on("chess:state", (state: GameState) => {
       setGameState(state);
       if (state.status === "playing") setPhase("game");
-      if (state.status === "ended") setPhase("ended");
+      if (state.status === "ended") { setPhase("ended"); clearChessSession(); }
     });
     socketRef.current = s;
     return s;
   }, []);
 
   const handleCreate = () => { setConnecting(true); const s = connect(); if (!s) return; s.on("connect", () => s.emit("chess:create")); };
-  const handleJoin = () => {
-    const code = joinCode.trim().toUpperCase();
-    if (code.length !== 6) { toast.error("Enter a 6-character code."); return; }
+  const handleJoin = (code?: string) => {
+    const c = (code ?? joinCode).trim().toUpperCase();
+    if (c.length !== 6) { toast.error("Enter a 6-character code."); return; }
     setConnecting(true); const s = connect(); if (!s) return;
-    s.on("connect", () => { s.emit("chess:join", { code }); setMyColor("black"); setJoinCode(""); });
+    s.on("connect", () => { s.emit("chess:join", { code: c }); setMyColor("black"); setJoinCode(""); saveChessSession(c, "black"); });
+  };
+  const handleRejoin = () => {
+    if (!savedSession) return;
+    setSavedSession(null);
+    handleJoin(savedSession.code);
   };
 
   useEffect(() => {
@@ -599,6 +626,7 @@ export default function ChessGame({ onBack }: { onBack: () => void }) {
   const handleLeave = () => {
     socketRef.current?.emit("chess:leave", { code: gameState?.code });
     socketRef.current?.disconnect(); socketRef.current = null;
+    clearChessSession(); setSavedSession(null);
     setPhase("setup"); setGameState(null);
   };
 
@@ -612,6 +640,26 @@ export default function ChessGame({ onBack }: { onBack: () => void }) {
     return (
       <div style={{ background: NAVY, borderRadius: 16, padding: 14, display: "flex", flexDirection: "column", gap: 14 }}>
         <p style={{ color: GOLD, fontWeight: 900, fontSize: 16, textAlign: "center", letterSpacing: 1 }}>♟ CHESS</p>
+
+        {/* Rejoin banner */}
+        {savedSession && (
+          <div style={{ background: "rgba(201,162,39,0.15)", border: `1px solid ${GOLD}`, borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div>
+              <p style={{ color: GOLD, fontWeight: 700, fontSize: 13 }}>♟ Active room: <span style={{ fontFamily: "monospace", letterSpacing: 2 }}>{savedSession.code}</span></p>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}>You were playing as {savedSession.myColor}</p>
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={handleRejoin} disabled={connecting}
+                style={{ background: GOLD, color: "#0D1B2A", fontWeight: 700, fontSize: 12, padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer" }}>
+                {connecting ? "Rejoining…" : "Rejoin"}
+              </button>
+              <button onClick={() => { clearChessSession(); setSavedSession(null); }}
+                style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)", fontSize: 11, padding: "6px 10px", borderRadius: 8, border: "none", cursor: "pointer" }}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* vs AI card */}
         <div style={{ background: CARD_BG, border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -687,7 +735,7 @@ export default function ChessGame({ onBack }: { onBack: () => void }) {
               placeholder="Enter 6-character code" maxLength={6}
               className="text-center text-lg tracking-widest font-mono uppercase"
               style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(201,162,39,0.4)", color: "white", borderRadius: 10 }} />
-            <button onClick={handleJoin} disabled={connecting || joinCode.trim().length !== 6} style={{
+            <button onClick={() => handleJoin()} disabled={connecting || joinCode.trim().length !== 6} style={{
               background: `linear-gradient(135deg, ${GOLD} 0%, #A07818 100%)`,
               color: "#1A1A2E", border: "none", borderRadius: 10, padding: "12px",
               fontWeight: 900, fontSize: 14, cursor: "pointer",
@@ -712,6 +760,10 @@ export default function ChessGame({ onBack }: { onBack: () => void }) {
           <button onClick={() => { navigator.clipboard.writeText(gameState.code); toast.success("Copied!"); }}
             style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 8, padding: "6px 10px", color: "white", cursor: "pointer" }}>
             <Copy size={14} />
+          </button>
+          <button onClick={() => { navigator.clipboard.writeText(`Join my Chess game on Mission Distinction! ♟️\nRoom Code: ${gameState.code}\n(Games → Chess → Multiplayer → Join Room)`); toast.success("Invite copied!"); }}
+            style={{ background: "rgba(201,162,39,0.2)", border: `1px solid rgba(201,162,39,0.4)`, borderRadius: 8, padding: "6px 10px", color: GOLD, cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+            Invite
           </button>
         </div>
         <div style={{ display: "flex", gap: 16, alignItems: "center" }}>

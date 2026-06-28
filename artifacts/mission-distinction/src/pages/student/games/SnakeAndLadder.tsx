@@ -525,6 +525,22 @@ function SNLAIGame({ onBack, numAI }: { onBack: () => void; numAI: number }) {
   );
 }
 
+// ─── Session persistence (survive navigation away) ───────────────────────────
+const SNL_SESSION_KEY = "snl_active_room";
+function saveSnlSession(code: string) {
+  try { localStorage.setItem(SNL_SESSION_KEY, JSON.stringify({ code, ts: Date.now() })); } catch {}
+}
+function clearSnlSession() { try { localStorage.removeItem(SNL_SESSION_KEY); } catch {} }
+function loadSnlSession(): { code: string } | null {
+  try {
+    const raw = localStorage.getItem(SNL_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.ts > 3 * 3600 * 1000) { clearSnlSession(); return null; }
+    return parsed;
+  } catch { return null; }
+}
+
 // ─── Multiplayer ──────────────────────────────────────────────────────────────
 type Phase = "setup" | "lobby" | "game" | "ended";
 interface Player { id: number; name: string; colorIdx: number; position: number; }
@@ -548,6 +564,9 @@ export default function SnakeAndLadder({ onBack }: { onBack: () => void }) {
   const socketRef = useRef<Socket | null>(null);
   const [gameMode, setGameMode] = useState<"menu" | "ai">("menu");
   const [numAI, setNumAI] = useState(1);
+  const [savedSession, setSavedSession] = useState<{ code: string } | null>(null);
+
+  useEffect(() => { setSavedSession(loadSnlSession()); }, []);
 
   const myPlayerIdx = gameState?.players.findIndex(p => p.id === myId) ?? -1;
   const isMyTurn = gameState?.currentPlayerId === myId;
@@ -559,11 +578,14 @@ export default function SnakeAndLadder({ onBack }: { onBack: () => void }) {
     const s = io({ path: "/api/socket.io/", auth: { token }, transports: ["websocket", "polling"] });
     s.on("connect_error", err => { toast.error("Connection failed: " + err.message); setConnecting(false); });
     s.on("snl:error", ({ message }: { message: string }) => { toast.error(message); setConnecting(false); });
-    s.on("snl:created", (state: GameState) => { setGameState(state); setPhase("lobby"); setConnecting(false); });
+    s.on("snl:created", (state: GameState) => {
+      setGameState(state); setPhase("lobby"); setConnecting(false);
+      saveSnlSession(state.code);
+    });
     s.on("snl:state", (state: GameState) => {
       setGameState(state);
       if (state.status === "playing") setPhase("game");
-      if (state.status === "ended") setPhase("ended");
+      if (state.status === "ended") { setPhase("ended"); clearSnlSession(); }
     });
     s.on("snl:player-joined", ({ name }: { name: string }) => toast.success(`${name} joined!`));
     s.on("snl:rolled", ({ dice, playerName, to }: any) => setLastMsg(`${playerName} rolled ${dice} → square ${to}`));
@@ -587,14 +609,15 @@ export default function SnakeAndLadder({ onBack }: { onBack: () => void }) {
     if (!s) return;
     s.on("connect", () => s.emit("snl:create", { maxPlayers: parseInt(maxPlayers) }));
   };
-  const handleJoin = () => {
-    const code = joinCode.trim().toUpperCase();
+  const handleJoin = (codeOverride?: string) => {
+    const code = (codeOverride ?? joinCode).trim().toUpperCase();
     if (code.length !== 6) { toast.error("Enter a 6-character code."); return; }
     setConnecting(true);
     const s = connect();
     if (!s) return;
-    s.on("connect", () => { s.emit("snl:join", { code }); setJoinCode(""); });
+    s.on("connect", () => { s.emit("snl:join", { code }); setJoinCode(""); saveSnlSession(code); });
   };
+  const handleRejoin = () => { if (!savedSession) return; setSavedSession(null); handleJoin(savedSession.code); };
   const handleStart = () => socketRef.current?.emit("snl:start", { code: gameState?.code });
   const handleRoll = () => {
     if (!isMyTurn || gameState?.diceRolled) return;
@@ -604,6 +627,7 @@ export default function SnakeAndLadder({ onBack }: { onBack: () => void }) {
     socketRef.current?.emit("snl:leave", { code: gameState?.code });
     socketRef.current?.disconnect();
     socketRef.current = null;
+    clearSnlSession(); setSavedSession(null);
     setPhase("setup"); setGameState(null); setLastMsg(null);
   };
 
@@ -617,6 +641,22 @@ export default function SnakeAndLadder({ onBack }: { onBack: () => void }) {
         <h2 className="text-center text-lg font-black" style={{ color: "#2E7D32" }}>
           🐍 SNAKES &amp; LADDERS 🪜
         </h2>
+
+        {savedSession && (
+          <div className="rounded-xl border-2 border-yellow-400 bg-yellow-50 p-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="font-bold text-sm text-yellow-800">🎲 Active room: <span className="font-mono tracking-widest">{savedSession.code}</span></p>
+              <p className="text-xs text-yellow-600">Tap Rejoin to return to your game</p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" disabled={connecting} onClick={handleRejoin} className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs h-8">
+                {connecting ? "Rejoining…" : "Rejoin"}
+              </Button>
+              <Button size="sm" variant="ghost" className="text-xs h-8" onClick={() => { clearSnlSession(); setSavedSession(null); }}>Dismiss</Button>
+            </div>
+          </div>
+        )}
+
         {/* vs AI */}
         <div className="rounded-2xl border-2 border-green-300 bg-green-50 p-4 space-y-3">
           <p className="font-bold text-sm text-green-800 flex items-center gap-2">🤖 Play vs Meddy AI (Offline)</p>
@@ -656,7 +696,7 @@ export default function SnakeAndLadder({ onBack }: { onBack: () => void }) {
             <Input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
               placeholder="Enter 6-character code" maxLength={6}
               className="text-center text-lg tracking-widest font-mono uppercase bg-card/40 rounded-xl" />
-            <Button onClick={handleJoin} disabled={connecting || joinCode.trim().length !== 6} className="w-full rounded-xl">
+            <Button onClick={() => handleJoin()} disabled={connecting || joinCode.trim().length !== 6} className="w-full rounded-xl">
               {connecting ? "Joining…" : "Join Game"}
             </Button>
           </div>
@@ -676,6 +716,10 @@ export default function SnakeAndLadder({ onBack }: { onBack: () => void }) {
             <Button variant="ghost" size="icon" className="h-7 w-7"
               onClick={() => { navigator.clipboard.writeText(gameState.code); toast.success("Copied!"); }}>
               <Copy size={13} />
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs px-2"
+              onClick={() => { navigator.clipboard.writeText(`Join my Snakes & Ladders game on Mission Distinction! 🐍🪜\nRoom Code: ${gameState.code}\n(Games → Snakes & Ladders → Multiplayer → Join Room)`); toast.success("Invite copied!"); }}>
+              Invite
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-1">{gameState.players.length}/{gameState.maxPlayers} players</p>
