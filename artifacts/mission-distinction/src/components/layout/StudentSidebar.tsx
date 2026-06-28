@@ -7,7 +7,7 @@ import { useListAnnouncements, getListAnnouncementsQueryKey } from "@workspace/a
 import {
   LayoutDashboard, FileText, File, Users, Newspaper, TrendingUp,
   Bookmark, Calendar as CalendarIcon, Settings, Trophy, MessageSquare,
-  Timer, Music, BookOpen, Lightbulb, CalendarDays, MessageCircleHeart,
+  Timer, Music, BookOpen, Lightbulb, MessageCircleHeart,
   Bot, Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { useXPStats } from "@/hooks/useXPStats";
@@ -69,7 +69,6 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
     { icon: Bookmark, label: "Bookmarks", href: "/student/bookmarks" },
     { icon: CalendarIcon, label: "Calendar", href: "/student/calendar" },
     { icon: Timer, label: "Study Tools", href: "/student/tools" },
-    { icon: CalendarDays, label: "Exam Countdown", href: "/student/exams" },
     { icon: Lightbulb, label: "Mnemonics", href: "/student/mnemonics" },
     { icon: BookOpen, label: "Flashcards", href: "/student/flashcards" },
     { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
