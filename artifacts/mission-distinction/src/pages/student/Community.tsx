@@ -283,6 +283,7 @@ export default function StudentCommunity() {
   const [inviting, setInviting] = useState<number | null>(null);
   const [transferringTo, setTransferringTo] = useState<number | null>(null);
   const [deletingGroup, setDeletingGroup] = useState(false);
+  const [leavingGroup, setLeavingGroup] = useState(false);
   // Rich share state
   const [flashcardPickerOpen, setFlashcardPickerOpen] = useState(false);
   const [mnemonicPickerOpen, setMnemonicPickerOpen] = useState(false);
@@ -452,6 +453,20 @@ export default function StudentCommunity() {
       setChatGroupId(null);
       setLiveMessages([]);
     } catch (e: any) { toast.error(e?.message || "Failed to delete group"); } finally { setDeletingGroup(false); }
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!chatGroupId || !user) return;
+    if (!window.confirm(`Leave "${activeGroup?.name}"? You can rejoin via invite. The group stays for others.`)) return;
+    setLeavingGroup(true);
+    try {
+      await customFetch(`/api/community/groups/${chatGroupId}/members/${(user as any).id}`, { method: "DELETE" });
+      toast.success("You left the group.");
+      queryClient.invalidateQueries({ queryKey: getListCommunityGroupsQueryKey() });
+      setMembersOpen(false);
+      setChatGroupId(null);
+      setLiveMessages([]);
+    } catch (e: any) { toast.error(e?.message || "Failed to leave group"); } finally { setLeavingGroup(false); }
   };
 
   useEffect(() => {
@@ -1443,14 +1458,20 @@ export default function StudentCommunity() {
               </div>
             ))}
           </div>
-          {isGroupOwner && (
-            <div className="pt-2 border-t border-border/40 space-y-2">
-              <Button size="sm" className="w-full gap-2" onClick={() => { setMembersOpen(false); setInviteOpen(true); setMemberSearch(""); setSearchResults([]); }}><UserPlus size={14} /> Invite More Students</Button>
-              <Button size="sm" variant="outline" className="w-full gap-2 border-destructive/30 text-destructive hover:bg-destructive/10" disabled={deletingGroup} onClick={handleDeleteGroup}>
-                {deletingGroup ? <Loader2 size={14} className="animate-spin" /> : <UserMinus size={14} />} Delete Group
+          <div className="pt-2 border-t border-border/40 space-y-2">
+            {isGroupOwner ? (
+              <>
+                <Button size="sm" className="w-full gap-2" onClick={() => { setMembersOpen(false); setInviteOpen(true); setMemberSearch(""); setSearchResults([]); }}><UserPlus size={14} /> Invite More Students</Button>
+                <Button size="sm" variant="outline" className="w-full gap-2 border-destructive/30 text-destructive hover:bg-destructive/10" disabled={deletingGroup} onClick={handleDeleteGroup}>
+                  {deletingGroup ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete Group for Everyone
+                </Button>
+              </>
+            ) : (
+              <Button size="sm" variant="outline" className="w-full gap-2 border-destructive/30 text-destructive hover:bg-destructive/10" disabled={leavingGroup} onClick={handleLeaveGroup}>
+                {leavingGroup ? <Loader2 size={14} className="animate-spin" /> : <UserMinus size={14} />} Leave Group
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
