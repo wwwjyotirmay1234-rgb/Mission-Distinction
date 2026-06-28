@@ -56,6 +56,20 @@ router.post("/", authMiddleware, feedbackLimiter, async (req: Request, res: Resp
   }
 });
 
+// Student: view their own feedback (including admin replies)
+router.get("/my", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const items = await db.select().from(feedbackTable)
+      .where(eq(feedbackTable.userId, user.id))
+      .orderBy(desc(feedbackTable.createdAt))
+      .limit(50);
+    res.json(items);
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.get("/", adminMiddleware, async (_req: Request, res: Response) => {
   try {
     const items = await db.select().from(feedbackTable)
@@ -76,6 +90,30 @@ router.patch("/:id/status", adminMiddleware, async (req: Request, res: Response)
       res.status(400).json({ error: "Invalid status" }); return;
     }
     const [item] = await db.update(feedbackTable).set({ status }).where(eq(feedbackTable.id, id)).returning();
+    if (!item) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(item);
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Admin: reply to feedback
+router.patch("/:id/reply", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+    const { reply } = req.body;
+    if (typeof reply !== "string" || reply.trim().length < 1) {
+      res.status(400).json({ error: "Reply cannot be empty" }); return;
+    }
+    if (reply.trim().length > 2000) {
+      res.status(400).json({ error: "Reply too long (max 2000 chars)" }); return;
+    }
+    const safeReply = stripHtml(reply.trim());
+    const [item] = await db.update(feedbackTable)
+      .set({ adminReply: safeReply, adminReplyAt: new Date(), status: "resolved" })
+      .where(eq(feedbackTable.id, id))
+      .returning();
     if (!item) { res.status(404).json({ error: "Not found" }); return; }
     res.json(item);
   } catch (err) {

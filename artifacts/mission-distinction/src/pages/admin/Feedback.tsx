@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { customFetch } from "@workspace/api-client-react";
-import { MessageSquare, Star, MoreVertical, Trash2, CheckCircle2, Eye } from "lucide-react";
+import { MessageSquare, Star, MoreVertical, Trash2, CheckCircle2, Eye, Reply, SendHorizonal, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,8 @@ type FeedbackItem = {
   message: string;
   rating: number | null;
   status: string;
+  adminReply: string | null;
+  adminReplyAt: string | null;
   createdAt: string;
 };
 
@@ -48,8 +51,53 @@ async function fetchFeedback(): Promise<FeedbackItem[]> {
   return customFetch<FeedbackItem[]>("/api/feedback");
 }
 
+function ReplyBox({ item, onDone }: { item: FeedbackItem; onDone: () => void }) {
+  const [text, setText] = useState(item.adminReply ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const handleSend = async () => {
+    if (!text.trim()) return;
+    setSaving(true);
+    try {
+      await customFetch(`/api/feedback/${item.id}/reply`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reply: text }),
+      });
+      toast.success("Reply sent!");
+      onDone();
+    } catch {
+      toast.error("Failed to send reply.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 space-y-2">
+      <Textarea
+        className="bg-background/50 min-h-[80px] resize-none text-sm"
+        placeholder="Write your reply to the student…"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        maxLength={2000}
+      />
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground">{text.length}/2000</span>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onDone}>Cancel</Button>
+          <Button size="sm" className="h-7 text-xs gap-1" onClick={handleSend} disabled={saving || !text.trim()}>
+            <SendHorizonal size={12} /> {saving ? "Sending…" : "Send Reply"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminFeedback() {
   const [filter, setFilter] = useState<"all" | "new" | "read" | "resolved">("all");
+  const [replyingId, setReplyingId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data: feedback, isLoading } = useQuery({
@@ -101,7 +149,7 @@ export default function AdminFeedback() {
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <MessageSquare className="h-6 w-6 text-secondary" /> Student Feedback
         </h1>
-        <p className="text-muted-foreground">Review and respond to feedback submitted by students.</p>
+        <p className="text-muted-foreground">Review and reply to feedback submitted by students.</p>
       </div>
 
       {/* Summary counts */}
@@ -192,6 +240,39 @@ export default function AdminFeedback() {
                         ))}
                         <span className="text-xs text-muted-foreground ml-1">{item.rating}/5</span>
                       </div>
+                    )}
+
+                    {/* Existing admin reply */}
+                    {item.adminReply && replyingId !== item.id && (
+                      <div className="mt-3 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2.5">
+                        <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
+                          <Reply size={11} /> Admin Reply · {item.adminReplyAt ? timeAgo(item.adminReplyAt) : ""}
+                        </p>
+                        <p className="text-sm text-foreground/80 leading-relaxed">{item.adminReply}</p>
+                      </div>
+                    )}
+
+                    {/* Reply box */}
+                    {replyingId === item.id && (
+                      <ReplyBox
+                        item={item}
+                        onDone={() => {
+                          setReplyingId(null);
+                          queryClient.invalidateQueries({ queryKey: ["admin-feedback"] });
+                        }}
+                      />
+                    )}
+
+                    {/* Reply button (when not editing) */}
+                    {replyingId !== item.id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 h-7 text-xs gap-1 text-muted-foreground hover:text-foreground px-2"
+                        onClick={() => setReplyingId(item.id)}
+                      >
+                        {item.adminReply ? <><Pencil size={11} /> Edit Reply</> : <><Reply size={11} /> Reply</>}
+                      </Button>
                     )}
                   </div>
 

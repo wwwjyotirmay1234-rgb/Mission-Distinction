@@ -20,7 +20,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { customFetch } from "@workspace/api-client-react";
 import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "sonner";
-import { Star, MessageSquare, Bell, BellOff, Loader2, Camera, Trash2, ShieldAlert, ExternalLink } from "lucide-react";
+import { Star, MessageSquare, Bell, BellOff, Loader2, Camera, Trash2, ShieldAlert, ExternalLink, Reply, ChevronDown, ChevronUp } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { resetAnalytics } from "@/lib/analytics";
@@ -377,6 +378,8 @@ export default function StudentSettings() {
         </CardContent>
       </Card>
 
+      <MyFeedbackCard />
+
       <Card className="bg-card/40 border-border/40">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sm">
@@ -515,5 +518,111 @@ export default function StudentSettings() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+type MyFeedbackItem = {
+  id: number;
+  category: string;
+  subject: string;
+  message: string;
+  rating: number | null;
+  status: string;
+  adminReply: string | null;
+  adminReplyAt: string | null;
+  createdAt: string;
+};
+
+function timeAgoShort(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  return new Date(dateStr).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+function MyFeedbackCard() {
+  const [expanded, setExpanded] = useState<number | null>(null);
+
+  const { data: items, isLoading } = useQuery<MyFeedbackItem[]>({
+    queryKey: ["my-feedback"],
+    queryFn: () => customFetch<MyFeedbackItem[]>("/api/feedback/my"),
+  });
+
+  if (isLoading) return null;
+  if (!items || items.length === 0) return null;
+
+  const unread = items.filter((i) => i.adminReply && i.status === "resolved").length;
+
+  return (
+    <Card className="bg-card/40 border-border/40">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Reply className="h-4 w-4 text-primary" aria-hidden="true" />
+          My Feedback
+          {unread > 0 && (
+            <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-normal">
+              {unread} {unread === 1 ? "reply" : "replies"}
+            </span>
+          )}
+        </CardTitle>
+        <CardDescription>Your submitted feedback and admin responses.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className={cn(
+              "rounded-xl border p-3 space-y-2 transition-colors",
+              item.adminReply
+                ? "border-primary/30 bg-primary/5"
+                : "border-border/40 bg-background/30"
+            )}
+          >
+            <button
+              className="w-full text-left flex items-start justify-between gap-2"
+              onClick={() => setExpanded(expanded === item.id ? null : item.id)}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium truncate">{item.subject}</span>
+                  {item.adminReply && (
+                    <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full shrink-0">
+                      Admin replied
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">{timeAgoShort(item.createdAt)} · {item.category}</p>
+              </div>
+              {expanded === item.id ? <ChevronUp size={14} className="text-muted-foreground shrink-0 mt-0.5" /> : <ChevronDown size={14} className="text-muted-foreground shrink-0 mt-0.5" />}
+            </button>
+
+            {expanded === item.id && (
+              <div className="space-y-3 pt-1 border-t border-border/30">
+                {item.rating && (
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} size={12} className={i < item.rating! ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/30"} />
+                    ))}
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground leading-relaxed">{item.message}</p>
+
+                {item.adminReply ? (
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg px-3 py-2.5">
+                    <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
+                      <Reply size={11} /> Admin Reply · {item.adminReplyAt ? timeAgoShort(item.adminReplyAt) : ""}
+                    </p>
+                    <p className="text-sm text-foreground/90 leading-relaxed">{item.adminReply}</p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">No reply yet.</p>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
