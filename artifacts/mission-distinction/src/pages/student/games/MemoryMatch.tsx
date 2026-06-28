@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
-import { Brain, RotateCcw, Trophy, Zap } from "lucide-react";
+import { Brain, RotateCcw, Trophy } from "lucide-react";
 import { ALL_SUBJECTS, DIFFICULTY_OPTIONS, type Difficulty } from "./gameConstants";
 
 interface Pair { term: string; definition: string; emoji: string; }
@@ -36,13 +36,12 @@ function buildCards(pairs: Pair[]): Card[] {
   return shuffle(cards);
 }
 
-// Fallback emoji palette per subject if AI forgets to include one
 const SUBJECT_EMOJI: Record<string, string[]> = {
-  Anatomy:    ["🦴","🫀","🫁","🧠","🦷","👁","👂","🦵","💪","🫃","🫂","🦾"],
-  Physiology: ["⚡","💧","🩸","🌡","💨","🔬","⚗","🧪","🫧","🔄","📊","🧬"],
+  Anatomy:     ["🦴","🫀","🫁","🧠","🦷","👁","👂","🦵","💪","🫃","🫂","🦾"],
+  Physiology:  ["⚡","💧","🩸","🌡","💨","🔬","⚗","🧪","🫧","🔄","📊","🧬"],
   Biochemistry:["🧬","⚗","🔬","💊","🧪","🫧","⚡","🔩","🔗","🧲","💎","🌀"],
   Pharmacology:["💊","💉","🩺","🧪","⚗","🏥","🔬","🩹","🌿","🧬","⚡","🫧"],
-  Pathology:  ["🔬","🩸","🧫","🦠","🫀","💔","⚠","🧬","🩻","🩹","🔍","🚨"],
+  Pathology:   ["🔬","🩸","🧫","🦠","🫀","💔","⚠","🧬","🩻","🩹","🔍","🚨"],
   Microbiology:["🦠","🧫","🔬","🧬","⚗","🧪","🫧","🌡","💉","🩺","🌀","⚡"],
 };
 
@@ -57,82 +56,68 @@ function CardTile({ card, onClick, disabled }: {
 }) {
   const faceDown = !card.flipped && !card.matched;
 
+  let borderColor: string;
+  let background: string;
+  let boxShadow: string = "none";
+
+  if (card.matched) {
+    borderColor = "rgba(34,197,94,0.6)";
+    background = "linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(16,185,129,0.1) 100%)";
+    boxShadow = "0 2px 12px rgba(34,197,94,0.25)";
+  } else if (card.flipped) {
+    if (card.type === "picture") {
+      borderColor = "rgba(167,139,250,0.7)";
+      background = "linear-gradient(135deg, rgba(139,92,246,0.22) 0%, rgba(109,40,217,0.12) 100%)";
+      boxShadow = "0 4px 20px rgba(139,92,246,0.3)";
+    } else {
+      borderColor = "rgba(99,102,241,0.7)";
+      background = "linear-gradient(135deg, rgba(79,70,229,0.22) 0%, rgba(55,48,163,0.12) 100%)";
+      boxShadow = "0 4px 20px rgba(79,70,229,0.3)";
+    }
+  } else {
+    borderColor = "rgba(148,163,184,0.3)";
+    background = "transparent";
+  }
+
   return (
     <button
       onClick={onClick}
       disabled={disabled || card.matched}
-      aria-label={faceDown ? "Hidden card" : card.type === "picture" ? card.term : card.term}
+      aria-label={faceDown ? "Hidden card" : card.term}
+      className={`border-2 rounded-[14px] flex flex-col items-center justify-center gap-1 transition-all duration-200 overflow-hidden select-none
+        ${faceDown ? "bg-muted/50 hover:bg-muted/80" : ""}
+        ${card.matched ? "opacity-80 scale-[0.97]" : card.flipped ? "scale-[1.03]" : "scale-100"}
+        ${disabled && !card.flipped && !card.matched ? "cursor-default" : card.matched ? "cursor-default" : "cursor-pointer"}
+      `}
       style={{
-        position: "relative",
         height: 96,
-        borderRadius: 14,
-        border: card.matched
-          ? "2px solid rgba(34,197,94,0.6)"
-          : card.flipped
-            ? card.type === "picture"
-              ? "2px solid rgba(167,139,250,0.7)"
-              : "2px solid rgba(99,102,241,0.7)"
-            : "2px solid rgba(255,255,255,0.08)",
-        background: card.matched
-          ? "linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(16,185,129,0.1) 100%)"
-          : card.flipped
-            ? card.type === "picture"
-              ? "linear-gradient(135deg, rgba(139,92,246,0.25) 0%, rgba(109,40,217,0.15) 100%)"
-              : "linear-gradient(135deg, rgba(79,70,229,0.25) 0%, rgba(55,48,163,0.15) 100%)"
-            : "rgba(255,255,255,0.05)",
-        cursor: disabled || card.matched ? "default" : "pointer",
-        transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)",
-        transform: card.matched ? "scale(0.97)" : card.flipped ? "scale(1.03)" : "scale(1)",
-        boxShadow: card.flipped && !card.matched
-          ? card.type === "picture"
-            ? "0 4px 20px rgba(139,92,246,0.35)"
-            : "0 4px 20px rgba(79,70,229,0.35)"
-          : card.matched
-            ? "0 2px 12px rgba(34,197,94,0.3)"
-            : "none",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 4,
         padding: "6px 4px",
-        overflow: "hidden",
+        borderColor,
+        background: faceDown ? undefined : background,
+        boxShadow,
       }}
     >
       {faceDown ? (
-        /* Face-down: question mark */
-        <>
-          <span style={{ fontSize: 32, opacity: 0.35 }}>?</span>
-        </>
+        <span className="text-3xl font-bold text-foreground/30 leading-none">?</span>
       ) : card.type === "picture" ? (
-        /* Picture card: big emoji */
         <>
-          <span style={{ fontSize: 42, lineHeight: 1, filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.4))" }}>
+          <span style={{ fontSize: 42, lineHeight: 1, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}>
             {card.emoji}
           </span>
           {card.matched && (
-            <span style={{ fontSize: 9, color: "rgba(34,197,94,0.8)", fontWeight: 700, letterSpacing: 0.5 }}>
-              MATCHED ✓
-            </span>
+            <span className="text-[9px] font-bold text-green-600 dark:text-green-400 tracking-wide">MATCHED ✓</span>
           )}
         </>
       ) : (
-        /* Name card: term text */
         <>
-          <span style={{
-            fontSize: card.term.length > 12 ? 11 : card.term.length > 8 ? 13 : 14,
-            fontWeight: 800,
-            color: card.matched ? "rgb(134,239,172)" : "rgb(199,210,254)",
-            textAlign: "center",
-            lineHeight: 1.25,
-            padding: "0 4px",
-            wordBreak: "break-word",
-          }}>
+          <span className={`text-center font-extrabold leading-snug px-1 break-words
+            ${card.matched ? "text-green-600 dark:text-green-300" : "text-violet-700 dark:text-indigo-200"}
+          `}
+            style={{ fontSize: card.term.length > 12 ? 11 : card.term.length > 8 ? 13 : 14, wordBreak: "break-word" }}
+          >
             {card.term}
           </span>
-          {card.matched && (
-            <span style={{ fontSize: 16 }}>✓</span>
-          )}
+          {card.matched && <span className="text-base leading-none">✓</span>}
         </>
       )}
     </button>
@@ -208,7 +193,6 @@ export default function MemoryMatch() {
     const cardB = cards.find(c => c.id === b);
 
     if (cardA && cardB && cardA.pairId === cardB.pairId && cardA.type !== cardB.type) {
-      // Match!
       setCards(prev => prev.map(c => c.id === a || c.id === b ? { ...c, matched: true } : c));
       setSelected([]);
       setLocked(false);
@@ -253,22 +237,17 @@ export default function MemoryMatch() {
         <button
           onClick={generate}
           disabled={loading}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold"
-          style={{
-            background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)",
-            color: "white", border: "none", cursor: loading ? "wait" : "pointer",
-            opacity: loading ? 0.7 : 1,
-          }}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-70"
+          style={{ background: "linear-gradient(135deg,#7c3aed 0%,#5b21b6 100%)", cursor: loading ? "wait" : "pointer" }}
         >
           <Brain size={14} />
           {cards.length ? "New Game" : "Start Game"}
         </button>
 
-        {/* Stats */}
         {cards.length > 0 && (
           <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
-              <span style={{ color: "rgb(167,139,250)" }}>🟣</span> {matched}/{total}
+              <span className="text-violet-500">🟣</span> {matched}/{total}
             </span>
             <span>🕐 {fmt(elapsed)}</span>
             <span>⚡ {moves}</span>
@@ -276,45 +255,35 @@ export default function MemoryMatch() {
         )}
       </div>
 
-      {/* How to play hint */}
+      {/* Hint */}
       {cards.length > 0 && !won && (
-        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", textAlign: "center" }}>
+        <p className="text-[11px] text-muted-foreground text-center">
           Match each 🖼 picture card with its 📝 name card
         </p>
       )}
 
       {/* Loading skeletons */}
       {loading && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+        <div className="grid grid-cols-4 gap-2">
           {Array.from({ length: 16 }).map((_, i) => (
-            <div key={i} style={{
-              height: 96, borderRadius: 14,
-              background: "rgba(255,255,255,0.06)",
-              animation: "pulse 1.5s ease-in-out infinite",
-            }} />
+            <div key={i} className="h-24 rounded-[14px] bg-muted animate-pulse" />
           ))}
         </div>
       )}
 
       {/* Win screen */}
       {won && (
-        <div style={{
-          display: "flex", flexDirection: "column", alignItems: "center",
-          justifyContent: "center", padding: "32px 16px", textAlign: "center",
-          background: "linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(167,139,250,0.08) 100%)",
-          border: "1px solid rgba(167,139,250,0.3)", borderRadius: 16,
-        }}>
-          <Trophy size={44} style={{ color: "rgb(250,204,21)", marginBottom: 12 }} />
-          <h3 style={{ fontSize: 22, fontWeight: 900, color: "white", margin: "0 0 6px" }}>You Won! 🎉</h3>
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, margin: "0 0 16px" }}>
+        <div className="flex flex-col items-center justify-center py-8 px-4 text-center rounded-2xl border border-violet-500/30 bg-violet-500/5">
+          <Trophy size={44} className="text-yellow-500 mb-3" />
+          <h3 className="text-xl font-black text-foreground mb-1">You Won! 🎉</h3>
+          <p className="text-muted-foreground text-sm mb-4">
             {total} pairs matched · {moves} moves · {fmt(elapsed)}
           </p>
-          <button onClick={generate} style={{
-            background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)",
-            color: "white", border: "none", borderRadius: 10,
-            padding: "10px 24px", fontWeight: 700, fontSize: 14, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
+          <button
+            onClick={generate}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white"
+            style={{ background: "linear-gradient(135deg,#7c3aed 0%,#5b21b6 100%)" }}
+          >
             <RotateCcw size={14} /> Play Again
           </button>
         </div>
@@ -322,7 +291,7 @@ export default function MemoryMatch() {
 
       {/* Card grid */}
       {!loading && !won && cards.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+        <div className="grid grid-cols-4 gap-2">
           {cards.map(card => (
             <CardTile
               key={card.id}
@@ -334,19 +303,19 @@ export default function MemoryMatch() {
         </div>
       )}
 
-      {/* Legend strip (shown after cards loaded) */}
+      {/* Legend */}
       {!loading && cards.length > 0 && !won && (
-        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "rgba(167,139,250,0.8)" }}>
-            <div style={{ width: 16, height: 16, borderRadius: 4, background: "rgba(139,92,246,0.3)", border: "1px solid rgba(167,139,250,0.5)" }} />
+        <div className="flex gap-4 justify-center">
+          <div className="flex items-center gap-1.5 text-[11px] text-violet-600 dark:text-violet-300">
+            <div className="w-4 h-4 rounded bg-violet-500/25 border border-violet-400/50" />
             Picture cards
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "rgba(165,180,252,0.8)" }}>
-            <div style={{ width: 16, height: 16, borderRadius: 4, background: "rgba(79,70,229,0.3)", border: "1px solid rgba(99,102,241,0.5)" }} />
+          <div className="flex items-center gap-1.5 text-[11px] text-indigo-600 dark:text-indigo-300">
+            <div className="w-4 h-4 rounded bg-indigo-500/25 border border-indigo-400/50" />
             Name cards
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "rgba(134,239,172,0.8)" }}>
-            <div style={{ width: 16, height: 16, borderRadius: 4, background: "rgba(34,197,94,0.2)", border: "1px solid rgba(34,197,94,0.5)" }} />
+          <div className="flex items-center gap-1.5 text-[11px] text-green-600 dark:text-green-400">
+            <div className="w-4 h-4 rounded bg-green-500/20 border border-green-400/50" />
             Matched!
           </div>
         </div>
@@ -354,10 +323,10 @@ export default function MemoryMatch() {
 
       {/* Empty state */}
       {!loading && cards.length === 0 && !won && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 16px", textAlign: "center", color: "rgba(255,255,255,0.3)" }}>
-          <span style={{ fontSize: 48, marginBottom: 12 }}>🧬</span>
-          <p style={{ fontSize: 14 }}>Match the picture cards with their medical names</p>
-          <p style={{ fontSize: 12, marginTop: 4 }}>Select a subject and hit Start Game</p>
+        <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+          <span className="text-5xl mb-3">🧬</span>
+          <p className="text-sm">Match the picture cards with their medical names</p>
+          <p className="text-xs mt-1 opacity-60">Select a subject and hit Start Game</p>
         </div>
       )}
     </div>
