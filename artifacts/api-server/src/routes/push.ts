@@ -86,7 +86,8 @@ router.post("/subscribe", authMiddleware, pushSubscribeLimiter, async (req: Requ
       set: { userId: user.id, p256dh: keys.p256dh, auth: keys.auth },
     });
     res.json({ message: "Subscribed to push notifications" });
-  } catch {
+  } catch (err) {
+    console.error("[Push] subscribe error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
