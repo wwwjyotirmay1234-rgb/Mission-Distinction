@@ -84,7 +84,7 @@ function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void })
 
         <div className="flex-1 overflow-y-auto px-6 py-5 min-h-0">
           {isLink ? (
-            note.fileUrl && isDriveUrl(note.fileUrl) ? (
+            note.fileUrl ? (
               <iframe
                 src={getEmbedUrl(note.fileUrl)}
                 className="w-full rounded border border-border/40"
@@ -93,16 +93,7 @@ function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void })
                 allow="autoplay"
               />
             ) : (
-              <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
-                <ExternalLink size={40} className="text-primary/60" />
-                <p className="text-muted-foreground text-sm">This note links to an external resource.</p>
-                <Button
-                  onClick={() => { window.open(note.fileUrl!, "_blank", "noopener,noreferrer"); onClose(); }}
-                  className="gap-2"
-                >
-                  <ExternalLink size={14} /> Open Link
-                </Button>
-              </div>
+              <p className="text-muted-foreground text-sm text-center py-12">No link available.</p>
             )
           ) : isFile && embedUrl ? (
             isPdf ? (
@@ -116,7 +107,7 @@ function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void })
               <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
                 <FileText size={40} className="text-primary/60" />
                 <p className="text-muted-foreground text-sm">File attached to this note.</p>
-                <a href={embedUrl} target="_blank" rel="noopener noreferrer" download>
+                <a href={embedUrl} download>
                   <Button className="gap-2">
                     <Download size={14} /> Download File
                   </Button>
@@ -188,11 +179,13 @@ function getDriveEmbedUrl(url: string): string {
 
 function getEmbedUrl(url: string): string {
   if (url.includes("drive.google.com")) return getDriveEmbedUrl(url);
-  return getServeUrlWithToken(url);
-}
-
-function isDriveUrl(url: string): boolean {
-  return url.includes("drive.google.com");
+  if (url.includes("/api/upload/pdf/serve/") || url.includes("/api/pdfs/")) return getServeUrlWithToken(url);
+  // Use Google Docs Viewer as a universal in-app renderer for any external doc/PDF URL
+  const lower = url.toLowerCase();
+  if (lower.endsWith(".pdf") || lower.includes(".pdf?") || lower.includes("docs.google") || lower.endsWith(".docx") || lower.endsWith(".pptx")) {
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+  }
+  return url;
 }
 
 function PYQCard({ pyq }: { pyq: PYQ }) {
