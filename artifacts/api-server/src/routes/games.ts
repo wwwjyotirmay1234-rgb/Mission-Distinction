@@ -575,20 +575,23 @@ router.post("/memory-match", authMiddleware, gameLimiter, async (req: Request, r
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      max_completion_tokens: 900,
+      max_completion_tokens: 1000,
       temperature: 1.0,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
-          content: `Generate 8 term-definition pairs for a memory match game on ${subject}.
+          content: `Generate 8 term-definition pairs for a memory match card game on ${subject}.
 ${diffInstr}
 Focus specifically on this topic area: "${topic}"
-Definitions must be concise (max 10 words) but accurate and precise — not generic.
+Rules:
+- "term": short medical term or structure name (1-4 words max)
+- "definition": concise description (max 8 words, no period at end)
+- "emoji": ONE single emoji that visually represents the term (anatomy organ, body part, medical symbol, etc.)
 Avoid obvious/basic pairs. Include clinical correlations where appropriate.
 Return JSON array only:
 [
-  { "term": "Berry aneurysm", "definition": "Most common site of subarachnoid haemorrhage; saccular" }
+  { "term": "Berry aneurysm", "definition": "Saccular; commonest cause of subarachnoid haemorrhage", "emoji": "🫀" }
 ]`,
         },
       ],
