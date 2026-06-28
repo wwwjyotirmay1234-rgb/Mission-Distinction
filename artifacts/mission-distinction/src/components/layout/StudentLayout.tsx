@@ -11,7 +11,6 @@ import { MailWarning, X, CheckCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { PinnedBanner } from "@/components/PinnedBanner";
 import { WarningBanner } from "@/components/WarningBanner";
-import { Watermark } from "@/components/Watermark";
 import { OnboardingModal } from "@/components/OnboardingModal";
 
 function EmailVerificationBanner() {
@@ -114,7 +113,6 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
             </main>
           </div>
         </div>
-        <Watermark />
         <PersistentPlayer />
         <OnboardingModal />
       </SidebarProvider>
