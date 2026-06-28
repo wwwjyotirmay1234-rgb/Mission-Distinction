@@ -585,9 +585,20 @@ export default function StudentCommunity() {
   };
 
   const handleCreatePost = () => {
-    if (!postForm.title || !postForm.content || !postForm.groupName) { toast.error("All fields are required."); return; }
-    createPost.mutate({ data: postForm }, {
-      onSuccess: () => { toast.success("Post created!"); queryClient.invalidateQueries({ queryKey: getListCommunityPostsQueryKey() }); setPostOpen(false); setPostForm({ title: "", content: "", groupName: "" }); },
+    // Auto-use the only group if user didn't explicitly pick one
+    const resolvedGroup = postForm.groupName || (groupsList.length === 1 ? groupsList[0].name : "");
+    if (!postForm.title || !postForm.content || !resolvedGroup) {
+      if (!resolvedGroup) toast.error("Please select a group, or create one first.");
+      else toast.error("All fields are required.");
+      return;
+    }
+    createPost.mutate({ data: { ...postForm, groupName: resolvedGroup } }, {
+      onSuccess: () => {
+        toast.success("Post created!");
+        queryClient.invalidateQueries({ queryKey: getListCommunityPostsQueryKey() });
+        setPostOpen(false);
+        setPostForm({ title: "", content: "", groupName: "" });
+      },
       onError: () => toast.error("Failed to create post."),
     });
   };
@@ -1009,20 +1020,73 @@ export default function StudentCommunity() {
       <Dialog open={postOpen} onOpenChange={setPostOpen}>
         <DialogContent className="bg-card border-border/50 max-w-lg">
           <DialogHeader><DialogTitle>Create a Post</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5"><Label>Title <span className="text-destructive">*</span></Label><Input placeholder="What's on your mind?" className="bg-background/50" value={postForm.title} onChange={(e) => setPostForm({ ...postForm, title: e.target.value })} /></div>
-            <div className="space-y-1.5"><Label>Group <span className="text-destructive">*</span></Label>
-              <Select value={postForm.groupName} onValueChange={(v) => setPostForm({ ...postForm, groupName: v })}>
-                <SelectTrigger className="bg-background/50"><SelectValue placeholder="Select a group" /></SelectTrigger>
-                <SelectContent>{groupsList.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}</SelectContent>
-              </Select>
+          {groupsList.length === 0 ? (
+            /* ── No groups exist yet — guide user to create one first ── */
+            <div className="py-6 flex flex-col items-center gap-4 text-center px-4">
+              <div className="rounded-full bg-primary/10 p-4">
+                <Users size={32} className="text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-base">You need a group first</p>
+                <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                  Posts live inside study groups. Create your first group — then you can post, chat, and invite classmates.
+                </p>
+              </div>
+              <div className="flex gap-3 w-full max-w-xs">
+                <Button variant="outline" className="flex-1" onClick={() => setPostOpen(false)}>Cancel</Button>
+                <Button className="flex-1 gap-2" onClick={() => { setPostOpen(false); setGroupOpen(true); }}>
+                  <PlusCircle size={15} /> Create a Group
+                </Button>
+              </div>
             </div>
-            <div className="space-y-1.5"><Label>Content <span className="text-destructive">*</span></Label><Textarea placeholder="Share your thoughts, doubts, or resources..." className="bg-background/50 min-h-[120px] resize-none" value={postForm.content} onChange={(e) => setPostForm({ ...postForm, content: e.target.value })} /></div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPostOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreatePost} disabled={createPost.isPending}>{createPost.isPending ? "Posting..." : "Post"}</Button>
-          </DialogFooter>
+          ) : (
+            <>
+              <div className="space-y-4 py-2">
+                <div className="space-y-1.5">
+                  <Label>Title <span className="text-destructive">*</span></Label>
+                  <Input placeholder="What's on your mind?" className="bg-background/50" value={postForm.title}
+                    onChange={(e) => setPostForm({ ...postForm, title: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Group <span className="text-destructive">*</span></Label>
+                  <Select
+                    value={postForm.groupName || (groupsList.length === 1 ? groupsList[0].name : "")}
+                    onValueChange={(v) => {
+                      if (v === "__create__") { setPostOpen(false); setGroupOpen(true); return; }
+                      setPostForm({ ...postForm, groupName: v });
+                    }}
+                  >
+                    <SelectTrigger className="bg-background/50">
+                      <SelectValue placeholder="Select a group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groupsList.map(g => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
+                      <SelectItem value="__create__" className="text-primary font-medium border-t border-border/50 mt-1">
+                        <span className="flex items-center gap-1.5"><PlusCircle size={13} /> Create new group…</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {groupsList.length === 1 && !postForm.groupName && (
+                    <p className="text-xs text-muted-foreground">
+                      Will post to <strong>{groupsList[0].name}</strong> (your only group)
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Content <span className="text-destructive">*</span></Label>
+                  <Textarea placeholder="Share your thoughts, doubts, or resources..."
+                    className="bg-background/50 min-h-[120px] resize-none" value={postForm.content}
+                    onChange={(e) => setPostForm({ ...postForm, content: e.target.value })} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPostOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreatePost} disabled={createPost.isPending}>
+                  {createPost.isPending ? "Posting..." : "Post"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
