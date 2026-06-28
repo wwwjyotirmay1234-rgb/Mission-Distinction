@@ -25,6 +25,8 @@ import {
   Lightbulb,
   BookOpen,
   ClipboardCheck,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const navItems = [
@@ -76,37 +78,55 @@ const premiumNavItems = [
   { icon: Pin, label: "Pinned Notices", href: "/admin/notices", color: "text-emerald-400" },
 ];
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({ onNavigate, isCollapsed }: { onNavigate?: () => void; isCollapsed?: boolean }) {
   const [location] = useLocation();
   const { isSuperAdmin } = useAuth();
+  const { collapsed, setCollapsed } = useSidebar();
 
   return (
     <>
-      <div className="p-6 flex items-center gap-3 shrink-0">
-        <img src="/logo.jpeg" alt="Mission Distinction" className="h-8 w-8 object-contain rounded-lg" />
-        <span className="font-bold text-lg text-foreground tracking-tight">
-          Admin<span className="text-secondary">Portal</span>
-        </span>
+      <div className={cn("flex items-center shrink-0 border-b border-sidebar-border", isCollapsed ? "p-3 justify-center" : "p-4 gap-3 justify-between")}>
+        {!isCollapsed && (
+          <div className="flex items-center gap-3 min-w-0">
+            <img src="/logo.jpeg" alt="Mission Distinction" className="h-8 w-8 object-contain rounded-lg shrink-0" />
+            <span className="font-bold text-lg text-foreground tracking-tight truncate">
+              Admin<span className="text-secondary">Portal</span>
+            </span>
+          </div>
+        )}
+        {isCollapsed && (
+          <img src="/logo.jpeg" alt="Mission Distinction" className="h-8 w-8 object-contain rounded-lg" />
+        )}
+        {/* Collapse toggle — only on desktop sidebar */}
+        {onNavigate === undefined && (
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        )}
       </div>
 
-      <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-4">
+      <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto py-3 pb-4">
         {navItems.map((item) => {
           const isActive = location === item.href || location.startsWith(item.href + "/");
 
-          if (item.subItems) {
+          if (item.subItems && !isCollapsed) {
             const isParentActive = location.startsWith(item.href);
             return (
-              <div key={item.href} className="mb-2">
+              <div key={item.href} className="mb-1">
                 <div
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium",
+                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium",
                     isParentActive ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
                   <item.icon size={18} />
                   {item.label}
                 </div>
-                <div className="ml-9 mt-1 space-y-1 border-l border-border pl-3">
+                <div className="ml-9 mt-0.5 space-y-0.5 border-l border-border pl-3">
                   {item.subItems.map((subItem) => {
                     const isSubActive = location === subItem.href;
                     return (
@@ -129,11 +149,16 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             );
           }
 
+          // Collapsed: show parent icon only, navigate to first subItem or main href
+          const href = item.subItems ? item.subItems[0].href : item.href;
+
           return (
-            <Link key={item.href} href={item.href} onClick={onNavigate}>
+            <Link key={item.href} href={href} onClick={onNavigate}>
               <div
+                title={isCollapsed ? item.label : undefined}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer mb-1",
+                  "flex items-center rounded-lg text-sm font-medium transition-colors cursor-pointer",
+                  isCollapsed ? "justify-center p-2.5 mx-1" : "gap-3 px-3 py-2.5",
                   isActive
                     ? "bg-secondary text-secondary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -143,31 +168,35 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   size={18}
                   className={isActive ? "text-secondary-foreground" : "text-muted-foreground"}
                 />
-                {item.label}
+                {!isCollapsed && item.label}
               </div>
             </Link>
           );
         })}
 
         {/* Premium Admin Features */}
-        <div className="my-3 pt-2">
-          <p className="px-3 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground/60 mb-2">
-            Premium Tools
-          </p>
+        <div className={cn("pt-2 mt-1", !isCollapsed && "border-t border-border/40")}>
+          {!isCollapsed && (
+            <p className="px-3 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground/60 mb-2 mt-1">
+              Premium Tools
+            </p>
+          )}
           {premiumNavItems.map((item) => {
             const isActive = location === item.href;
             return (
               <Link key={item.href} href={item.href} onClick={onNavigate}>
                 <div
+                  title={isCollapsed ? item.label : undefined}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer mb-1",
+                    "flex items-center rounded-lg text-sm font-medium transition-colors cursor-pointer",
+                    isCollapsed ? "justify-center p-2.5 mx-1" : "gap-3 px-3 py-2.5",
                     isActive
                       ? "bg-primary/10 text-primary shadow-sm"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
                   <item.icon size={18} className={isActive ? "text-primary" : item.color} />
-                  {item.label}
+                  {!isCollapsed && item.label}
                 </div>
               </Link>
             );
@@ -176,18 +205,20 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
         {isSuperAdmin && (
           <>
-            <div className="my-3 border-t border-border/40" />
+            <div className="my-2 border-t border-border/40" />
             <Link href="/admin/super" onClick={onNavigate}>
               <div
+                title={isCollapsed ? "Super Admin" : undefined}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer mb-1",
+                  "flex items-center rounded-lg text-sm font-medium transition-colors cursor-pointer",
+                  isCollapsed ? "justify-center p-2.5 mx-1" : "gap-3 px-3 py-2.5",
                   location === "/admin/super"
                     ? "bg-yellow-500/20 text-yellow-400 shadow-sm"
                     : "text-yellow-500/70 hover:bg-yellow-500/10 hover:text-yellow-400"
                 )}
               >
                 <Crown size={18} />
-                Super Admin
+                {!isCollapsed && "Super Admin"}
               </div>
             </Link>
           </>
@@ -198,19 +229,28 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function AdminSidebar() {
-  const { open, setOpen } = useSidebar();
+  const { open, setOpen, hidden, collapsed } = useSidebar();
+
+  const desktopWidth = collapsed ? "w-14" : "w-64";
+  const desktopTranslate = hidden ? "-translate-x-full" : "translate-x-0";
 
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-64 h-screen bg-sidebar border-r border-sidebar-border flex-col fixed left-0 top-0 z-20">
-        <SidebarContent />
+      <aside
+        className={cn(
+          "hidden md:flex h-screen bg-sidebar border-r border-sidebar-border flex-col fixed left-0 top-0 z-20 transition-all duration-300",
+          desktopWidth,
+          desktopTranslate
+        )}
+      >
+        <SidebarContent isCollapsed={collapsed} />
       </aside>
 
       {/* Mobile sidebar as Sheet */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="p-0 w-64 bg-sidebar border-sidebar-border flex flex-col">
-          <SidebarContent onNavigate={() => setOpen(false)} />
+          <SidebarContent onNavigate={() => setOpen(false)} isCollapsed={false} />
         </SheetContent>
       </Sheet>
     </>
