@@ -3,8 +3,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -14,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { UserCircle, AlertCircle } from "lucide-react";
 import { ODISHA_GOVT_COLLEGES, ODISHA_PRIVATE_COLLEGES, MBBS_YEARS } from "@/lib/colleges";
 
@@ -22,38 +21,25 @@ export function CompleteProfileModal() {
 
   const missingFields =
     !user ||
-    !user.mobileNumber ||
     !(user as any).year ||
     !(user as any).college;
 
-  const [mobile, setMobile] = useState((user as any)?.mobileNumber ?? "");
   const [year, setYear] = useState((user as any)?.year ?? "");
   const [college, setCollege] = useState((user as any)?.college ?? "");
   const [saving, setSaving] = useState(false);
-  const [mobileError, setMobileError] = useState("");
 
   if (!missingFields) return null;
 
-  const validate = () => {
-    if (!mobile || !/^[6-9]\d{9}$/.test(mobile)) {
-      setMobileError("Enter a valid 10-digit Indian mobile number");
-      return false;
-    }
-    setMobileError("");
-    if (!year) { toast.error("Please select your academic year"); return false; }
-    if (!college) { toast.error("Please select your college"); return false; }
-    return true;
-  };
-
   const handleSave = async () => {
-    if (!validate()) return;
+    if (!year) { toast.error("Please select your academic year"); return; }
+    if (!college) { toast.error("Please select your college"); return; }
     if (!user) return;
     setSaving(true);
     try {
       const res = await apiFetch(`/api/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobileNumber: mobile, year, college }),
+        body: JSON.stringify({ year, college }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to save");
@@ -88,24 +74,6 @@ export function CompleteProfileModal() {
         </div>
 
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="cp-mobile">
-              Mobile Number <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="cp-mobile"
-              placeholder="10-digit mobile number"
-              inputMode="numeric"
-              maxLength={10}
-              value={mobile}
-              onChange={(e) => { setMobile(e.target.value); setMobileError(""); }}
-              className="bg-background/50"
-            />
-            {mobileError && (
-              <p className="text-xs text-destructive">{mobileError}</p>
-            )}
-          </div>
-
           <div className="space-y-1.5">
             <Label>
               Academic Year <span className="text-destructive">*</span>
