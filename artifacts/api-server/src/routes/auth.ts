@@ -16,11 +16,11 @@ import rateLimit from "express-rate-limit";
 
 const router = Router();
 
-// Limits are set high enough for a full college batch (200+ students)
-// logging in from the same campus WiFi (shared IP address).
+// Limits are generous enough for a college batch (200+ students) on shared
+// campus WiFi (one IP), but capped to prevent abuse.
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 1000 : 300,
+  max: process.env.NODE_ENV === "development" ? 1000 : 200,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many login attempts. Please try again in 15 minutes." },
@@ -28,7 +28,7 @@ const loginLimiter = rateLimit({
 
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 250,
+  max: process.env.NODE_ENV === "development" ? 500 : 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many registration attempts. Please try again in an hour." },
@@ -36,7 +36,7 @@ const registerLimiter = rateLimit({
 
 const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50,
+  max: process.env.NODE_ENV === "development" ? 500 : 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many password reset requests. Please try again in 15 minutes." },
@@ -44,7 +44,7 @@ const forgotPasswordLimiter = rateLimit({
 
 const resetPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 1000 : 100,
+  max: process.env.NODE_ENV === "development" ? 500 : 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many password reset attempts. Please try again in an hour." },
@@ -52,7 +52,7 @@ const resetPasswordLimiter = rateLimit({
 
 const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 1000 : 600,
+  max: process.env.NODE_ENV === "development" ? 1000 : 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many token refresh requests. Please try again shortly." },
@@ -60,7 +60,7 @@ const refreshLimiter = rateLimit({
 
 const googleAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 1000 : 300,
+  max: process.env.NODE_ENV === "development" ? 1000 : 200,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many Google sign-in attempts. Please try again shortly." },
