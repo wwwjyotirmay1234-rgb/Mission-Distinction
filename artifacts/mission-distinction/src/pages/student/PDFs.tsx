@@ -73,6 +73,7 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
   const [saveProgress, setSaveProgress] = React.useState(0);
   const [saveError, setSaveError] = React.useState<string | null>(null);
   const [isSaved, setIsSaved] = React.useState(false);
+  const [downloading, setDownloading] = React.useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   // Track online/offline
@@ -166,9 +167,22 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
     setIsSaved(false);
   };
 
-  const embedUrl = blobUrl ?? getEmbedUrl(pdf.url);
+  // Download via proxy → blob → <a download> so it stays in-app on mobile
+  const handleDownloadPdf = async () => {
+    setDownloading(true);
+    try {
+      await downloadPdfViaProxy(pdf);
+    } catch {
+      // Fallback: open the proxy URL directly in a new tab
+      const token = localStorage.getItem("mission_token") ?? "";
+      window.open(`/api/pdfs/${pdf.id}/proxy?token=${encodeURIComponent(token)}`, "_blank", "noopener");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const embedUrl = getEmbedUrl(pdf.url);
   const openUrl = getOpenUrl(pdf.url);
-  const downloadUrl = getDownloadUrl(pdf.url);
 
   // When offline and no local copy — show a helpful screen instead of black iframe
   const showOfflineWall = isOffline && !blobUrl;
@@ -184,20 +198,27 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-4">
-            {!isOffline && (
+            {/* Open in browser — for online Google Drive PDFs */}
+            {!isOffline && !blobUrl && (
               <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" asChild>
                 <a href={openUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink size={13} /> Open
                 </a>
               </Button>
             )}
-            {!isOffline && (
-              <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" asChild>
-                <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
-                  <Download size={13} /> Download
-                </a>
+            {/* Open from local blob — shows PDF in new tab, works on all mobile browsers */}
+            {blobUrl && (
+              <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs"
+                onClick={() => window.open(blobUrl, "_blank", "noopener")}>
+                <ExternalLink size={13} /> Open
               </Button>
             )}
+            {/* Download via proxy → blob → <a download> — stays in-app on mobile */}
+            <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs"
+              onClick={handleDownloadPdf} disabled={downloading}>
+              {downloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+              {downloading ? "…" : "Download"}
+            </Button>
             {/* Save / remove offline copy */}
             {!isOffline && !isSaved && (
               <Button
@@ -242,7 +263,7 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
 
         <div className="flex-1 relative overflow-hidden">
           {!cacheChecked ? (
-            /* ── Waiting for IndexedDB check before deciding which URL to use ── */
+            /* ── Waiting for IndexedDB check ── */
             <div className="flex items-center justify-center h-full gap-3 text-muted-foreground">
               <Loader2 size={24} className="animate-spin text-primary" />
               <span className="text-sm">Opening…</span>
@@ -267,8 +288,38 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
                 <p>4. Next time you open it, it works offline ✓</p>
               </div>
             </div>
-          ) : embedFailed && !blobUrl ? (
-            /* ── Embed failed, no local fallback ── */
+          ) : blobUrl ? (
+            /* ── Offline / saved copy — blob URLs can't render in iframes on mobile.
+               Use <object> which works on desktop, with a full-screen "Open" CTA
+               as the universal mobile fallback (rendered inside <object>'s fallback
+               slot AND as an overlay so it's always visible on phones). ── */
+            <div className="relative w-full h-full flex flex-col">
+              <object
+                data={blobUrl}
+                type="application/pdf"
+                className="w-full flex-1 border-0"
+                style={{ minHeight: 0 }}
+              >
+                {/* This content shows when <object> can't render (iOS, etc.) */}
+                <div className="flex flex-col items-center justify-center h-full gap-5 px-6 text-center py-12">
+                  <div className="rounded-full bg-primary/10 p-5">
+                    <FileText size={40} className="text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-lg">{pdf.title}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Saved offline · {pdf.subject}</p>
+                  </div>
+                  <Button className="gap-2 px-6" onClick={() => window.open(blobUrl, "_blank", "noopener")}>
+                    <BookOpen size={16} /> Open PDF
+                  </Button>
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    Tap <strong>Open PDF</strong> to read it — or use the <strong>Open</strong> button in the toolbar above.
+                  </p>
+                </div>
+              </object>
+            </div>
+          ) : embedFailed ? (
+            /* ── Online embed failed ── */
             <div className="flex flex-col items-center justify-center h-full gap-5 px-6 text-center">
               <FileText size={48} className="text-primary/50" />
               <div>
@@ -281,21 +332,20 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
                     <BookOpen size={16} /> Read PDF
                   </a>
                 </Button>
-                <Button variant="outline" className="flex-1 gap-2" asChild>
-                  <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
-                    <Download size={16} /> Download
-                  </a>
+                <Button variant="outline" className="flex-1 gap-2" onClick={handleDownloadPdf} disabled={downloading}>
+                  {downloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} Download
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">Preview unavailable — tap "Read PDF" to open in your browser.</p>
             </div>
           ) : (
+            /* ── Online embed (Google Drive preview / server URL) ── */
             <iframe
               src={embedUrl}
               className="w-full h-full border-0"
               title={pdf.title}
               allow="fullscreen"
-              onError={() => !blobUrl && setEmbedFailed(true)}
+              onError={() => setEmbedFailed(true)}
             />
           )}
         </div>
@@ -304,24 +354,36 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
   );
 }
 
-// Silently save a PDF to IndexedDB in the background after a download click.
-// Errors are swallowed — this is best-effort so the download still proceeds.
-async function autoSaveOffline(pdf: Pdf) {
-  try {
-    const existing = await getPdfBlob(pdf.id);
-    if (existing) return; // already cached, nothing to do
-    const token = localStorage.getItem("mission_token") ?? "";
+// Fetch PDF via proxy → trigger <a download> click → optionally save to IndexedDB.
+// Keeps the download in-app on mobile (no external browser).
+async function downloadPdfViaProxy(pdf: Pdf, { saveOffline = true } = {}) {
+  const token = localStorage.getItem("mission_token") ?? "";
+  // Reuse cached blob if we already saved it
+  const cached = await getPdfBlob(pdf.id).catch(() => null);
+  let blob: Blob;
+  if (cached) {
+    blob = cached.blob;
+  } else {
     const res = await fetch(`/api/pdfs/${pdf.id}/proxy`, {
       credentials: "include",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (!res.ok) return;
-    const buf = await res.arrayBuffer();
-    const blob = new Blob([buf], { type: "application/pdf" });
-    await savePdfBlob(pdf.id, blob, pdf.title);
-  } catch {
-    // best-effort — ignore errors
+    if (!res.ok) throw new Error(`${res.status}`);
+    blob = await res.blob();
+    // Cache it for offline use while we're at it
+    if (saveOffline) {
+      savePdfBlob(pdf.id, blob, pdf.title).catch(() => {});
+    }
   }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${pdf.title.replace(/[^a-z0-9 ._-]/gi, "_")}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  trackDownload(pdf.id);
 }
 
 async function trackDownload(pdfId: number) {
@@ -455,7 +517,7 @@ export default function StudentPDFs() {
                       size="sm"
                       variant="secondary"
                       className="flex-1 h-8 text-xs gap-1.5"
-                      onClick={() => { trackDownload(pdf.id); autoSaveOffline(pdf); window.open(getDownloadUrl(pdf.url), "_blank", "noopener,noreferrer"); }}
+                      onClick={() => downloadPdfViaProxy(pdf as Pdf).catch(() => window.open(getDownloadUrl((pdf as Pdf).url), "_blank", "noopener,noreferrer"))}
                     >
                       <Download size={13} /> Download
                     </Button>
