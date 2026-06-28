@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Flame, Medal, Zap, Crown } from "lucide-react";
+import { Trophy, Flame, Medal, Zap, Crown, Building2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import { RankBadge } from "@/components/RankBadge";
@@ -61,7 +61,7 @@ function PositionBadge({ rank }: { rank: number }) {
 }
 
 export default function StudentLeaderboard() {
-  const [tab, setTab] = useState<"xp" | "score" | "streak">("xp");
+  const [tab, setTab] = useState<"xp" | "score" | "streak" | "college">("xp");
   const { user } = useAuth();
 
   const { data, isLoading: classicLoading } = useQuery({
@@ -79,11 +79,17 @@ export default function StudentLeaderboard() {
   const classicEntries: LeaderboardEntry[] =
     tab === "score" ? (data?.topScorers ?? []) : (data?.streakLeaders ?? []);
 
-  const isLoading = tab === "xp" ? xpLoading : classicLoading;
+  const myCollege = user?.college ?? "";
+  const collegeXpEntries = (xpData ?? []).filter(
+    (e) => myCollege && e.college?.trim().toLowerCase() === myCollege.trim().toLowerCase()
+  );
+
+  const isLoading = tab === "xp" ? xpLoading : tab === "college" ? xpLoading : classicLoading;
 
   const myXpRank = (xpData ?? []).findIndex(e => e.id === user?.id) + 1;
   const myClassicRank = classicEntries.findIndex(e => e.id === user?.id) + 1;
-  const myRank = tab === "xp" ? myXpRank : myClassicRank;
+  const myCollegeRank = collegeXpEntries.findIndex(e => e.id === user?.id) + 1;
+  const myRank = tab === "xp" ? myXpRank : tab === "college" ? myCollegeRank : myClassicRank;
 
   const myXpEntry = xpData?.find(e => e.id === user?.id);
   const myRankInfo = myXpEntry ? getRankForXp(myXpEntry.totalXp) : null;
@@ -118,8 +124,8 @@ export default function StudentLeaderboard() {
         </Card>
       )}
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "xp" | "score" | "streak")}>
-        <TabsList className="bg-muted/50 border border-border/50">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "xp" | "score" | "streak" | "college")}>
+        <TabsList className="bg-muted/50 border border-border/50 flex-wrap h-auto gap-1">
           <TabsTrigger value="xp" className="gap-1.5">
             <Zap size={13} className="text-amber-400" /> XP Rankings
           </TabsTrigger>
@@ -128,6 +134,9 @@ export default function StudentLeaderboard() {
           </TabsTrigger>
           <TabsTrigger value="streak" className="gap-1.5">
             <Flame size={13} /> Streak Leaders
+          </TabsTrigger>
+          <TabsTrigger value="college" className="gap-1.5">
+            <Building2 size={13} className="text-blue-400" /> My College
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -151,7 +160,15 @@ export default function StudentLeaderboard() {
       <Card className="bg-card/40 border-border/40">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold text-muted-foreground">
-            {tab === "xp" ? "Ranked by total XP earned" : tab === "score" ? "Ranked by average quiz score" : "Ranked by study streak"}
+            {tab === "xp"
+              ? "Ranked by total XP earned"
+              : tab === "score"
+              ? "Ranked by average quiz score"
+              : tab === "streak"
+              ? "Ranked by study streak"
+              : myCollege
+              ? `Top students at ${myCollege}`
+              : "Set your college in Settings to see your college leaderboard"}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -161,6 +178,55 @@ export default function StudentLeaderboard() {
                 <Skeleton key={i} className="h-14 w-full rounded-xl" />
               ))}
             </div>
+          ) : tab === "college" ? (
+            !myCollege ? (
+              <div className="p-12 text-center text-muted-foreground text-sm">
+                <Building2 size={32} className="mx-auto mb-3 opacity-40" />
+                Add your college in <strong>Settings → Profile</strong> to see your college leaderboard.
+              </div>
+            ) : collegeXpEntries.length === 0 ? (
+              <div className="p-12 text-center text-muted-foreground text-sm">
+                No other students from {myCollege} yet. Invite your friends!
+              </div>
+            ) : (
+              <div className="divide-y divide-border/40">
+                {collegeXpEntries.map((entry, idx) => {
+                  const pos = idx + 1;
+                  const isMe = entry.id === user?.id;
+                  return (
+                    <div
+                      key={entry.id}
+                      className={`p-4 flex items-center gap-4 transition-colors ${isMe ? "bg-primary/5" : "hover:bg-muted/20"}`}
+                    >
+                      <div className="w-10 flex items-center justify-center shrink-0">
+                        <PositionBadge rank={pos} />
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold text-sm shrink-0">
+                        {entry.fullName?.charAt(0)?.toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold truncate">
+                            {entry.fullName}
+                            {isMe && <span className="ml-1 text-xs text-primary">(You)</span>}
+                          </p>
+                          <RankBadge xp={entry.totalXp} size="xs" />
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {entry.year ? entry.year : "1st Year"}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-base font-bold text-amber-400 flex items-center gap-1 justify-end">
+                          <Zap size={13} /> {entry.totalXp.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">XP</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
           ) : tab === "xp" ? (
             (xpData ?? []).length === 0 ? (
               <div className="p-12 text-center text-muted-foreground text-sm">

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { PinnedBanner } from "@/components/PinnedBanner";
 import { WarningBanner } from "@/components/WarningBanner";
 import { Watermark } from "@/components/Watermark";
+import { OnboardingModal } from "@/components/OnboardingModal";
 
 function EmailVerificationBanner() {
   const { user, token } = useAuth();
@@ -115,6 +116,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
         </div>
         <Watermark />
         <PersistentPlayer />
+        <OnboardingModal />
       </SidebarProvider>
     </MusicPlayerProvider>
   );

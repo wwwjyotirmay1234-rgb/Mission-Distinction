@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, Bell, LogOut, User as UserIcon, Menu, Zap, Megaphone, Newspaper, CalendarDays, AlertTriangle } from "lucide-react";
+import { Search, Bell, LogOut, User as UserIcon, Menu, Zap, Megaphone, Newspaper, CalendarDays, AlertTriangle, Sun, Moon } from "lucide-react";
 import { ScreenshotButton } from "@/components/ScreenshotButton";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSidebar } from "@/contexts/SidebarContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { RankBadge } from "@/components/RankBadge";
 import { useXPStats } from "@/hooks/useXPStats";
 import { getRankForXp } from "@/lib/ranks";
@@ -229,6 +230,7 @@ export function Header() {
   const xp = xpStats?.totalXp ?? 0;
   const rankLevel = xpStats?.currentRankLevel ?? 1;
   const rank = getRankForXp(xp);
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 gap-3">
@@ -263,6 +265,13 @@ export function Header() {
           </button>
         )}
 
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-lg hover:bg-muted/60 transition-colors text-muted-foreground hover:text-foreground"
+          aria-label="Toggle theme"
+        >
+          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
         {user?.role !== "admin" && <ScreenshotButton />}
         {user?.role !== "admin" && <NotificationsBell />}
 
