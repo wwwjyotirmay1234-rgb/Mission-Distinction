@@ -1,5 +1,5 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { trackPage } from "@/lib/analytics";
 import * as Sentry from "@sentry/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -39,72 +39,81 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-// Pages
-import NotFound from "@/pages/not-found";
-import LandingPage from "@/pages/auth/LandingPage";
-import ComingSoon from "@/pages/auth/ComingSoon";
-import ForgotPassword from "@/pages/auth/ForgotPassword";
-import ResetPassword from "@/pages/auth/ResetPassword";
-import VerifyEmail from "@/pages/auth/VerifyEmail";
-import PrivacyPolicy from "@/pages/PrivacyPolicy";
-import TermsOfService from "@/pages/TermsOfService";
+// Page-level loading spinner — shown while a lazy chunk is downloading
+function PageLoader() {
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0d0f1a" }}>
+      <div style={{ width: 36, height: 36, border: "3px solid #3b2170", borderTopColor: "#7c3aed", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
 
-// Layouts
+// ── Lazy page imports — each becomes its own JS chunk ────────────────────────
+// Auth / public
+const LandingPage      = lazy(() => import("@/pages/auth/LandingPage"));
+const ComingSoon       = lazy(() => import("@/pages/auth/ComingSoon"));
+const ForgotPassword   = lazy(() => import("@/pages/auth/ForgotPassword"));
+const ResetPassword    = lazy(() => import("@/pages/auth/ResetPassword"));
+const VerifyEmail      = lazy(() => import("@/pages/auth/VerifyEmail"));
+const PrivacyPolicy    = lazy(() => import("@/pages/PrivacyPolicy"));
+const TermsOfService   = lazy(() => import("@/pages/TermsOfService"));
+const NotFound         = lazy(() => import("@/pages/not-found"));
+
+// Layouts (small — keep eager so protected routes don't flash)
 import { StudentLayout } from "@/components/layout/StudentLayout";
-import { AdminLayout } from "@/components/layout/AdminLayout";
+import { AdminLayout }   from "@/components/layout/AdminLayout";
 
-// Student Pages
-import StudentAnatomyHub from "@/pages/student/AnatomyHub";
-import StudentDashboard from "@/pages/student/Dashboard";
-import StudentQuiz from "@/pages/student/Quiz";
-import StudentNotes from "@/pages/student/Notes";
-import StudentPDFs from "@/pages/student/PDFs";
-import StudentCommunity from "@/pages/student/Community";
-import StudentProgress from "@/pages/student/Progress";
-import StudentBookmarks from "@/pages/student/Bookmarks";
-import StudentCalendar from "@/pages/student/Calendar";
-import StudentSettings from "@/pages/student/Settings";
-import StudentAnnouncements from "@/pages/student/Announcements";
-import StudentLeaderboard from "@/pages/student/Leaderboard";
-import StudentDoubts from "@/pages/student/Doubts";
-import StudentTools from "@/pages/student/Tools";
-import StudentMusic from "@/pages/student/Music";
-import StudentFlashcards from "@/pages/student/Flashcards";
-import StudentMnemonics from "@/pages/student/Mnemonics";
-import StudentExams from "@/pages/student/Exams";
-import StudentConfessions from "@/pages/student/Confessions";
-import StudentStudyRooms from "@/pages/student/StudyRooms";
-import StudentAITools from "@/pages/student/AITools";
-import StudentGames from "@/pages/student/Games";
+// Student pages
+const StudentAnatomyHub    = lazy(() => import("@/pages/student/AnatomyHub"));
+const StudentDashboard     = lazy(() => import("@/pages/student/Dashboard"));
+const StudentQuiz          = lazy(() => import("@/pages/student/Quiz"));
+const StudentNotes         = lazy(() => import("@/pages/student/Notes"));
+const StudentPDFs          = lazy(() => import("@/pages/student/PDFs"));
+const StudentCommunity     = lazy(() => import("@/pages/student/Community"));
+const StudentProgress      = lazy(() => import("@/pages/student/Progress"));
+const StudentBookmarks     = lazy(() => import("@/pages/student/Bookmarks"));
+const StudentCalendar      = lazy(() => import("@/pages/student/Calendar"));
+const StudentSettings      = lazy(() => import("@/pages/student/Settings"));
+const StudentAnnouncements = lazy(() => import("@/pages/student/Announcements"));
+const StudentLeaderboard   = lazy(() => import("@/pages/student/Leaderboard"));
+const StudentDoubts        = lazy(() => import("@/pages/student/Doubts"));
+const StudentTools         = lazy(() => import("@/pages/student/Tools"));
+const StudentMusic         = lazy(() => import("@/pages/student/Music"));
+const StudentFlashcards    = lazy(() => import("@/pages/student/Flashcards"));
+const StudentMnemonics     = lazy(() => import("@/pages/student/Mnemonics"));
+const StudentExams         = lazy(() => import("@/pages/student/Exams"));
+const StudentConfessions   = lazy(() => import("@/pages/student/Confessions"));
+const StudentStudyRooms    = lazy(() => import("@/pages/student/StudyRooms"));
+const StudentAITools       = lazy(() => import("@/pages/student/AITools"));
+const StudentGames         = lazy(() => import("@/pages/student/Games"));
 
-// Admin Pages
-import AdminDashboard from "@/pages/admin/Dashboard";
-import AdminUsers from "@/pages/admin/Users";
-import AdminNotes from "@/pages/admin/Notes";
-import AdminPDFs from "@/pages/admin/PDFs";
-import AdminBooks from "@/pages/admin/Books";
-import AdminPYQs from "@/pages/admin/PYQs";
-import AdminQuizzes from "@/pages/admin/Quizzes";
-import AdminAnnouncements from "@/pages/admin/Announcements";
-import AdminAnalytics from "@/pages/admin/Analytics";
-import AdminQuizEditor from "@/pages/admin/QuizEditor";
-import AdminNews from "@/pages/admin/News";
-import AdminSettings from "@/pages/admin/Settings";
-import AdminReports from "@/pages/admin/Reports";
-import AdminFeedback from "@/pages/admin/Feedback";
-import SuperAdminPanel from "@/pages/admin/SuperAdmin";
-
-// New Premium Admin Pages
-import ActivityFeed from "@/pages/admin/ActivityFeed";
-import ModerationCenter from "@/pages/admin/ModerationCenter";
-import WarningsPage from "@/pages/admin/WarningsPage";
-import AuditLog from "@/pages/admin/AuditLog";
-import QuizIntelligence from "@/pages/admin/QuizIntelligence";
-import NoticesPage from "@/pages/admin/NoticesPage";
-import AdminMnemonics from "@/pages/admin/Mnemonics";
-import AdminFlashcards from "@/pages/admin/Flashcards";
-import QuizSubmissions from "@/pages/admin/QuizSubmissions";
-import ProctoringReport from "@/pages/admin/ProctoringReport";
+// Admin pages
+const AdminDashboard     = lazy(() => import("@/pages/admin/Dashboard"));
+const AdminUsers         = lazy(() => import("@/pages/admin/Users"));
+const AdminNotes         = lazy(() => import("@/pages/admin/Notes"));
+const AdminPDFs          = lazy(() => import("@/pages/admin/PDFs"));
+const AdminBooks         = lazy(() => import("@/pages/admin/Books"));
+const AdminPYQs          = lazy(() => import("@/pages/admin/PYQs"));
+const AdminQuizzes       = lazy(() => import("@/pages/admin/Quizzes"));
+const AdminAnnouncements = lazy(() => import("@/pages/admin/Announcements"));
+const AdminAnalytics     = lazy(() => import("@/pages/admin/Analytics"));
+const AdminQuizEditor    = lazy(() => import("@/pages/admin/QuizEditor"));
+const AdminNews          = lazy(() => import("@/pages/admin/News"));
+const AdminSettings      = lazy(() => import("@/pages/admin/Settings"));
+const AdminReports       = lazy(() => import("@/pages/admin/Reports"));
+const AdminFeedback      = lazy(() => import("@/pages/admin/Feedback"));
+const SuperAdminPanel    = lazy(() => import("@/pages/admin/SuperAdmin"));
+const ActivityFeed       = lazy(() => import("@/pages/admin/ActivityFeed"));
+const ModerationCenter   = lazy(() => import("@/pages/admin/ModerationCenter"));
+const WarningsPage       = lazy(() => import("@/pages/admin/WarningsPage"));
+const AuditLog           = lazy(() => import("@/pages/admin/AuditLog"));
+const QuizIntelligence   = lazy(() => import("@/pages/admin/QuizIntelligence"));
+const NoticesPage        = lazy(() => import("@/pages/admin/NoticesPage"));
+const AdminMnemonics     = lazy(() => import("@/pages/admin/Mnemonics"));
+const AdminFlashcards    = lazy(() => import("@/pages/admin/Flashcards"));
+const QuizSubmissions    = lazy(() => import("@/pages/admin/QuizSubmissions"));
+const ProctoringReport   = lazy(() => import("@/pages/admin/ProctoringReport"));
 
 const queryClient = new QueryClient();
 
@@ -127,104 +136,103 @@ function PageTracker() {
 
 function Router() {
   return (
-    <>
-    <PageTracker />
-    <Switch>
-      <Route path="/">
-        <ForceDark><LandingPage /></ForceDark>
-      </Route>
-      <Route path="/coming-soon">
-        <ForceDark><ComingSoon /></ForceDark>
-      </Route>
-      <Route path="/forgot-password">
-        <ForceDark><ForgotPassword /></ForceDark>
-      </Route>
-      <Route path="/reset-password">
-        <ForceDark><ResetPassword /></ForceDark>
-      </Route>
-      <Route path="/verify-email">
-        <ForceDark><VerifyEmail /></ForceDark>
-      </Route>
-      <Route path="/privacy-policy">
-        <ForceDark><PrivacyPolicy /></ForceDark>
-      </Route>
-      <Route path="/terms">
-        <ForceDark><TermsOfService /></ForceDark>
-      </Route>
-      
-      {/* Student Routes */}
-      <Route path="/student/*">
-        <ProtectedRoute>
-          <StudentLayout>
-            <Switch>
-              <Route path="/student/anatomy" component={AnatomyRoute} />
-              <Route path="/student/dashboard" component={StudentDashboard} />
-              <Route path="/student/quiz" component={StudentQuiz} />
-              <Route path="/student/notes" component={StudentNotes} />
-              <Route path="/student/pdfs" component={StudentPDFs} />
-              <Route path="/student/community" component={StudentCommunity} />
-              <Route path="/student/announcements" component={StudentAnnouncements} />
-              <Route path="/student/progress" component={StudentProgress} />
-              <Route path="/student/leaderboard" component={StudentLeaderboard} />
-              <Route path="/student/doubts" component={StudentDoubts} />
-              <Route path="/student/bookmarks" component={StudentBookmarks} />
-              <Route path="/student/calendar" component={StudentCalendar} />
-              <Route path="/student/settings" component={StudentSettings} />
-              <Route path="/student/tools" component={StudentTools} />
-              <Route path="/student/music" component={StudentMusic} />
-              <Route path="/student/flashcards" component={StudentFlashcards} />
-              <Route path="/student/mnemonics" component={StudentMnemonics} />
-              <Route path="/student/exams" component={StudentExams} />
-              <Route path="/student/confessions" component={StudentConfessions} />
-              <Route path="/student/study-rooms" component={StudentStudyRooms} />
-              <Route path="/student/ai-tools" component={StudentAITools} />
-              <Route path="/student/games" component={StudentGames} />
-              <Route component={NotFound} />
-            </Switch>
-          </StudentLayout>
-        </ProtectedRoute>
-      </Route>
+    <Suspense fallback={<PageLoader />}>
+      <PageTracker />
+      <Switch>
+        <Route path="/">
+          <ForceDark><LandingPage /></ForceDark>
+        </Route>
+        <Route path="/coming-soon">
+          <ForceDark><ComingSoon /></ForceDark>
+        </Route>
+        <Route path="/forgot-password">
+          <ForceDark><ForgotPassword /></ForceDark>
+        </Route>
+        <Route path="/reset-password">
+          <ForceDark><ResetPassword /></ForceDark>
+        </Route>
+        <Route path="/verify-email">
+          <ForceDark><VerifyEmail /></ForceDark>
+        </Route>
+        <Route path="/privacy-policy">
+          <ForceDark><PrivacyPolicy /></ForceDark>
+        </Route>
+        <Route path="/terms">
+          <ForceDark><TermsOfService /></ForceDark>
+        </Route>
 
-      {/* Admin Routes */}
-      <Route path="/admin/*">
-        <ProtectedRoute requireAdmin>
-          <AdminLayout>
-            <Switch>
-              <Route path="/admin/dashboard" component={AdminDashboard} />
-              <Route path="/admin/users" component={AdminUsers} />
-              <Route path="/admin/content/notes" component={AdminNotes} />
-              <Route path="/admin/content/pdfs" component={AdminPDFs} />
-              <Route path="/admin/content/books" component={AdminBooks} />
-              <Route path="/admin/content/pyqs" component={AdminPYQs} />
-              <Route path="/admin/quizzes/:id/edit" component={AdminQuizEditor} />
-              <Route path="/admin/quizzes" component={AdminQuizzes} />
-              <Route path="/admin/news" component={AdminNews} />
-              <Route path="/admin/announcements" component={AdminAnnouncements} />
-              <Route path="/admin/analytics" component={AdminAnalytics} />
-              <Route path="/admin/quiz-intelligence" component={QuizIntelligence} />
-              <Route path="/admin/reports" component={AdminReports} />
-              <Route path="/admin/feedback" component={AdminFeedback} />
-              <Route path="/admin/settings" component={AdminSettings} />
-              <Route path="/admin/super" component={SuperAdminPanel} />
-              {/* Premium Admin Pages */}
-              <Route path="/admin/activity-feed" component={ActivityFeed} />
-              <Route path="/admin/moderation" component={ModerationCenter} />
-              <Route path="/admin/warnings" component={WarningsPage} />
-              <Route path="/admin/audit-log" component={AuditLog} />
-              <Route path="/admin/notices" component={NoticesPage} />
-              <Route path="/admin/study-tools/mnemonics" component={AdminMnemonics} />
-              <Route path="/admin/study-tools/flashcards" component={AdminFlashcards} />
-              <Route path="/admin/quiz-submissions" component={QuizSubmissions} />
-              <Route path="/admin/proctoring/:attemptId" component={ProctoringReport} />
-              <Route component={NotFound} />
-            </Switch>
-          </AdminLayout>
-        </ProtectedRoute>
-      </Route>
+        {/* Student Routes */}
+        <Route path="/student/*">
+          <ProtectedRoute>
+            <StudentLayout>
+              <Switch>
+                <Route path="/student/anatomy" component={AnatomyRoute} />
+                <Route path="/student/dashboard"    component={StudentDashboard} />
+                <Route path="/student/quiz"         component={StudentQuiz} />
+                <Route path="/student/notes"        component={StudentNotes} />
+                <Route path="/student/pdfs"         component={StudentPDFs} />
+                <Route path="/student/community"    component={StudentCommunity} />
+                <Route path="/student/announcements" component={StudentAnnouncements} />
+                <Route path="/student/progress"     component={StudentProgress} />
+                <Route path="/student/leaderboard"  component={StudentLeaderboard} />
+                <Route path="/student/doubts"       component={StudentDoubts} />
+                <Route path="/student/bookmarks"    component={StudentBookmarks} />
+                <Route path="/student/calendar"     component={StudentCalendar} />
+                <Route path="/student/settings"     component={StudentSettings} />
+                <Route path="/student/tools"        component={StudentTools} />
+                <Route path="/student/music"        component={StudentMusic} />
+                <Route path="/student/flashcards"   component={StudentFlashcards} />
+                <Route path="/student/mnemonics"    component={StudentMnemonics} />
+                <Route path="/student/exams"        component={StudentExams} />
+                <Route path="/student/confessions"  component={StudentConfessions} />
+                <Route path="/student/study-rooms"  component={StudentStudyRooms} />
+                <Route path="/student/ai-tools"     component={StudentAITools} />
+                <Route path="/student/games"        component={StudentGames} />
+                <Route component={NotFound} />
+              </Switch>
+            </StudentLayout>
+          </ProtectedRoute>
+        </Route>
 
-      <Route component={NotFound} />
-    </Switch>
-    </>
+        {/* Admin Routes */}
+        <Route path="/admin/*">
+          <ProtectedRoute requireAdmin>
+            <AdminLayout>
+              <Switch>
+                <Route path="/admin/dashboard"              component={AdminDashboard} />
+                <Route path="/admin/users"                  component={AdminUsers} />
+                <Route path="/admin/content/notes"          component={AdminNotes} />
+                <Route path="/admin/content/pdfs"           component={AdminPDFs} />
+                <Route path="/admin/content/books"          component={AdminBooks} />
+                <Route path="/admin/content/pyqs"           component={AdminPYQs} />
+                <Route path="/admin/quizzes/:id/edit"       component={AdminQuizEditor} />
+                <Route path="/admin/quizzes"                component={AdminQuizzes} />
+                <Route path="/admin/news"                   component={AdminNews} />
+                <Route path="/admin/announcements"          component={AdminAnnouncements} />
+                <Route path="/admin/analytics"              component={AdminAnalytics} />
+                <Route path="/admin/quiz-intelligence"      component={QuizIntelligence} />
+                <Route path="/admin/reports"                component={AdminReports} />
+                <Route path="/admin/feedback"               component={AdminFeedback} />
+                <Route path="/admin/settings"               component={AdminSettings} />
+                <Route path="/admin/super"                  component={SuperAdminPanel} />
+                <Route path="/admin/activity-feed"          component={ActivityFeed} />
+                <Route path="/admin/moderation"             component={ModerationCenter} />
+                <Route path="/admin/warnings"               component={WarningsPage} />
+                <Route path="/admin/audit-log"              component={AuditLog} />
+                <Route path="/admin/notices"                component={NoticesPage} />
+                <Route path="/admin/study-tools/mnemonics"  component={AdminMnemonics} />
+                <Route path="/admin/study-tools/flashcards" component={AdminFlashcards} />
+                <Route path="/admin/quiz-submissions"       component={QuizSubmissions} />
+                <Route path="/admin/proctoring/:attemptId"  component={ProctoringReport} />
+                <Route component={NotFound} />
+              </Switch>
+            </AdminLayout>
+          </ProtectedRoute>
+        </Route>
+
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 

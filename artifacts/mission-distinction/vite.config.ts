@@ -50,6 +50,36 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // Three.js + R3F — largest deps, isolate so they're only loaded for Anatomy
+          if (id.includes("three") || id.includes("@react-three") || id.includes("@react-spring")) {
+            return "vendor-three";
+          }
+          // Core React runtime
+          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+            return "vendor-react";
+          }
+          // Framer Motion
+          if (id.includes("framer-motion")) {
+            return "vendor-motion";
+          }
+          // Routing + data fetching
+          if (id.includes("wouter") || id.includes("@tanstack/react-query")) {
+            return "vendor-router";
+          }
+          // UI primitives (Radix, Lucide, cmdk, sonner)
+          if (id.includes("@radix-ui") || id.includes("lucide-react") || id.includes("cmdk") || id.includes("sonner")) {
+            return "vendor-ui";
+          }
+          // Everything else in node_modules → vendor-misc
+          if (id.includes("node_modules")) {
+            return "vendor-misc";
+          }
+        },
+      },
+    },
   },
   server: {
     port,
