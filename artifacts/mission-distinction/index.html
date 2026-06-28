@@ -64,31 +64,33 @@
     -->
     <script>
       (function () {
-        // 1. Reload the moment a new SW takes control (clears stale chunk cache)
+        // 1. When a new SW takes control, reload once to get fresh JS chunks.
+        //    This is safe — after the reload the SW is already active, so
+        //    controllerchange won't fire again on normal usage.
         if ('serviceWorker' in navigator) {
-          var _reloading = false;
+          var _swReloading = false;
           navigator.serviceWorker.addEventListener('controllerchange', function () {
-            if (!_reloading) { _reloading = true; window.location.reload(); }
+            if (!_swReloading) { _swReloading = true; window.location.reload(); }
           });
         }
 
-        // 2. If any JS module chunk 404s / fails, do a hard reload to get fresh chunks
-        window.addEventListener('error', function (e) {
-          var src = (e && e.target && e.target.src) || '';
-          if (src && src.includes('/assets/')) {
-            console.warn('[MD] Chunk load failed, hard-reloading:', src);
-            window.location.reload(true);
-          }
-        }, true);
-
-        // 3. Safety timeout: if #root is still empty after 10 s, hard-reload
-        setTimeout(function () {
-          var root = document.getElementById('root');
-          if (root && !root.firstChild) {
-            console.warn('[MD] Root empty after 10 s — hard-reloading');
-            window.location.reload(true);
-          }
-        }, 10000);
+        // 2. If a JS/CSS chunk 404s (stale cache), do ONE hard reload.
+        //    sessionStorage flag prevents an infinite reload loop on slow connections.
+        var CHUNK_KEY = '_md_cr';
+        if (!sessionStorage.getItem(CHUNK_KEY)) {
+          window.addEventListener('error', function (e) {
+            var el = e && e.target;
+            var src = (el && (el.src || el.href)) || '';
+            if (src && src.includes('/assets/') &&
+                (src.endsWith('.js') || src.endsWith('.css'))) {
+              console.warn('[MD] Chunk failed, reloading once:', src);
+              sessionStorage.setItem(CHUNK_KEY, '1');
+              window.location.reload(true);
+            }
+          }, true);
+        } else {
+          sessionStorage.removeItem(CHUNK_KEY); // reset for next visit
+        }
       })();
     </script>
 
