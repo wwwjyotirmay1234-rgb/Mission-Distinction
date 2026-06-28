@@ -199,15 +199,16 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
 }
 
 export function StudentSidebar() {
-  const { open, setOpen, collapsed } = useSidebar();
+  const { open, setOpen, collapsed, hidden } = useSidebar();
   const sidebarWidth = collapsed ? "w-[60px]" : "w-[220px]";
 
   return (
     <>
-      {/* Desktop fixed sidebar */}
+      {/* Desktop fixed sidebar — hidden completely when user hides it */}
       <aside className={cn(
         "hidden md:flex h-screen bg-sidebar border-r border-sidebar-border flex-col fixed left-0 top-0 transition-[width] duration-200 ease-in-out overflow-hidden",
-        sidebarWidth
+        sidebarWidth,
+        hidden && "!hidden"
       )}>
         <SidebarContent />
       </aside>

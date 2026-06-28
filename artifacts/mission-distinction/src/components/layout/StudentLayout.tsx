@@ -96,7 +96,7 @@ function EmailVerificationBanner() {
 }
 
 function StudentLayoutInner({ children }: { children: React.ReactNode }) {
-  const { collapsed } = useSidebar();
+  const { collapsed, hidden } = useSidebar();
   return (
     <div
       className="min-h-screen bg-background text-foreground flex"
@@ -106,7 +106,7 @@ function StudentLayoutInner({ children }: { children: React.ReactNode }) {
       <div
         id="md-capture-area"
         className="relative flex-1 flex flex-col min-w-0 transition-[margin] duration-200 ease-in-out"
-        style={{ marginLeft: collapsed ? 60 : 220 }}
+        style={{ marginLeft: hidden ? 0 : collapsed ? 60 : 220 }}
       >
         <Watermark />
         <Header />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, Bell, LogOut, User as UserIcon, Menu, Zap, Megaphone, Newspaper, CalendarDays, AlertTriangle, Sun, Moon } from "lucide-react";
+import { Search, Bell, LogOut, User as UserIcon, Menu, Zap, Megaphone, Newspaper, CalendarDays, AlertTriangle, Sun, Moon, PanelLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
@@ -210,7 +210,7 @@ function NotificationsBell() {
 export function Header() {
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
-  const { setOpen } = useSidebar();
+  const { setOpen, hidden, setHidden } = useSidebar();
   const { data: xpStats } = useXPStats();
 
   const handleLogout = () => {
@@ -233,6 +233,7 @@ export function Header() {
 
   return (
     <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 gap-3">
+      {/* Mobile: open sheet drawer */}
       <Button
         variant="ghost"
         size="icon"
@@ -241,6 +242,18 @@ export function Header() {
         aria-label="Open menu"
       >
         <Menu size={20} />
+      </Button>
+
+      {/* Desktop: toggle sidebar hidden/visible */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="hidden md:flex shrink-0"
+        onClick={() => setHidden(!hidden)}
+        aria-label={hidden ? "Show sidebar" : "Hide sidebar"}
+        title={hidden ? "Show sidebar" : "Hide sidebar"}
+      >
+        <PanelLeft size={20} className={hidden ? "text-muted-foreground" : "text-foreground"} />
       </Button>
 
       <div className="flex-1 max-w-md relative hidden sm:block">
