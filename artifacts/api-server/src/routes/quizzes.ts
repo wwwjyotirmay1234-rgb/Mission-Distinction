@@ -8,6 +8,7 @@ import { updateStreak } from "../lib/streak";
 import { stripHtml } from "../lib/sanitize";
 import { awardXp, XP_VALUES } from "../lib/xp";
 import rateLimit from "express-rate-limit";
+import { openai } from "@workspace/integrations-openai-ai-server";
 
 const SUBJECTIVE_TYPES = ["short_answer", "long_answer"];
 
@@ -86,6 +87,79 @@ router.get("/reports", adminMiddleware, async (req: Request, res: Response) => {
     res.json(reports);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/ai-parse", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { rawText } = req.body;
+    if (!rawText || typeof rawText !== "string" || !rawText.trim()) {
+      res.status(400).json({ error: "rawText is required" }); return;
+    }
+    if (rawText.length > 40000) {
+      res.status(400).json({ error: "Input too long. Max 40,000 characters." }); return;
+    }
+
+    const systemPrompt = `You are a question parser for a 1st year MBBS medical education platform in India. 
+Parse raw question text (any format) into a structured JSON array.
+
+Supported questionType values: "mcq", "true-false", "fill-blank", "name-following", "one-word", "short_answer", "long_answer"
+
+Output schema for each question object:
+{
+  "text": string,                  // question text; for fill-blank use ___ for blanks
+  "questionType": string,          // one of the supported types above
+  "options": string[] | null,      // 4 strings for mcq, ["True","False"] for true-false, null otherwise
+  "correctOption": number | null,  // 0-indexed for mcq/true-false, null otherwise
+  "correctAnswer": string | null,  // the answer for fill-blank/name-following/one-word, null otherwise
+  "explanation": string | null     // any explanation or model answer provided
+}
+
+Parsing rules:
+1. MCQ: identify 4 options, find the correct one (marked by *, ✓, (Ans), answer key, bold, etc). correctOption is 0-based index.
+2. True/False: correctOption=0 for True, 1 for False.
+3. Fill-in-the-blank: keep ___ in the text, put the answer word/phrase in correctAnswer.
+4. Name-following / One-word: put the short answer in correctAnswer.
+5. SAQ / LAQ: put the model answer or key points in explanation; leave correctAnswer null.
+6. If question type is ambiguous but has 4 options, treat as mcq.
+7. Strip question numbers/prefixes (e.g. "1.", "Q1)", "Q:") from the text.
+8. Preserve the original wording faithfully — do not rephrase or add content.
+9. If no explanation is provided, set explanation to null.
+
+Return ONLY a valid JSON array. No markdown fences, no explanations, just the raw JSON array.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5.4",
+      max_completion_tokens: 8192,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: rawText.trim() },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content?.trim() ?? "";
+    let parsed: any[];
+    try {
+      const jsonStr = raw.startsWith("[") ? raw : raw.replace(/^```json?\n?/, "").replace(/```$/, "").trim();
+      parsed = JSON.parse(jsonStr);
+      if (!Array.isArray(parsed)) throw new Error("Not an array");
+    } catch {
+      res.status(422).json({ error: "AI could not parse the questions. Try a clearer format.", raw });
+      return;
+    }
+
+    const cleaned = parsed.filter(q => q && typeof q.text === "string" && q.text.trim()).map(q => ({
+      text: stripHtml(q.text.trim()),
+      questionType: q.questionType || "mcq",
+      options: Array.isArray(q.options) ? q.options.map((o: any) => stripHtml(String(o))) : null,
+      correctOption: typeof q.correctOption === "number" ? q.correctOption : null,
+      correctAnswer: q.correctAnswer ? stripHtml(String(q.correctAnswer)) : null,
+      explanation: q.explanation ? stripHtml(String(q.explanation)) : null,
+    }));
+
+    res.json({ questions: cleaned });
+  } catch (err) {
+    res.status(500).json({ error: "AI parsing failed. Please try again." });
   }
 });
 

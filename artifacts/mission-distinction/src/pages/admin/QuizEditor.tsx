@@ -21,7 +21,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft, Plus, Pencil, Trash2, CheckCircle2, Brain,
-  Clock, BookOpen, Sparkles, AlertCircle, Upload, HelpCircle,
+  Clock, BookOpen, Sparkles, AlertCircle, Upload, HelpCircle, Wand2, Loader2,
 } from "lucide-react";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "Medicine", "Surgery", "Mixed"];
@@ -89,6 +89,8 @@ export default function QuizEditor() {
   const [bulkImporting, setBulkImporting] = useState(false);
   const [bulkPreview, setBulkPreview] = useState<any[] | null>(null);
   const [bulkError, setBulkError] = useState("");
+  const [bulkMode, setBulkMode] = useState<"ai" | "manual">("ai");
+  const [aiParsing, setAiParsing] = useState(false);
 
   const { data: quiz, isLoading, refetch } = useQuery<QuizDetail>({
     queryKey: ["quiz-detail", quizId],
@@ -130,6 +132,29 @@ export default function QuizEditor() {
     if (error && parsed.length === 0) { setBulkError(error); setBulkPreview(null); return; }
     if (error) setBulkError(error);
     setBulkPreview(parsed);
+  };
+
+  const handleAIParse = async () => {
+    if (!bulkText.trim()) return;
+    setAiParsing(true);
+    setBulkError("");
+    setBulkPreview(null);
+    try {
+      const data = await customFetch<{ questions: any[] }>("/api/quizzes/ai-parse", {
+        method: "POST",
+        body: JSON.stringify({ rawText: bulkText }),
+      });
+      if (!data.questions || data.questions.length === 0) {
+        setBulkError("AI found no questions in the pasted text. Try adding more structure (e.g. label the correct answer).");
+      } else {
+        setBulkPreview(data.questions);
+        toast.success(`AI parsed ${data.questions.length} question${data.questions.length !== 1 ? "s" : ""}!`);
+      }
+    } catch (err: any) {
+      setBulkError(err?.message || "AI parsing failed. Please try again or use Manual Format.");
+    } finally {
+      setAiParsing(false);
+    }
   };
 
   const handleBulkImport = async () => {
@@ -674,56 +699,148 @@ export default function QuizEditor() {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 space-y-2">
-              <p className="text-sm font-medium text-blue-300 flex items-center gap-2">
-                <HelpCircle className="h-4 w-4 shrink-0" /> Accepted formats
-              </p>
-              <div className="space-y-2 text-xs text-blue-200/70">
-                <p className="font-semibold text-blue-300/80">① Pipe-separated (one question per line):</p>
-                <code className="block bg-background/40 rounded p-2 font-mono leading-relaxed whitespace-pre">
+            {/* Mode toggle */}
+            <div className="flex gap-1 p-1 rounded-lg bg-muted/30 border border-border/30 w-fit">
+              <button
+                onClick={() => { setBulkMode("ai"); setBulkPreview(null); setBulkError(""); }}
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${bulkMode === "ai" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Wand2 className="h-3.5 w-3.5" /> AI Parse
+              </button>
+              <button
+                onClick={() => { setBulkMode("manual"); setBulkPreview(null); setBulkError(""); }}
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${bulkMode === "manual" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <HelpCircle className="h-3.5 w-3.5" /> Manual Format
+              </button>
+            </div>
+
+            {/* AI mode */}
+            {bulkMode === "ai" && (
+              <div className="space-y-3">
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3.5">
+                  <p className="text-sm font-medium text-primary flex items-center gap-2 mb-1">
+                    <Wand2 className="h-4 w-4 shrink-0" /> Paste questions in any format
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    MCQs, SAQs, fill-in-the-blank, true/false, name-the-following — any format works.
+                    AI will identify the question type, options, correct answer, and explanation automatically.
+                    Questions remain yours; AI only structures them.
+                  </p>
+                </div>
+                <Textarea
+                  className="bg-background/50 resize-none min-h-[200px] text-sm"
+                  placeholder={`Paste your questions here. Examples:
+
+1. Which nerve supplies the skin of the anterior thigh?
+a) Femoral nerve  b) Obturator nerve  c) Sciatic nerve  d) Lateral cutaneous nerve
+Answer: a) Femoral nerve
+Explanation: The femoral nerve (L2-L4) provides cutaneous supply to the anterior thigh.
+
+2. The femoral nerve arises from L2, L3, L4 nerve roots. True or False?
+Answer: True
+
+3. Fill in the blank: The main arterial supply of the femoral head is the ___ artery.
+Answer: medial circumflex femoral`}
+                  value={bulkText}
+                  onChange={(e) => { setBulkText(e.target.value); setBulkPreview(null); setBulkError(""); }}
+                />
+                {!bulkPreview && (
+                  <Button
+                    className="w-full gap-2"
+                    onClick={handleAIParse}
+                    disabled={!bulkText.trim() || aiParsing}
+                  >
+                    {aiParsing ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /> Parsing with AI…</>
+                    ) : (
+                      <><Wand2 className="h-4 w-4" /> Parse with AI</>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Manual mode */}
+            {bulkMode === "manual" && (
+              <div className="space-y-3">
+                <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 space-y-2">
+                  <p className="text-sm font-medium text-blue-300 flex items-center gap-2">
+                    <HelpCircle className="h-4 w-4 shrink-0" /> Accepted formats
+                  </p>
+                  <div className="space-y-2 text-xs text-blue-200/70">
+                    <p className="font-semibold text-blue-300/80">① Pipe-separated (one question per line):</p>
+                    <code className="block bg-background/40 rounded p-2 font-mono leading-relaxed whitespace-pre">
 {`Question text | Option A | Option B | Option C | Option D | A | Explanation (optional)
 Which nerve supplies the skin of the anterior thigh? | Femoral | Obturator | Sciatic | Lateral cutaneous | A | Femoral nerve (L2-L4)`}
-                </code>
-                <p className="font-semibold text-blue-300/80 pt-1">② JSON array:</p>
-                <code className="block bg-background/40 rounded p-2 font-mono leading-relaxed whitespace-pre">
+                    </code>
+                    <p className="font-semibold text-blue-300/80 pt-1">② JSON array:</p>
+                    <code className="block bg-background/40 rounded p-2 font-mono leading-relaxed whitespace-pre">
 {`[{"text":"Question?","options":["A","B","C","D"],"correctOption":0,"explanation":"..."}]`}
-                </code>
-                <p className="text-blue-200/50">For correct answer: use A/B/C/D or 0/1/2/3. Lines starting with # are ignored.</p>
+                    </code>
+                    <p className="text-blue-200/50">For correct answer: use A/B/C/D or 0/1/2/3. Lines starting with # are ignored.</p>
+                  </div>
+                </div>
+                <Textarea
+                  className="bg-background/50 font-mono text-xs resize-none min-h-[160px]"
+                  placeholder={"Which nerve supplies the skin of the anterior thigh? | Femoral | Obturator | Sciatic | Lateral cutaneous | A | Femoral nerve (L2–L4)"}
+                  value={bulkText}
+                  onChange={(e) => { setBulkText(e.target.value); setBulkPreview(null); setBulkError(""); }}
+                />
+                {!bulkPreview && (
+                  <Button onClick={handleBulkPreview} disabled={!bulkText.trim()}>
+                    Preview Questions
+                  </Button>
+                )}
               </div>
-            </div>
+            )}
 
-            <div className="space-y-1.5">
-              <Label>Paste your questions</Label>
-              <Textarea
-                className="bg-background/50 font-mono text-xs resize-none min-h-[160px]"
-                placeholder={"Which nerve supplies the skin of the anterior thigh? | Femoral | Obturator | Sciatic | Lateral cutaneous | A | Femoral nerve (L2–L4)\nWhat is the action of deltoid muscle? | Flexion | Abduction | Adduction | Extension | B"}
-                value={bulkText}
-                onChange={(e) => { setBulkText(e.target.value); setBulkPreview(null); setBulkError(""); }}
-              />
-            </div>
-
+            {/* Error */}
             {bulkError && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive whitespace-pre-wrap font-mono">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive whitespace-pre-wrap">
                 {bulkError}
               </div>
             )}
 
+            {/* Preview */}
             {bulkPreview && bulkPreview.length > 0 && (
               <div className="space-y-2">
-                <p className="text-sm font-medium text-green-400">
-                  ✓ {bulkPreview.length} question{bulkPreview.length !== 1 ? "s" : ""} ready to import
-                </p>
-                <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-green-400">
+                    ✓ {bulkPreview.length} question{bulkPreview.length !== 1 ? "s" : ""} ready to import
+                  </p>
+                  <button
+                    className="text-xs text-muted-foreground hover:text-foreground underline"
+                    onClick={() => { setBulkPreview(null); setBulkError(""); }}
+                  >
+                    ← Edit text
+                  </button>
+                </div>
+                <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
                   {bulkPreview.map((q, i) => (
                     <div key={i} className="rounded-lg border border-border/30 bg-muted/10 p-3 text-sm">
-                      <p className="font-medium mb-1">{i + 1}. {q.text}</p>
-                      <div className="grid grid-cols-2 gap-1">
-                        {(q.options as string[]).map((opt: string, j: number) => (
-                          <span key={j} className={`text-xs px-2 py-0.5 rounded ${j === q.correctOption ? "bg-green-500/15 text-green-400" : "text-muted-foreground"}`}>
-                            {OPTION_LABELS[j]}. {opt} {j === q.correctOption ? "✓" : ""}
-                          </span>
-                        ))}
+                      <div className="flex items-start gap-2 mb-2">
+                        <span className="text-xs font-bold text-primary shrink-0 mt-0.5">{i + 1}.</span>
+                        <p className="font-medium leading-snug flex-1">{q.text}</p>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/40 text-muted-foreground shrink-0 font-mono">
+                          {q.questionType || "mcq"}
+                        </span>
                       </div>
+                      {Array.isArray(q.options) && q.options.length > 0 && (
+                        <div className="grid grid-cols-2 gap-1 pl-5">
+                          {q.options.map((opt: string, j: number) => (
+                            <span key={j} className={`text-xs px-2 py-0.5 rounded ${j === q.correctOption ? "bg-green-500/15 text-green-400" : "text-muted-foreground"}`}>
+                              {OPTION_LABELS[j] ?? j}. {opt} {j === q.correctOption ? "✓" : ""}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {q.correctAnswer && (
+                        <p className="text-xs text-green-400 pl-5 mt-1">✓ {q.correctAnswer}</p>
+                      )}
+                      {q.explanation && (
+                        <p className="text-xs text-blue-300/70 pl-5 mt-1 italic">{q.explanation}</p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -735,13 +852,13 @@ Which nerve supplies the skin of the anterior thigh? | Femoral | Obturator | Sci
             <Button variant="outline" onClick={() => { setBulkOpen(false); setBulkPreview(null); setBulkError(""); }}>
               Cancel
             </Button>
-            {!bulkPreview ? (
-              <Button onClick={handleBulkPreview} disabled={!bulkText.trim()}>
-                Preview Questions
-              </Button>
-            ) : (
-              <Button onClick={handleBulkImport} disabled={bulkImporting || bulkPreview.length === 0}>
-                {bulkImporting ? "Importing..." : `Import ${bulkPreview.length} Question${bulkPreview.length !== 1 ? "s" : ""}`}
+            {bulkPreview && bulkPreview.length > 0 && (
+              <Button onClick={handleBulkImport} disabled={bulkImporting}>
+                {bulkImporting ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Importing…</>
+                ) : (
+                  `Import ${bulkPreview.length} Question${bulkPreview.length !== 1 ? "s" : ""}`
+                )}
               </Button>
             )}
           </DialogFooter>
