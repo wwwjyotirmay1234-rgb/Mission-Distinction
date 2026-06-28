@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import DOMPurify from "dompurify";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -305,6 +306,20 @@ const mdComponents: React.ComponentProps<typeof ReactMarkdown>["components"] = {
     <blockquote className="border-l-2 border-primary/40 pl-3 my-2 text-foreground/70 italic">{children}</blockquote>
   ),
   hr: () => <hr className="my-3 border-border/40" />,
+  table: ({ children }) => (
+    <div className="my-3 overflow-x-auto rounded-lg border border-border/40">
+      <table className="w-full text-xs border-collapse">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="bg-muted/60">{children}</thead>,
+  tbody: ({ children }) => <tbody className="divide-y divide-border/30">{children}</tbody>,
+  tr: ({ children }) => <tr className="divide-x divide-border/30 hover:bg-muted/20 transition-colors">{children}</tr>,
+  th: ({ children }) => (
+    <th className="px-3 py-2 text-left font-semibold text-foreground whitespace-nowrap">{children}</th>
+  ),
+  td: ({ children }) => (
+    <td className="px-3 py-2 text-foreground/85 leading-snug">{children}</td>
+  ),
 };
 
 // ─── Parse AI text and render [DIAGRAM: ...] tags as DiagramBlocks ────────────
@@ -331,7 +346,7 @@ function renderMessageContent(text: string) {
       {parts.map((p, i) =>
         p.type === "text" ? (
           p.value.trim() ? (
-            <ReactMarkdown key={i} components={mdComponents}>{p.value}</ReactMarkdown>
+            <ReactMarkdown key={i} remarkPlugins={[remarkGfm]} components={mdComponents}>{p.value}</ReactMarkdown>
           ) : null
         ) : (
           <DiagramBlock key={i} description={p.value} />
@@ -587,7 +602,7 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
                   // While streaming: render markdown but strip partial [DIAGRAM:...] tags
                   msg.content ? (
                     <>
-                      <ReactMarkdown components={mdComponents}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
                         {msg.content.replace(/\[DIAGRAM:[^\]]*$/g, "")}
                       </ReactMarkdown>
                       <span className="inline-block w-0.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-text-bottom" />
