@@ -186,7 +186,7 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
               isCollapsed ? "p-2 flex justify-center" : "p-3"
             )}>
               {isCollapsed
-                ? <Trophy size={16} className="text-primary" title={`${xp.toLocaleString()} XP`} />
+                ? <Trophy size={16} className="text-primary" aria-label={`${xp.toLocaleString()} XP`} />
                 : <XPProgressBar xp={xp} compact />
               }
             </div>

@@ -399,11 +399,11 @@ export default function StudentCalendar() {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const { data: rawEvents = [] } = useListCalendarEvents(
-    {}, { query: { queryKey: getListCalendarEventsQueryKey({}) } }
+    { query: { queryKey: getListCalendarEventsQueryKey() } }
   );
   const events = rawEvents as CalEvent[];
 
-  const refresh = () => qc.invalidateQueries({ queryKey: getListCalendarEventsQueryKey({}) });
+  const refresh = () => qc.invalidateQueries({ queryKey: getListCalendarEventsQueryKey() });
 
   const goBack = () => {
     if (curMonth === 0) { setCurMonth(11); setCurYear(y => y - 1); }

@@ -40,7 +40,7 @@ export function ScreenshotButton() {
         onclone: (_doc: Document, clone: HTMLElement) => {
           clone.querySelectorAll<HTMLElement>("[style*='backdrop-filter']").forEach(el => {
             el.style.backdropFilter = "none";
-            el.style.webkitBackdropFilter = "none";
+            (el.style as unknown as Record<string, string>).webkitBackdropFilter = "none";
           });
         },
       } as Parameters<typeof html2canvas>[1]);

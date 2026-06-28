@@ -313,12 +313,14 @@ export default function StudentMusic() {
       <div className="flex gap-1.5 px-4 pt-3 pb-1 bg-background">
         {tabs.map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)}
-            className="flex items-center px-4 py-2 rounded-xl text-xs font-semibold transition-all flex-1 justify-center"
+            className={tab===t.id
+              ? "flex items-center px-4 py-2 rounded-xl text-xs font-semibold transition-all flex-1 justify-center"
+              : "flex items-center px-4 py-2 rounded-xl text-xs font-semibold transition-all flex-1 justify-center bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+            }
             style={tab===t.id
               ? {background:`${t.color}cc`,boxShadow:`0 2px 12px ${t.color}55`,color:"white"}
               : undefined
-            }
-            {...(tab!==t.id?{className:"flex items-center px-4 py-2 rounded-xl text-xs font-semibold transition-all flex-1 justify-center bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"}:{})}>
+            }>
             {t.label}
           </button>
         ))}
