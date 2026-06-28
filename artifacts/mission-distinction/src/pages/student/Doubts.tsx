@@ -98,6 +98,7 @@ function DiagramBlock({ description }: { description: string }) {
   const [errMsg, setErrMsg] = React.useState<string>("");
   const [webImgs, setWebImgs] = React.useState<{ title: string; url: string; thumb: string; source: string }[]>([]);
   const [webImgState, setWebImgState] = React.useState<"idle" | "loading" | "done">("idle");
+  const svgContainerRef = React.useRef<HTMLDivElement>(null);
 
   const generateDiagram = async () => {
     setState("loading");
@@ -158,6 +159,61 @@ function DiagramBlock({ description }: { description: string }) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  const downloadPng = async () => {
+    if (!svgData || !svgContainerRef.current) return;
+    const svgEl = svgContainerRef.current.querySelector("svg");
+    if (!svgEl) return;
+
+    // Determine canvas dimensions from viewBox or rendered size
+    const vb = svgEl.getAttribute("viewBox");
+    let w = 1600, h = 1200;
+    if (vb) {
+      const parts = vb.trim().split(/[\s,]+/).map(Number);
+      if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+        const scale = 1600 / parts[2];
+        w = 1600;
+        h = Math.round(parts[3] * scale);
+      }
+    } else {
+      const rect = svgEl.getBoundingClientRect();
+      if (rect.width > 0) { const s = 1600 / rect.width; w = 1600; h = Math.round(rect.height * s); }
+    }
+
+    // Serialise SVG with explicit dimensions so Image loads at correct size
+    const clone = svgEl.cloneNode(true) as SVGSVGElement;
+    clone.setAttribute("width", String(w));
+    clone.setAttribute("height", String(h));
+    clone.removeAttribute("style");
+    const serialised = new XMLSerializer().serializeToString(clone);
+    const svgBlob = new Blob([serialised], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(svgUrl);
+      canvas.toBlob(blob => {
+        if (!blob) return;
+        const pngUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = pngUrl;
+        a.download = `diagram-${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(pngUrl), 1000);
+      }, "image/png");
+    };
+    img.onerror = () => { URL.revokeObjectURL(svgUrl); downloadSvg(); };
+    img.src = svgUrl;
+  };
+
   return (
     <div className="my-3 rounded-xl border border-primary/30 bg-primary/5 overflow-hidden">
       {/* Header bar */}
@@ -168,13 +224,22 @@ function DiagramBlock({ description }: { description: string }) {
         </div>
         <div className="flex items-center gap-1.5">
           {state === "done" && (
-            <button
-              onClick={downloadSvg}
-              title="Download diagram as SVG"
-              className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-md bg-primary/10 hover:bg-primary/20 text-primary/70 hover:text-primary transition-colors"
-            >
-              ↓ SVG
-            </button>
+            <>
+              <button
+                onClick={downloadPng}
+                title="Download diagram as PNG (save to gallery / print)"
+                className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-md bg-green-500/20 hover:bg-green-500/30 text-green-700 dark:text-green-400 hover:text-green-600 dark:hover:text-green-300 transition-colors"
+              >
+                ↓ PNG
+              </button>
+              <button
+                onClick={downloadSvg}
+                title="Download diagram as SVG (vector, scalable)"
+                className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-md bg-primary/10 hover:bg-primary/20 text-primary/70 hover:text-primary transition-colors"
+              >
+                ↓ SVG
+              </button>
+            </>
           )}
           {(state === "idle" || state === "error") && (
             <button
@@ -245,6 +310,7 @@ function DiagramBlock({ description }: { description: string }) {
       {state === "done" && svgData && (
         <div className="p-2 border-t border-primary/10">
           <div
+            ref={svgContainerRef}
             className="w-full rounded-lg border border-border/30 overflow-hidden bg-white"
             style={{ lineHeight: 0 }}
             dangerouslySetInnerHTML={{ __html: svgData }}
