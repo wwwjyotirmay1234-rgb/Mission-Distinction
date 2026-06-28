@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Download, Smartphone } from "lucide-react";
+import { X, Download, Smartphone, Share, MoreVertical, Plus, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -7,96 +7,218 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+const FIRST_VISIT_KEY = "md-has-visited";
+const SESSION_MINIMIZED_KEY = "md-install-minimized";
+
+function isStandalone() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as any).standalone === true
+  );
+}
+
+function isIOSDevice() {
+  const ua = navigator.userAgent;
+  const isTouchMac = /mac/i.test(ua) && navigator.maxTouchPoints > 1;
+  return (/ipad|iphone|ipod/i.test(ua) || isTouchMac) && !(window as any).MSStream;
+}
+
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showBanner, setShowBanner] = useState(false);
+  const [installed, setInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [minimized, setMinimized] = useState(false);
+  const [justInstalled, setJustInstalled] = useState(false);
 
   useEffect(() => {
-    const dismissedAt = localStorage.getItem("pwa-install-dismissed");
-    if (dismissedAt) {
-      const sevenDays = 7 * 24 * 60 * 60 * 1000;
-      if (Date.now() - Number(dismissedAt) < sevenDays) return;
-      localStorage.removeItem("pwa-install-dismissed");
+    if (isStandalone()) { setInstalled(true); return; }
+
+    const ios = isIOSDevice();
+    setIsIOS(ios);
+
+    const isFirstVisit = !localStorage.getItem(FIRST_VISIT_KEY);
+    const isMinimizedThisSession = sessionStorage.getItem(SESSION_MINIMIZED_KEY) === "1";
+
+    if (isFirstVisit) {
+      localStorage.setItem(FIRST_VISIT_KEY, "1");
+      setTimeout(() => setShowModal(true), 800);
     }
 
-    const isIOSDevice = /ipad|iphone|ipod/i.test(navigator.userAgent) && !(window as any).MSStream;
-    const isInStandaloneMode = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone;
-
-    if (isInStandaloneMode) return;
-
-    if (isIOSDevice) {
-      setIsIOS(true);
-      setShowBanner(true);
-      return;
+    if (isMinimizedThisSession) {
+      setMinimized(true);
     }
 
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowBanner(true);
     };
     window.addEventListener("beforeinstallprompt", handler);
+
+    window.matchMedia("(display-mode: standalone)").addEventListener("change", (e) => {
+      if (e.matches) setInstalled(true);
+    });
+
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
-  const handleInstall = async () => {
-    if (isIOS) {
-      setShowIOSInstructions(true);
-      return;
-    }
-    if (!deferredPrompt) return;
+  const triggerInstall = async () => {
+    if (!deferredPrompt) return false;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      setShowBanner(false);
-    }
     setDeferredPrompt(null);
+    if (outcome === "accepted") {
+      setJustInstalled(true);
+      setInstalled(true);
+      return true;
+    }
+    return false;
   };
 
-  const handleDismiss = () => {
-    setShowBanner(false);
-    setShowIOSInstructions(false);
-    localStorage.setItem("pwa-install-dismissed", String(Date.now()));
+  const handleModalInstall = async () => {
+    if (isIOS) {
+      setShowModal(false);
+    } else {
+      const ok = await triggerInstall();
+      if (!ok) setShowModal(false);
+    }
   };
 
-  if (!showBanner) return null;
+  const handleModalLater = () => {
+    setShowModal(false);
+  };
+
+  const handleMinimize = () => {
+    setMinimized(true);
+    sessionStorage.setItem(SESSION_MINIMIZED_KEY, "1");
+  };
+
+  const handleExpand = () => {
+    setMinimized(false);
+    sessionStorage.removeItem(SESSION_MINIMIZED_KEY);
+  };
+
+  const handleBannerInstall = async () => {
+    if (isIOS) {
+      setShowModal(true);
+    } else {
+      await triggerInstall();
+    }
+  };
+
+  if (installed || justInstalled) return null;
 
   return (
     <>
-      <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300">
-        <div className="bg-card border border-primary/30 rounded-xl p-4 shadow-2xl shadow-primary/10 flex items-start gap-3">
-          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-            <Smartphone className="w-5 h-5 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground">Install Mission Distinction</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {isIOS ? "Add to your Home Screen for the full app experience" : "Install the app for faster access, offline support, and push notifications"}
-            </p>
-            {showIOSInstructions && (
-              <div className="mt-2 p-2 bg-primary/10 rounded-lg">
-                <p className="text-xs text-foreground">
-                  Tap the <strong>Share</strong> button (square with arrow) at the bottom of your browser, then tap <strong>"Add to Home Screen"</strong>.
-                </p>
+      {/* ── First-visit modal ─────────────────────────────────────────────── */}
+      {showModal && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-primary/30 rounded-2xl shadow-2xl shadow-primary/20 w-full max-w-sm animate-in slide-in-from-bottom-8 duration-300">
+            {/* Header */}
+            <div className="flex flex-col items-center pt-6 pb-4 px-6 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mb-4 shadow-lg shadow-primary/20">
+                <Smartphone className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-lg font-bold tracking-tight">Install Mission Distinction</h2>
+              <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+                Add to your home screen for instant access, offline support, and the full app experience — completely free.
+              </p>
+            </div>
+
+            {/* Bullets */}
+            <div className="px-6 pb-4 space-y-2">
+              {[
+                "Works offline — study without internet",
+                "Faster than the browser — no address bar",
+                "Push notifications for announcements",
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2.5 text-sm text-foreground/80">
+                  <CheckCircle className="w-4 h-4 text-primary shrink-0" />
+                  {item}
+                </div>
+              ))}
+            </div>
+
+            {/* iOS instructions inline */}
+            {isIOS && (
+              <div className="mx-6 mb-4 p-3 bg-primary/10 rounded-xl text-xs text-foreground/80 space-y-1.5">
+                <p className="font-semibold text-foreground">How to install on iPhone / iPad:</p>
+                <div className="flex items-center gap-2">
+                  <Share className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>Tap the <strong>Share</strong> button at the bottom of Safari</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Plus className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>Tap <strong>"Add to Home Screen"</strong> then <strong>Add</strong></span>
+                </div>
+                <p className="text-muted-foreground text-[11px] pt-0.5">⚠️ Must use Safari — Chrome on iOS doesn't support install</p>
               </div>
             )}
-            <div className="flex gap-2 mt-3">
-              <Button size="sm" className="h-7 text-xs px-3 gap-1.5" onClick={handleInstall}>
-                <Download className="w-3 h-3" />
-                {isIOS ? "How to install" : "Install App"}
-              </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs px-3 text-muted-foreground" onClick={handleDismiss}>
-                Not now
+
+            {/* Actions */}
+            <div className="flex flex-col gap-2 px-6 pb-6">
+              {!isIOS && (
+                <Button className="w-full gap-2 h-11 text-sm font-semibold" onClick={handleModalInstall}
+                  disabled={!deferredPrompt && !isIOS}>
+                  <Download className="w-4 h-4" />
+                  {deferredPrompt ? "Install Now" : "Continue in Browser"}
+                </Button>
+              )}
+              {isIOS && (
+                <Button className="w-full gap-2 h-11 text-sm font-semibold" onClick={handleModalLater}>
+                  <CheckCircle className="w-4 h-4" /> Got it!
+                </Button>
+              )}
+              <Button variant="ghost" className="w-full h-9 text-sm text-muted-foreground" onClick={handleModalLater}>
+                Maybe later
               </Button>
             </div>
           </div>
-          <button onClick={handleDismiss} className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors">
-            <X className="w-4 h-4" />
-          </button>
         </div>
-      </div>
+      )}
+
+      {/* ── Persistent bottom banner (always visible, not modal) ──────────── */}
+      {!showModal && (
+        minimized ? (
+          /* Minimized pill */
+          <button
+            onClick={handleExpand}
+            className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-4 py-2.5 shadow-lg shadow-primary/30 text-sm font-semibold animate-in slide-in-from-bottom-4 duration-300 hover:bg-primary/90 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Install App
+          </button>
+        ) : (
+          /* Full banner */
+          <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-lg mx-auto">
+            <div className="bg-card border border-primary/30 rounded-xl p-3.5 shadow-2xl shadow-primary/10 flex items-center gap-3">
+              <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
+                <Smartphone className="w-4.5 h-4.5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold leading-tight">Install Mission Distinction</p>
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                  {isIOS ? "Tap Share → Add to Home Screen in Safari" : "Add to home screen for offline access"}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button size="sm" className="h-8 text-xs px-3 gap-1.5 font-semibold" onClick={handleBannerInstall}
+                  disabled={!isIOS && !deferredPrompt}>
+                  <Download className="w-3 h-3" />
+                  {isIOS ? "How?" : "Install"}
+                </Button>
+                <button
+                  onClick={handleMinimize}
+                  className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted/40"
+                  title="Minimize"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      )}
     </>
   );
 }
