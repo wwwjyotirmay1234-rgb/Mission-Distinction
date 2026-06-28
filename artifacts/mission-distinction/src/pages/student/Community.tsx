@@ -698,6 +698,19 @@ export default function StudentCommunity() {
     }
   };
 
+  const handleDeletePost = async (postId: number) => {
+    try {
+      const res = await apiFetch(`/api/community/posts/${postId}`, { method: "DELETE" });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.error || "Failed to delete post"); return; }
+      toast.success("Post deleted");
+      queryClient.setQueryData(getListCommunityPostsQueryKey({ search: search || undefined }), (old: any) => {
+        if (!old) return old;
+        const arr = Array.isArray(old) ? old : (old?.posts ?? []);
+        return arr.filter((p: any) => p.id !== postId);
+      });
+    } catch { toast.error("Failed to delete post"); }
+  };
+
   const handleDeleteComment = async (postId: number, commentId: number) => {
     try {
       const res = await apiFetch(`/api/community/posts/${postId}/comments/${commentId}`, { method: "DELETE" });
@@ -1065,6 +1078,23 @@ export default function StudentCommunity() {
                                     <Clock size={10} /> {new Date(post.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                                   </p>
                                 </div>
+                                {((user as any)?.id === post.authorId || (user as any)?.role === "admin") && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <button className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors">
+                                        <MoreVertical size={15} />
+                                      </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-36">
+                                      <DropdownMenuItem
+                                        className="text-destructive focus:text-destructive gap-2 cursor-pointer"
+                                        onClick={() => handleDeletePost(post.id)}
+                                      >
+                                        <Trash2 size={13} /> Delete Post
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
                               </div>
 
                               {/* Content */}

@@ -111,6 +111,24 @@ router.post("/posts", authMiddleware, postCreateLimiter, async (req: Request, re
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });
 
+router.delete("/posts/:id", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const postId = parseId(req.params.id);
+    if (!postId) { res.status(400).json({ error: "Invalid post ID" }); return; }
+    const [post] = await db.select({ id: communityPostsTable.id, authorId: communityPostsTable.authorId })
+      .from(communityPostsTable).where(eq(communityPostsTable.id, postId));
+    if (!post) { res.status(404).json({ error: "Post not found" }); return; }
+    if (post.authorId !== user.id && user.role !== "admin") {
+      res.status(403).json({ error: "You can only delete your own posts" }); return;
+    }
+    await db.delete(postCommentsTable).where(eq(postCommentsTable.postId, postId));
+    await db.delete(postLikesTable).where(eq(postLikesTable.postId, postId));
+    await db.delete(communityPostsTable).where(eq(communityPostsTable.id, postId));
+    res.json({ message: "Post deleted" });
+  } catch (err) { console.error("[Delete post]", err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 // ─── Post likes ───────────────────────────────────────────────────────────────
 
 router.post("/posts/:id/like", authMiddleware, async (req: Request, res: Response) => {
