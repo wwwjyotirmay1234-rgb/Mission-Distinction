@@ -1,4 +1,6 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { useEffect } from "react";
+import { trackPage } from "@/lib/analytics";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -114,8 +116,16 @@ function AnatomyRoute() {
   return <StudentAnatomyHub />;
 }
 
+function PageTracker() {
+  const [location] = useLocation();
+  useEffect(() => { trackPage(location); }, [location]);
+  return null;
+}
+
 function Router() {
   return (
+    <>
+    <PageTracker />
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/coming-soon" component={ComingSoon} />
@@ -197,6 +207,7 @@ function Router() {
 
       <Route component={NotFound} />
     </Switch>
+    </>
   );
 }
 

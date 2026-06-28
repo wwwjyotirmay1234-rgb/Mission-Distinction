@@ -77,3 +77,4 @@ externalPort = 3003
 [userenv]
 
 [userenv.shared]
+VITE_GA_MEASUREMENT_ID = "G-DQE6YB15MZ"
