@@ -85,14 +85,14 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
       <div className={cn("flex items-center shrink-0 border-b border-sidebar-border", isCollapsed ? "justify-center py-4 px-2" : "px-4 py-4 gap-3")}>
         {!isCollapsed && (
           <>
-            <img src="/logo.jpeg" alt="Mission Distinction" className="h-8 w-8 object-contain rounded-lg shrink-0" />
+            <img src="/md-logo-new.png" alt="Mission Distinction" className="h-8 w-8 object-contain rounded-lg shrink-0" />
             <span className="font-bold text-base text-foreground tracking-tight truncate">
               Mission<span className="text-primary">Distinction</span>
             </span>
           </>
         )}
         {isCollapsed && (
-          <img src="/logo.jpeg" alt="Mission Distinction" className="h-7 w-7 object-contain rounded-lg" />
+          <img src="/md-logo-new.png" alt="Mission Distinction" className="h-7 w-7 object-contain rounded-lg" />
         )}
         {/* Collapse toggle — only on desktop */}
         {!forceExpanded && (

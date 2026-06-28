@@ -10,7 +10,7 @@ export function Watermark() {
       className="absolute inset-0 pointer-events-none select-none z-[9999] flex items-center justify-center"
     >
       <img
-        src={`${import.meta.env.BASE_URL}md-logo.jpeg`}
+        src={`${import.meta.env.BASE_URL}md-logo-new.png`}
         alt=""
         draggable={false}
         style={{

@@ -342,7 +342,7 @@ export default function LandingPage() {
       {/* Header */}
       <header className="container mx-auto px-4 py-4 flex items-center justify-between z-10">
         <div className="flex items-center gap-2 min-w-0">
-          <img src="/logo.jpeg" alt="Mission Distinction" className="h-9 w-9 flex-shrink-0 object-contain rounded-xl" />
+          <img src="/md-logo-new.png" alt="Mission Distinction" className="h-9 w-9 flex-shrink-0 object-contain rounded-xl" />
           <span className="text-base font-bold whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
             Mission Distinction
           </span>
@@ -390,14 +390,14 @@ export default function LandingPage() {
           <div className="absolute" style={{top:48,left:"9%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
           <div className="absolute" style={{top:48,right:"9%",width:2,height:2,borderRadius:"50%",background:"rgba(167,139,250,0.4)"}}/>
 
-          {/* ── Caduceus hero image ── */}
+          {/* ── Mission Distinction hero logo ── */}
           <img
-            src="/caduceus-hero-nobg.png"
-            alt="Medical Caduceus"
+            src="/md-logo-new.png"
+            alt="Mission Distinction"
             width={220}
             height={220}
-            className="relative z-10"
-            style={{ filter: "drop-shadow(0 0 18px rgba(124,58,237,0.65))" }}
+            className="relative z-10 rounded-2xl"
+            style={{ objectFit: "contain", boxShadow: "0 8px 40px rgba(124,58,237,0.35)" }}
           />
         </motion.div>
 
