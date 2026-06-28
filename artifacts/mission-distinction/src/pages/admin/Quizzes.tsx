@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "Medicine", "Surgery", "Mixed"];
+const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Mixed", "NEET PG"];
 
 export default function AdminQuizzes() {
   const [, navigate] = useLocation();
