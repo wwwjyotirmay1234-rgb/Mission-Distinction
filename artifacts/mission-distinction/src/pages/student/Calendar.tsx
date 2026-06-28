@@ -453,7 +453,7 @@ export default function StudentCalendar() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between gap-3 px-1">
         <div>
-          <h1 className="text-2xl font-black text-foreground tracking-tight">Calendar</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">Calendar</h1>
           <p className="text-sm text-muted-foreground">Plan your study. Master every day.</p>
         </div>
         <button

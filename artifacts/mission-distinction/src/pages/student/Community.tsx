@@ -852,10 +852,10 @@ export default function StudentCommunity() {
           </div>
         ) : (
           <>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Community Hub</h1>
-                <p className="text-muted-foreground">Connect with peers, share resources, and learn together.</p>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Community Hub</h1>
+                <p className="text-sm text-muted-foreground">Connect with peers, share resources, and learn together.</p>
               </div>
               <div className="flex gap-2">
                 <div className="relative w-full sm:w-56">

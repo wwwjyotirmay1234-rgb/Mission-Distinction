@@ -371,10 +371,10 @@ export default function StudentFlashcards() {
   const myDecks = decks.filter(d => !d.isAdminShared);
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      <div className="flex items-start justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><BookOpen size={22} className="text-primary" /> Flashcards</h1>
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><BookOpen size={20} className="text-primary" /> Flashcards</h1>
           <p className="text-muted-foreground text-sm mt-1">Spaced repetition — the most effective way to remember.</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="gap-2 shrink-0"><Plus size={16} /> New Deck</Button>

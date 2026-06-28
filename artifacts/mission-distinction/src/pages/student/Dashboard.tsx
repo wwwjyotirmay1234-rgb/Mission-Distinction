@@ -133,15 +133,15 @@ export default function StudentDashboard() {
   const recentGroups = Array.isArray(communityGroups) ? (communityGroups as CommunityGroup[]).slice(0, 3) : [];
 
   return (
-    <div className="space-y-6 pb-12">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6 pb-8 sm:pb-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
             Welcome back, {user?.fullName?.split(" ")[0]}! 👋
           </h1>
-          <p className="text-muted-foreground">Ready to conquer your goals today?</p>
+          <p className="text-sm text-muted-foreground">Ready to conquer your goals today?</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+        <div className="flex flex-row flex-wrap gap-2 items-center">
           {/* Academic Year selector */}
           <div className="flex items-center gap-2 bg-card border border-border/60 rounded-xl px-3 py-2 shadow-sm">
             <GraduationCap size={15} className="text-primary shrink-0" />
@@ -210,78 +210,72 @@ export default function StudentDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="bg-card/50 backdrop-blur border-border/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between pb-2">
-              <p className="text-sm font-medium">Notes Read</p>
-              <FileText className="h-4 w-4 text-blue-500" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="flex items-center justify-between pb-1.5">
+              <p className="text-xs sm:text-sm font-medium">Notes Read</p>
+              <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500 shrink-0" />
             </div>
-            {statsLoading ? <Skeleton className="h-8 w-16" /> : (
-              <div className="flex items-baseline gap-2">
-                <h2 className="text-3xl font-bold">{stats?.notesCount || 0}</h2>
-              </div>
+            {statsLoading ? <Skeleton className="h-7 w-12 mt-1" /> : (
+              <h2 className="text-2xl sm:text-3xl font-bold">{stats?.notesCount || 0}</h2>
             )}
-            <p className="text-xs text-muted-foreground mt-1">total notes</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">total notes</p>
           </CardContent>
         </Card>
 
         <Card className="bg-card/50 backdrop-blur border-border/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between pb-2">
-              <p className="text-sm font-medium">PDFs Downloaded</p>
-              <File className="h-4 w-4 text-orange-500" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="flex items-center justify-between pb-1.5">
+              <p className="text-xs sm:text-sm font-medium">PDFs</p>
+              <File className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500 shrink-0" />
             </div>
-            {statsLoading ? <Skeleton className="h-8 w-16" /> : (
-              <div className="flex items-baseline gap-2">
-                <h2 className="text-3xl font-bold">{stats?.pdfsDownloaded || 0}</h2>
-              </div>
+            {statsLoading ? <Skeleton className="h-7 w-12 mt-1" /> : (
+              <h2 className="text-2xl sm:text-3xl font-bold">{stats?.pdfsDownloaded || 0}</h2>
             )}
-            <p className="text-xs text-muted-foreground mt-1">total downloads</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">downloaded</p>
           </CardContent>
         </Card>
 
         <Card className="bg-card/50 backdrop-blur border-border/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between pb-2">
-              <p className="text-sm font-medium">Quizzes Attempted</p>
-              <CheckCircle className="h-4 w-4 text-primary" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="flex items-center justify-between pb-1.5">
+              <p className="text-xs sm:text-sm font-medium">Quizzes</p>
+              <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
             </div>
-            {statsLoading ? <Skeleton className="h-8 w-16" /> : (
-              <div className="flex items-baseline gap-2">
-                <h2 className="text-3xl font-bold">{stats?.quizzesAttempted || 0}</h2>
-              </div>
+            {statsLoading ? <Skeleton className="h-7 w-12 mt-1" /> : (
+              <h2 className="text-2xl sm:text-3xl font-bold">{stats?.quizzesAttempted || 0}</h2>
             )}
-            <p className="text-xs text-muted-foreground mt-1">quizzes done</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">attempted</p>
           </CardContent>
         </Card>
 
         <Card className="bg-card/50 backdrop-blur border-border/50 border-primary/20 relative overflow-hidden">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-xl pointer-events-none" />
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between pb-2">
-              <p className="text-sm font-medium">Study Streak</p>
-              <Flame className="h-4 w-4 text-orange-500" />
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-primary/10 rounded-full blur-xl pointer-events-none" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="flex items-center justify-between pb-1.5">
+              <p className="text-xs sm:text-sm font-medium">Streak</p>
+              <Flame className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500 shrink-0" />
             </div>
-            {statsLoading ? <Skeleton className="h-8 w-16" /> : (
-              <div className="flex items-baseline gap-2">
-                <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
+            {statsLoading ? <Skeleton className="h-7 w-12 mt-1" /> : (
+              <div className="flex items-baseline gap-1">
+                <h2 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
                   {stats?.studyStreak || 0}
                 </h2>
-                <span className="text-sm font-bold text-orange-500">Days</span>
+                <span className="text-xs font-bold text-orange-500">Days</span>
               </div>
             )}
-            <p className="text-xs font-medium text-orange-400/80 mt-1">Keep it up! 🔥</p>
+            <p className="text-[10px] sm:text-xs font-medium text-orange-400/80 mt-1">Keep it up! 🔥</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Quick Access */}
           <div>
-            <h2 className="text-lg font-semibold mb-4">Quick Access</h2>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+            <h2 className="text-base sm:text-lg font-semibold mb-3">Quick Access</h2>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
               {[
                 { icon: CheckCircle, label: "Take Quiz", href: "/student/quiz", color: "text-blue-500", bg: "bg-blue-500/10" },
                 { icon: FileText, label: "My Notes", href: "/student/notes", color: "text-purple-500", bg: "bg-purple-500/10" },
@@ -291,11 +285,11 @@ export default function StudentDashboard() {
                 { icon: Calendar, label: "Calendar", href: "/student/calendar", color: "text-green-500", bg: "bg-green-500/10" },
               ].map((item, i) => (
                 <Link key={i} href={item.href}>
-                  <div className="flex flex-col items-center justify-center p-3 rounded-xl hover:bg-card/80 bg-card/40 border border-border/30 cursor-pointer transition-all hover:-translate-y-1">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${item.bg} ${item.color}`}>
-                      <item.icon size={20} />
+                  <div className="flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl hover:bg-card/80 bg-card/40 border border-border/30 cursor-pointer transition-all hover:-translate-y-1 active:scale-95">
+                    <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-1.5 ${item.bg} ${item.color}`}>
+                      <item.icon size={18} />
                     </div>
-                    <span className="text-xs font-medium text-center">{item.label}</span>
+                    <span className="text-[10px] sm:text-xs font-medium text-center leading-tight line-clamp-2">{item.label}</span>
                   </div>
                 </Link>
               ))}
@@ -304,7 +298,7 @@ export default function StudentDashboard() {
 
           {/* Recent Activity */}
           <div>
-            <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
+            <h2 className="text-base sm:text-lg font-semibold mb-3">Recent Activity</h2>
             <Card className="bg-card/40 border-border/40">
               <CardContent className="p-0">
                 {activitiesLoading ? (

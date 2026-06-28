@@ -80,10 +80,10 @@ export default function StudentProgress() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight mb-2">My Progress</h1>
-        <p className="text-muted-foreground">Track your learning journey and subject mastery.</p>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight mb-1">My Progress</h1>
+        <p className="text-sm text-muted-foreground">Track your learning journey and subject mastery.</p>
       </div>
 
       {/* ── XP & Rank Card ── */}
@@ -185,9 +185,9 @@ export default function StudentProgress() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4">
         <Card className="bg-card/40 border-border/40">
-          <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+          <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center text-center">
             <div className="h-32 w-32 relative mb-4">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -214,36 +214,36 @@ export default function StudentProgress() {
           </CardContent>
         </Card>
 
-        <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="md:col-span-3 grid grid-cols-3 gap-3 sm:gap-4">
           <Card className="bg-card/40 border-border/40">
-            <CardContent className="p-6 h-full flex flex-col justify-center">
-              <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center mb-4">
-                <Clock size={20} />
+            <CardContent className="p-3 sm:p-5 h-full flex flex-col justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center mb-2 sm:mb-4">
+                <Clock size={16} />
               </div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Study Time (Week)</p>
-              {isLoading ? <Skeleton className="h-8 w-16" /> : <h3 className="text-3xl font-bold">{studyHoursWeek}h</h3>}
+              <p className="text-[10px] sm:text-sm font-medium text-muted-foreground mb-1">Study Time</p>
+              {isLoading ? <Skeleton className="h-7 w-12" /> : <h3 className="text-xl sm:text-3xl font-bold">{studyHoursWeek}h</h3>}
             </CardContent>
           </Card>
           <Card className="bg-card/40 border-border/40">
-            <CardContent className="p-6 h-full flex flex-col justify-center">
-              <div className="w-10 h-10 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center mb-4">
-                <Flame size={20} />
+            <CardContent className="p-3 sm:p-5 h-full flex flex-col justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center mb-2 sm:mb-4">
+                <Flame size={16} />
               </div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Study Streak</p>
-              {isLoading ? <Skeleton className="h-8 w-16" /> : (
-                <h3 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
+              <p className="text-[10px] sm:text-sm font-medium text-muted-foreground mb-1">Streak</p>
+              {isLoading ? <Skeleton className="h-7 w-12" /> : (
+                <h3 className="text-xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
                   {studyStreak} 🔥
                 </h3>
               )}
             </CardContent>
           </Card>
           <Card className="bg-card/40 border-border/40">
-            <CardContent className="p-6 h-full flex flex-col justify-center">
-              <div className="w-10 h-10 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mb-4">
-                <FileText size={20} />
+            <CardContent className="p-3 sm:p-5 h-full flex flex-col justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mb-2 sm:mb-4">
+                <FileText size={16} />
               </div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Notes Read</p>
-              {isLoading ? <Skeleton className="h-8 w-16" /> : <h3 className="text-3xl font-bold">{notesCompleted}</h3>}
+              <p className="text-[10px] sm:text-sm font-medium text-muted-foreground mb-1">Notes Read</p>
+              {isLoading ? <Skeleton className="h-7 w-12" /> : <h3 className="text-xl sm:text-3xl font-bold">{notesCompleted}</h3>}
             </CardContent>
           </Card>
         </div>

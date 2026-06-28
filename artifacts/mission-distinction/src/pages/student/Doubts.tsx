@@ -1102,11 +1102,11 @@ export default function StudentDoubts() {
   const currentMeta = TAB_META.find(t => t.id === tab)!;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-3xl mx-auto px-0 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Bot size={22} className="text-primary" /> Mission Distinction AI
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+          <Bot size={20} className="text-primary" /> Mission Distinction AI
         </h1>
         <p className="text-muted-foreground text-sm mt-0.5">{currentMeta.desc}</p>
       </div>

@@ -290,14 +290,14 @@ function Hub({ onSelect, rankLevel, currentXp }: { onSelect: (id: GameId) => voi
   const [peekGame, setPeekGame] = useState<PeekGame | null>(null);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Locked game peek modal */}
       {peekGame && (
         <GamePeekModal game={peekGame} currentXp={currentXp} onClose={() => setPeekGame(null)} />
       )}
 
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Medical Games</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Medical Games</h1>
         <p className="text-muted-foreground text-sm mt-1">
           AI-powered single-player games + real-time multiplayer — 1st Year MBBS
         </p>

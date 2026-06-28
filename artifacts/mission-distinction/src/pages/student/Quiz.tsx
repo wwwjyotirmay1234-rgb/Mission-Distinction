@@ -940,8 +940,8 @@ export default function StudentQuiz() {
       </Dialog>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight mb-2">Quiz Center</h1>
-        <p className="text-muted-foreground">Test your knowledge and track your performance.</p>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight mb-2">Quiz Center</h1>
+        <p className="text-sm text-muted-foreground">Test your knowledge and track your performance.</p>
         <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
           {[
             { type: "mcq", label: "MCQ" },

@@ -250,9 +250,9 @@ export default function StudentAITools() {
   const [tab, setTab] = useState<"mcq" | "summarise">("mcq");
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2"><Bot size={22} className="text-primary" /> AI Study Tools</h1>
+        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><Bot size={20} className="text-primary" /> AI Study Tools</h1>
         <p className="text-muted-foreground text-sm mt-1">AI-powered tools to help you study smarter, not harder.</p>
       </div>
 

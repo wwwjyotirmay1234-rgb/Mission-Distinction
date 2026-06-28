@@ -372,13 +372,13 @@ export default function StudentNotes() {
   const isLoading = activeTab === "notes" ? notesLoading : activeTab === "books" ? booksLoading : pyqsLoading;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {viewingNote && <NoteViewerModal note={viewingNote} onClose={() => setViewingNote(null)} />}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Notes, Books & PYQs</h1>
-          <p className="text-muted-foreground">High-yield notes, textbooks, and previous year question papers.</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Notes, Books & PYQs</h1>
+          <p className="text-sm text-muted-foreground">High-yield notes, textbooks, and previous year question papers.</p>
         </div>
         <div className="flex gap-2">
           <div className="relative w-full md:w-64">

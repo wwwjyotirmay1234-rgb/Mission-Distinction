@@ -36,10 +36,10 @@ export default function StudentBookmarks() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight mb-2">Bookmarks</h1>
-        <p className="text-muted-foreground">Quick access to your saved content.</p>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight mb-1">Bookmarks</h1>
+        <p className="text-sm text-muted-foreground">Quick access to your saved content.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

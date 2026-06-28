@@ -1,4 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler, { passive: true });
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+}
+
 import { StudentSidebar } from "./StudentSidebar";
 import { Header } from "./Header";
 import { PersistentPlayer } from "./PersistentPlayer";
@@ -97,6 +108,8 @@ function EmailVerificationBanner() {
 
 function StudentLayoutInner({ children }: { children: React.ReactNode }) {
   const { collapsed, hidden } = useSidebar();
+  const isMobile = useIsMobile();
+  const sidebarMargin = isMobile ? 0 : hidden ? 0 : collapsed ? 60 : 220;
   return (
     <div
       className="min-h-screen bg-background text-foreground flex"
@@ -106,7 +119,7 @@ function StudentLayoutInner({ children }: { children: React.ReactNode }) {
       <div
         id="md-capture-area"
         className="relative flex-1 flex flex-col min-w-0 transition-[margin] duration-200 ease-in-out"
-        style={{ marginLeft: hidden ? 0 : collapsed ? 60 : 220 }}
+        style={{ marginLeft: sidebarMargin }}
       >
         <Watermark />
         <Header />

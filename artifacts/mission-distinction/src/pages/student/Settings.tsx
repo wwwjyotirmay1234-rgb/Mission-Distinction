@@ -160,10 +160,10 @@ export default function StudentSettings() {
   };
 
   return (
-    <div className="max-w-4xl space-y-6 pb-12">
+    <div className="max-w-4xl space-y-4 sm:space-y-6 pb-8 sm:pb-12">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight mb-2">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and preferences.</p>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight mb-1">Settings</h1>
+        <p className="text-sm text-muted-foreground">Manage your account and preferences.</p>
       </div>
 
       <Card className="bg-card/40 border-border/40">
