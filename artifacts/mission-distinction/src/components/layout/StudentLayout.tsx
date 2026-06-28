@@ -11,6 +11,7 @@ import { MailWarning, X, CheckCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { PinnedBanner } from "@/components/PinnedBanner";
 import { WarningBanner } from "@/components/WarningBanner";
+import { Watermark } from "@/components/Watermark";
 
 function EmailVerificationBanner() {
   const { user, token } = useAuth();
@@ -97,7 +98,10 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
   return (
     <MusicPlayerProvider>
       <SidebarProvider>
-        <div className="min-h-screen bg-background text-foreground flex">
+        <div
+          className="min-h-screen bg-background text-foreground flex"
+          onContextMenu={(e) => e.preventDefault()}
+        >
           <StudentSidebar />
           <div id="md-capture-area" className="flex-1 flex flex-col md:ml-64 min-w-0">
             <Header />
@@ -109,6 +113,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
             </main>
           </div>
         </div>
+        <Watermark />
         <PersistentPlayer />
       </SidebarProvider>
     </MusicPlayerProvider>
