@@ -89,7 +89,7 @@ export function CompleteProfileModal() {
                 <SelectTrigger className="bg-background/50">
                   <SelectValue placeholder="Select year" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[300]">
                   {MBBS_YEARS.map((y) => (
                     <SelectItem key={y} value={y}>{y}</SelectItem>
                   ))}
@@ -103,7 +103,7 @@ export function CompleteProfileModal() {
                 <SelectTrigger className="bg-background/50">
                   <SelectValue placeholder="e.g. 2025-26" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[300]">
                   {SESSION_YEARS.map((s) => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
@@ -118,7 +118,7 @@ export function CompleteProfileModal() {
               <SelectTrigger className="bg-background/50">
                 <SelectValue placeholder="Select your medical college" />
               </SelectTrigger>
-              <SelectContent className="max-h-64">
+              <SelectContent className="z-[300] max-h-64">
                 <SelectGroup>
                   <SelectLabel className="text-xs text-primary font-semibold px-2 py-1">🏛️ Government Colleges</SelectLabel>
                   {ODISHA_GOVT_COLLEGES.map((c) => (
