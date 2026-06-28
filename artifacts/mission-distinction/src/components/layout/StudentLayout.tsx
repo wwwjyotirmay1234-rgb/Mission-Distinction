@@ -104,7 +104,8 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
           onContextMenu={(e) => e.preventDefault()}
         >
           <StudentSidebar />
-          <div id="md-capture-area" className="flex-1 flex flex-col md:ml-64 min-w-0">
+          <div id="md-capture-area" className="relative flex-1 flex flex-col md:ml-64 min-w-0">
+            <Watermark />
             <Header />
             <PinnedBanner />
             <EmailVerificationBanner />
@@ -116,7 +117,6 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
         </div>
         <PersistentPlayer />
         <OnboardingModal />
-        <Watermark />
       </SidebarProvider>
     </MusicPlayerProvider>
   );

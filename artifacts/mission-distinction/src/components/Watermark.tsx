@@ -2,7 +2,7 @@ export function Watermark() {
   return (
     <div
       aria-hidden="true"
-      className="fixed inset-0 pointer-events-none select-none z-[9999] flex items-center justify-center dark:hidden"
+      className="absolute inset-0 pointer-events-none select-none z-[9999] flex items-center justify-center dark:hidden"
     >
       <img
         src={`${import.meta.env.BASE_URL}md-logo.jpeg`}
