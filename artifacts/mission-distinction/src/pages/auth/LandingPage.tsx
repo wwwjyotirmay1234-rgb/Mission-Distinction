@@ -20,10 +20,13 @@ import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChan
 import { auth, googleProvider } from "@/lib/firebase";
 
 
-import { ODISHA_GOVT_COLLEGES, ODISHA_PRIVATE_COLLEGES } from "@/lib/colleges";
+import { ODISHA_GOVT_COLLEGES, ODISHA_PRIVATE_COLLEGES, MBBS_YEARS, SESSION_YEARS, ACTIVE_SESSION_YEAR, ACTIVE_MBBS_YEAR } from "@/lib/colleges";
 
-function getRouteByYear(year: string | undefined) {
-  return (year === "1st Year" || year === "1st Year MBBS") ? "/student/dashboard" : "/coming-soon";
+function getRoute(year: string | undefined, sessionYear: string | undefined) {
+  return (
+    (year === ACTIVE_MBBS_YEAR || year === "1st Year MBBS") &&
+    sessionYear === ACTIVE_SESSION_YEAR
+  ) ? "/student/dashboard" : "/coming-soon";
 }
 
 const studentLoginSchema = z.object({
@@ -40,6 +43,7 @@ const studentRegisterSchema = z.object({
     .regex(/[0-9]/, "Password must contain at least one number"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
   year: z.string().min(1, "Select your year"),
+  sessionYear: z.string().min(1, "Select your session year"),
   college: z.string().min(1, "Select your college"),
   agreeTerms: z.boolean().refine(val => val === true, "You must agree to the terms"),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -81,7 +85,8 @@ export default function LandingPage() {
   if (isAuthenticated) {
     if (isAdmin) return <Redirect to="/admin/dashboard" />;
     const year = user?.year ?? undefined;
-    return <Redirect to={getRouteByYear(year)} />;
+    const sessionYear = (user as any)?.sessionYear ?? undefined;
+    return <Redirect to={getRoute(year, sessionYear)} />;
   }
 
   const studentLoginMutation = useStudentLogin();
@@ -106,11 +111,12 @@ export default function LandingPage() {
     // Google users may not have a year set yet — always route to dashboard
     // (1st year content) and prompt them to complete their profile in Settings.
     const year = data.user?.year;
-    if (!year) {
-      toast.info("Welcome! Please set your college & year in Settings.", { duration: 6000 });
+    const sessionYear = data.user?.sessionYear;
+    if (!year || !sessionYear) {
+      toast.info("Welcome! Please set your college, year & session in Settings.", { duration: 6000 });
       setLocation("/student/dashboard");
     } else {
-      setLocation(getRouteByYear(year));
+      setLocation(getRoute(year, sessionYear));
     }
   };
 
@@ -253,7 +259,7 @@ export default function LandingPage() {
   const studentRegisterForm = useForm<z.infer<typeof studentRegisterSchema>>({
     resolver: zodResolver(studentRegisterSchema),
     defaultValues: {
-      fullName: "", email: "", password: "", confirmPassword: "", year: "", college: "", agreeTerms: false,
+      fullName: "", email: "", password: "", confirmPassword: "", year: "", sessionYear: "", college: "", agreeTerms: false,
     },
   });
 
@@ -281,7 +287,7 @@ export default function LandingPage() {
       onSuccess: (res) => {
         login(res);
         toast.success("Login successful!");
-        setLocation(getRouteByYear(res.user?.year ?? undefined));
+        setLocation(getRoute(res.user?.year ?? undefined, (res.user as any)?.sessionYear ?? undefined));
       },
       onError: (err) => {
         toast.error(getApiError(err, "Login failed. Please check your credentials."));
@@ -294,7 +300,7 @@ export default function LandingPage() {
       onSuccess: (res) => {
         login(res);
         toast.success("Account created successfully!");
-        setLocation(getRouteByYear(values.year));
+        setLocation(getRoute(values.year, values.sessionYear));
       },
       onError: (err) => {
         toast.error(getApiError(err, "Registration failed. Please try again."));
@@ -629,10 +635,31 @@ export default function LandingPage() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    <SelectItem value="1st Year">1st Year</SelectItem>
-                                    <SelectItem value="2nd Year">2nd Year</SelectItem>
-                                    <SelectItem value="4th Year">4th Year</SelectItem>
-                                    <SelectItem value="Final Year">Final Year</SelectItem>
+                                    {MBBS_YEARS.map((y) => (
+                                      <SelectItem key={y} value={y}>{y}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={studentRegisterForm.control}
+                            name="sessionYear"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Session Year</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="bg-background/50">
+                                      <SelectValue placeholder="e.g. 2025-26" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {SESSION_YEARS.map((s) => (
+                                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />

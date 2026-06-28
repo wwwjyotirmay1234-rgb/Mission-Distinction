@@ -11,6 +11,7 @@ export const usersTable = pgTable("users", {
   role: text("role").notNull().default("student"), // student | admin
   isSuperAdmin: boolean("is_super_admin").default(false).notNull(),
   year: text("year"),
+  sessionYear: text("session_year"),
   college: text("college"),
   avatarUrl: text("avatar_url"),
   studyStreak: integer("study_streak").default(0),

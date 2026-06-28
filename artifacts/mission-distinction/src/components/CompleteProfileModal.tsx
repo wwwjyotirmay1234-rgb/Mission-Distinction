@@ -14,7 +14,12 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { UserCircle, AlertCircle } from "lucide-react";
-import { ODISHA_GOVT_COLLEGES, ODISHA_PRIVATE_COLLEGES, MBBS_YEARS } from "@/lib/colleges";
+import {
+  ODISHA_GOVT_COLLEGES,
+  ODISHA_PRIVATE_COLLEGES,
+  MBBS_YEARS,
+  SESSION_YEARS,
+} from "@/lib/colleges";
 
 export function CompleteProfileModal() {
   const { user, updateUser } = useAuth();
@@ -22,9 +27,11 @@ export function CompleteProfileModal() {
   const missingFields =
     !user ||
     !(user as any).year ||
+    !(user as any).sessionYear ||
     !(user as any).college;
 
   const [year, setYear] = useState((user as any)?.year ?? "");
+  const [sessionYear, setSessionYear] = useState((user as any)?.sessionYear ?? "");
   const [college, setCollege] = useState((user as any)?.college ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -32,6 +39,7 @@ export function CompleteProfileModal() {
 
   const handleSave = async () => {
     if (!year) { toast.error("Please select your academic year"); return; }
+    if (!sessionYear) { toast.error("Please select your session year"); return; }
     if (!college) { toast.error("Please select your college"); return; }
     if (!user) return;
     setSaving(true);
@@ -39,7 +47,7 @@ export function CompleteProfileModal() {
       const res = await apiFetch(`/api/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ year, college }),
+        body: JSON.stringify({ year, sessionYear, college }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to save");
@@ -74,26 +82,38 @@ export function CompleteProfileModal() {
         </div>
 
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>
-              Academic Year <span className="text-destructive">*</span>
-            </Label>
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger className="bg-background/50">
-                <SelectValue placeholder="Select your year" />
-              </SelectTrigger>
-              <SelectContent>
-                {MBBS_YEARS.map((y) => (
-                  <SelectItem key={y} value={y}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Academic Year <span className="text-destructive">*</span></Label>
+              <Select value={year} onValueChange={setYear}>
+                <SelectTrigger className="bg-background/50">
+                  <SelectValue placeholder="Select year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MBBS_YEARS.map((y) => (
+                    <SelectItem key={y} value={y}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Session Year <span className="text-destructive">*</span></Label>
+              <Select value={sessionYear} onValueChange={setSessionYear}>
+                <SelectTrigger className="bg-background/50">
+                  <SelectValue placeholder="e.g. 2025-26" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SESSION_YEARS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label>
-              College <span className="text-destructive">*</span>
-            </Label>
+            <Label>College <span className="text-destructive">*</span></Label>
             <Select value={college} onValueChange={setCollege}>
               <SelectTrigger className="bg-background/50">
                 <SelectValue placeholder="Select your medical college" />

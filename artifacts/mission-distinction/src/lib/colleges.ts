@@ -20,3 +20,10 @@ export const ODISHA_PRIVATE_COLLEGES = [
 ];
 
 export const MBBS_YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "Final Year"];
+
+export const SESSION_YEARS = [
+  "2022-23", "2023-24", "2024-25", "2025-26", "2026-27", "2027-28",
+];
+
+export const ACTIVE_SESSION_YEAR = "2025-26";
+export const ACTIVE_MBBS_YEAR   = "1st Year";

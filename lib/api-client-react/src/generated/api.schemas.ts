@@ -17,6 +17,7 @@ export interface StudentRegisterInput {
   password: string;
   confirmPassword: string;
   year: string;
+  sessionYear: string;
   college: string;
   agreeTerms?: boolean;
 }

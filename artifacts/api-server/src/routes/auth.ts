@@ -95,8 +95,8 @@ function validatePasswordStrength(password: string): string | null {
 // ─── Student Register ────────────────────────────────────────────────────────
 router.post("/student/register", registerLimiter, async (req: Request, res: Response) => {
   try {
-    const { fullName, email: rawEmail, mobileNumber, password, year, college } = req.body;
-    if (!fullName || !rawEmail || !password || !year || !college) {
+    const { fullName, email: rawEmail, mobileNumber, password, year, sessionYear, college } = req.body;
+    if (!fullName || !rawEmail || !password || !year || !sessionYear || !college) {
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
@@ -115,6 +115,7 @@ router.post("/student/register", registerLimiter, async (req: Request, res: Resp
       passwordHash: await hashPassword(password),
       role: "student",
       year,
+      sessionYear,
       college,
       studyStreak: 0,
       emailVerified: false,
