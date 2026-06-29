@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import sgMail from "@sendgrid/mail";
+import { Resend } from "resend";
 
 export function generateEmailToken(): string {
   return crypto.randomBytes(32).toString("hex");
@@ -26,45 +26,33 @@ export async function sendEmail(
   html: string,
   text: string
 ): Promise<boolean> {
-  const apiKey = process.env.SENDGRID_API_KEY;
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.SMTP_EMAIL;
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || "Mission Distinction <onboarding@resend.dev>";
 
   if (!apiKey) {
-    console.warn(`[Email] SENDGRID_API_KEY not set — email skipped.`);
-    return false;
-  }
-
-  if (!fromEmail) {
-    console.warn(`[Email] SENDGRID_FROM_EMAIL not set — email skipped.`);
+    console.warn(`[Email] RESEND_API_KEY not set — email skipped.`);
     return false;
   }
 
   try {
-    sgMail.setApiKey(apiKey);
-    await sgMail.send({
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: fromEmail,
       to,
-      from: { name: "Mission Distinction", email: fromEmail },
-      replyTo: fromEmail,
       subject,
       html,
       text,
     });
-    console.info(`[Email] Sent | Subject: ${subject}`);
+
+    if (error) {
+      console.error(`[Email] Resend error:`, error);
+      return false;
+    }
+
+    console.info(`[Email] Sent via Resend | Subject: ${subject}`);
     return true;
   } catch (err: any) {
-    const status = err?.response?.status;
-    const body = err?.response?.body;
-    if (status === 403) {
-      console.error(
-        `[Email] SendGrid 403 — sender "${fromEmail}" not verified. ` +
-        `Go to app.sendgrid.com → Settings → Sender Authentication.`,
-        body
-      );
-    } else if (status === 401) {
-      console.error(`[Email] SendGrid 401 — SENDGRID_API_KEY may be invalid.`, body);
-    } else {
-      console.error(`[Email] SendGrid error (status ${status ?? "unknown"}):`, body ?? err?.message ?? err);
-    }
+    console.error(`[Email] Resend exception:`, err?.message ?? err);
     return false;
   }
 }
