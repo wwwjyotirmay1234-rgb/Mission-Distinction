@@ -55,6 +55,15 @@ export function setTokenRefresher(refresher: (() => Promise<string | null>) | nu
   _tokenRefresher = refresher;
 }
 
+/**
+ * Returns the currently registered token refresher, or null if none is set.
+ * Use this to share the same refresh-lock across multiple fetch utilities
+ * (e.g. a hand-rolled apiFetch alongside the generated customFetch).
+ */
+export function getTokenRefresher(): (() => Promise<string | null>) | null {
+  return _tokenRefresher;
+}
+
 function isRequest(input: RequestInfo | URL): input is Request {
   return typeof Request !== "undefined" && input instanceof Request;
 }
