@@ -154,7 +154,8 @@ export function PersistentPlayer() {
           src={iframeSrc}
           width="100%"
           height={onMusicPage ? embedH : 1}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          allowFullScreen
           title="music-player"
           style={{ border: 0, display: "block" }}
         />

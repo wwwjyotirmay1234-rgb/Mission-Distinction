@@ -269,7 +269,7 @@ function SpotifyTab() {
       {error&&<p className="text-xs text-red-500">{error}</p>}
       {embed&&(
         <div className="space-y-2">
-          <iframe src={embed} width="100%" height="352" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" className="rounded-2xl border-0" title="Spotify"/>
+          <iframe src={embed} width="100%" height="352" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" allowFullScreen loading="lazy" className="rounded-2xl border-0" title="Spotify"/>
           <button onClick={()=>{setEmbed(null);setInput("");}} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1">✕ Close</button>
         </div>
       )}
