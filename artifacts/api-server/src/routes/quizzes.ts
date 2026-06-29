@@ -129,7 +129,7 @@ Parsing rules:
 Return ONLY a valid JSON array. No markdown fences, no explanations, just the raw JSON array.`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-5.4",
+      model: "gpt-4o",
       max_completion_tokens: 8192,
       messages: [
         { role: "system", content: systemPrompt },
@@ -390,6 +390,9 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
     if (!quizId) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
     const user = (req as any).user;
     const { answers } = req.body;
+    if (!Array.isArray(answers) || answers.length > 500) {
+      res.status(400).json({ error: "Invalid answers payload" }); return;
+    }
 
     const [quiz] = await db.select().from(quizzesTable).where(eq(quizzesTable.id, quizId));
     if (!quiz) { res.status(404).json({ error: "Quiz not found" }); return; }

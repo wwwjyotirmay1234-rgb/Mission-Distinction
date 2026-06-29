@@ -6,6 +6,7 @@ import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import rateLimit from "express-rate-limit";
 import { awardXp, XP_VALUES } from "../lib/xp";
+import { stripHtml } from "../lib/sanitize";
 
 const router = Router();
 
@@ -42,7 +43,7 @@ router.post("/", authMiddleware, postLimiter, async (req: Request, res: Response
     const userId = ((req as any).user.id as number);
     const { content } = req.body;
     if (!content?.trim()) { res.status(400).json({ error: "content required" }); return; }
-    const stripped = content.replace(/<[^>]*>/g, "").trim();
+    const stripped = stripHtml(String(content)).trim();
     if (!stripped) { res.status(400).json({ error: "content required" }); return; }
     if (stripped.length > 500) { res.status(400).json({ error: "Max 500 characters" }); return; }
     const [row] = await db.insert(confessionsTable).values({ userId, content: stripped }).returning();

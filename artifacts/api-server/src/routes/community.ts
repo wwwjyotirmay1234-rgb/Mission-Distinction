@@ -269,6 +269,10 @@ router.post("/groups", authMiddleware, groupCreateLimiter, async (req: Request, 
     if (safeName.length > 80) { res.status(400).json({ error: "Group name too long" }); return; }
     const existing = await db.select({ id: communityGroupsTable.id }).from(communityGroupsTable).where(eq(communityGroupsTable.name, safeName));
     if (existing.length > 0) { res.status(409).json({ error: "A group with that name already exists" }); return; }
+    if (user.role !== "admin") {
+      const ownedGroups = await db.select({ id: communityGroupsTable.id }).from(communityGroupsTable).where(eq(communityGroupsTable.createdBy, user.id));
+      if (ownedGroups.length >= 3) { res.status(400).json({ error: "You can own a maximum of 3 groups" }); return; }
+    }
     const [group] = await db.insert(communityGroupsTable).values({ name: safeName, subject: safeSubject, description: safeDesc, createdBy: user.id, isAdminCreated: user.role === "admin", memberCount: 1 }).returning();
     await db.insert(groupMembersTable).values({ groupId: group.id, userId: user.id, role: "owner" });
     res.status(201).json(group);
