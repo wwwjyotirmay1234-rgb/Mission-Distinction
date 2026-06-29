@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { quizAttemptsTable, activityTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, gte, and } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { updateStreak } from "../lib/streak";
 
@@ -60,6 +60,31 @@ router.get("/activity", authMiddleware, async (req: Request, res: Response) => {
       .limit(20);
     res.json(activity);
   } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * GET /api/progress/heatmap
+ * Returns daily activity counts for the past 16 weeks (112 days).
+ * Response: { "2026-06-01": 5, "2026-06-02": 2, ... }
+ */
+router.get("/heatmap", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const since = new Date(Date.now() - 112 * 24 * 60 * 60 * 1000);
+    const activity = await db
+      .select({ createdAt: activityTable.createdAt })
+      .from(activityTable)
+      .where(and(eq(activityTable.userId, user.id), gte(activityTable.createdAt, since)));
+
+    const dayMap: Record<string, number> = {};
+    for (const a of activity) {
+      const day = a.createdAt.toISOString().split("T")[0];
+      dayMap[day] = (dayMap[day] || 0) + 1;
+    }
+    res.json(dayMap);
+  } catch {
     res.status(500).json({ error: "Internal server error" });
   }
 });

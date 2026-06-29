@@ -2,17 +2,137 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useGetMyProgress, getGetMyProgressQueryKey, useListQuizAttempts, getListQuizAttemptsQueryKey } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/apiFetch";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   Radar, ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, Award, FileText, CheckCircle, Flame, Zap, Trophy, BookOpen, Download, MessageSquare, Timer, Bookmark, Brain, Users, MessageCircle, Lightbulb } from "lucide-react";
+import { Clock, FileText, CheckCircle, Flame, Zap, Trophy, BookOpen, Download, MessageSquare, Timer, Bookmark, Brain, Users, MessageCircle, Lightbulb } from "lucide-react";
 import { Progress as ProgressBar } from "@/components/ui/progress";
 import { XPProgressBar } from "@/components/XPProgressBar";
 import { RankBadge } from "@/components/RankBadge";
 import { useXPStats } from "@/hooks/useXPStats";
 import { RANKS } from "@/lib/ranks";
+
+// ── Study Heatmap ─────────────────────────────────────────────────────────────
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function StudyHeatmap({ data }: { data: Record<string, number> }) {
+  // Build 16 full weeks (Mon→Sun), most-recent week last
+  const today = new Date();
+  // Go back to the start of the current week (Monday)
+  const startOfCurrentWeek = new Date(today);
+  const dow = (today.getDay() + 6) % 7; // 0=Mon
+  startOfCurrentWeek.setDate(today.getDate() - dow);
+  startOfCurrentWeek.setHours(0, 0, 0, 0);
+
+  // Build 16 weeks of dates, oldest first
+  const weeks: Date[][] = [];
+  for (let w = 15; w >= 0; w--) {
+    const week: Date[] = [];
+    for (let d = 0; d < 7; d++) {
+      const dt = new Date(startOfCurrentWeek);
+      dt.setDate(startOfCurrentWeek.getDate() - w * 7 + d);
+      week.push(dt);
+    }
+    weeks.push(week);
+  }
+
+  const maxCount = Math.max(1, ...Object.values(data));
+
+  function cellColor(count: number): string {
+    if (count === 0) return "bg-muted/30";
+    const pct = count / maxCount;
+    if (pct < 0.25) return "bg-primary/20";
+    if (pct < 0.5)  return "bg-primary/40";
+    if (pct < 0.75) return "bg-primary/65";
+    return "bg-primary";
+  }
+
+  // Determine which weeks cross into a new month for labels
+  const monthLabels: { colIdx: number; label: string }[] = [];
+  let prevMonth = -1;
+  weeks.forEach((week, wi) => {
+    const firstOfWeek = week[0];
+    const m = firstOfWeek.getMonth();
+    if (m !== prevMonth) {
+      monthLabels.push({ colIdx: wi, label: MONTHS[m] });
+      prevMonth = m;
+    }
+  });
+
+  const totalDays = Object.values(data).reduce((s, v) => s + v, 0);
+  const activeDays = Object.values(data).filter(v => v > 0).length;
+
+  return (
+    <Card className="bg-card/40 border-border/40">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Flame size={14} className="text-orange-400" /> Study Activity
+          </CardTitle>
+          <span className="text-xs text-muted-foreground">
+            {activeDays} active day{activeDays !== 1 ? "s" : ""} · {totalDays} activities in 16 weeks
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <div className="min-w-[520px]">
+            {/* Month labels */}
+            <div className="flex mb-1 ml-6">
+              {weeks.map((_, wi) => {
+                const lbl = monthLabels.find(m => m.colIdx === wi);
+                return (
+                  <div key={wi} className="flex-1 text-[9px] text-muted-foreground leading-none">
+                    {lbl?.label ?? ""}
+                  </div>
+                );
+              })}
+            </div>
+            {/* Grid: 7 rows (days) × 16 cols (weeks) */}
+            <div className="flex gap-0.5">
+              {/* Day labels */}
+              <div className="flex flex-col gap-0.5 mr-1">
+                {["M","","W","","F","","S"].map((d, i) => (
+                  <div key={i} className="h-3 w-4 text-[8px] text-muted-foreground leading-3 text-right pr-0.5">
+                    {d}
+                  </div>
+                ))}
+              </div>
+              {weeks.map((week, wi) => (
+                <div key={wi} className="flex flex-col gap-0.5 flex-1">
+                  {week.map((dt, di) => {
+                    const key = dt.toISOString().split("T")[0];
+                    const count = data[key] ?? 0;
+                    const isFuture = dt > today;
+                    return (
+                      <div
+                        key={di}
+                        title={isFuture ? "" : `${key}: ${count} activit${count !== 1 ? "ies" : "y"}`}
+                        className={`h-3 rounded-[2px] transition-colors ${isFuture ? "bg-transparent" : cellColor(count)}`}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+            {/* Legend */}
+            <div className="flex items-center gap-1 mt-2 justify-end">
+              <span className="text-[9px] text-muted-foreground">Less</span>
+              {["bg-muted/30","bg-primary/20","bg-primary/40","bg-primary/65","bg-primary"].map(c => (
+                <div key={c} className={`w-2.5 h-2.5 rounded-[2px] ${c}`} />
+              ))}
+              <span className="text-[9px] text-muted-foreground">More</span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 interface QuizAttempt {
   id: number;
@@ -41,6 +161,16 @@ export default function StudentProgress() {
 
   const { data: attempts, isLoading: attemptsLoading } = useListQuizAttempts({
     query: { queryKey: getListQuizAttemptsQueryKey() },
+  });
+
+  const { data: heatmapData, isLoading: heatmapLoading } = useQuery({
+    queryKey: ["progress-heatmap"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/progress/heatmap");
+      if (!res.ok) throw new Error("Failed to load heatmap");
+      return res.json() as Promise<Record<string, number>>;
+    },
+    staleTime: 60_000,
   });
 
   const subjectProgress = progress?.subjectProgress ?? [];
@@ -184,6 +314,20 @@ export default function StudentProgress() {
           </CardContent>
         </Card>
       )}
+
+      {/* ── Study Activity Heatmap ── */}
+      {heatmapLoading ? (
+        <Card className="bg-card/40 border-border/40">
+          <CardHeader className="pb-2">
+            <Skeleton className="h-4 w-32" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-20 w-full" />
+          </CardContent>
+        </Card>
+      ) : heatmapData ? (
+        <StudyHeatmap data={heatmapData} />
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4">
         <Card className="bg-card/40 border-border/40">
