@@ -8,6 +8,20 @@ import { getTokenRefresher } from "@workspace/api-client-react";
  * parallel 401s (common on Android when the app resumes) only ever trigger a
  * single rotation instead of N competing ones.
  */
+/**
+ * Like apiFetch but throws on non-2xx so React Query marks the query as
+ * failed instead of silently treating an error JSON body as success data.
+ * Use this in all queryFn callbacks that return arrays or objects.
+ */
+export async function apiFetchJson<T = unknown>(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<T> {
+  const res = await apiFetch(input, init ?? {});
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res.json() as Promise<T>;
+}
+
 export async function apiFetch(
   input: RequestInfo | URL,
   init: RequestInit = {},

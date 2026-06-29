@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Plus, ChevronLeft, Trash2, RotateCcw, CheckCircle2, X, Brain, Sparkles, Shield, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "NEET PG", "General"];
 
@@ -351,7 +351,7 @@ export default function StudentFlashcards() {
 
   const { data: decks = [], isLoading } = useQuery<Deck[]>({
     queryKey: ["flashcard-decks"],
-    queryFn: () => apiFetch("/api/flashcards/decks").then(r => r.json()),
+    queryFn: () => apiFetchJson("/api/flashcards/decks"),
   });
 
   const createMutation = useMutation({

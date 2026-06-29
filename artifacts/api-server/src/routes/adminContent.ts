@@ -24,7 +24,7 @@ router.get("/mnemonics", async (req: Request, res: Response) => {
 router.post("/mnemonics", async (req: Request, res: Response) => {
   try {
     const adminId = (req as any).user.id as number;
-    const adminName = (req as any).user?.name || "Admin";
+    const adminName = (req as any).user?.fullName || "Admin";
     const { subject, topic, mnemonic, description } = req.body;
     if (!subject || !topic?.trim() || !mnemonic?.trim()) {
       res.status(400).json({ error: "subject, topic, and mnemonic required" }); return;
@@ -46,7 +46,7 @@ router.post("/mnemonics", async (req: Request, res: Response) => {
 router.delete("/mnemonics/:id", async (req: Request, res: Response) => {
   try {
     const adminId = (req as any).user.id as number;
-    const adminName = (req as any).user?.name || "Admin";
+    const adminName = (req as any).user?.fullName || "Admin";
     const id = parseId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     await db.delete(mnemonicUpvotesTable).where(eq(mnemonicUpvotesTable.mnemonicId, id));
@@ -70,7 +70,7 @@ router.get("/flashcard-decks", async (req: Request, res: Response) => {
 router.post("/flashcard-decks", async (req: Request, res: Response) => {
   try {
     const adminId = (req as any).user.id as number;
-    const adminName = (req as any).user?.name || "Admin";
+    const adminName = (req as any).user?.fullName || "Admin";
     const { subject, title } = req.body;
     if (!subject || !title?.trim()) { res.status(400).json({ error: "subject and title required" }); return; }
     const [deck] = await db.insert(flashcardDecksTable).values({
@@ -87,7 +87,7 @@ router.post("/flashcard-decks", async (req: Request, res: Response) => {
 router.delete("/flashcard-decks/:id", async (req: Request, res: Response) => {
   try {
     const adminId = (req as any).user.id as number;
-    const adminName = (req as any).user?.name || "Admin";
+    const adminName = (req as any).user?.fullName || "Admin";
     const id = parseId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     await db.delete(flashcardsTable).where(eq(flashcardsTable.deckId, id));

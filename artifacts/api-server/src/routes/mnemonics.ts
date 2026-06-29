@@ -38,7 +38,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 router.post("/", authMiddleware, createMnemonicLimiter, async (req: Request, res: Response) => {
   try {
     const userId = ((req as any).user.id as number);
-    const authorName = (req as any).user?.name || "Student";
+    const authorName = (req as any).user?.fullName || "Student";
     const { subject, topic, mnemonic, description } = req.body;
     if (!subject || !topic?.trim() || !mnemonic?.trim()) { res.status(400).json({ error: "subject, topic, and mnemonic required" }); return; }
     const [row] = await db.insert(mnemonicsTable).values({ userId, authorName, subject, topic: topic.trim(), mnemonic: mnemonic.trim(), description: description?.trim() || null }).returning();

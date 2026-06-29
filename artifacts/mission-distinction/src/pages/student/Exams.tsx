@@ -11,7 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Plus, Trash2, Globe, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "General", "University"];
 
@@ -55,7 +55,7 @@ export default function StudentExams() {
 
   const { data: exams = [], isLoading } = useQuery<Exam[]>({
     queryKey: ["exams"],
-    queryFn: () => apiFetch("/api/exams").then(r => r.json()),
+    queryFn: () => apiFetchJson("/api/exams"),
     refetchInterval: 60_000,
   });
 

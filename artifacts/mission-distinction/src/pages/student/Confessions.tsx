@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Heart, Plus, MessageCircleHeart, Smile } from "lucide-react";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
 
 interface Confession {
   id: number; content: string; likes: number; hasLiked: boolean; createdAt: string;
@@ -33,7 +33,7 @@ export default function StudentConfessions() {
 
   const { data: confessions = [], isLoading } = useQuery<Confession[]>({
     queryKey: ["confessions"],
-    queryFn: () => apiFetch("/api/confessions").then(r => r.json()),
+    queryFn: () => apiFetchJson("/api/confessions"),
   });
 
   const postMutation = useMutation({

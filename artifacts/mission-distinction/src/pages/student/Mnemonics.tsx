@@ -11,7 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Lightbulb, Plus, ThumbsUp, Trash2, Sparkles, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "NEET PG", "General"];
 
@@ -41,7 +41,7 @@ export default function StudentMnemonics() {
 
   const { data: mnemonics = [], isLoading } = useQuery<Mnemonic[]>({
     queryKey: ["mnemonics", filterSubject],
-    queryFn: () => apiFetch(filterSubject !== "All" ? `/api/mnemonics?subject=${filterSubject}` : "/api/mnemonics").then(r => r.json()),
+    queryFn: () => apiFetchJson(filterSubject !== "All" ? `/api/mnemonics?subject=${filterSubject}` : "/api/mnemonics"),
   });
 
   const createMutation = useMutation({

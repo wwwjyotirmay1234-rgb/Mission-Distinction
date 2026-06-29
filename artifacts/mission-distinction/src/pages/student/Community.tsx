@@ -24,7 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { io, Socket } from "socket.io-client";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
 import VideoCall from "@/components/VideoCall";
 
 type RichFlashcard = { deckId: number; title: string; subject: string; cardCount: number; isAdminShared?: boolean };
@@ -149,7 +149,7 @@ function FlashcardPicker({ open, onClose, onShare }: {
 }) {
   const { data: decks = [], isLoading } = useQuery<Deck[]>({
     queryKey: ["flashcard-decks"],
-    queryFn: () => apiFetch("/api/flashcards/decks").then(r => r.json()),
+    queryFn: () => apiFetchJson("/api/flashcards/decks"),
     enabled: open,
   });
   const [filter, setFilter] = useState("");
@@ -189,7 +189,7 @@ function MnemonicPicker({ open, onClose, onShare }: {
 }) {
   const { data: mnemonics = [], isLoading } = useQuery<Mnemonic[]>({
     queryKey: ["mnemonics"],
-    queryFn: () => apiFetch("/api/mnemonics").then(r => r.json()),
+    queryFn: () => apiFetchJson("/api/mnemonics"),
     enabled: open,
   });
   const [filter, setFilter] = useState("");
