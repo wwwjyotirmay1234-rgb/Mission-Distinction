@@ -93,14 +93,18 @@ reconcile_and_push() {
       return 1
     fi
 
-    echo "[github-sync] Fetch OK — attempting rebase onto ${REMOTE_TRACKING_REF}..."
+    # Ensure we are on main before rewriting its history
+    git checkout main 2>/dev/null || true
+
+    echo "[github-sync] Fetch OK — attempting rebase of main onto ${REMOTE_TRACKING_REF}..."
     local REBASE_OUT REBASE_CODE
-    REBASE_OUT=$(git rebase "$REMOTE_TRACKING_REF" 2>&1)
+    REBASE_OUT=$(git rebase "$REMOTE_TRACKING_REF" main 2>&1)
     REBASE_CODE=$?
 
     if [ $REBASE_CODE -ne 0 ]; then
-      echo "[github-sync] Rebase had conflicts — aborting, falling back to merge..."
+      echo "[github-sync] Rebase had conflicts — aborting, falling back to merge on main..."
       git rebase --abort 2>/dev/null
+      git checkout main 2>/dev/null || true
       local MERGE_OUT MERGE_CODE
       MERGE_OUT=$(git merge --no-ff "$REMOTE_TRACKING_REF" \
         -m "chore: merge remote GitHub changes into local main" 2>&1)
@@ -110,9 +114,9 @@ reconcile_and_push() {
         rm -f "$CRED_FILE"
         return 1
       fi
-      echo "[github-sync] Merge commit created."
+      echo "[github-sync] Merge commit created on main."
     else
-      echo "[github-sync] Rebase OK."
+      echo "[github-sync] Rebase of main OK."
     fi
 
     # ── Step 3: Retry push after reconciliation ────────────────────────────
