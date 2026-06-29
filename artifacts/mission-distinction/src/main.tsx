@@ -41,4 +41,16 @@ if ("storage" in navigator && "persist" in navigator.storage) {
   navigator.storage.persist().catch(() => {});
 }
 
+// When a lazy-loaded chunk fails to fetch (e.g. after a new deployment replaces
+// old hashed filenames), Vite emits this event. Reloading forces the browser to
+// re-fetch index.html and get the new chunk URLs — one automatic reload, then done.
+window.addEventListener("vite:preloadError", () => {
+  const key = "_md_chunk_reload";
+  const lastReload = Number(sessionStorage.getItem(key) || "0");
+  if (Date.now() - lastReload > 10_000) {
+    sessionStorage.setItem(key, String(Date.now()));
+    window.location.reload();
+  }
+});
+
 createRoot(document.getElementById("root")!).render(<App />);
