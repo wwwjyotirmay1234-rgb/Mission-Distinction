@@ -43,15 +43,16 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
     const validSeverities = new Set(["warning", "strike", "final"]);
     const sev = validSeverities.has(severity) ? severity : "warning";
 
+    const adminName = admin.fullName || admin.name || "Admin";
     const [warning] = await db.insert(studentWarningsTable).values({
       userId: targetUserId,
       issuedBy: admin.id,
-      issuedByName: admin.name,
+      issuedByName: adminName,
       reason: reason.trim().slice(0, 500),
       severity: sev,
     }).returning();
 
-    await logAudit(admin.id, admin.name, "issued_warning", "user", targetUserId, { severity: sev, reason: reason.trim().slice(0, 100) });
+    await logAudit(admin.id, adminName, "issued_warning", "user", targetUserId, { severity: sev, reason: reason.trim().slice(0, 100) });
     res.json(warning);
   } catch { res.status(500).json({ error: "Failed to issue warning" }); }
 });
