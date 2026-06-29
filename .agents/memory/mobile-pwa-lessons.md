@@ -36,3 +36,31 @@ description: Hard-won mobile/PWA fixes for Mission Distinction — auth, PDF vie
 ## Avatar file input on Android
 **Rule:** Use `accept="image/*"` not specific MIME types like `accept="image/jpeg,image/png"`.
 **Why:** Some Android phones only show the camera/gallery chooser for `image/*`; specific MIME types suppress it.
+
+## Stale chunk crash after deployment (vite:preloadError)
+**Rule:** Add a `vite:preloadError` listener in main.tsx that reloads the page once when a lazy chunk fails to fetch.
+**Why:** Every deployment regenerates chunk hashes. Users with cached old HTML try to load old chunk URLs that no longer exist → "Failed to fetch dynamically imported module". One auto-reload fetches fresh HTML with new chunk URLs.
+**How to apply:**
+```js
+window.addEventListener("vite:preloadError", () => {
+  const key = "_md_chunk_reload";
+  const lastReload = Number(sessionStorage.getItem(key) || "0");
+  if (Date.now() - lastReload > 10_000) {
+    sessionStorage.setItem(key, String(Date.now()));
+    window.location.reload();
+  }
+});
+```
+The 10s guard prevents infinite reload loops.
+
+## Production BASE_PATH is "/" not "/mission-distinction/"
+**Rule:** Replit's deployment system rebuilds the app using `BASE_PATH="/"` from artifact.toml. Local dev builds use `BASE_PATH=/mission-distinction/`. These produce different chunk hashes — never compare local dist hashes to production hashes.
+**Why:** The artifact.toml `[services.env]` sets `BASE_PATH = "/"` for the deployed build. The `/mission-distinction/` prefix is added by Replit's proxy, not baked into the build.
+
+## Google login: always add prompt="select_account"
+**Rule:** Set `googleProvider.setCustomParameters({ prompt: "select_account" })` on the GoogleAuthProvider.
+**Why:** Without it, if the user has one Google account signed in, they skip the account picker. On shared college devices this silently logs in the wrong person.
+
+## Google-only accounts have empty passwordHash
+**Rule:** Guard `verifyPassword` against empty string before calling bcrypt: `if (!hash) return false`.
+**Why:** Google sign-up creates users with `passwordHash: ""`. `bcrypt.compare(anything, "")` throws on invalid hash format → 500 crash instead of clean "use Google button" error.
