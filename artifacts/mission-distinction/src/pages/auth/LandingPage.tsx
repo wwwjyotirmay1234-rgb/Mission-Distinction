@@ -121,7 +121,10 @@ export default function LandingPage() {
 
   useEffect(() => {
     let active = true;
-    // Only show loading if we're returning from a Google redirect
+    // Only show loading if we're returning from a Google redirect.
+    // NOTE: iOS Safari may clear sessionStorage during the redirect — so
+    // redirectPending can be false even when we ARE returning from Google.
+    // We handle that via the always-on onAuthStateChanged fallback below.
     const redirectPending = sessionStorage.getItem("md_google_redirect") === "1";
     if (redirectPending) {
       setGoogleLoading(true);
@@ -162,31 +165,34 @@ export default function LandingPage() {
         }
       });
 
-    // Fallback for iOS/Android browsers that drop the auth event on redirect:
-    // If we came back from a Google redirect but getRedirectResult returned null
-    // (auth/no-auth-event), Firebase still has the signed-in user in its local
-    // persistence. Catch that here and finish the backend auth handshake.
-    let unsubscribe: (() => void) | null = null;
-    if (redirectPending) {
-      unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-        if (!active || handledByRedirectResult || !firebaseUser) return;
-        // Give getRedirectResult a short head-start to avoid a race.
-        await new Promise((r) => setTimeout(r, 500));
-        if (!active || handledByRedirectResult) return;
-        handledByRedirectResult = true;
-        try {
-          const idToken = await firebaseUser.getIdToken();
-          await finishGoogleAuth(idToken);
-        } catch (err: any) {
-          toast.error(err?.message || "Google sign-in failed. Please try again.");
-          setGoogleLoading(false);
-        }
-      });
-    }
+    // Always-on fallback for iOS/Android where sessionStorage is cleared
+    // during the redirect (iOS ITP) so redirectPending === false on return,
+    // AND getRedirectResult drops the event (auth/no-auth-event).
+    // Firebase still has the signed-in user in local persistence —
+    // onAuthStateChanged catches them here.
+    // Guard: only proceed if we don't already have a backend token (avoids
+    // auto-login when user explicitly logged out but stayed in Firebase).
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!active || handledByRedirectResult || !firebaseUser) return;
+      // Give getRedirectResult a head-start to avoid a race condition.
+      await new Promise((r) => setTimeout(r, 800));
+      if (!active || handledByRedirectResult) return;
+      // Don't re-login someone who already has a valid backend session.
+      if (localStorage.getItem("mission_token")) return;
+      handledByRedirectResult = true;
+      setGoogleLoading(true);
+      try {
+        const idToken = await firebaseUser.getIdToken();
+        await finishGoogleAuth(idToken);
+      } catch (err: any) {
+        toast.error(err?.message || "Google sign-in failed. Please try again.");
+        setGoogleLoading(false);
+      }
+    });
 
     return () => {
       active = false;
-      unsubscribe?.();
+      unsubscribe();
     };
   }, []);
 
