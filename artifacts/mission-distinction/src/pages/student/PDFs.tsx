@@ -151,7 +151,12 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
       setIsSaved(true);
     } catch (err: any) {
       if (err?.name !== "AbortError") {
-        setSaveError("Could not save for offline. Try again when connected.");
+        const msg = err?.message ?? "";
+        if (msg.includes("valid PDF") || msg.includes("restricted") || msg.includes("sign-in")) {
+          setSaveError("This PDF can't be saved offline — it's a Google Drive file that requires a sign-in to download directly. Use the Open button to read it online.");
+        } else {
+          setSaveError("Could not save for offline. Try again when connected.");
+        }
       }
     } finally {
       setSaving(false);
@@ -173,9 +178,9 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
     try {
       await downloadPdfViaProxy(pdf);
     } catch {
-      // Fallback: open the proxy URL directly in a new tab
-      const token = localStorage.getItem("mission_token") ?? "";
-      window.open(`/api/pdfs/${pdf.id}/proxy?token=${encodeURIComponent(token)}`, "_blank", "noopener");
+      // Proxy failed (e.g. Google Drive restriction) — fall back to the
+      // native Drive download URL which works directly in the browser.
+      window.open(getDownloadUrl(pdf.url), "_blank", "noopener,noreferrer");
     } finally {
       setDownloading(false);
     }
@@ -356,6 +361,7 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
 
 // Fetch PDF via proxy → trigger <a download> click → optionally save to IndexedDB.
 // Keeps the download in-app on mobile (no external browser).
+// Throws if the proxy fails so callers can fall back to a browser open.
 async function downloadPdfViaProxy(pdf: Pdf, { saveOffline = true } = {}) {
   const token = localStorage.getItem("mission_token") ?? "";
   // Reuse cached blob if we already saved it
@@ -368,8 +374,17 @@ async function downloadPdfViaProxy(pdf: Pdf, { saveOffline = true } = {}) {
       credentials: "include",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (!res.ok) throw new Error(`${res.status}`);
+    if (!res.ok) {
+      // Try to surface a meaningful message from the server
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.error ?? `Proxy error ${res.status}`);
+    }
     blob = await res.blob();
+    // Verify we actually got a PDF (magic bytes %PDF) before saving
+    if (blob.size < 4) throw new Error("Empty response from server");
+    const header = await blob.slice(0, 4).arrayBuffer();
+    const magic = String.fromCharCode(...new Uint8Array(header));
+    if (magic !== "%PDF") throw new Error("Server did not return a valid PDF");
     // Cache it for offline use while we're at it
     if (saveOffline) {
       savePdfBlob(pdf.id, blob, pdf.title).catch(() => {});
@@ -517,7 +532,8 @@ export default function StudentPDFs() {
                       size="sm"
                       variant="secondary"
                       className="flex-1 h-8 text-xs gap-1.5"
-                      onClick={() => downloadPdfViaProxy(pdf as Pdf).catch(() => window.open(getDownloadUrl((pdf as Pdf).url), "_blank", "noopener,noreferrer"))}
+                      onClick={() => downloadPdfViaProxy(pdf as Pdf).catch(() => window.open(getDownloadUrl((pdf as Pdf).url), "_blank", "noopener,noreferrer"))
+                      }
                     >
                       <Download size={13} /> Download
                     </Button>

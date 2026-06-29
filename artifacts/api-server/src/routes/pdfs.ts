@@ -224,12 +224,30 @@ router.get("/:id/proxy", authMiddleware, async (req: Request, res: Response) => 
       return;
     }
 
-    const contentLength = upstream.headers.get("content-length");
-    if (contentLength) res.setHeader("Content-Length", contentLength);
-
+    // Read the first chunk and verify it starts with %PDF (PDF magic bytes).
+    // Google Drive sometimes returns an HTML warning/consent page instead of the
+    // actual file — streaming that as application/pdf produces a corrupt download.
     const reader = upstream.body?.getReader();
     if (!reader) { res.status(502).json({ error: "No response body" }); return; }
 
+    const first = await reader.read();
+    if (first.done || !first.value || first.value.length === 0) {
+      res.status(502).json({ error: "Empty response from upstream" });
+      return;
+    }
+
+    // Check PDF magic bytes: %PDF
+    const magic = String.fromCharCode(first.value[0], first.value[1], first.value[2], first.value[3]);
+    if (magic !== "%PDF") {
+      res.status(422).json({ error: "Upstream did not return a valid PDF. The file may be restricted or require a sign-in." });
+      return;
+    }
+
+    const contentLength = upstream.headers.get("content-length");
+    if (contentLength) res.setHeader("Content-Length", contentLength);
+
+    // Stream the first chunk + remainder
+    res.write(first.value); // nosemgrep: javascript.express.security.audit.xss.direct-response-write -- binary PDF bytes piped from cloud storage, Content-Type is application/pdf, not HTML
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
