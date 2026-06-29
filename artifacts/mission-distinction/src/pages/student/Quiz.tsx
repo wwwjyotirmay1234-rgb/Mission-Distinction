@@ -19,7 +19,9 @@ import {
   Play, Clock, CheckCircle, ChevronLeft, ChevronRight,
   Timer, Trophy, XCircle, AlertCircle, ArrowLeft, Flag,
   Upload, RefreshCw, ImageIcon, PenLine, FileText, ShieldCheck,
+  BarChart2,
 } from "lucide-react";
+import QuizAnalysisSection from "./QuizAnalysis";
 import ProctorOverlay from "@/components/ProctorOverlay";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -424,6 +426,7 @@ function ReportDialog({
 
 export default function StudentQuiz() {
   const [mode, setMode] = useState<QuizMode>("browse");
+  const [hubSection, setHubSection] = useState<"quizzes" | "analysis">("quizzes");
   const [activeTab, setActiveTab] = useState("all");
   const [selectedQuizId, setSelectedQuizId] = useState<number | null>(null);
   const [currentQ, setCurrentQ] = useState(0);
@@ -891,7 +894,7 @@ export default function StudentQuiz() {
   const quizList: QuizSummary[] = Array.isArray(quizzesData) ? (quizzesData as QuizSummary[]) : [];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <Dialog open={showProctoringSetup} onOpenChange={setShowProctoringSetup}>
         <DialogContent className="bg-card border-border/50 max-w-md">
           <DialogHeader>
@@ -939,77 +942,117 @@ export default function StudentQuiz() {
         </DialogContent>
       </Dialog>
 
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight mb-2">Quiz Center</h1>
-        <p className="text-sm text-muted-foreground">Test your knowledge and track your performance.</p>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-          {[
-            { type: "mcq", label: "MCQ" },
-            { type: "fill-blank", label: "Fill in the Blank" },
-            { type: "true-false", label: "True / False" },
-            { type: "name-following", label: "Name the Following" },
-            { type: "one-word", label: "One Word" },
-            { type: "short_answer", label: "SAQ" },
-            { type: "long_answer", label: "LAQ" },
-          ].map(t => (
-            <Badge key={t.type} variant="outline" className={`text-[10px] ${getTypeBadgeColor(t.type)}`}>
-              {t.label}
-            </Badge>
-          ))}
-          <span className="self-center">— question types used in quizzes</span>
+      {/* ── Hub header + section switcher ── */}
+      <div className="flex flex-col sm:flex-row sm:items-end gap-4 justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Quiz Hub</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {hubSection === "quizzes"
+              ? "Test your knowledge across all subjects."
+              : "Review your performance, spot weak areas, and study correct answers."}
+          </p>
+        </div>
+
+        {/* Pill toggle */}
+        <div className="flex items-center bg-muted/50 border border-border/50 rounded-full p-1 shrink-0 self-start sm:self-auto">
+          <button
+            onClick={() => setHubSection("quizzes")}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              hubSection === "quizzes"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Play size={13} /> Quizzes
+          </button>
+          <button
+            onClick={() => setHubSection("analysis")}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              hubSection === "analysis"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BarChart2 size={13} /> My Analysis
+          </button>
         </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Browse by Category</h2>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-muted/50 border border-border/50 h-auto p-1 flex-wrap justify-start">
-            {SUBJECTS.map((s) => (
-              <TabsTrigger key={s} value={s}>{s === "all" ? "All Quizzes" : s}</TabsTrigger>
-            ))}
-          </TabsList>
+      {/* ── Analysis section ── */}
+      {hubSection === "analysis" && <QuizAnalysisSection />}
 
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {isLoading ? (
-              Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)
-            ) : quizList.length === 0 ? (
-              <div className="col-span-2 p-12 text-center border border-dashed rounded-xl text-muted-foreground">
-                No quizzes found for this category.
-              </div>
-            ) : (
-              quizList.map((quiz) => (
-                <Card key={quiz.id} className="bg-card/30 border-border/40 hover:bg-card/50 transition-colors">
-                  <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">{quiz.subject}</Badge>
-                        <Badge variant="outline" className={
-                          quiz.difficulty === "easy" ? "bg-green-500/10 text-green-500 border-green-500/20" :
-                          quiz.difficulty === "hard" ? "bg-red-500/10 text-red-500 border-red-500/20" :
-                          "bg-orange-500/10 text-orange-500 border-orange-500/20"
-                        }>{quiz.difficulty}</Badge>
-                        {quiz.isProctored && (
-                          <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20 gap-1 text-[10px]">
-                            <ShieldCheck size={9} /> Proctored
-                          </Badge>
-                        )}
-                      </div>
-                      <h4 className="font-semibold text-base">{quiz.title}</h4>
-                      <div className="flex gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1"><CheckCircle size={14} /> {quiz.questionCount || 0} Questions</span>
-                        <span className="flex items-center gap-1"><Clock size={14} /> {quiz.durationMinutes || 30} mins</span>
-                      </div>
-                    </div>
-                    <Button onClick={() => startQuiz(quiz)} className="w-full sm:w-auto shrink-0 mt-2 sm:mt-0 gap-2">
-                      <Play size={16} /> Start
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))
-            )}
+      {/* ── Quizzes section ── */}
+      {hubSection === "quizzes" && (
+        <div className="space-y-6">
+          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            {[
+              { type: "mcq", label: "MCQ" },
+              { type: "fill-blank", label: "Fill in the Blank" },
+              { type: "true-false", label: "True / False" },
+              { type: "name-following", label: "Name the Following" },
+              { type: "one-word", label: "One Word" },
+              { type: "short_answer", label: "SAQ" },
+              { type: "long_answer", label: "LAQ" },
+            ].map(t => (
+              <Badge key={t.type} variant="outline" className={`text-[10px] ${getTypeBadgeColor(t.type)}`}>
+                {t.label}
+              </Badge>
+            ))}
+            <span className="self-center">— question types</span>
           </div>
-        </Tabs>
-      </div>
+
+          <div>
+            <h2 className="text-base font-semibold mb-3">Browse by Category</h2>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="bg-muted/50 border border-border/50 h-auto p-1 flex-wrap justify-start">
+                {SUBJECTS.map((s) => (
+                  <TabsTrigger key={s} value={s}>{s === "all" ? "All Quizzes" : s}</TabsTrigger>
+                ))}
+              </TabsList>
+
+              <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {isLoading ? (
+                  Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)
+                ) : quizList.length === 0 ? (
+                  <div className="col-span-2 p-12 text-center border border-dashed rounded-xl text-muted-foreground">
+                    No quizzes found for this category.
+                  </div>
+                ) : (
+                  quizList.map((quiz) => (
+                    <Card key={quiz.id} className="bg-card/30 border-border/40 hover:bg-card/50 transition-colors">
+                      <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">{quiz.subject}</Badge>
+                            <Badge variant="outline" className={
+                              quiz.difficulty === "easy" ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                              quiz.difficulty === "hard" ? "bg-red-500/10 text-red-500 border-red-500/20" :
+                              "bg-orange-500/10 text-orange-500 border-orange-500/20"
+                            }>{quiz.difficulty}</Badge>
+                            {quiz.isProctored && (
+                              <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20 gap-1 text-[10px]">
+                                <ShieldCheck size={9} /> Proctored
+                              </Badge>
+                            )}
+                          </div>
+                          <h4 className="font-semibold text-base">{quiz.title}</h4>
+                          <div className="flex gap-4 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1"><CheckCircle size={14} /> {quiz.questionCount || 0} Questions</span>
+                            <span className="flex items-center gap-1"><Clock size={14} /> {quiz.durationMinutes || 30} mins</span>
+                          </div>
+                        </div>
+                        <Button onClick={() => startQuiz(quiz)} className="w-full sm:w-auto shrink-0 mt-2 sm:mt-0 gap-2">
+                          <Play size={16} /> Start
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </Tabs>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
