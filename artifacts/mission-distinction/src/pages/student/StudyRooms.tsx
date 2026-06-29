@@ -56,7 +56,11 @@ function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
 
   const { data, isLoading } = useQuery<Room & { members: Member[] }>({
     queryKey: ["study-room", roomId],
-    queryFn: () => apiFetch(`/api/study-rooms/${roomId}`).then(r => r.json()),
+    queryFn: async () => {
+      const r = await apiFetch(`/api/study-rooms/${roomId}`);
+      if (!r.ok) throw new Error("Failed to load room");
+      return r.json();
+    },
     refetchInterval: 5000,
   });
 
@@ -411,7 +415,12 @@ export default function StudentStudyRooms() {
 
   const { data: rooms = [], isLoading } = useQuery<Room[]>({
     queryKey: ["study-rooms"],
-    queryFn: () => apiFetch("/api/study-rooms").then(r => r.json()),
+    queryFn: async () => {
+      const r = await apiFetch("/api/study-rooms");
+      if (!r.ok) throw new Error("Failed to load rooms");
+      const data = await r.json();
+      return Array.isArray(data) ? data : [];
+    },
     refetchInterval: 10000,
   });
 

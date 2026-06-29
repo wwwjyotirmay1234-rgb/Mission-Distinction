@@ -58,7 +58,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 router.post("/", authMiddleware, createRoomLimiter, async (req: Request, res: Response) => {
   try {
     const userId = ((req as any).user.id as number);
-    const userName = (req as any).user?.name || "Anonymous";
+    const userName = (req as any).user?.fullName || (req as any).user?.name || "Anonymous";
     const { name, subject, timerMinutes } = req.body;
     if (!name?.trim() || !subject) { res.status(400).json({ error: "name and subject required" }); return; }
     const mins = Math.min(Math.max(parseInt(timerMinutes) || 25, 5), 180);
@@ -72,7 +72,7 @@ router.post("/", authMiddleware, createRoomLimiter, async (req: Request, res: Re
 router.post("/:id/join", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = ((req as any).user.id as number);
-    const userName = (req as any).user?.name || "Anonymous";
+    const userName = (req as any).user?.fullName || (req as any).user?.name || "Anonymous";
     const roomId = parseId(req.params.id);
     if (!roomId) { res.status(400).json({ error: "Invalid room ID" }); return; }
     const [room] = await db.select().from(studyRoomsTable).where(eq(studyRoomsTable.id, roomId)).limit(1);
