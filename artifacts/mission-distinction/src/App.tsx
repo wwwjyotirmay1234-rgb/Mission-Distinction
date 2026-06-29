@@ -87,6 +87,7 @@ const StudentConfessions   = lazy(() => import("@/pages/student/Confessions"));
 const StudentStudyRooms    = lazy(() => import("@/pages/student/StudyRooms"));
 const StudentAITools       = lazy(() => import("@/pages/student/AITools"));
 const StudentGames         = lazy(() => import("@/pages/student/Games"));
+const StudentQuizAnalysis  = lazy(() => import("@/pages/student/QuizAnalysis"));
 
 // Admin pages
 const AdminDashboard     = lazy(() => import("@/pages/admin/Dashboard"));
@@ -168,7 +169,8 @@ function Router() {
               <Switch>
                 <Route path="/student/anatomy" component={AnatomyRoute} />
                 <Route path="/student/dashboard"    component={StudentDashboard} />
-                <Route path="/student/quiz"         component={StudentQuiz} />
+                <Route path="/student/quiz"          component={StudentQuiz} />
+                <Route path="/student/quiz-analysis" component={StudentQuizAnalysis} />
                 <Route path="/student/notes"        component={StudentNotes} />
                 <Route path="/student/pdfs"         component={StudentPDFs} />
                 <Route path="/student/community"    component={StudentCommunity} />

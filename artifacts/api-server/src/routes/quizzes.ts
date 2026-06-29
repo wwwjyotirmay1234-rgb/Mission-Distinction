@@ -384,6 +384,44 @@ router.post("/:id/questions/:qid/report", authMiddleware, reportLimiter, async (
   }
 });
 
+/**
+ * GET /api/quizzes/attempts/:id/review
+ * Returns the full question list with correct answers for a specific past attempt.
+ * Only the student who owns the attempt can access this.
+ */
+router.get("/attempts/:id/review", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const attemptId = parseId(req.params.id);
+    if (!attemptId) { res.status(400).json({ error: "Invalid attempt ID" }); return; }
+    const user = (req as any).user;
+
+    const [attempt] = await db.select().from(quizAttemptsTable)
+      .where(eq(quizAttemptsTable.id, attemptId));
+
+    if (!attempt) { res.status(404).json({ error: "Attempt not found" }); return; }
+    if (attempt.userId !== user.id) { res.status(403).json({ error: "Forbidden" }); return; }
+
+    const [quiz] = await db.select({
+      id: quizzesTable.id,
+      title: quizzesTable.title,
+      subject: quizzesTable.subject,
+      difficulty: quizzesTable.difficulty,
+      durationMinutes: quizzesTable.durationMinutes,
+      description: quizzesTable.description,
+    }).from(quizzesTable).where(eq(quizzesTable.id, attempt.quizId));
+
+    if (!quiz) { res.status(404).json({ error: "Quiz not found" }); return; }
+
+    const questions = await db.select().from(questionsTable)
+      .where(eq(questionsTable.quizId, attempt.quizId));
+
+    res.json({ attempt, quiz, questions });
+  } catch (err) {
+    console.error("Review endpoint error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request, res: Response) => {
   try {
     const quizId = parseId(req.params.id);

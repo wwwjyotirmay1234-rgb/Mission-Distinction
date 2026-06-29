@@ -8,7 +8,7 @@ import {
   LayoutDashboard, FileText, File, Users, Newspaper, TrendingUp,
   Bookmark, Calendar as CalendarIcon, Settings, Trophy, MessageSquare,
   Timer, Music, BookOpen, Lightbulb, MessageCircleHeart,
-  Bot, Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight,
+  Bot, Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight, BarChart2,
 } from "lucide-react";
 import { useXPStats } from "@/hooks/useXPStats";
 import { XPProgressBar } from "@/components/XPProgressBar";
@@ -59,6 +59,7 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
     { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy", comingSoon: !canSeeAnatomy },
     { icon: LayoutDashboard, label: "Dashboard", href: "/student/dashboard" },
     { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
+    { icon: BarChart2, label: "Quiz Analysis", href: "/student/quiz-analysis" },
     { icon: FileText, label: "Notes & Books", href: "/student/notes" },
     { icon: File, label: "PDF Library", href: "/student/pdfs" },
     { icon: Users, label: "Community", href: "/student/community" },
