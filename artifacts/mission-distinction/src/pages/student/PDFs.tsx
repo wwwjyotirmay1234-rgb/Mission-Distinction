@@ -231,7 +231,7 @@ export default function StudentPDFs() {
   const [viewingPdf, setViewingPdf] = useState<Pdf | null>(null);
 
   const activeSubject = subject === "All" ? undefined : subject;
-  const { data: pdfsData, isLoading } = useListPdfs(
+  const { data: pdfsData, isLoading, isError, refetch } = useListPdfs(
     { search: search || undefined, subject: activeSubject },
     { query: { queryKey: getListPdfsQueryKey({ search: search || undefined, subject: activeSubject }) } }
   );
@@ -287,6 +287,13 @@ export default function StudentPDFs() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 xl:gap-6">
           {isLoading ? (
             Array(8).fill(0).map((_, i) => <Skeleton key={i} className="aspect-[3/4] w-full rounded-xl" />)
+          ) : isError ? (
+            <div className="col-span-full p-12 text-center border border-dashed border-destructive/30 rounded-xl">
+              <FileText size={32} className="mx-auto mb-3 text-destructive/50" />
+              <p className="font-semibold text-foreground mb-1">Couldn't load PDFs</p>
+              <p className="text-sm text-muted-foreground mb-4">Check your connection and try again.</p>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>
+            </div>
           ) : !pdfsData || (Array.isArray(pdfsData) ? pdfsData.length === 0 : !(pdfsData as any).pdfs?.length) ? (
             <div className="col-span-full p-12 text-center border border-dashed rounded-xl text-muted-foreground">
               No PDFs yet. Check back once your admin uploads study materials.

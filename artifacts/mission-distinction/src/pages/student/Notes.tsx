@@ -350,7 +350,7 @@ export default function StudentNotes() {
     if (viewingNote) trackNoteRead(viewingNote.id);
   }, [viewingNote?.id]);
 
-  const { data: notesData, isLoading: notesLoading } = useListNotes(
+  const { data: notesData, isLoading: notesLoading, isError: notesError, refetch: refetchNotes } = useListNotes(
     { search: search || undefined, subject: activeSubject === "All Subjects" ? undefined : activeSubject },
     { query: { queryKey: getListNotesQueryKey({ search: search || undefined, subject: activeSubject === "All Subjects" ? undefined : activeSubject }) } }
   );
@@ -453,6 +453,13 @@ export default function StudentNotes() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {isLoading ? (
             Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)
+          ) : notesError ? (
+            <div className="col-span-full p-12 text-center border border-dashed border-destructive/30 rounded-xl">
+              <FileText size={32} className="mx-auto mb-3 text-destructive/50" />
+              <p className="font-semibold text-foreground mb-1">Couldn't load notes</p>
+              <p className="text-sm text-muted-foreground mb-4">Check your connection and try again.</p>
+              <Button variant="outline" size="sm" onClick={() => refetchNotes()}>Retry</Button>
+            </div>
           ) : !notesData || notesData.length === 0 ? (
             <div className="col-span-full p-12 text-center border border-dashed rounded-xl text-muted-foreground">
               No notes found. Try adjusting your search or filter.
