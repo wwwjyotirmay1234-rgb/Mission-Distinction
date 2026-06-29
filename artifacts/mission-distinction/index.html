@@ -63,7 +63,7 @@
     -->
     <script>
       (function () {
-        var BUILD_STAMP = 'md-v20-20260629';
+        var BUILD_STAMP = 'md-v21-20260629';
         var STAMP_KEY   = '_md_build';
         var CHUNK_KEY   = '_md_cr';
 
@@ -87,12 +87,18 @@
           return; // halt — reload is coming
         }
 
-        // ── 2. controllerchange: new SW just took over → reload for fresh chunks ──
+        // ── 2. SW signals update via postMessage (iOS-safe) or controllerchange ──
         if ('serviceWorker' in navigator) {
           var _swReloading = false;
-          navigator.serviceWorker.addEventListener('controllerchange', function () {
+          function _doSwReload() {
             if (!_swReloading) { _swReloading = true; window.location.reload(); }
+          }
+          // postMessage path: new SW broadcasts SW_UPDATED after clients.claim()
+          navigator.serviceWorker.addEventListener('message', function (ev) {
+            if (ev.data && ev.data.type === 'SW_UPDATED') { _doSwReload(); }
           });
+          // controllerchange path: fallback for browsers that support it reliably
+          navigator.serviceWorker.addEventListener('controllerchange', _doSwReload);
         }
 
         // ── 3. Chunk 404 guard: stale cached JS/CSS → reload once per session ────

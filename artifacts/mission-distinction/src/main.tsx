@@ -26,6 +26,7 @@ if ("serviceWorker" in navigator) {
       // Vite serves the public folder under the configured base path.
       await navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, {
         scope: import.meta.env.BASE_URL,
+        updateViaCache: "none", // always fetch fresh sw.js — never serve from HTTP cache
       });
     } catch (err) {
       console.warn("[SW] Registration failed:", err);

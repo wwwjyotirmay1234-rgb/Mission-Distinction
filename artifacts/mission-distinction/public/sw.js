@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v20"; // force-evict stale chunk caches after deployment
+const CACHE_VERSION = "v21"; // force-evict stale chunk caches after deployment
 
 // Derive the app base from the SW registration scope, not the SW script URL.
 // This is correct regardless of where sw.js itself is served (root vs sub-path).
@@ -211,6 +211,17 @@ self.addEventListener("activate", event => {
           .map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim())
+      .then(() => {
+        // Force all open tabs/PWA windows to reload so they get fresh JS chunks.
+        // This is more reliable than relying on controllerchange in the page,
+        // especially on iOS Safari where that event can be unreliable.
+        return self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      })
+      .then(clientList => {
+        clientList.forEach(client => {
+          client.postMessage({ type: "SW_UPDATED", version: CACHE_VERSION });
+        });
+      })
       .then(() => rescheduleAllAlarms()) // re-arm any alarms that survived SW restart
   );
 });
@@ -292,20 +303,23 @@ self.addEventListener("fetch", event => {
   }
 
   if (url.pathname.startsWith(BASE + "assets/")) {
+    // Network-first for JS/CSS chunks so fresh deployment files always win.
+    // Falls back to cache only when offline.
     event.respondWith(
-      caches.open(ASSET_CACHE_NAME).then(async cache => {
-        const cached = await cache.match(event.request);
-        if (cached) return cached;
-        return fetch(event.request).then(response => {
-          if (response.ok) cache.put(event.request, response.clone());
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            caches.open(ASSET_CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
+          }
           return response;
-        });
-      })
+        })
+        .catch(() => caches.match(event.request).then(cached => cached || new Response("", { status: 404 })))
     );
     return;
   }
 
   if (url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf|otf)$/)) {
+    // Cache-first for images/fonts — these are content-addressed and don't change.
     event.respondWith(
       caches.open(ASSET_CACHE_NAME).then(async cache => {
         const cached = await cache.match(event.request);
