@@ -15,7 +15,7 @@ const router = Router();
 router.get("/", adminMiddleware, adminListLimiter, async (req: Request, res: Response) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit as string) || 500));
     const role = req.query.role as string | undefined;
 
     const DB_CAP = 10000;
