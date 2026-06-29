@@ -40,8 +40,12 @@ async function _verifyToken(token: string, req: Request, res: Response, next: Ne
   if (parsed.uah) {
     const currentUah = uaHash(req.headers["user-agent"]);
     if (currentUah && parsed.uah !== currentUah) {
-      res.status(401).json({ error: "Session invalid. Please log in again." });
-      return;
+      // Soft-warn only — Samsung devices change UA frequently (Desktop mode toggle,
+      // switching between Samsung Internet / Chrome / PWA mode). A hard reject here
+      // causes all API calls to silently return 401 on tablets, making pages appear
+      // blank even though the user is authenticated. Authentication is guaranteed by
+      // the JWT signature + live DB user lookup above, so UA mismatch is non-critical.
+      console.warn(`[auth] UA mismatch for user ${parsed.userId} — token UA differs from request UA (expected in multi-browser/tab scenarios)`);
     }
   }
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, parsed.userId));

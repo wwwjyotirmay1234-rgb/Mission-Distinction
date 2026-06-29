@@ -1,4 +1,4 @@
-- [JWT UA fingerprinting](jwt-ua-fingerprint.md) — generateToken takes optional ua param, embeds 16-char SHA256 uah claim; soft-checked in authMiddleware (warn, never reject)
+- [JWT UA fingerprinting](jwt-ua-fingerprint.md) — generateToken takes optional ua param, embeds 16-char SHA256 uah claim; MUST be soft-warn only in authMiddleware (never reject)
 - [JWT timing test fix](jwt-timing.md) — JWT iat is second-precision; refresh-rotation test needs ≥1100ms sleep or tokens will be identical within same second
 - [Bundle minification](bundle-minification.md) — adding minify+treeShaking to esbuild cut bundle 4.4MB→2.3MB; sourcemap still 7.9MB (linked, not inline, fine)
 - [Load test baseline](load-test-baseline.md) — localhost: 2032 req/s, 0% errors, p95=20ms, p99=41ms; thresholds: error<1%, p95<2000ms, rps>10
@@ -11,3 +11,4 @@
 - [Exams route role check pattern](exams-role-check.md) — user object has role:"admin"|"student", NOT isAdmin boolean; always check user.role === "admin"
 - [LandingPage hooks order](landing-hooks-order.md) — ALL hooks must come before any conditional return; putting mutations/useForm/useEffect after early return causes crash on re-render
 - [WebRTC TURN servers for India](webrtc-turn-india.md) — STUN alone fails on Indian carrier NAT (Jio/Airtel/BSNL); use Open Relay Project free TURN servers
+- [SW API cache strategy](sw-api-cache.md) — use network-first (not stale-while-revalidate) for API routes; stale-while-revalidate causes blank pages when empty [] is cached pre-profile-setup

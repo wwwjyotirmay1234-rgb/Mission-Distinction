@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v26"; // force-evict stale chunk caches after deployment
+const CACHE_VERSION = "v27"; // force-evict stale chunk caches after deployment
 
 // Derive the app base from the SW registration scope, not the SW script URL.
 // This is correct regardless of where sw.js itself is served (root vs sub-path).
@@ -256,25 +256,22 @@ self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
 
   if (isCacheableApi(url)) {
+    // Network-first: always try the network so online users get fresh content
+    // (stale-while-revalidate caused blank pages when an empty response was cached
+    // before the student set their year/session — tablets were served stale [] for
+    // up to 10 minutes even after the profile was updated).
+    // Offline fallback: serve cache if the network is unavailable.
     event.respondWith(
-      caches.open(API_CACHE_NAME).then(async cache => {
-        const cached = await cache.match(event.request);
-        if (cached && !isExpired(cached)) {
-          fetch(event.request)
-            .then(fresh => cacheApiResponse(event.request, fresh))
-            .catch(() => {});
-          return cached;
-        }
-        return fetch(event.request)
-          .then(response => cacheApiResponse(event.request, response))
-          .catch(() => {
-            if (cached) return cached;
-            return new Response(
-              JSON.stringify({ error: "You are offline. Showing cached data when available." }),
-              { status: 503, headers: { "Content-Type": "application/json" } }
-            );
-          });
-      })
+      fetch(event.request)
+        .then(response => cacheApiResponse(event.request, response))
+        .catch(async () => {
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          return new Response(
+            JSON.stringify({ error: "You are offline. Showing cached data when available." }),
+            { status: 503, headers: { "Content-Type": "application/json" } }
+          );
+        })
     );
     return;
   }
