@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, setTokenRefresher, setAuthTokenGetter } from "@workspace/api-client-react";
+import { signOut as firebaseSignOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 interface LoginResponse {
   token: string;
@@ -46,6 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       credentials: "include",
       headers: { "Content-Type": "application/json" },
     }).catch(() => {});
+    // Sign out of Firebase too so Google-authenticated students
+    // are not automatically re-logged in via onAuthStateChanged.
+    firebaseSignOut(auth).catch(() => {});
     setUser(null);
     setToken(null);
     localStorage.removeItem("mission_user");
