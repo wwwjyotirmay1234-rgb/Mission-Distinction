@@ -19,8 +19,7 @@ function isProfileComplete(user: any): boolean {
   return !!(
     user?.year?.trim() &&
     user?.sessionYear?.trim() &&
-    user?.college?.trim() &&
-    user?.mobileNumber?.trim()
+    user?.college?.trim()
   );
 }
 
@@ -39,16 +38,15 @@ export function CompleteProfileModal() {
   if (!year)        missingFields.push("MBBS Year");
   if (!sessionYear) missingFields.push("Session Year");
   if (!college)     missingFields.push("College");
-  if (!mobile)      missingFields.push("Mobile Number");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!year || !sessionYear || !college || !mobile.trim()) {
+    if (!year || !sessionYear || !college) {
       toast.error("Please fill in all required fields.");
       return;
     }
-    if (!/^[6-9]\d{9}$/.test(mobile.trim())) {
+    if (mobile.trim() && !/^[6-9]\d{9}$/.test(mobile.trim())) {
       toast.error("Enter a valid 10-digit Indian mobile number.");
       return;
     }
@@ -167,7 +165,8 @@ export function CompleteProfileModal() {
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-2">
               <Phone size={14} className="text-primary" />
-              Mobile Number <span className="text-red-400">*</span>
+              Mobile Number
+              <span className="text-[10px] font-normal text-muted-foreground">(optional)</span>
             </Label>
             <div className="flex">
               <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-border bg-muted text-muted-foreground text-sm">
@@ -179,17 +178,17 @@ export function CompleteProfileModal() {
                 placeholder="10-digit mobile number"
                 value={mobile}
                 onChange={e => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                className={`rounded-l-none ${!mobile || !/^[6-9]\d{9}$/.test(mobile) ? "border-red-500/50" : ""}`}
+                className={`rounded-l-none ${mobile && !/^[6-9]\d{9}$/.test(mobile) ? "border-red-500/50" : ""}`}
               />
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Used for important notices — not shared publicly.
+              Recommended — used for important notices, not shared publicly.
             </p>
           </div>
 
           <Button
             type="submit"
-            disabled={saving || !year || !sessionYear || !college || !mobile || mobile.length !== 10}
+            disabled={saving || !year || !sessionYear || !college || (!!mobile && mobile.length !== 10)}
             className="w-full mt-2"
             size="lg"
           >
