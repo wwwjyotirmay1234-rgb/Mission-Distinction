@@ -4,12 +4,15 @@
 # Runs as a background workflow — no manual pushes needed.
 
 REPO_URL="${GITHUB_REPO_URL}"
-TOKEN="${GITHUB_TOKEN}"
+# Prefer GITHUB_PERSONAL_ACCESS_TOKEN (classic PAT with workflow scope) over
+# GITHUB_TOKEN, which is a fine-grained PAT that lacks workflow scope and
+# will be rejected when pushing commits that touch .github/workflows/*.
+TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN:-${GITHUB_TOKEN}}"
 REF_FILE=".git/refs/heads/main"
 LAST_SHA=""
 
 if [ -z "$REPO_URL" ] || [ -z "$TOKEN" ]; then
-  echo "[github-sync] GITHUB_REPO_URL or GITHUB_TOKEN not set — sync disabled."
+  echo "[github-sync] GITHUB_REPO_URL and a GitHub token (GITHUB_PERSONAL_ACCESS_TOKEN or GITHUB_TOKEN) must be set — sync disabled."
   exit 0
 fi
 
