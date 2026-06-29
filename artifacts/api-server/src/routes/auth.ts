@@ -185,6 +185,10 @@ router.post("/student/login", loginLimiter, perCredentialLimiter, async (req: Re
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
+    if (!user.passwordHash) {
+      res.status(401).json({ error: "This account was created with Google. Please sign in using the Google button." });
+      return;
+    }
     if (!await verifyPassword(password, user.passwordHash)) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
