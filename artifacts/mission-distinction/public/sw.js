@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v25"; // force-evict stale chunk caches after deployment
+const CACHE_VERSION = "v26"; // force-evict stale chunk caches after deployment
 
 // Derive the app base from the SW registration scope, not the SW script URL.
 // This is correct regardless of where sw.js itself is served (root vs sub-path).

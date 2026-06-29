@@ -538,6 +538,19 @@ export default function StudentCommunity() {
     return () => { sock.disconnect(); socketRef.current = null; };
   }, [token]);
 
+  // Android/iOS background → foreground: if the socket exhausted its reconnection
+  // attempts while the tab was hidden (OS killed the connection), reconnect on return.
+  useEffect(() => {
+    const onVisible = () => {
+      const sock = socketRef.current;
+      if (sock && !sock.connected) {
+        sock.connect();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
   useEffect(() => {
     const sock = socketRef.current;
     if (!sock) return;

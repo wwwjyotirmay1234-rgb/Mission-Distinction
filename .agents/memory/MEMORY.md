@@ -10,3 +10,4 @@
 - [3D Anatomy Hub architecture](anatomy-hub-arch.md) — R3F + drei for 3D, lazy-loaded, JSX.Element → React.ReactElement to avoid TS namespace errors, procedural geometry per system
 - [Exams route role check pattern](exams-role-check.md) — user object has role:"admin"|"student", NOT isAdmin boolean; always check user.role === "admin"
 - [LandingPage hooks order](landing-hooks-order.md) — ALL hooks must come before any conditional return; putting mutations/useForm/useEffect after early return causes crash on re-render
+- [WebRTC TURN servers for India](webrtc-turn-india.md) — STUN alone fails on Indian carrier NAT (Jio/Airtel/BSNL); use Open Relay Project free TURN servers
