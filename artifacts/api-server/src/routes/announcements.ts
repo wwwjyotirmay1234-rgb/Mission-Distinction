@@ -8,7 +8,7 @@ import { stripHtml } from "../lib/sanitize";
 import { sendPushToAll } from "./push";
 import { getCache, setCache, invalidateCache } from "../lib/cache";
 
-const VALID_TYPES = new Set(["event", "news", "alert", "general"]);
+const VALID_TYPES = new Set(["event", "news", "alert", "general", "announcement"]);
 const CACHE_PREFIX = "announcements:";
 const CACHE_TTL_MS = 2 * 60 * 1000;
 
