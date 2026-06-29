@@ -58,15 +58,36 @@
 
     <!--
       CRITICAL: This inline script runs BEFORE any React bundle.
-      If stale service-worker chunks cause main.tsx to never execute,
-      the controllerchange listener in main.tsx is never registered.
-      This script is the safety net — it fires regardless of React.
+      BUILD_STAMP changes with every deployment — triggers a full SW nuke + reload
+      for any user whose cached stamp is outdated, regardless of sessionStorage state.
     -->
     <script>
       (function () {
-        // 1. When a new SW takes control, reload once to get fresh JS chunks.
-        //    This is safe — after the reload the SW is already active, so
-        //    controllerchange won't fire again on normal usage.
+        var BUILD_STAMP = 'md-v20-20260629';
+        var STAMP_KEY   = '_md_build';
+        var CHUNK_KEY   = '_md_cr';
+
+        // ── 1. Build-stamp check: new deployment → nuke old SW + caches + reload ──
+        var storedStamp = localStorage.getItem(STAMP_KEY);
+        if (storedStamp !== BUILD_STAMP && 'serviceWorker' in navigator) {
+          localStorage.setItem(STAMP_KEY, BUILD_STAMP);
+          sessionStorage.removeItem(CHUNK_KEY); // clear any stale chunk-error flag
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            var nukes = regs.map(function (r) { return r.unregister(); });
+            return Promise.all(nukes);
+          }).then(function () {
+            return caches.keys();
+          }).then(function (keys) {
+            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          }).then(function () {
+            window.location.reload(true);
+          }).catch(function () {
+            window.location.reload(true);
+          });
+          return; // halt — reload is coming
+        }
+
+        // ── 2. controllerchange: new SW just took over → reload for fresh chunks ──
         if ('serviceWorker' in navigator) {
           var _swReloading = false;
           navigator.serviceWorker.addEventListener('controllerchange', function () {
@@ -74,9 +95,7 @@
           });
         }
 
-        // 2. If a JS/CSS chunk 404s (stale cache), do ONE hard reload.
-        //    sessionStorage flag prevents an infinite reload loop on slow connections.
-        var CHUNK_KEY = '_md_cr';
+        // ── 3. Chunk 404 guard: stale cached JS/CSS → reload once per session ────
         if (!sessionStorage.getItem(CHUNK_KEY)) {
           window.addEventListener('error', function (e) {
             var el = e && e.target;
@@ -89,7 +108,7 @@
             }
           }, true);
         } else {
-          sessionStorage.removeItem(CHUNK_KEY); // reset for next visit
+          sessionStorage.removeItem(CHUNK_KEY);
         }
       })();
     </script>
