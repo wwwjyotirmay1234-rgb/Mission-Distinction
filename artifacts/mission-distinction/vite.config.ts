@@ -57,10 +57,6 @@ export default defineConfig({
           if (id.includes("three") || id.includes("@react-three") || id.includes("@react-spring")) {
             return "vendor-three";
           }
-          // Core React runtime
-          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
-            return "vendor-react";
-          }
           // Framer Motion
           if (id.includes("framer-motion")) {
             return "vendor-motion";
