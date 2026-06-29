@@ -16,19 +16,33 @@ import rateLimit from "express-rate-limit";
 
 const router = Router();
 
-// Limits are generous enough for a college batch (200+ students) on shared
-// campus WiFi (one IP), but capped to prevent abuse.
+// ── Per-IP limits (shared campus WiFi → all students share one IP) ─────────────
+// Raised to handle 500+ students logging in simultaneously from one network.
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 1000 : 200,
+  max: process.env.NODE_ENV === "development" ? 2000 : 2000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many login attempts. Please try again in 15 minutes." },
 });
 
+// ── Per-credential brute-force protection (keyed on email/phone) ────────────
+// Prevents an attacker targeting a specific account, even from different IPs.
+const perCredentialLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const id = req.body?.identifier || req.body?.email || req.body?.phone || "unknown";
+    return String(id).toLowerCase().trim().slice(0, 100);
+  },
+  message: { error: "Too many attempts for this account. Please try again in 15 minutes." },
+});
+
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 500 : 30,
+  max: process.env.NODE_ENV === "development" ? 500 : 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many registration attempts. Please try again in an hour." },
@@ -36,7 +50,7 @@ const registerLimiter = rateLimit({
 
 const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 500 : 20,
+  max: process.env.NODE_ENV === "development" ? 500 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many password reset requests. Please try again in 15 minutes." },
@@ -44,7 +58,7 @@ const forgotPasswordLimiter = rateLimit({
 
 const resetPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 500 : 30,
+  max: process.env.NODE_ENV === "development" ? 500 : 200,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many password reset attempts. Please try again in an hour." },
@@ -52,7 +66,7 @@ const resetPasswordLimiter = rateLimit({
 
 const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 1000 : 300,
+  max: process.env.NODE_ENV === "development" ? 2000 : 2000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many token refresh requests. Please try again shortly." },
@@ -60,7 +74,7 @@ const refreshLimiter = rateLimit({
 
 const googleAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 1000 : 200,
+  max: process.env.NODE_ENV === "development" ? 2000 : 2000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many Google sign-in attempts. Please try again shortly." },
@@ -157,7 +171,7 @@ router.post("/student/register", registerLimiter, async (req: Request, res: Resp
 });
 
 // ─── Student Login ────────────────────────────────────────────────────────────
-router.post("/student/login", loginLimiter, async (req: Request, res: Response) => {
+router.post("/student/login", loginLimiter, perCredentialLimiter, async (req: Request, res: Response) => {
   try {
     const { identifier: rawIdentifier, password } = req.body;
     if (!rawIdentifier || !password) {
@@ -229,7 +243,7 @@ router.post("/admin/register", registerLimiter, async (req: Request, res: Respon
 });
 
 // ─── Admin Login ──────────────────────────────────────────────────────────────
-router.post("/admin/login", loginLimiter, async (req: Request, res: Response) => {
+router.post("/admin/login", loginLimiter, perCredentialLimiter, async (req: Request, res: Response) => {
   try {
     const { email: rawAdminEmail, password } = req.body;
     if (!rawAdminEmail || !password) {
