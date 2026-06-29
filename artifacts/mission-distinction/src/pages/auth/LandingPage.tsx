@@ -223,46 +223,33 @@ export default function LandingPage() {
 
     setGoogleLoading(true);
 
-    // On mobile or PWA standalone mode, popups are always blocked by the OS/browser.
-    // Skip straight to redirect so it works on the first tap every time.
-    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
-
-    if (isMobile || isStandalone) {
-      try {
-        sessionStorage.setItem("md_google_redirect", "1");
-        await signInWithRedirect(auth, googleProvider);
-        // Page navigates away — result handled in useEffect via getRedirectResult.
-      } catch {
-        sessionStorage.removeItem("md_google_redirect");
-        toast.error("Could not start Google sign-in. Please try again.");
-        setGoogleLoading(false);
-      }
-      return;
-    }
-
-    // Desktop: popup is reliable and faster (no page reload needed).
+    // Use signInWithPopup on ALL platforms (including mobile).
+    // Modern Chrome/Safari allow popups triggered by a real user gesture (tap/click).
+    // This completely avoids the signInWithRedirect + getRedirectResult flow which is
+    // broken in Chrome 115+ and Safari ITP due to third-party cookie restrictions.
+    // Redirect is only used as a last resort if the popup itself is blocked.
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
       await finishGoogleAuth(idToken);
     } catch (err: any) {
       const code: string = err?.code ?? "";
-      if (code === "auth/popup-blocked" || code === "auth/popup-closed-by-user") {
-        // Popup was blocked on desktop — fall back to redirect
+      if (code === "auth/popup-blocked") {
+        // Popup was explicitly blocked by the browser — fall back to redirect
         try {
           sessionStorage.setItem("md_google_redirect", "1");
           await signInWithRedirect(auth, googleProvider);
+          // Page navigates away — result handled in useEffect on return.
         } catch {
           sessionStorage.removeItem("md_google_redirect");
           toast.error("Popup blocked. Please allow popups for this site and try again.");
           setGoogleLoading(false);
         }
+      } else if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+        // User dismissed the popup — reset silently
+        setGoogleLoading(false);
       } else if (code === "auth/unauthorized-domain") {
         toast.error(`Google sign-in blocked. Add "${window.location.hostname}" to Firebase Console → Authentication → Authorized domains.`);
-        setGoogleLoading(false);
-      } else if (code === "auth/cancelled-popup-request") {
-        // User clicked the button multiple times — silently reset
         setGoogleLoading(false);
       } else if (code) {
         toast.error(`Google sign-in failed (${code}). Please try again.`);

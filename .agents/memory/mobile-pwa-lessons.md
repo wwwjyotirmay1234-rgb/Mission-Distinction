@@ -8,10 +8,10 @@ description: Hard-won mobile/PWA fixes for Mission Distinction — auth, PDF vie
 **Why:** Mobile browsers don't always send the refresh cookie reliably (especially from PWA home-screen shortcuts), so short-lived tokens get users kicked out constantly.
 **How to apply:** Keep JWT_EXPIRES_IN at "7d". The refresh token (30d, httpOnly cookie) handles rotation for active sessions.
 
-## Google login on mobile: skip popup, use redirect + onAuthStateChanged fallback
-**Rule:** On mobile (`/Mobi|Android|iPhone|iPad/i`), call `signInWithRedirect` directly. Also add an `onAuthStateChanged` fallback for when `getRedirectResult` drops the auth event.
-**Why:** Mobile browsers block popups. Additionally, iOS (ITP) and some Android browsers silently throw `auth/no-auth-event` from `getRedirectResult` — the user IS signed into Firebase but the backend never gets notified, causing "multiple attempts needed". Firebase still has the user in local persistence, so `onAuthStateChanged` catches them.
-**How to apply:** In the `useEffect`, after `getRedirectResult`, if `redirectPending===true` register an `onAuthStateChanged` listener. Guard with a `handledByRedirectResult` flag + 500ms delay so `getRedirectResult` gets first pick. Only call `finishGoogleAuth` once. Unsubscribe on cleanup.
+## Google login: always use signInWithPopup first on ALL platforms
+**Rule:** Use `signInWithPopup` on both desktop AND mobile. Only fall back to `signInWithRedirect` if the error code is specifically `auth/popup-blocked`. Keep the `onAuthStateChanged` + `getRedirectResult` useEffect as fallback for the rare redirect case.
+**Why:** `signInWithRedirect` + `getRedirectResult` is broken in Chrome 115+ and Safari ITP because both block third-party cookies, which Firebase relies on to relay the auth result back. The result: user completes Google sign-in, is redirected back, but `getRedirectResult` returns null silently. Modern mobile browsers (Chrome on Android, Safari on iOS) DO allow popups triggered by a real user gesture (tap). Switching to popup-first completely bypasses the cookie issue. The "add domain to Firebase" fix kept being needed because redirect was the real silent failure.
+**How to apply:** In `handleGoogleSignIn`, call `signInWithPopup` directly. Catch `auth/popup-blocked` → fall back to redirect. Catch `auth/popup-closed-by-user` / `auth/cancelled-popup-request` → reset loading silently. Keep the useEffect `getRedirectResult` + `onAuthStateChanged` chain as a safety net for the redirect fallback path.
 
 ## PDF/document viewer on mobile
 **Rule:** Google Docs viewer (`docs.google.com/viewer?url=...`) is unreliable on mobile — often blank or "Unable to preview". On mobile, show direct "Read PDF" + "Download" buttons instead.
