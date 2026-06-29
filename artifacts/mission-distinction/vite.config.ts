@@ -73,6 +73,14 @@ export default defineConfig({
           if (id.includes("@radix-ui") || id.includes("lucide-react") || id.includes("cmdk") || id.includes("sonner")) {
             return "vendor-ui";
           }
+          // Firebase — split out so it's a separate download (large, ~800KB)
+          if (id.includes("node_modules/firebase") || id.includes("node_modules/@firebase")) {
+            return "vendor-firebase";
+          }
+          // Sentry — large, only needed for error reporting
+          if (id.includes("node_modules/@sentry")) {
+            return "vendor-sentry";
+          }
           // Everything else in node_modules → vendor-misc
           if (id.includes("node_modules")) {
             return "vendor-misc";

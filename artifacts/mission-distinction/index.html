@@ -51,10 +51,41 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Dark background prevents white/black flash while JS loads -->
-    <style>html,body{background:#0d0f1a;margin:0;padding:0;min-height:100vh;}</style>
+    <style>
+      html,body{background:#0d0f1a;margin:0;padding:0;min-height:100vh;}
+      #app-loading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d0f1a;z-index:9990;pointer-events:none;}
+      #app-loading-ring{width:40px;height:40px;border:3px solid #3b2170;border-top-color:#7c3aed;border-radius:50%;animation:md-spin 0.7s linear infinite;}
+      @keyframes md-spin{to{transform:rotate(360deg)}}
+      #app-error{display:none;position:fixed;top:0;left:0;right:0;padding:16px 20px;background:#1a0a2e;border-bottom:2px solid #f87171;color:#fca5a5;font-family:monospace;font-size:13px;z-index:9999;white-space:pre-wrap;word-break:break-all;line-height:1.5;}
+    </style>
   </head>
   <body>
+    <!-- #app-loading spinner: visible immediately, hidden by JS once React mounts -->
+    <div id="app-loading" aria-hidden="true">
+      <div id="app-loading-ring"></div>
+    </div>
+    <!-- #app-error: hidden normally, shown by onerror/onunhandledrejection before React mounts -->
+    <div id="app-error"></div>
+
     <div id="root"></div>
+
+    <!-- Error capture: shows any JS error on-screen BEFORE React mounts so we can debug production -->
+    <script>
+      (function(){
+        function _showErr(msg){
+          var el=document.getElementById('app-error');
+          if(el){el.style.display='block';el.textContent=(el.textContent?el.textContent+'\n':'')+msg;}
+        }
+        window.addEventListener('error',function(e){
+          if(document.getElementById('root').hasChildNodes())return;
+          _showErr('[JS Error] '+(e.message||String(e.error))+'\n  at '+(e.filename||'?')+':'+(e.lineno||'?'));
+        });
+        window.addEventListener('unhandledrejection',function(e){
+          if(document.getElementById('root').hasChildNodes())return;
+          _showErr('[Unhandled Promise] '+(e.reason&&(e.reason.message||e.reason.stack||String(e.reason))));
+        });
+      })();
+    </script>
 
     <!--
       CRITICAL: This inline script runs BEFORE any React bundle.
@@ -63,7 +94,7 @@
     -->
     <script>
       (function () {
-        var BUILD_STAMP = 'md-v21-20260629';
+        var BUILD_STAMP = 'md-v22-20260629';
         var STAMP_KEY   = '_md_build';
         var CHUNK_KEY   = '_md_cr';
 

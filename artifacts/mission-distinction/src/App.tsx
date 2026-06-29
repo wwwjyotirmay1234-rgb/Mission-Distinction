@@ -241,9 +241,18 @@ function ThemedToaster() {
   return <Toaster theme={theme} />;
 }
 
+function HideLoadingSpinner() {
+  useEffect(() => {
+    const el = document.getElementById("app-loading");
+    if (el) el.style.display = "none";
+  }, []);
+  return null;
+}
+
 function App() {
   return (
     <ErrorBoundary>
+      <HideLoadingSpinner />
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ThemeProvider>
