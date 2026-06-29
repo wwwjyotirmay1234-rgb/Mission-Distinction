@@ -309,7 +309,7 @@ export default function SuperAdminPanel() {
                             <Badge variant="outline" className={`text-[10px] px-1.5 py-0 capitalize ${u.isSuperAdmin ? "border-yellow-500/30 text-yellow-400" : u.role === "admin" ? "border-purple-500/30 text-purple-400" : "border-primary/30 text-primary"}`}>
                               {u.isSuperAdmin ? "super admin" : u.role}
                             </Badge>
-                            {u.college && <span className="text-[10px] text-muted-foreground truncate max-w-[160px]">{u.college}</span>}
+                            {u.college && u.role !== "admin" && <span className="text-[10px] text-muted-foreground truncate max-w-[160px]">{u.college}</span>}
                             {!!u.studyStreak && u.studyStreak > 0 && (
                               <span className="text-[10px] text-orange-400 flex items-center gap-0.5"><Flame size={10} />{u.studyStreak}</span>
                             )}

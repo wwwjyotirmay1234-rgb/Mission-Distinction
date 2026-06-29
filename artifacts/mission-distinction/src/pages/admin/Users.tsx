@@ -232,7 +232,7 @@ export default function AdminUsers() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">{user.role === "student" ? ((user as any).year || "—") : "Admin Access"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{(user as any).college || "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{user.role === "admin" ? "—" : ((user as any).college || "—")}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       {user.id !== currentUser?.id ? (
