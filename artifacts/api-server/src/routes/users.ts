@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq, desc, and, ilike, or } from "drizzle-orm";
-import { adminMiddleware, authMiddleware } from "../middlewares/auth";
+import { adminMiddleware, authMiddleware, superAdminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import rateLimit from "express-rate-limit";
 
@@ -137,10 +137,15 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
+router.delete("/:id", superAdminMiddleware, async (req: Request, res: Response) => {
   try {
     const id = parseId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid user ID" }); return; }
+    const caller = (req as any).user;
+    if (id === caller.id) { res.status(400).json({ error: "You cannot delete your own account" }); return; }
+    const [target] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+    if (!target) { res.status(404).json({ error: "User not found" }); return; }
+    if (target.isSuperAdmin) { res.status(403).json({ error: "Cannot delete another super admin" }); return; }
     await db.delete(usersTable).where(eq(usersTable.id, id));
     res.status(204).send();
   } catch (err) {

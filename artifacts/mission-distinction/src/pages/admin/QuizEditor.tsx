@@ -23,6 +23,7 @@ import {
   ArrowLeft, Plus, Pencil, Trash2, CheckCircle2, Brain,
   Clock, BookOpen, Sparkles, AlertCircle, Upload, HelpCircle, Wand2, Loader2,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology", "Medicine", "Surgery", "Mixed"];
 const OPTION_LABELS = ["A", "B", "C", "D"];
@@ -70,6 +71,8 @@ export default function QuizEditor() {
   const [, navigate] = useLocation();
   const quizId = params?.id ? parseInt(params.id) : null;
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
+  const isSuperAdmin = !!(currentUser as any)?.isSuperAdmin;
 
   const [qOpen, setQOpen] = useState(false);
   const [qForm, setQForm] = useState(emptyQForm);
@@ -660,10 +663,16 @@ export default function QuizEditor() {
                 <Label>Mark as Featured</Label>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-red-500/20 bg-red-500/5">
-              <Switch checked={metaForm.isProctored} onCheckedChange={(v) => setMetaForm({ ...metaForm, isProctored: v })} />
+            <div className={`flex items-center gap-3 p-3 rounded-xl border border-red-500/20 bg-red-500/5 ${!isSuperAdmin ? "opacity-50" : ""}`}>
+              <Switch
+                checked={metaForm.isProctored}
+                onCheckedChange={(v) => isSuperAdmin && setMetaForm({ ...metaForm, isProctored: v })}
+                disabled={!isSuperAdmin}
+              />
               <div>
-                <Label className="text-red-300">Proctored Exam</Label>
+                <Label className="text-red-300">
+                  Proctored Exam {!isSuperAdmin && <span className="text-xs text-muted-foreground font-normal">(super admin only)</span>}
+                </Label>
                 <p className="text-xs text-muted-foreground mt-0.5">AI webcam monitoring, tab detection, fullscreen enforcement, copy/paste blocked</p>
               </div>
             </div>

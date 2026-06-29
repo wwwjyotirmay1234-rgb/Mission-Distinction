@@ -35,6 +35,8 @@ export default function AdminUsers() {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
 
+  const isSuperAdmin = !!(currentUser as any)?.isSuperAdmin;
+
   const { data: usersData, isLoading } = useListUsers(
     { role: roleFilter },
     { query: { queryKey: getListUsersQueryKey({ role: roleFilter }) } }
@@ -146,7 +148,7 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* Bulk action toolbar */}
+      {/* Bulk action toolbar — delete only available to super admin */}
       {selected.size > 0 && (
         <div className="flex items-center gap-3 px-4 py-3 bg-primary/10 border border-primary/20 rounded-xl">
           <CheckSquare className="w-4 h-4 text-primary" />
@@ -155,9 +157,11 @@ export default function AdminUsers() {
             <Button size="sm" variant="outline" onClick={exportCSV} className="gap-1.5 text-xs">
               <Download className="w-3.5 h-3.5" /> Export Selected
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setConfirmBulkDelete(true)} className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
-              <Trash2 className="w-3.5 h-3.5" /> Delete Selected
-            </Button>
+            {isSuperAdmin && (
+              <Button size="sm" variant="outline" onClick={() => setConfirmBulkDelete(true)} className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
+                <Trash2 className="w-3.5 h-3.5" /> Delete Selected
+              </Button>
+            )}
             <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())} className="text-xs">Clear</Button>
           </div>
         </div>
@@ -240,13 +244,15 @@ export default function AdminUsers() {
                             <DropdownMenuItem onClick={() => setWarnDialog({ id: user.id, name: user.fullName })}>
                               <AlertTriangle className="mr-2 h-4 w-4 text-amber-400" /> Issue Warning
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive focus:bg-destructive/10"
-                              onClick={() => setConfirmDelete({ id: user.id, name: user.fullName })}
-                            >
-                              <ShieldOff className="mr-2 h-4 w-4" />
-                              {user.role === "student" ? "Kick Student" : "Remove Admin"}
-                            </DropdownMenuItem>
+                            {isSuperAdmin && (
+                              <DropdownMenuItem
+                                className="text-destructive focus:bg-destructive/10"
+                                onClick={() => setConfirmDelete({ id: user.id, name: user.fullName })}
+                              >
+                                <ShieldOff className="mr-2 h-4 w-4" />
+                                {user.role === "student" ? "Kick Student" : "Remove Admin"}
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       ) : (

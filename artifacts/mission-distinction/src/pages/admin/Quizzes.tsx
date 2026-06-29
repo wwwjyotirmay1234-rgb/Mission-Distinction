@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useListQuizzes, useCreateQuiz, useDeleteQuiz, getListQuizzesQueryKey } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
 import { Search, Plus, MoreVertical, Trash2, CheckCircle, Pencil, ClipboardCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -21,6 +22,8 @@ const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Mixed", "NEET PG"];
 
 export default function AdminQuizzes() {
   const [, navigate] = useLocation();
+  const { user: currentUser } = useAuth();
+  const isSuperAdmin = !!(currentUser as any)?.isSuperAdmin;
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -230,9 +233,15 @@ export default function AdminQuizzes() {
                   <Switch checked={form.isFeatured} onCheckedChange={(v) => setForm({ ...form, isFeatured: v })} />
                   <Label className="cursor-pointer">Featured</Label>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Switch checked={form.isProctored} onCheckedChange={(v) => setForm({ ...form, isProctored: v })} />
-                  <Label className="cursor-pointer">Proctored</Label>
+                <div className={`flex items-center gap-3 ${!isSuperAdmin ? "opacity-50" : ""}`}>
+                  <Switch
+                    checked={form.isProctored}
+                    onCheckedChange={(v) => isSuperAdmin && setForm({ ...form, isProctored: v })}
+                    disabled={!isSuperAdmin}
+                  />
+                  <Label className={isSuperAdmin ? "cursor-pointer" : "cursor-not-allowed"}>
+                    Proctored {!isSuperAdmin && <span className="text-xs text-muted-foreground">(super admin only)</span>}
+                  </Label>
                 </div>
               </div>
             </div>

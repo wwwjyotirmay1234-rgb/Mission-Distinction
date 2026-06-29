@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { quizzesTable, questionsTable, quizAttemptsTable, activityTable, questionReportsTable, quizSubmissionsTable } from "@workspace/db";
 import { eq, sql, desc } from "drizzle-orm";
-import { authMiddleware, adminMiddleware } from "../middlewares/auth";
+import { authMiddleware, adminMiddleware, superAdminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { updateStreak } from "../lib/streak";
 import { stripHtml } from "../lib/sanitize";
@@ -204,12 +204,18 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const id = parseId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
+    const caller = (req as any).user;
     const { title, subject, description, difficulty, durationMinutes, isFeatured, isProctored } = req.body;
     const safeTitle = title !== undefined ? stripHtml(String(title)) : undefined;
     const safeSubject = subject !== undefined ? stripHtml(String(subject)) : undefined;
     const safeDescription = description !== undefined ? (description ? stripHtml(String(description)) : null) : undefined;
+    const updates: Record<string, any> = { title: safeTitle, subject: safeSubject, description: safeDescription, difficulty, durationMinutes, isFeatured };
+    // Only super admins can change proctored status
+    if (caller.isSuperAdmin && isProctored !== undefined) {
+      updates.isProctored = isProctored;
+    }
     const [quiz] = await db.update(quizzesTable)
-      .set({ title: safeTitle, subject: safeSubject, description: safeDescription, difficulty, durationMinutes, isFeatured, isProctored })
+      .set(updates)
       .where(eq(quizzesTable.id, id))
       .returning();
     if (!quiz) { res.status(404).json({ error: "Not found" }); return; }
