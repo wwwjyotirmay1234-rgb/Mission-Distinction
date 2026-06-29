@@ -590,7 +590,7 @@ export default function LandingPage() {
                           name="fullName"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Full Name</FormLabel>
+                              <FormLabel>Full Name <span className="text-destructive">*</span></FormLabel>
                               <FormControl>
                                 <Input placeholder="John Doe" {...field} className="bg-background/50" />
                               </FormControl>
@@ -617,7 +617,7 @@ export default function LandingPage() {
                             name="password"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Password</FormLabel>
+                                <FormLabel>Password <span className="text-destructive">*</span></FormLabel>
                                 <FormControl>
                                   <Input type="password" autoComplete="new-password" {...field} className="bg-background/50" />
                                 </FormControl>
@@ -630,7 +630,7 @@ export default function LandingPage() {
                             name="confirmPassword"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Confirm</FormLabel>
+                                <FormLabel>Confirm <span className="text-destructive">*</span></FormLabel>
                                 <FormControl>
                                   <Input type="password" autoComplete="new-password" {...field} className="bg-background/50" />
                                 </FormControl>
@@ -645,7 +645,7 @@ export default function LandingPage() {
                             name="year"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Year</FormLabel>
+                                <FormLabel>Year <span className="text-destructive">*</span></FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                   <FormControl>
                                     <SelectTrigger className="bg-background/50">
@@ -667,7 +667,7 @@ export default function LandingPage() {
                             name="sessionYear"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Session Year</FormLabel>
+                                <FormLabel>Session Year <span className="text-destructive">*</span></FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                   <FormControl>
                                     <SelectTrigger className="bg-background/50">
@@ -689,7 +689,7 @@ export default function LandingPage() {
                             name="college"
                             render={({ field }) => (
                               <FormItem className="col-span-2">
-                                <FormLabel>College</FormLabel>
+                                <FormLabel>College <span className="text-destructive">*</span></FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                   <FormControl>
                                     <SelectTrigger className="bg-background/50">
