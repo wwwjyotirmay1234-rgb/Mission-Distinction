@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Lightbulb, Plus, Trash2, Sparkles, Shield } from "lucide-react";
@@ -22,6 +23,7 @@ export default function AdminMnemonics() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ subject: "Anatomy", topic: "", mnemonic: "", description: "" });
   const [aiLoading, setAiLoading] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data: mnemonics = [], isLoading, isError } = useQuery<Mnemonic[]>({
@@ -98,13 +100,29 @@ export default function AdminMnemonics() {
                     {m.description && <p className="text-sm text-muted-foreground">{m.description}</p>}
                   </div>
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive shrink-0"
-                    onClick={() => deleteMutation.mutate(m.id)}><Trash2 size={13} /></Button>
+                    onClick={() => setConfirmDeleteId(m.id)}><Trash2 size={13} /></Button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <AlertDialog open={confirmDeleteId !== null} onOpenChange={(o) => !o && setConfirmDeleteId(null)}>
+        <AlertDialogContent className="bg-card border-border/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Mnemonic?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove the mnemonic for all students. This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              onClick={() => { if (confirmDeleteId) deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null); }}
+            >Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="bg-card border-border/60 sm:max-w-lg">

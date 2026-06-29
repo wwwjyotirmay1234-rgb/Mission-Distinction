@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/apiFetch";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -35,6 +36,7 @@ export default function NoticesPage() {
   const [type, setType] = useState("info");
   const [expiresAt, setExpiresAt] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmClearId, setConfirmClearId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data: notices, isLoading } = useQuery<Notice[]>({
@@ -106,7 +108,7 @@ export default function NoticesPage() {
                 )}
               </div>
             </div>
-            <Button size="sm" variant="ghost" onClick={() => handleClear(activeNotice.id)} className="text-xs gap-1 text-muted-foreground hover:text-destructive shrink-0">
+            <Button size="sm" variant="ghost" onClick={() => setConfirmClearId(activeNotice.id)} className="text-xs gap-1 text-muted-foreground hover:text-destructive shrink-0">
               <Trash2 className="w-3.5 h-3.5" /> Clear
             </Button>
           </div>
@@ -145,7 +147,7 @@ export default function NoticesPage() {
                         <Badge variant="outline" className="text-xs text-muted-foreground">Cleared</Badge>
                       )}
                       {notice.isActive && (
-                        <Button size="sm" variant="ghost" onClick={() => handleClear(notice.id)} className="text-muted-foreground hover:text-destructive">
+                        <Button size="sm" variant="ghost" onClick={() => setConfirmClearId(notice.id)} className="text-muted-foreground hover:text-destructive">
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       )}
@@ -157,6 +159,22 @@ export default function NoticesPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmClearId !== null} onOpenChange={(o) => !o && setConfirmClearId(null)}>
+        <AlertDialogContent className="bg-card border-border/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear this notice?</AlertDialogTitle>
+            <AlertDialogDescription>Students will no longer see this banner. You can pin a new one anytime.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              onClick={() => { if (confirmClearId) handleClear(confirmClearId); setConfirmClearId(null); }}
+            >Clear Notice</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-md bg-card border-border">

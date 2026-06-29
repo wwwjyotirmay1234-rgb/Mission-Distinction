@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Plus, Trash2, Sparkles, Shield, ChevronLeft, ChevronRight } from "lucide-react";
@@ -25,6 +26,7 @@ function DeckManager({ deckId, deckTitle, onBack }: { deckId: number; deckTitle:
   const [aiTopic, setAiTopic] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiCards, setAiCards] = useState<{ front: string; back: string }[]>([]);
+  const [confirmCardId, setConfirmCardId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -110,7 +112,7 @@ function DeckManager({ deckId, deckTitle, onBack }: { deckId: number; deckTitle:
                       <p className="text-xs text-muted-foreground mt-1">{card.back}</p>
                     </div>
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive shrink-0"
-                      onClick={() => deleteMutation.mutate(card.id)}><Trash2 size={13} /></Button>
+                      onClick={() => setConfirmCardId(card.id)}><Trash2 size={13} /></Button>
                   </CardContent>
                 </Card>
               ))}
@@ -118,6 +120,22 @@ function DeckManager({ deckId, deckTitle, onBack }: { deckId: number; deckTitle:
           )}
         </>
       )}
+
+      <AlertDialog open={confirmCardId !== null} onOpenChange={(o) => !o && setConfirmCardId(null)}>
+        <AlertDialogContent className="bg-card border-border/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this card?</AlertDialogTitle>
+            <AlertDialogDescription>This flashcard will be permanently removed from the deck.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              onClick={() => { if (confirmCardId) deleteMutation.mutate(confirmCardId); setConfirmCardId(null); }}
+            >Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent className="bg-card border-border/60">
@@ -182,6 +200,7 @@ export default function AdminFlashcards() {
   const [selectedDeck, setSelectedDeck] = useState<{ id: number; title: string } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ subject: "Anatomy", title: "" });
+  const [confirmDeckId, setConfirmDeckId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data: decks = [], isLoading } = useQuery<Deck[]>({
@@ -229,7 +248,7 @@ export default function AdminFlashcards() {
                     <Badge variant="outline" className="text-[10px] mt-1 bg-primary/10 text-primary border-primary/20">{deck.subject}</Badge>
                   </div>
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 shrink-0"
-                    onClick={e => { e.stopPropagation(); deleteMutation.mutate(deck.id); }}><Trash2 size={13} /></Button>
+                    onClick={e => { e.stopPropagation(); setConfirmDeckId(deck.id); }}><Trash2 size={13} /></Button>
                 </div>
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-xs text-muted-foreground">{deck.cardCount} card{deck.cardCount !== 1 ? "s" : ""}</span>
@@ -240,6 +259,22 @@ export default function AdminFlashcards() {
           ))}
         </div>
       )}
+
+      <AlertDialog open={confirmDeckId !== null} onOpenChange={(o) => !o && setConfirmDeckId(null)}>
+        <AlertDialogContent className="bg-card border-border/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this deck?</AlertDialogTitle>
+            <AlertDialogDescription>All cards in this deck will be permanently deleted. Students will lose access to it.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              onClick={() => { if (confirmDeckId) deleteMutation.mutate(confirmDeckId); setConfirmDeckId(null); }}
+            >Delete Deck</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="bg-card border-border/60">
