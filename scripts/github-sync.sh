@@ -2,7 +2,7 @@
 # Watches for new git commits and automatically pushes them to GitHub.
 # Before each push, fetches remote main and rebases local commits on top of it
 # so non-fast-forward rejections are resolved automatically.
-# Uses a temp credential helper so the token is never stored in .git/config.
+# Token is NEVER embedded in logged URLs — credential helper only.
 # Runs as a background workflow — no manual pushes needed.
 
 REPO_URL="${GITHUB_REPO_URL}"
@@ -19,25 +19,37 @@ if [ -z "$REPO_URL" ] || [ -z "$TOKEN" ]; then
   exit 0
 fi
 
+# Clean URL used in all git commands and log messages — no token embedded.
 BARE_URL="${REPO_URL#https://}"
-AUTH_URL="https://x-access-token:${TOKEN}@${BARE_URL}"
+CLEAN_URL="https://${BARE_URL}"
+# Auth is supplied exclusively via a short-lived credential-store file.
 REMOTE_TRACKING_REF="refs/remotes/github-sync/main"
+
+# Redact any accidental token echo from git stderr before logging.
+sanitize() {
+  sed "s/x-access-token:[^@]*@/x-access-token:***@/g"
+}
 
 make_cred_file() {
   local CRED_FILE
   CRED_FILE=$(mktemp)
   chmod 600 "$CRED_FILE"
-  echo "https://x-access-token:${TOKEN}@${BARE_URL}" > "$CRED_FILE"
+  # Credential store format: protocol://user:pass@host
+  printf 'https://x-access-token:%s@%s\n' "$TOKEN" "$(echo "$BARE_URL" | cut -d'/' -f1)" > "$CRED_FILE"
   echo "$CRED_FILE"
+}
+
+git_with_creds() {
+  local CRED_FILE="$1"; shift
+  git -c credential.helper="store --file=$CRED_FILE" "$@"
 }
 
 verify_sha_parity() {
   local CRED_FILE
   CRED_FILE=$(make_cred_file)
-  local LOCAL_SHA
+  local LOCAL_SHA REMOTE_SHA
   LOCAL_SHA=$(git rev-parse main 2>/dev/null)
-  local REMOTE_SHA
-  REMOTE_SHA=$(git -c credential.helper="store --file=$CRED_FILE" ls-remote "$AUTH_URL" refs/heads/main 2>/dev/null | awk '{print $1}')
+  REMOTE_SHA=$(git_with_creds "$CRED_FILE" ls-remote "$CLEAN_URL" refs/heads/main 2>/dev/null | awk '{print $1}')
   rm -f "$CRED_FILE"
   if [ -n "$LOCAL_SHA" ] && [ "$LOCAL_SHA" = "$REMOTE_SHA" ]; then
     echo "[github-sync] ✓ SHA parity confirmed: local=remote=${LOCAL_SHA:0:8}"
@@ -55,47 +67,46 @@ reconcile_and_push() {
   CRED_FILE=$(make_cred_file)
 
   # ── Step 1: Try a normal fast-forward push first ──────────────────────────
-  local PUSH_OUT
-  PUSH_OUT=$(git -c credential.helper="store --file=$CRED_FILE" \
-    push "$AUTH_URL" main:main 2>&1)
-  local PUSH_CODE=$?
+  local PUSH_OUT PUSH_CODE
+  PUSH_OUT=$(git_with_creds "$CRED_FILE" push "$CLEAN_URL" main:main 2>&1)
+  PUSH_CODE=$?
 
   if [ $PUSH_CODE -eq 0 ]; then
     rm -f "$CRED_FILE"
     return 0
   fi
 
-  echo "[github-sync] Push rejected: $PUSH_OUT"
+  echo "[github-sync] Push rejected: $(echo "$PUSH_OUT" | sanitize)"
 
   # ── Step 2: If rejected due to diverged history, fetch and reconcile ──────
   if echo "$PUSH_OUT" | grep -qE "rejected.*(non-fast-forward|fetch first)"; then
     echo "[github-sync] History diverged — fetching remote main..."
 
-    local FETCH_OUT
-    FETCH_OUT=$(git -c credential.helper="store --file=$CRED_FILE" \
-      fetch "$AUTH_URL" "refs/heads/main:${REMOTE_TRACKING_REF}" 2>&1)
-    local FETCH_CODE=$?
+    local FETCH_OUT FETCH_CODE
+    FETCH_OUT=$(git_with_creds "$CRED_FILE" \
+      fetch "$CLEAN_URL" "refs/heads/main:${REMOTE_TRACKING_REF}" 2>&1)
+    FETCH_CODE=$?
 
     if [ $FETCH_CODE -ne 0 ]; then
-      echo "[github-sync] Fetch failed: $FETCH_OUT"
+      echo "[github-sync] Fetch failed: $(echo "$FETCH_OUT" | sanitize)"
       rm -f "$CRED_FILE"
       return 1
     fi
 
     echo "[github-sync] Fetch OK — attempting rebase onto ${REMOTE_TRACKING_REF}..."
-    local REBASE_OUT
+    local REBASE_OUT REBASE_CODE
     REBASE_OUT=$(git rebase "$REMOTE_TRACKING_REF" 2>&1)
-    local REBASE_CODE=$?
+    REBASE_CODE=$?
 
     if [ $REBASE_CODE -ne 0 ]; then
       echo "[github-sync] Rebase had conflicts — aborting, falling back to merge..."
       git rebase --abort 2>/dev/null
-      local MERGE_OUT
+      local MERGE_OUT MERGE_CODE
       MERGE_OUT=$(git merge --no-ff "$REMOTE_TRACKING_REF" \
         -m "chore: merge remote GitHub changes into local main" 2>&1)
-      local MERGE_CODE=$?
+      MERGE_CODE=$?
       if [ $MERGE_CODE -ne 0 ]; then
-        echo "[github-sync] Merge also failed: $MERGE_OUT — manual intervention required."
+        echo "[github-sync] Merge also failed — manual intervention required."
         rm -f "$CRED_FILE"
         return 1
       fi
@@ -106,11 +117,10 @@ reconcile_and_push() {
 
     # ── Step 3: Retry push after reconciliation ────────────────────────────
     echo "[github-sync] Retrying push after reconciliation..."
-    PUSH_OUT=$(git -c credential.helper="store --file=$CRED_FILE" \
-      push "$AUTH_URL" main:main 2>&1)
+    PUSH_OUT=$(git_with_creds "$CRED_FILE" push "$CLEAN_URL" main:main 2>&1)
     PUSH_CODE=$?
     if [ $PUSH_CODE -ne 0 ]; then
-      echo "[github-sync] Push after reconciliation failed: $PUSH_OUT"
+      echo "[github-sync] Push after reconciliation failed: $(echo "$PUSH_OUT" | sanitize)"
     fi
   fi
 
@@ -119,7 +129,7 @@ reconcile_and_push() {
 }
 
 # Perform initial push on startup to ensure remote is in sync
-echo "[github-sync] Performing initial push to GitHub (target: ${REPO_URL})..."
+echo "[github-sync] Performing initial push to GitHub (target: ${CLEAN_URL})..."
 if reconcile_and_push; then
   echo "[github-sync] ✓ Initial push successful"
   verify_sha_parity
