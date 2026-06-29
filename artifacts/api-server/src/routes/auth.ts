@@ -16,11 +16,10 @@ import rateLimit from "express-rate-limit";
 
 const router = Router();
 
-// ── Per-IP limits (shared campus WiFi → all students share one IP) ─────────────
-// Raised to handle 500+ students logging in simultaneously from one network.
+// ── Per-IP limits — set high so entire college campus (shared WiFi) is never blocked ──
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 2000 : 2000,
+  max: 200_000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many login attempts. Please try again in 15 minutes." },
@@ -42,7 +41,7 @@ const perCredentialLimiter = rateLimit({
 
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 500 : 500,
+  max: 50_000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many registration attempts. Please try again in an hour." },
@@ -50,7 +49,7 @@ const registerLimiter = rateLimit({
 
 const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 500 : 100,
+  max: 10_000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many password reset requests. Please try again in 15 minutes." },
@@ -58,7 +57,7 @@ const forgotPasswordLimiter = rateLimit({
 
 const resetPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 500 : 200,
+  max: 20_000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many password reset attempts. Please try again in an hour." },
@@ -66,7 +65,7 @@ const resetPasswordLimiter = rateLimit({
 
 const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 2000 : 2000,
+  max: 200_000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many token refresh requests. Please try again shortly." },
@@ -74,7 +73,7 @@ const refreshLimiter = rateLimit({
 
 const googleAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "development" ? 2000 : 2000,
+  max: 200_000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many Google sign-in attempts. Please try again shortly." },
