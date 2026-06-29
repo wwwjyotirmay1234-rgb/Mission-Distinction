@@ -78,21 +78,38 @@ export default function LandingPage() {
   const [, setLocation] = useLocation();
   const { login, isAuthenticated, isAdmin, user } = useAuth();
 
-  // ── Already logged in — go straight to the right dashboard ─────────────────
-  // This is what makes the app feel like a real app: open it and you're in,
-  // no login screen every time.
-  if (isAuthenticated) {
-    if (isAdmin) return <Redirect to="/admin/dashboard" />;
-    const year = user?.year ?? undefined;
-    const sessionYear = (user as any)?.sessionYear ?? undefined;
-    return <Redirect to={getRoute(year, sessionYear)} />;
-  }
-
+  // ── All hooks must be called unconditionally before any conditional return ──
   const studentLoginMutation = useStudentLogin();
   const studentRegisterMutation = useStudentRegister();
   const adminLoginMutation = useAdminLogin();
   const adminRegisterMutation = useAdminRegister();
 
+  const studentLoginForm = useForm<z.infer<typeof studentLoginSchema>>({
+    resolver: zodResolver(studentLoginSchema),
+    defaultValues: { identifier: "", password: "" },
+  });
+
+  const studentRegisterForm = useForm<z.infer<typeof studentRegisterSchema>>({
+    resolver: zodResolver(studentRegisterSchema),
+    defaultValues: {
+      fullName: "", email: "", password: "", confirmPassword: "", year: "", sessionYear: "", college: "", agreeTerms: false,
+    },
+  });
+
+  const adminLoginForm = useForm<z.infer<typeof adminLoginSchema>>({
+    resolver: zodResolver(adminLoginSchema),
+    defaultValues: { email: "", password: "", rememberMe: false },
+  });
+
+  const adminRegisterForm = useForm<z.infer<typeof adminRegisterSchema>>({
+    resolver: zodResolver(adminRegisterSchema),
+    defaultValues: {
+      fullName: "", workEmail: "", password: "", confirmPassword: "", inviteCode: "", agreeTerms: false,
+    },
+  });
+
+  // finishGoogleAuth is a plain async function — not a hook.
+  // It must be defined before useEffect so the effect closure captures it.
   const finishGoogleAuth = async (idToken: string) => {
     const res = await fetch(`/api/auth/google`, {
       method: "POST",
@@ -256,30 +273,6 @@ export default function LandingPage() {
     }
   };
 
-  const studentLoginForm = useForm<z.infer<typeof studentLoginSchema>>({
-    resolver: zodResolver(studentLoginSchema),
-    defaultValues: { identifier: "", password: "" },
-  });
-
-  const studentRegisterForm = useForm<z.infer<typeof studentRegisterSchema>>({
-    resolver: zodResolver(studentRegisterSchema),
-    defaultValues: {
-      fullName: "", email: "", password: "", confirmPassword: "", year: "", sessionYear: "", college: "", agreeTerms: false,
-    },
-  });
-
-  const adminLoginForm = useForm<z.infer<typeof adminLoginSchema>>({
-    resolver: zodResolver(adminLoginSchema),
-    defaultValues: { email: "", password: "", rememberMe: false },
-  });
-
-  const adminRegisterForm = useForm<z.infer<typeof adminRegisterSchema>>({
-    resolver: zodResolver(adminRegisterSchema),
-    defaultValues: {
-      fullName: "", workEmail: "", password: "", confirmPassword: "", inviteCode: "", agreeTerms: false,
-    },
-  });
-
   function getApiError(err: unknown, fallback: string): string {
     const data = (err as any)?.data;
     if (data?.error && typeof data.error === "string") return data.error;
@@ -338,6 +331,19 @@ export default function LandingPage() {
       }
     });
   };
+
+  // ── All hooks have been called above — conditional returns are now safe ──
+
+  // Already logged in — go straight to the right dashboard.
+  // Google users who haven't set year/session yet go to dashboard (not coming-soon)
+  // so they can update their profile in Settings.
+  if (isAuthenticated) {
+    if (isAdmin) return <Redirect to="/admin/dashboard" />;
+    const year = user?.year ?? undefined;
+    const sessionYear = (user as any)?.sessionYear ?? undefined;
+    if (!year || !sessionYear) return <Redirect to="/student/dashboard" />;
+    return <Redirect to={getRoute(year, sessionYear)} />;
+  }
 
   if (googleLoading) {
     return (
