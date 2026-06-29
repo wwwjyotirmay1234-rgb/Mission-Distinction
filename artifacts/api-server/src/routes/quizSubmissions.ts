@@ -14,15 +14,20 @@ const SUBJECTIVE_TYPES = ["short_answer", "long_answer"];
 router.get("/my", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const { status } = req.query;
+    const { status, attemptId } = req.query;
 
     const client = await pool.connect();
     try {
-      let whereClause = `qs.user_id = $1`;
+      const conditions: string[] = [`qs.user_id = $1`];
       const params: any[] = [user.id];
+      let idx = 2;
       if (status && ["pending", "ai_graded", "graded"].includes(status as string)) {
-        whereClause += ` AND qs.status = $2`;
+        conditions.push(`qs.status = $${idx++}`);
         params.push(status);
+      }
+      if (attemptId) {
+        const aid = parseInt(attemptId as string);
+        if (!isNaN(aid)) { conditions.push(`qs.attempt_id = $${idx++}`); params.push(aid); }
       }
 
       const result = await client.query(
@@ -30,12 +35,13 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
           qs.*,
           q.text AS question_text,
           q.max_marks AS question_max_marks,
+          q.model_answer,
           qz.title AS quiz_title,
           qz.subject AS quiz_subject
         FROM quiz_submissions qs
         LEFT JOIN questions q ON q.id = qs.question_id
         LEFT JOIN quizzes qz ON qz.id = qs.quiz_id
-        WHERE ${whereClause}
+        WHERE ${conditions.join(" AND ")}
         ORDER BY qs.created_at DESC
         LIMIT 100`,
         params
@@ -123,24 +129,29 @@ router.post("/:id/ai-grade", adminMiddleware, async (req: Request, res: Response
       return;
     }
 
-    const questionType = question.questionType === "short_answer" ? "Short Answer" : "Long Answer";
-    const systemPrompt = `You are a medical examiner grading a ${questionType} question for 1st Year MBBS students. Grade objectively and fairly. Always return valid JSON only.`;
+    const questionType = question.questionType === "short_answer" ? "Short Answer (SAQ)" : "Long Answer (LAQ)";
+    const systemPrompt = `You are a medical examiner grading a ${questionType} question for 1st Year MBBS students in India. Grade objectively and fairly. Always return valid JSON only.`;
 
     const userPrompt = `Question: ${question.text}
 
-${modelAnswer ? `Model Answer / Key Points: ${modelAnswer}` : ""}
+${modelAnswer ? `Model Answer / Key Points:\n${modelAnswer}` : "No model answer provided — use your medical knowledge to evaluate."}
 
 Student's Answer: ${studentAnswer || "(No typed answer — see image if provided)"}
 
 Maximum Marks: ${maxMarks}
 
-Grade this answer out of ${maxMarks} marks. Consider:
+Evaluate this answer carefully. Consider:
 - Accuracy of medical facts
-- Completeness of key points
+- Completeness of key points from the model answer
 - Clarity of expression
 - For partial answers, award partial marks proportionally
 
-Return JSON only: {"marks": <number 0-${maxMarks}>, "feedback": "<2-3 sentence constructive feedback explaining the grade>"}`;
+Return JSON only with these exact keys:
+{
+  "marks": <integer 0–${maxMarks}>,
+  "feedback": "<1-2 sentences of overall feedback on the answer quality>",
+  "lacking": "<bullet-point list of specific points/concepts that were missing or incorrect, starting each bullet with '• '. If the answer is complete, write 'None — all key points covered.'>"
+}`;
 
     const messages: any[] = [{ role: "user", content: userPrompt }];
 
@@ -154,23 +165,24 @@ Return JSON only: {"marks": <number 0-${maxMarks}>, "feedback": "<2-3 sentence c
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "system", content: systemPrompt }, ...messages],
-      max_completion_tokens: 300,
+      max_completion_tokens: 500,
       response_format: { type: "json_object" },
     });
 
-    const raw = completion.choices[0]?.message?.content || '{"marks":0,"feedback":"Unable to grade."}';
-    let parsed: { marks: number; feedback: string };
+    const raw = completion.choices[0]?.message?.content || '{"marks":0,"feedback":"Unable to grade.","lacking":""}';
+    let parsed: { marks: number; feedback: string; lacking?: string };
     try {
       parsed = JSON.parse(raw);
     } catch {
-      parsed = { marks: 0, feedback: "AI grading failed — please grade manually." };
+      parsed = { marks: 0, feedback: "AI grading failed — please grade manually.", lacking: "" };
     }
 
     const aiMarks = Math.max(0, Math.min(maxMarks, Math.round(parsed.marks)));
     const aiFeedback = parsed.feedback || "";
+    const aiLacking = parsed.lacking || "";
 
     const [updated] = await db.update(quizSubmissionsTable)
-      .set({ aiMarks, aiFeedback, status: "ai_graded", gradedAt: new Date() })
+      .set({ aiMarks, aiFeedback, aiLacking, status: "ai_graded", gradedAt: new Date() })
       .where(eq(quizSubmissionsTable.id, id))
       .returning();
 
@@ -186,7 +198,7 @@ router.patch("/:id/grade", adminMiddleware, async (req: Request, res: Response) 
     const id = parseId(req.params.id as string);
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
 
-    const { adminMarks, adminFeedback } = req.body;
+    const { adminMarks, adminFeedback, adminLacking } = req.body;
     if (adminMarks === undefined || adminMarks === null) {
       res.status(400).json({ error: "adminMarks is required" }); return;
     }
@@ -200,6 +212,7 @@ router.patch("/:id/grade", adminMiddleware, async (req: Request, res: Response) 
       .set({
         adminMarks: marks,
         adminFeedback: adminFeedback ? String(adminFeedback).slice(0, 1000) : null,
+        adminLacking: adminLacking ? String(adminLacking).slice(0, 2000) : null,
         status: "graded",
         gradedAt: new Date(),
       })

@@ -223,6 +223,10 @@ export async function runStartupMigrations() {
       CREATE INDEX IF NOT EXISTS quiz_submissions_status
         ON quiz_submissions(status);
 
+      ALTER TABLE quiz_submissions
+        ADD COLUMN IF NOT EXISTS ai_lacking TEXT,
+        ADD COLUMN IF NOT EXISTS admin_lacking TEXT;
+
       ALTER TABLE quizzes
         ADD COLUMN IF NOT EXISTS is_proctored BOOLEAN NOT NULL DEFAULT FALSE;
 

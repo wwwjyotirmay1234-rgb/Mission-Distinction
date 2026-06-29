@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import {
   Brain, CheckCircle, Clock, Eye, FileText, RefreshCw,
   User, BookOpen, AlertCircle, ChevronDown, ChevronUp, Image as ImageIcon,
-  ShieldAlert, ShieldCheck,
+  ShieldAlert, ShieldCheck, XCircle, Lightbulb,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,8 +31,10 @@ type Submission = {
   max_marks: number;
   ai_marks: number | null;
   ai_feedback: string | null;
+  ai_lacking: string | null;
   admin_marks: number | null;
   admin_feedback: string | null;
+  admin_lacking: string | null;
   status: "pending" | "ai_graded" | "graded";
   created_at: string;
   graded_at: string | null;
@@ -57,6 +59,7 @@ function SubmissionCard({ sub, onGraded }: { sub: Submission; onGraded: () => vo
   const [gradeOpen, setGradeOpen] = useState(false);
   const [marks, setMarks] = useState(String(sub.admin_marks ?? sub.ai_marks ?? ""));
   const [feedback, setFeedback] = useState(sub.admin_feedback ?? sub.ai_feedback ?? "");
+  const [lacking, setLacking] = useState(sub.admin_lacking ?? sub.ai_lacking ?? "");
   const [saving, setSaving] = useState(false);
 
   const handleAiGrade = async () => {
@@ -66,6 +69,7 @@ function SubmissionCard({ sub, onGraded }: { sub: Submission; onGraded: () => vo
       toast.success(`AI graded: ${result.ai_marks}/${sub.max_marks} marks`);
       setMarks(String(result.ai_marks ?? ""));
       setFeedback(result.ai_feedback ?? "");
+      setLacking(result.ai_lacking ?? "");
       onGraded();
     } catch {
       toast.error("AI grading failed. Please try again.");
@@ -84,7 +88,11 @@ function SubmissionCard({ sub, onGraded }: { sub: Submission; onGraded: () => vo
     try {
       await customFetch(`/api/quiz-submissions/${sub.id}/grade`, {
         method: "PATCH",
-        body: JSON.stringify({ adminMarks: m, adminFeedback: feedback.trim() || null }),
+        body: JSON.stringify({
+          adminMarks: m,
+          adminFeedback: feedback.trim() || null,
+          adminLacking: lacking.trim() || null,
+        }),
       });
       toast.success("Grade saved successfully!");
       setGradeOpen(false);
@@ -192,9 +200,21 @@ function SubmissionCard({ sub, onGraded }: { sub: Submission; onGraded: () => vo
               </div>
             )}
 
+            {(sub.admin_lacking || sub.ai_lacking) && (
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                  <XCircle size={11} className="text-red-400" />
+                  {sub.admin_lacking ? "Admin — What was Lacking" : "AI — What was Lacking"}
+                </p>
+                <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3 text-sm text-red-200 whitespace-pre-wrap leading-relaxed">
+                  {sub.admin_lacking || sub.ai_lacking}
+                </div>
+              </div>
+            )}
             {(sub.ai_feedback || sub.admin_feedback) && (
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                  <Lightbulb size={11} className="text-blue-400" />
                   {sub.admin_feedback ? "Admin Feedback" : "AI Feedback"}
                 </p>
                 <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 text-sm">
@@ -213,43 +233,78 @@ function SubmissionCard({ sub, onGraded }: { sub: Submission; onGraded: () => vo
               <CheckCircle size={16} className="text-primary" /> Grade Answer
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-1">
             <div className="bg-muted/20 rounded-xl p-3 text-sm">
               <p className="font-medium mb-1">{sub.question_text}</p>
               <p className="text-muted-foreground text-xs">Student: {sub.student_name || sub.student_email}</p>
             </div>
 
-            {sub.ai_marks !== null && (
-              <div className="flex items-center gap-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-xl text-sm">
-                <Brain size={14} className="text-blue-400 shrink-0" />
-                <div>
-                  <span className="font-medium text-blue-400">AI Suggestion: {sub.ai_marks}/{sub.max_marks} marks</span>
-                  {sub.ai_feedback && <p className="text-xs text-muted-foreground mt-0.5">{sub.ai_feedback}</p>}
+            {sub.model_answer && (
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-green-400 uppercase tracking-wide flex items-center gap-1.5">
+                  <Lightbulb size={11} /> Perfect / Model Answer
+                </p>
+                <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-3 text-sm text-green-200 whitespace-pre-wrap leading-relaxed">
+                  {sub.model_answer}
                 </div>
               </div>
             )}
 
+            {sub.ai_marks !== null && (
+              <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-xl text-sm space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Brain size={14} className="text-blue-400 shrink-0" />
+                  <span className="font-medium text-blue-400">AI Suggestion: {sub.ai_marks}/{sub.max_marks} marks</span>
+                </div>
+                {sub.ai_lacking && (
+                  <p className="text-xs text-red-300 whitespace-pre-wrap leading-relaxed">
+                    <span className="font-semibold text-red-400">Lacking: </span>{sub.ai_lacking}
+                  </p>
+                )}
+                {sub.ai_feedback && <p className="text-xs text-muted-foreground">{sub.ai_feedback}</p>}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Marks <span className="text-muted-foreground text-xs">(0 – {sub.max_marks})</span></Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={sub.max_marks}
+                  value={marks}
+                  onChange={e => setMarks(e.target.value)}
+                  className="bg-background/50"
+                  placeholder={`0–${sub.max_marks}`}
+                />
+              </div>
+            </div>
+
             <div className="space-y-1.5">
-              <Label>Marks <span className="text-muted-foreground text-xs">(0 – {sub.max_marks})</span></Label>
-              <Input
-                type="number"
-                min={0}
-                max={sub.max_marks}
-                value={marks}
-                onChange={e => setMarks(e.target.value)}
-                className="bg-background/50 w-28"
-                placeholder={`0–${sub.max_marks}`}
+              <Label className="flex items-center gap-1.5">
+                <XCircle size={12} className="text-red-400" />
+                What was Lacking <span className="text-muted-foreground text-xs">(missing / incorrect points)</span>
+              </Label>
+              <Textarea
+                rows={3}
+                value={lacking}
+                onChange={e => setLacking(e.target.value)}
+                placeholder={"• Point 1 that was missing\n• Point 2 that was incorrect\n• ..."}
+                className="bg-background/50 resize-none text-sm"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label>Feedback <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Label className="flex items-center gap-1.5">
+                <Lightbulb size={12} className="text-blue-400" />
+                Overall Feedback <span className="text-muted-foreground text-xs">(optional)</span>
+              </Label>
               <Textarea
-                rows={3}
+                rows={2}
                 value={feedback}
                 onChange={e => setFeedback(e.target.value)}
-                placeholder="Add constructive feedback for the student…"
-                className="bg-background/50 resize-none"
+                placeholder="Good attempt, but needs more detail on…"
+                className="bg-background/50 resize-none text-sm"
               />
             </div>
           </div>

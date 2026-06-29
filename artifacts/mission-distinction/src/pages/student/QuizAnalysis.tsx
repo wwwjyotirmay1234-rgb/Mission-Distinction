@@ -14,7 +14,7 @@ import {
 import {
   Trophy, CheckCircle, XCircle, Clock, TrendingUp, BarChart2,
   ChevronRight, BookOpen, ArrowLeft, Lightbulb, AlertCircle,
-  Target, Award, Flame, Star,
+  Target, Award, Flame, Star, Brain, FileText,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -39,6 +39,23 @@ interface ReviewQuestion {
   correctAnswer: string | null;
   explanation: string | null;
   maxMarks: number | null;
+}
+
+interface SubjectiveSubmission {
+  id: number;
+  question_id: number;
+  question_text: string;
+  answer_text: string | null;
+  answer_image_url: string | null;
+  max_marks: number;
+  ai_marks: number | null;
+  ai_feedback: string | null;
+  ai_lacking: string | null;
+  admin_marks: number | null;
+  admin_feedback: string | null;
+  admin_lacking: string | null;
+  model_answer: string | null;
+  status: "pending" | "ai_graded" | "graded";
 }
 
 interface ReviewData {
@@ -146,6 +163,17 @@ function ReviewPanel({ attemptId, onClose }: { attemptId: number; onClose: () =>
       return res.json();
     },
     staleTime: 300_000,
+  });
+
+  const { data: submissions } = useQuery<SubjectiveSubmission[]>({
+    queryKey: ["quiz-submissions-attempt", attemptId],
+    queryFn: async () => {
+      const res = await apiFetch(`/api/quiz-submissions/my?attemptId=${attemptId}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 60_000,
+    enabled: !!attemptId,
   });
 
   return (
@@ -319,6 +347,118 @@ function ReviewPanel({ attemptId, onClose }: { attemptId: number; onClose: () =>
               </Card>
             );
           })}
+
+          {/* ── Subjective Answer Feedback Section ── */}
+          {submissions && submissions.length > 0 && (
+            <div className="space-y-3 mt-2">
+              <div className="flex items-center gap-2 border-t border-border/30 pt-4">
+                <FileText size={14} className="text-primary" />
+                <p className="text-sm font-semibold">Your Subjective Answer Results</p>
+              </div>
+              {submissions.map((sub, idx) => {
+                const finalMarks = sub.admin_marks ?? sub.ai_marks;
+                const finalLacking = sub.admin_lacking ?? sub.ai_lacking;
+                const finalFeedback = sub.admin_feedback ?? sub.ai_feedback;
+                const gradedByAi = sub.admin_marks === null && sub.ai_marks !== null;
+                return (
+                  <Card key={sub.id} className={`border-border/40 ${
+                    sub.status === "pending"
+                      ? "bg-amber-500/5 border-amber-500/20"
+                      : sub.status === "graded"
+                      ? "bg-green-500/5 border-green-500/20"
+                      : "bg-blue-500/5 border-blue-500/20"
+                  }`}>
+                    <CardContent className="p-4 space-y-3">
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div>
+                          <p className="text-xs text-muted-foreground font-medium">SAQ/LAQ #{idx + 1}</p>
+                          <p className="text-sm font-medium mt-0.5 leading-snug">{sub.question_text}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {sub.status === "pending" ? (
+                            <span className="flex items-center gap-1 text-xs text-amber-400 font-semibold">
+                              <Clock size={11} /> Pending review
+                            </span>
+                          ) : (
+                            <span className={`flex items-center gap-1 text-sm font-black ${
+                              finalMarks !== null && finalMarks >= sub.max_marks * 0.6
+                                ? "text-green-400" : "text-red-400"
+                            }`}>
+                              {finalMarks}/{sub.max_marks}
+                              <span className="text-xs font-normal text-muted-foreground ml-0.5">marks</span>
+                            </span>
+                          )}
+                          {sub.status !== "pending" && (
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                              sub.status === "graded"
+                                ? "bg-green-500/15 text-green-400"
+                                : "bg-blue-500/15 text-blue-400"
+                            }`}>
+                              {sub.status === "graded" ? "Admin Graded" : "AI Graded"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Student's answer */}
+                      {sub.answer_text && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Your Answer</p>
+                          <div className="bg-background/40 border border-border/30 rounded-lg p-2.5 text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                            {sub.answer_text}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Model answer (shown after grading) */}
+                      {sub.status !== "pending" && sub.model_answer && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-green-400 uppercase tracking-wide mb-1 flex items-center gap-1">
+                            <Lightbulb size={9} /> Perfect / Model Answer
+                          </p>
+                          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-2.5 text-xs text-green-200 whitespace-pre-wrap leading-relaxed">
+                            {sub.model_answer}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* What was lacking */}
+                      {sub.status !== "pending" && finalLacking && finalLacking.toLowerCase() !== "none — all key points covered." && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-red-400 uppercase tracking-wide mb-1 flex items-center gap-1">
+                            <XCircle size={9} /> What was Lacking
+                          </p>
+                          <div className="bg-red-500/5 border border-red-500/20 rounded-lg p-2.5 text-xs text-red-200 whitespace-pre-wrap leading-relaxed">
+                            {finalLacking}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Overall feedback */}
+                      {sub.status !== "pending" && finalFeedback && (
+                        <div>
+                          <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-wide mb-1 flex items-center gap-1">
+                            {gradedByAi ? <Brain size={9} /> : <CheckCircle size={9} />}
+                            {gradedByAi ? "AI Feedback" : "Admin Feedback"}
+                          </p>
+                          <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-2.5 text-xs text-muted-foreground leading-relaxed">
+                            {finalFeedback}
+                          </div>
+                        </div>
+                      )}
+
+                      {sub.status === "pending" && (
+                        <p className="text-xs text-muted-foreground italic">
+                          Your answer is being reviewed. Model answer and feedback will appear here once graded.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>
