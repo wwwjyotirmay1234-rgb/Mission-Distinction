@@ -7,6 +7,7 @@ import { parseId } from "../lib/auth";
 import { updateStreak } from "../lib/streak";
 import { stripHtml } from "../lib/sanitize";
 import { awardXp, XP_VALUES } from "../lib/xp";
+import { getGcsBucket } from "../lib/gcs";
 import rateLimit from "express-rate-limit";
 
 const router = Router();
@@ -158,9 +159,13 @@ router.post("/:id/download", authMiddleware, downloadCountLimiter, async (req: R
 
 /**
  * GET /api/pdfs/:id/proxy
- * Server-side fetch of the PDF bytes — avoids browser CORS restrictions on
- * Google Drive / Cloudinary URLs so the client can store them in IndexedDB
- * for offline reading.
+ * Streams PDF bytes to the client so they can be cached in IndexedDB for
+ * offline reading / download.
+ *
+ * Handles three URL types:
+ *  1. /api/upload/pdf/serve/:fileName  → stream directly from GCS (no re-auth needed)
+ *  2. drive.google.com                 → convert to direct usercontent download URL
+ *  3. Any other HTTPS URL              → forward as-is
  */
 router.get("/:id/proxy", authMiddleware, async (req: Request, res: Response) => {
   try {
@@ -170,35 +175,67 @@ router.get("/:id/proxy", authMiddleware, async (req: Request, res: Response) => 
     const [pdf] = await db.select({ url: pdfsTable.url, title: pdfsTable.title })
       .from(pdfsTable).where(eq(pdfsTable.id, id));
     if (!pdf) { res.status(404).json({ error: "Not found" }); return; }
-    if (!isValidHttpsUrl(pdf.url)) { res.status(422).json({ error: "PDF URL is not fetchable" }); return; }
 
-    const upstream = await fetch(pdf.url, {
-      headers: { "User-Agent": "Mozilla/5.0 Mission-Distinction-Offline-Cache/1.0" },
+    const safeTitle = `${pdf.title.replace(/[^a-z0-9 ._-]/gi, "_")}.pdf`;
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(safeTitle)}"`);
+    res.setHeader("Cache-Control", "private, max-age=86400");
+
+    // ── Case 1: PDF stored in GCS — stream directly (no HTTP round-trip needed) ─
+    const serveMatch = pdf.url.match(/\/api\/upload\/pdf\/serve\/([^?#]+)/);
+    if (serveMatch) {
+      try {
+        const bucket = getGcsBucket();
+        const fileRef = bucket.file(`pdfs/${serveMatch[1]}`);
+        fileRef.createReadStream()
+          .on("error", (err: any) => {
+            if (!res.headersSent) res.status(502).json({ error: "GCS stream error" });
+            else res.destroy(err);
+          })
+          .pipe(res);
+      } catch {
+        if (!res.headersSent) res.status(500).json({ error: "Storage not configured" });
+      }
+      return;
+    }
+
+    // ── Case 2: Google Drive — convert to direct usercontent download URL ───────
+    let fetchUrl = pdf.url;
+    const driveMatch = pdf.url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (driveMatch) {
+      fetchUrl = `https://drive.usercontent.google.com/download?id=${driveMatch[1]}&export=download&authuser=0&confirm=t`;
+    }
+
+    if (!isValidHttpsUrl(fetchUrl)) {
+      res.status(422).json({ error: "PDF URL is not fetchable" });
+      return;
+    }
+
+    // ── Case 3: Generic HTTPS URL ────────────────────────────────────────────────
+    const upstream = await fetch(fetchUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; Mission-Distinction/1.0)",
+        "Accept": "application/pdf,*/*",
+      },
+      redirect: "follow",
     });
     if (!upstream.ok) {
       res.status(502).json({ error: `Upstream returned ${upstream.status}` });
       return;
     }
 
-    const contentType = upstream.headers.get("content-type") ?? "application/pdf";
     const contentLength = upstream.headers.get("content-length");
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(pdf.title)}.pdf"`);
-    res.setHeader("Cache-Control", "private, max-age=86400");
     if (contentLength) res.setHeader("Content-Length", contentLength);
 
     const reader = upstream.body?.getReader();
     if (!reader) { res.status(502).json({ error: "No response body" }); return; }
 
-    const pump = async () => {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        res.write(value); // nosemgrep: javascript.express.security.audit.xss.direct-response-write -- binary PDF bytes piped from cloud storage, Content-Type is application/pdf, not HTML
-      }
-      res.end();
-    };
-    await pump();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      res.write(value); // nosemgrep: javascript.express.security.audit.xss.direct-response-write -- binary PDF bytes piped from cloud storage, Content-Type is application/pdf, not HTML
+    }
+    res.end();
   } catch (err) {
     if (!res.headersSent) res.status(500).json({ error: "Failed to proxy PDF" });
   }
