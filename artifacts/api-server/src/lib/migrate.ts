@@ -313,6 +313,8 @@ export async function runStartupMigrations() {
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
 
+      ALTER TABLE pyqs ADD COLUMN IF NOT EXISTS college TEXT NOT NULL DEFAULT 'VIMSAR';
+
       CREATE TABLE IF NOT EXISTS post_likes (
         id SERIAL PRIMARY KEY,
         post_id INTEGER NOT NULL,
