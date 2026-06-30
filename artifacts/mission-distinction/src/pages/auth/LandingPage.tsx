@@ -939,6 +939,18 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
+      <footer className="border-t border-border/30 bg-background/60 backdrop-blur mt-8">
+        <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+          <p>© {new Date().getFullYear()} Mission Distinction · Free medical education for Odisha MBBS students</p>
+          <div className="flex items-center gap-4">
+            <a href="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</a>
+            <a href="/terms" className="hover:text-primary transition-colors">Terms of Service</a>
+            <a href="mailto:missiondistinction108@gmail.com" className="hover:text-primary transition-colors">Grievance Officer</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
