@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
-  Sparkles, X, Send, FileText, BookOpen, ChevronDown,
-  Loader2, Bot, RotateCcw, Copy, Check, Mic, MicOff, Maximize2, Minimize2,
-  FileQuestion, List, Lightbulb, AlignLeft, StickyNote,
+  Sparkles, X, Send, Loader2, Bot, RotateCcw, Copy, Check, Mic, MicOff, Maximize2, Minimize2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,11 +13,6 @@ type Msg = {
   isStreaming?: boolean;
   suggestions?: string[];
 };
-
-type Resource = { id: number; title: string; subject: string; url: string; year?: string };
-type Resources = { pdfs: Resource[]; books: Resource[]; notes: Resource[] };
-type SelectedResource = Resource & { type: "pdf" | "book" | "note" };
-type DocStats = { pages: number; chars: number };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function renderContent(text: string): React.ReactNode[] {
@@ -60,7 +53,6 @@ function renderContent(text: string): React.ReactNode[] {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Table detection
     if (line.includes("|") && line.trim().startsWith("|")) {
       tableLines.push(line);
       i++;
@@ -75,7 +67,7 @@ function renderContent(text: string): React.ReactNode[] {
       elements.push(<p key={i} className="font-bold text-violet-300 mt-3 mb-1 text-sm">{formatInline(line.slice(3))}</p>);
     } else if (line.startsWith("**Q") && line.includes(".**")) {
       elements.push(<p key={i} className="font-semibold text-sm mt-3 mb-1 text-white">{formatInline(line)}</p>);
-    } else if (line.match(/^[✅❌🔍📄❓🧠🗺️💡📚🎯⚠️]/)) {
+    } else if (line.match(/^[✅❌🔍📄❓🧠🗺️💡📚🎯⚠️🆘🤖📥]/)) {
       elements.push(<p key={i} className="text-sm leading-relaxed mt-1">{formatInline(line)}</p>);
     } else if (line.startsWith("- ") || line.startsWith("• ")) {
       elements.push(
@@ -115,7 +107,6 @@ function renderContent(text: string): React.ReactNode[] {
 }
 
 function formatInline(text: string): React.ReactNode {
-  // Bold, italic, inline code
   const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g);
   return parts.map((p, i) => {
     if (p.startsWith("`") && p.endsWith("`")) return <code key={i} className="bg-white/10 text-violet-300 px-1 py-0.5 rounded text-xs font-mono">{p.slice(1, -1)}</code>;
@@ -140,14 +131,6 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-// ── Resource icon ──────────────────────────────────────────────────────────
-function ResIcon({ type }: { type: string }) {
-  if (type === "book") return <BookOpen size={12} className="text-emerald-400 shrink-0" />;
-  if (type === "pyq") return <ClipboardList size={12} className="text-amber-400 shrink-0" />;
-  if (type === "note") return <StickyNote size={12} className="text-blue-400 shrink-0" />;
-  return <FileText size={12} className="text-violet-400 shrink-0" />;
-}
-
 // ── Dot typing indicator ───────────────────────────────────────────────────
 function TypingDots() {
   return (
@@ -163,55 +146,6 @@ function TypingDots() {
   );
 }
 
-// ── Fuzzy-match a resource from user's query ───────────────────────────────
-const STOP_WORDS = new Set(["the", "and", "with", "for", "from", "of", "a", "an", "in", "on", "at", "to", "by", "its", "my"]);
-
-function findBestMatch(query: string, resources: SelectedResource[]): SelectedResource | null {
-  if (!resources.length) return null;
-  const q = query.toLowerCase();
-
-  // Only trigger on queries that seem to be asking about content
-  const contentTriggers = [
-    "what's in", "whats in", "what is in", "what does", "what do",
-    "contents of", "content of", "topics in", "chapters in", "chapter in",
-    "table of contents", "show me", "tell me about", "summarize",
-    "about this book", "cover", "index of", "what topics", "what chapters",
-    "in the book", "in this", "show topics",
-  ];
-  const isContentQuery = contentTriggers.some(t => q.includes(t));
-  // Also match bare-name queries: "Gray's Anatomy?" or "BD Chaurasia topics"
-  const seemsLikeNameQuery = /^[\w''\s\-\.]+\??\s*$/.test(query.trim()) && query.trim().length < 60;
-
-  if (!isContentQuery && !seemsLikeNameQuery) return null;
-
-  // 1. Exact full-title substring match
-  for (const r of resources) {
-    if (q.includes(r.title.toLowerCase())) return r;
-  }
-
-  // 2. Multi-word title overlap (≥2 significant words match)
-  for (const r of resources) {
-    const titleWords = r.title.toLowerCase()
-      .split(/[\s\-\/\.]+/)
-      .filter(w => w.length > 2 && !STOP_WORDS.has(w));
-    if (titleWords.length === 0) continue;
-    const hits = titleWords.filter(w => q.includes(w));
-    const threshold = titleWords.length === 1 ? 1 : 2;
-    if (hits.length >= threshold) return r;
-  }
-
-  return null;
-}
-
-// ── Build compact catalog for API requests ─────────────────────────────────
-function buildCompactCatalog(resources: Resources): object {
-  return {
-    pdfs: resources.pdfs.map(r => ({ title: r.title, subject: r.subject })),
-    books: resources.books.map(r => ({ title: r.title, subject: r.subject })),
-    notes: (resources.notes ?? []).map(r => ({ title: r.title, subject: r.subject })),
-  };
-}
-
 // ── Welcome quick actions ──────────────────────────────────────────────────
 const QUICK_ACTIONS = [
   { label: "I can't find my PDFs", icon: "🆘" },
@@ -222,104 +156,31 @@ const QUICK_ACTIONS = [
   { label: "Explain glycolysis simply", icon: "🧪" },
 ];
 
-// ── Document quick actions ─────────────────────────────────────────────────
-const DOC_ACTIONS = [
-  { label: "Summarize", icon: AlignLeft, prompt: "Please summarize this document chapter by chapter with key points and high-yield exam facts." },
-  { label: "Key Points", icon: List, prompt: "What are the most important key points and must-know facts in this document for exams?" },
-  { label: "Generate MCQs", icon: FileQuestion, prompt: "Generate 5 high-quality MCQs from this document in standard Indian medical exam format with answers and explanations." },
-  { label: "Topic List", icon: Lightbulb, prompt: "List all the topics and chapters covered in this document." },
-];
+const WELCOME_MSG = "Hi! I'm **Meddy** 👋 — your Mission Distinction app assistant.\n\nI'm your first stop for **anything** in the app:\n- 🆘 App issues or emergencies — tell me what's wrong\n- 🗺️ Navigate to any feature (PDFs, Quizzes, Study Rooms…)\n- 🔍 Find resources by subject or topic\n- ❓ Generate practice MCQs\n- 🧠 Explain any medical concept\n\nWhat do you need help with?";
 
 // ── Main component ─────────────────────────────────────────────────────────
 export function MeddyAssistant() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([{
-    role: "assistant",
-    content: "Hi! I'm **Meddy** 👋 — your Mission Distinction app assistant.\n\nI'm your first stop for **anything** in the app:\n- 🆘 App issues or emergencies — tell me what's wrong\n- 🗺️ Navigate to any feature (PDFs, Quizzes, Study Rooms…)\n- 🔍 Find resources by subject or topic\n- 📄 Analyse a document (pick one below)\n- ❓ Generate practice MCQs\n- 🧠 Explain any medical concept\n\nWhat do you need help with?",
-  }]);
+  const [messages, setMessages] = useState<Msg[]>([{ role: "assistant", content: WELCOME_MSG }]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [resources, setResources] = useState<Resources | null>(null);
-  const [loadingRes, setLoadingRes] = useState(false);
-  const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
-  const [extractedText, setExtractedText] = useState<string | null>(null);
-  const [extracting, setExtracting] = useState(false);
-  const [extractWarning, setExtractWarning] = useState<string | null>(null);
-  const [docStats, setDocStats] = useState<DocStats | null>(null);
-  const [showPicker, setShowPicker] = useState(false);
-  const [pickerSearch, setPickerSearch] = useState("");
-  const [pickerTab, setPickerTab] = useState<"all" | "pdf" | "book" | "note">("all");
   const [listening, setListening] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Voice support detection
   const hasVoice = typeof window !== "undefined" && !!(
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
   );
 
-  // Load resources when opened
-  useEffect(() => {
-    if (!open || resources) return;
-    setLoadingRes(true);
-    apiFetch("/api/meddy/resources")
-      .then(r => r.json())
-      .then((d: Resources) => setResources(d))
-      .catch(() => {})
-      .finally(() => setLoadingRes(false));
-  }, [open, resources]);
-
-  // Scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Focus input when opened
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 120);
   }, [open]);
-
-  const allResources: SelectedResource[] = resources ? [
-    ...resources.pdfs.map(r => ({ ...r, type: "pdf" as const })),
-    ...resources.books.map(r => ({ ...r, type: "book" as const })),
-    ...(resources.notes ?? []).map(r => ({ ...r, type: "note" as const })),
-  ] : [];
-
-  const filtered = allResources.filter(r => {
-    const matchTab = pickerTab === "all" || r.type === pickerTab;
-    const matchSearch = !pickerSearch || r.title.toLowerCase().includes(pickerSearch.toLowerCase()) || r.subject.toLowerCase().includes(pickerSearch.toLowerCase());
-    return matchTab && matchSearch;
-  });
-
-  const selectResource = useCallback(async (res: SelectedResource) => {
-    setSelectedResource(res);
-    setShowPicker(false);
-    setExtractedText(null);
-    setExtractWarning(null);
-    setDocStats(null);
-    setExtracting(true);
-    try {
-      const r = await apiFetch("/api/meddy/extract-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: res.url }),
-      });
-      const data = await r.json();
-      if (r.ok) {
-        setExtractedText(data.text || "");
-        if (data.pages) setDocStats({ pages: data.pages, chars: data.chars ?? 0 });
-        if (data.warning) setExtractWarning(data.warning);
-      } else {
-        setExtractWarning(data.error || "Could not read this file.");
-      }
-    } catch {
-      setExtractWarning("Could not load this file. You can still ask questions about it.");
-    } finally {
-      setExtracting(false);
-    }
-  }, []);
 
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
@@ -328,57 +189,8 @@ export function MeddyAssistant() {
 
     const history = messages.filter(m => !m.isStreaming);
 
-    // ── Auto-detect resource from query ──────────────────────────────────
-    let docResource = selectedResource;
-    let docText = extractedText;
-
-    if (!selectedResource && allResources.length > 0) {
-      const match = findBestMatch(text, allResources);
-      if (match) {
-        // Show user message + auto-load indicator immediately
-        setMessages(prev => [
-          ...prev,
-          { role: "user", content: text },
-          { role: "assistant", content: `🔍 Found **${match.title}** in your library! Loading it now…`, isStreaming: false },
-        ]);
-        setStreaming(true);
-        setSelectedResource(match);
-        setExtracting(true);
-        try {
-          const r = await apiFetch("/api/meddy/extract-pdf", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: match.url }),
-          });
-          const data = await r.json();
-          if (r.ok) {
-            docText = data.text || "";
-            setExtractedText(data.text || "");
-            if (data.pages) setDocStats({ pages: data.pages, chars: data.chars ?? 0 });
-            if (data.warning) setExtractWarning(data.warning);
-          }
-          docResource = match;
-        } catch {
-          // proceed without doc text if extraction fails
-        } finally {
-          setExtracting(false);
-        }
-        // Replace the "loading..." bubble with a streaming placeholder
-        setMessages(prev => {
-          const c = [...prev];
-          c[c.length - 1] = { role: "assistant", content: "", isStreaming: true };
-          return c;
-        });
-        // Fall through to streaming with docResource/docText set
-      } else {
-        // No match — normal flow
-        setMessages(prev => [...prev, { role: "user", content: text }, { role: "assistant", content: "", isStreaming: true }]);
-        setStreaming(true);
-      }
-    } else {
-      setMessages(prev => [...prev, { role: "user", content: text }, { role: "assistant", content: "", isStreaming: true }]);
-      setStreaming(true);
-    }
+    setMessages(prev => [...prev, { role: "user", content: text }, { role: "assistant", content: "", isStreaming: true }]);
+    setStreaming(true);
 
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -386,18 +198,10 @@ export function MeddyAssistant() {
     let accumulated = "";
 
     try {
-      // Build request body — include catalog when no doc is loaded
       const body: Record<string, unknown> = {
         message: text,
         history: history.slice(-10).map(m => ({ role: m.role, content: m.content.slice(0, 2000) })),
       };
-      if (docResource) {
-        body.documentTitle = docResource.title + (docResource.year ? ` (${docResource.year})` : "");
-        body.documentText = docText ?? "";
-      } else if (resources) {
-        // Always pass the full library catalog when no document is selected
-        body.resourcesCatalog = buildCompactCatalog(resources);
-      }
 
       const res = await fetch("/api/meddy/chat", {
         method: "POST",
@@ -447,23 +251,17 @@ export function MeddyAssistant() {
         }
       }
 
-      // Finalize message (no suggestions yet)
       setMessages(prev => {
         const c = [...prev];
         c[c.length - 1] = { role: "assistant", content: accumulated, isStreaming: false };
         return c;
       });
 
-      // Non-blocking: fetch suggestions after response
       if (accumulated.length > 20) {
         apiFetch("/api/meddy/suggest", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question: text,
-            answer: accumulated,
-            documentTitle: docResource?.title ?? "",
-          }),
+          body: JSON.stringify({ question: text, answer: accumulated, documentTitle: "" }),
         })
           .then(r => r.json())
           .then(d => {
@@ -492,7 +290,7 @@ export function MeddyAssistant() {
       setStreaming(false);
       abortRef.current = null;
     }
-  }, [input, streaming, messages, selectedResource, extractedText, allResources, resources]);
+  }, [input, streaming, messages]);
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -505,11 +303,7 @@ export function MeddyAssistant() {
     rec.lang = "en-IN";
     rec.interimResults = false;
     rec.maxAlternatives = 1;
-    rec.onresult = (e: any) => {
-      const transcript = e.results[0][0].transcript;
-      setInput(transcript);
-      setListening(false);
-    };
+    rec.onresult = (e: any) => { setInput(e.results[0][0].transcript); setListening(false); };
     rec.onerror = () => setListening(false);
     rec.onend = () => setListening(false);
     rec.start();
@@ -518,14 +312,7 @@ export function MeddyAssistant() {
 
   const reset = () => {
     abortRef.current?.abort();
-    setMessages([{
-      role: "assistant",
-      content: "Hi! I'm **Meddy** 👋 — your Mission Distinction app assistant.\n\nI'm your first stop for **anything** in the app:\n- 🆘 App issues or emergencies — tell me what's wrong\n- 🗺️ Navigate to any feature (PDFs, Quizzes, Study Rooms…)\n- 🔍 Find resources by subject or topic\n- 📄 Analyse a document (pick one below)\n- ❓ Generate practice MCQs\n- 🧠 Explain any medical concept\n\nWhat do you need help with?",
-    }]);
-    setSelectedResource(null);
-    setExtractedText(null);
-    setExtractWarning(null);
-    setDocStats(null);
+    setMessages([{ role: "assistant", content: WELCOME_MSG }]);
     setInput("");
     setStreaming(false);
   };
@@ -589,7 +376,7 @@ export function MeddyAssistant() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white leading-none">Meddy</p>
-              <p className="text-[10px] text-violet-300/60 mt-0.5">AI Learning Companion · GPT-4o</p>
+              <p className="text-[10px] text-violet-300/60 mt-0.5">App Assistant · Powered by AI</p>
             </div>
             <button
               onClick={() => setExpanded(v => !v)}
@@ -604,127 +391,6 @@ export function MeddyAssistant() {
             <button onClick={() => setOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/35 hover:text-white/80 hover:bg-white/10 transition-colors">
               <X size={14} />
             </button>
-          </div>
-
-          {/* ── Resource picker strip ── */}
-          <div className="px-3 pt-2 pb-2 shrink-0 border-b" style={{ borderColor: "rgba(124,58,237,0.15)" }}>
-            <div className="relative">
-              <button
-                onClick={() => setShowPicker(v => !v)}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-colors"
-                style={{
-                  background: selectedResource ? "rgba(124,58,237,0.15)" : "rgba(255,255,255,0.03)",
-                  borderColor: selectedResource ? "rgba(124,58,237,0.4)" : "rgba(255,255,255,0.08)",
-                }}
-              >
-                {selectedResource ? (
-                  <>
-                    <ResIcon type={selectedResource.type} />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs text-white/90 truncate block">{selectedResource.title}</span>
-                      {docStats && !extracting && (
-                        <span className="text-[9px] text-white/30">{docStats.pages} pages · {Math.round(docStats.chars / 1000)}k chars extracted</span>
-                      )}
-                    </div>
-                    {extracting && <Loader2 size={12} className="text-violet-400 animate-spin shrink-0" />}
-                    {!extracting && extractedText !== null && <span className="text-[9px] text-green-400 shrink-0 font-medium">✓ Ready</span>}
-                    {!extracting && extractedText === null && extractWarning && <span className="text-[9px] text-amber-400 shrink-0">Limited</span>}
-                  </>
-                ) : (
-                  <>
-                    <FileText size={12} className="text-white/25 shrink-0" />
-                    <span className="flex-1 text-xs text-white/30">Analyze a document — PDF, Book, Note, PYQ…</span>
-                  </>
-                )}
-                <ChevronDown size={12} className={`text-white/30 shrink-0 transition-transform ${showPicker ? "rotate-180" : ""}`} />
-              </button>
-
-              {showPicker && (
-                <div
-                  className="absolute top-full left-0 right-0 mt-1 rounded-xl border overflow-hidden z-10 shadow-xl"
-                  style={{ background: "#130930", borderColor: "rgba(124,58,237,0.35)", maxHeight: 260 }}
-                >
-                  {/* Search */}
-                  <div className="p-2 border-b" style={{ borderColor: "rgba(124,58,237,0.15)" }}>
-                    <input
-                      autoFocus
-                      placeholder="Search by title or subject…"
-                      value={pickerSearch}
-                      onChange={e => setPickerSearch(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-white/30 outline-none"
-                    />
-                  </div>
-                  {/* Tabs */}
-                  <div className="flex gap-0 border-b" style={{ borderColor: "rgba(124,58,237,0.12)" }}>
-                    {(["all", "pdf", "book", "note"] as const).map(t => (
-                      <button
-                        key={t}
-                        onClick={() => setPickerTab(t)}
-                        className={`flex-1 py-1.5 text-[10px] font-medium transition-colors capitalize ${pickerTab === t ? "text-violet-300 bg-white/5" : "text-white/30 hover:text-white/60"}`}
-                      >
-                        {t === "all" ? "All" : t === "pdf" ? "PDFs" : t === "book" ? "Books" : "Notes"}
-                      </button>
-                    ))}
-                  </div>
-                  {/* List */}
-                  <div className="overflow-y-auto" style={{ maxHeight: 160 }}>
-                    {loadingRes ? (
-                      <div className="flex items-center justify-center py-6">
-                        <Loader2 size={16} className="text-violet-400 animate-spin" />
-                      </div>
-                    ) : filtered.length === 0 ? (
-                      <p className="text-xs text-white/30 text-center py-4">No resources found</p>
-                    ) : (
-                      filtered.slice(0, 60).map(r => (
-                        <button
-                          key={`${r.type}-${r.id}`}
-                          onClick={() => selectResource(r)}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-white/5 transition-colors text-left"
-                        >
-                          <ResIcon type={r.type} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-white/80 truncate">{r.title}</p>
-                            <p className="text-[10px] text-white/35">{r.subject}{r.year ? ` · ${r.year}` : ""} · {r.type.toUpperCase()}</p>
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                  {selectedResource && (
-                    <button
-                      onClick={() => { setSelectedResource(null); setExtractedText(null); setExtractWarning(null); setDocStats(null); setShowPicker(false); }}
-                      className="w-full text-xs text-red-400/60 hover:text-red-400 py-2 border-t transition-colors"
-                      style={{ borderColor: "rgba(124,58,237,0.12)" }}
-                    >
-                      ✕ Remove document
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Extraction warning */}
-            {extractWarning && !showPicker && (
-              <p className="text-[10px] text-amber-400/75 mt-1.5 px-1">{extractWarning}</p>
-            )}
-
-            {/* Document quick actions */}
-            {selectedResource && !extracting && !showPicker && (
-              <div className="flex gap-1.5 mt-2 flex-wrap">
-                {DOC_ACTIONS.map(({ label, icon: Icon, prompt }) => (
-                  <button
-                    key={label}
-                    onClick={() => sendMessage(prompt)}
-                    disabled={streaming}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium text-violet-300/80 hover:text-violet-200 transition-colors disabled:opacity-40"
-                    style={{ background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.2)" }}
-                  >
-                    <Icon size={9} />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* ── Messages ── */}
@@ -817,9 +483,7 @@ export function MeddyAssistant() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKey}
-                placeholder={
-                  selectedResource ? `Ask about "${selectedResource.title}"…` : "Ask Meddy anything…"
-                }
+                placeholder="Ask Meddy anything…"
                 rows={1}
                 className="flex-1 resize-none text-sm min-h-[36px] max-h-[110px] bg-white/5 border-white/10 text-white placeholder:text-white/30 rounded-xl focus-visible:ring-violet-500/50 focus-visible:ring-1"
                 style={{ scrollbarWidth: "none" }}
@@ -836,7 +500,7 @@ export function MeddyAssistant() {
               </Button>
             </div>
             <p className="text-[9px] text-white/18 text-center mt-1.5">
-              For exam questions → AI Doubt section · Meddy may make mistakes
+              For exam Q&amp;A with file upload → AI Doubt section · Meddy may make mistakes
             </p>
           </div>
         </div>
