@@ -55,6 +55,17 @@ function getServeUrlWithToken(url: string): string {
   return `${url}${sep}token=${encodeURIComponent(token)}`;
 }
 
+function getDownloadUrl(url: string): string {
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) return `https://drive.usercontent.google.com/download?id=${match[1]}&export=download&authuser=0`;
+  if (url.includes("/api/upload/pdf/serve/")) return getServeUrlWithToken(url);
+  return url;
+}
+
+function openDownload(url: string) {
+  window.open(getDownloadUrl(url), "_blank", "noopener,noreferrer");
+}
+
 function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void }) {
   const color = SUBJECT_COLORS[note.subject] || DEFAULT_COLOR;
   const isFile = note.fileType && note.fileType !== "text" && note.fileType !== "link";
@@ -131,6 +142,11 @@ function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void })
             {note.content ? `${Math.ceil(note.content.length / 1000)} pages · ` : ""}{note.downloadCount || 0} downloads
           </span>
           <div className="flex gap-2">
+            {note.fileUrl && note.fileType !== "link" && (
+              <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => openDownload(note.fileUrl!)}>
+                <Download size={13} /> Download
+              </Button>
+            )}
             <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={onClose}>
               <ChevronLeft size={13} /> Back
             </Button>
@@ -217,9 +233,14 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
           <h3 className="font-semibold text-sm mb-3 line-clamp-2 group-hover:text-primary transition-colors flex-1">
             {pyq.title}
           </h3>
-          <Button className="w-full text-xs gap-1.5 mt-auto" size="sm" onClick={open}>
-            <FileText size={12} /> Open PYQ
-          </Button>
+          <div className="flex gap-2 mt-auto">
+            <Button className="flex-1 text-xs gap-1.5" size="sm" onClick={open}>
+              <BookOpen size={12} /> Read
+            </Button>
+            <Button variant="secondary" className="flex-1 text-xs gap-1.5" size="sm" onClick={() => openDownload(pyq.url)}>
+              <Download size={12} /> Download
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -249,9 +270,14 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
             </div>
             <div className="px-6 py-3 border-t border-border/50 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">{pyq.downloadCount ?? 0} views</span>
-              <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => setViewing(false)}>
-                <ChevronLeft size={13} /> Back
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => openDownload(pyq.url)}>
+                  <Download size={13} /> Download
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => setViewing(false)}>
+                  <ChevronLeft size={13} /> Back
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -298,9 +324,14 @@ function BookCard({ book }: { book: Book }) {
           {book.author && (
             <p className="text-xs text-muted-foreground mb-3">by {book.author}</p>
           )}
-          <Button className="w-full text-xs gap-1.5 mt-auto" size="sm" onClick={open}>
-            <BookOpen size={12} /> Read Book
-          </Button>
+          <div className="flex gap-2 mt-auto">
+            <Button className="flex-1 text-xs gap-1.5" size="sm" onClick={open}>
+              <BookOpen size={12} /> Read
+            </Button>
+            <Button variant="secondary" className="flex-1 text-xs gap-1.5" size="sm" onClick={() => openDownload(book.url)}>
+              <Download size={12} /> Download
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -328,7 +359,10 @@ function BookCard({ book }: { book: Book }) {
                 allow="autoplay"
               />
             </div>
-            <div className="px-6 py-3 border-t border-border/50 flex justify-end">
+            <div className="px-6 py-3 border-t border-border/50 flex justify-end gap-2">
+              <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => openDownload(book.url)}>
+                <Download size={13} /> Download
+              </Button>
               <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => setViewing(false)}>
                 <ChevronLeft size={13} /> Back
               </Button>
@@ -503,9 +537,25 @@ export default function StudentNotes() {
                         : <span className="flex items-center gap-1"><FileText size={12} /> {note.fileType || "text"}</span>}
                       <span className="flex items-center gap-1"><Download size={12} /> {note.downloadCount ?? 0} dl</span>
                     </p>
-                    <Button className="w-full text-xs" variant="secondary" size="sm">
-                      {note.fileType === "link" ? "Open Link" : note.fileType && note.fileType !== "text" ? "View File" : "Read Note"}
-                    </Button>
+                    {note.fileUrl && note.fileType !== "link" && note.fileType !== "text" ? (
+                      <div className="flex gap-2">
+                        <Button className="flex-1 text-xs gap-1" variant="secondary" size="sm">
+                          <BookOpen size={11} /> Read
+                        </Button>
+                        <Button
+                          className="flex-1 text-xs gap-1"
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); openDownload(note.fileUrl!); }}
+                        >
+                          <Download size={11} /> Download
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button className="w-full text-xs" variant="secondary" size="sm">
+                        {note.fileType === "link" ? "Open Link" : "Read Note"}
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               );
