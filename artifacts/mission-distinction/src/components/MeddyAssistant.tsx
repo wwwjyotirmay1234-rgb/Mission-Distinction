@@ -163,11 +163,61 @@ function TypingDots() {
   );
 }
 
+// ── Fuzzy-match a resource from user's query ───────────────────────────────
+const STOP_WORDS = new Set(["the", "and", "with", "for", "from", "of", "a", "an", "in", "on", "at", "to", "by", "its", "my"]);
+
+function findBestMatch(query: string, resources: SelectedResource[]): SelectedResource | null {
+  if (!resources.length) return null;
+  const q = query.toLowerCase();
+
+  // Only trigger on queries that seem to be asking about content
+  const contentTriggers = [
+    "what's in", "whats in", "what is in", "what does", "what do",
+    "contents of", "content of", "topics in", "chapters in", "chapter in",
+    "table of contents", "show me", "tell me about", "summarize",
+    "about this book", "cover", "index of", "what topics", "what chapters",
+    "in the book", "in this", "show topics",
+  ];
+  const isContentQuery = contentTriggers.some(t => q.includes(t));
+  // Also match bare-name queries: "Gray's Anatomy?" or "BD Chaurasia topics"
+  const seemsLikeNameQuery = /^[\w''\s\-\.]+\??\s*$/.test(query.trim()) && query.trim().length < 60;
+
+  if (!isContentQuery && !seemsLikeNameQuery) return null;
+
+  // 1. Exact full-title substring match
+  for (const r of resources) {
+    if (q.includes(r.title.toLowerCase())) return r;
+  }
+
+  // 2. Multi-word title overlap (≥2 significant words match)
+  for (const r of resources) {
+    const titleWords = r.title.toLowerCase()
+      .split(/[\s\-\/\.]+/)
+      .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+    if (titleWords.length === 0) continue;
+    const hits = titleWords.filter(w => q.includes(w));
+    const threshold = titleWords.length === 1 ? 1 : 2;
+    if (hits.length >= threshold) return r;
+  }
+
+  return null;
+}
+
+// ── Build compact catalog for API requests ─────────────────────────────────
+function buildCompactCatalog(resources: Resources): object {
+  return {
+    pdfs: resources.pdfs.map(r => ({ title: r.title, subject: r.subject })),
+    books: resources.books.map(r => ({ title: r.title, subject: r.subject })),
+    pyqs: resources.pyqs.map(r => ({ title: r.title, subject: r.subject, year: r.year })),
+    notes: (resources.notes ?? []).map(r => ({ title: r.title, subject: r.subject })),
+  };
+}
+
 // ── Welcome quick actions ──────────────────────────────────────────────────
 const QUICK_ACTIONS = [
-  { label: "Find Anatomy books", icon: "📖" },
-  { label: "What can Meddy do?", icon: "🤖" },
-  { label: "Generate 5 Physiology MCQs", icon: "❓" },
+  { label: "What books do we have?", icon: "📚" },
+  { label: "Show all NEET resources", icon: "🎯" },
+  { label: "Generate 5 Anatomy MCQs", icon: "❓" },
   { label: "Show all PYQs", icon: "📋" },
   { label: "Explain glycolysis simply", icon: "🧪" },
   { label: "How do I use flashcards?", icon: "🃏" },
@@ -187,7 +237,7 @@ export function MeddyAssistant() {
   const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([{
     role: "assistant",
-    content: "Hi! I'm **Meddy** 👋 — your AI learning companion for Mission Distinction.\n\nI can help you:\n- 🔍 Find PDFs, Books, Notes & PYQs\n- 📄 Analyse any document (pick one below)\n- ❓ Generate practice MCQs\n- 🧠 Explain tough 1st Year concepts\n- 🗺️ Navigate any app feature\n\nFor detailed exam MCQs → **AI Doubt** section!",
+    content: "Hi! I'm **Meddy** 👋 — your AI learning companion for Mission Distinction.\n\nI can help with resources **from 1st Year to NEET to USMLE** that are in our app:\n- 🔍 Ask *\"What books do we have?\"* — I'll list everything\n- 📄 Ask *\"What's in BD Chaurasia?\"* — I'll auto-load & show contents\n- ❓ Generate practice MCQs from any document\n- 🧠 Explain any concept with mnemonics\n- 🗺️ Navigate any app feature\n\nJust ask naturally — I'll find the right resource automatically! 🔥",
   }]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -278,10 +328,59 @@ export function MeddyAssistant() {
     if (!text || streaming) return;
     if (!overrideText) setInput("");
 
-    const userMsg: Msg = { role: "user", content: text };
     const history = messages.filter(m => !m.isStreaming);
-    setMessages(prev => [...prev, userMsg, { role: "assistant", content: "", isStreaming: true }]);
-    setStreaming(true);
+
+    // ── Auto-detect resource from query ──────────────────────────────────
+    let docResource = selectedResource;
+    let docText = extractedText;
+
+    if (!selectedResource && allResources.length > 0) {
+      const match = findBestMatch(text, allResources);
+      if (match) {
+        // Show user message + auto-load indicator immediately
+        setMessages(prev => [
+          ...prev,
+          { role: "user", content: text },
+          { role: "assistant", content: `🔍 Found **${match.title}** in your library! Loading it now…`, isStreaming: false },
+        ]);
+        setStreaming(true);
+        setSelectedResource(match);
+        setExtracting(true);
+        try {
+          const r = await apiFetch("/api/meddy/extract-pdf", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: match.url }),
+          });
+          const data = await r.json();
+          if (r.ok) {
+            docText = data.text || "";
+            setExtractedText(data.text || "");
+            if (data.pages) setDocStats({ pages: data.pages, chars: data.chars ?? 0 });
+            if (data.warning) setExtractWarning(data.warning);
+          }
+          docResource = match;
+        } catch {
+          // proceed without doc text if extraction fails
+        } finally {
+          setExtracting(false);
+        }
+        // Replace the "loading..." bubble with a streaming placeholder
+        setMessages(prev => {
+          const c = [...prev];
+          c[c.length - 1] = { role: "assistant", content: "", isStreaming: true };
+          return c;
+        });
+        // Fall through to streaming with docResource/docText set
+      } else {
+        // No match — normal flow
+        setMessages(prev => [...prev, { role: "user", content: text }, { role: "assistant", content: "", isStreaming: true }]);
+        setStreaming(true);
+      }
+    } else {
+      setMessages(prev => [...prev, { role: "user", content: text }, { role: "assistant", content: "", isStreaming: true }]);
+      setStreaming(true);
+    }
 
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -289,13 +388,17 @@ export function MeddyAssistant() {
     let accumulated = "";
 
     try {
+      // Build request body — include catalog when no doc is loaded
       const body: Record<string, unknown> = {
         message: text,
         history: history.slice(-10).map(m => ({ role: m.role, content: m.content.slice(0, 2000) })),
       };
-      if (selectedResource) {
-        body.documentTitle = selectedResource.title + (selectedResource.year ? ` (${selectedResource.year})` : "");
-        body.documentText = extractedText ?? "";
+      if (docResource) {
+        body.documentTitle = docResource.title + (docResource.year ? ` (${docResource.year})` : "");
+        body.documentText = docText ?? "";
+      } else if (resources) {
+        // Always pass the full library catalog when no document is selected
+        body.resourcesCatalog = buildCompactCatalog(resources);
       }
 
       const res = await fetch("/api/meddy/chat", {
@@ -361,7 +464,7 @@ export function MeddyAssistant() {
           body: JSON.stringify({
             question: text,
             answer: accumulated,
-            documentTitle: selectedResource?.title ?? "",
+            documentTitle: docResource?.title ?? "",
           }),
         })
           .then(r => r.json())
@@ -391,7 +494,7 @@ export function MeddyAssistant() {
       setStreaming(false);
       abortRef.current = null;
     }
-  }, [input, streaming, messages, selectedResource, extractedText]);
+  }, [input, streaming, messages, selectedResource, extractedText, allResources, resources]);
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }

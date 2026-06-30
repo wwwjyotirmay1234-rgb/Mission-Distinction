@@ -44,7 +44,7 @@ const limiter = rateLimit({
 const MEDDY_SYSTEM_PROMPT = `You are **Meddy** — the brilliant AI learning companion built into Mission Distinction, India's premier medical education platform for 1st Year MBBS students in Odisha.
 
 ## WHO YOU ARE:
-You are not just a chatbot — you are a warm, precise, and deeply knowledgeable medical education tutor. You know the 1st Year MBBS curriculum inside-out, understand the Indian medical exam system, and know every feature of Mission Distinction. You combine the warmth of a senior student mentor with the accuracy of a medical reference text.
+You are not just a chatbot — you are a warm, precise, and deeply knowledgeable medical education tutor. You know the MBBS curriculum from 1st Year through to NEET PG and USMLE. You understand the Indian medical exam system deeply, and you know every feature of Mission Distinction inside-out. You combine the warmth of a senior student mentor with the accuracy of a medical reference text.
 
 ---
 
@@ -73,11 +73,19 @@ Guide students to any feature: quizzes, AI doubt, bookmarks, study rooms, flashc
 
 ---
 
-## CURRICULUM KNOWLEDGE — 1st Year MBBS (Odisha):
-**Anatomy:** Gray's, Snell's, BD Chaurasia — Upper Limb, Lower Limb, Thorax, Abdomen, Head & Neck, Neuroanatomy, Embryology, Histology
-**Physiology:** Guyton & Hall, Ganong — General, CVS, Respiratory, Renal, GIT, Endocrine, Neurophysiology, Reproductive
-**Biochemistry:** Harper's, Lippincott, Vasudevan — Biomolecules, Metabolism, Molecular Biology, Clinical Biochemistry
-**Exam types:** University theory exams, Internal Assessment Tests (IAT 1/2/3), Practicals/Viva, Spotters
+## CURRICULUM KNOWLEDGE:
+**1st Year MBBS:**
+- Anatomy: Gray's, Snell's, BD Chaurasia — Upper/Lower Limb, Thorax, Abdomen, Head & Neck, Neuroanatomy, Embryology, Histology
+- Physiology: Guyton & Hall, Ganong — CVS, Respiratory, Renal, GIT, Endocrine, Neurophysiology, Reproductive
+- Biochemistry: Harper's, Lippincott, Vasudevan — Biomolecules, Metabolism, Molecular Biology, Clinical Biochemistry
+- Exam types: University theory, IAT 1/2/3, Practicals/Viva, Spotters
+
+**2nd Year MBBS:** Pathology (Robbins, Harsh Mohan), Pharmacology (KD Tripathi, Rang & Dale), Microbiology (Ananthnarayan), Forensic Medicine
+
+**3rd Year / Final MBBS:** Medicine (Harrison's, Davidson's), Surgery (Bailey & Love, SRB), OBG (DC Dutta, Shaw's), Paediatrics (OP Ghai), Ophthalmology, ENT, PSM (Park's), Orthopaedics, Dermatology
+
+**NEET PG / USMLE:** High-yield rapid revision, previous year MCQ patterns, clinical vignette reasoning, systems-based review
+**Exam types:** University theory exams, IAT 1/2/3, Practicals/Viva, Spotters, NEET PG, USMLE Step 1/2/3
 
 ---
 
@@ -126,9 +134,16 @@ When asked "how many questions from X" — count only those explicitly in sectio
 
 ---
 
+## LIBRARY CATALOG AWARENESS:
+When the student's message includes a <LIBRARY_CATALOG> block, you have access to the titles of every resource in their app. Use this to:
+- Tell them exactly which resources exist for a topic ("Yes! You have **Gray's Anatomy** and **BD Chaurasia** in your library under Anatomy")
+- Confirm if a specific book/PDF is available ("I can see **Robbins Basic Pathology** is in your library — load it using the picker and I'll walk you through its contents!")
+- List all resources by subject when asked ("Here are all your Anatomy resources: ...")
+- If a resource was auto-loaded (document provided), analyse it directly and answer the question
+
 ## WHAT YOU REDIRECT:
-- Clinical-year topics, NEET PG, pathology MCQs, pharmacology drug mechanisms → redirect to **AI Doubt section**: "For in-depth medical questions and MCQ explanations, our AI Doubt section gives you full Claude + GPT-4o power!"
-- Do NOT redirect 1st Year concept explanations — answer those directly.
+- Do NOT redirect 1st Year–3rd Year MBBS concept explanations — answer those directly
+- For purely clinical case solving or NEET PG full MCQ sets → suggest the **AI Doubt section**: "For full exam mode, our AI Doubt section gives you Claude + GPT-4o power!"
 
 ---
 
@@ -380,6 +395,29 @@ router.post("/extract-pdf", authMiddleware, limiter, async (req: Request, res: R
   }
 });
 
+// ── Build catalog block from raw catalog object ───────────────────────────
+function buildCatalogBlock(rawCatalog: unknown): string {
+  if (!rawCatalog || typeof rawCatalog !== "object") return "";
+  try {
+    const sections: string[] = [];
+    const typeLabels: Record<string, string> = {
+      pdfs: "PDFs", books: "Books", pyqs: "PYQs", notes: "Notes"
+    };
+    for (const [type, items] of Object.entries(rawCatalog as Record<string, unknown>)) {
+      if (!Array.isArray(items) || items.length === 0) continue;
+      const label = typeLabels[type] ?? type.toUpperCase();
+      const list = (items as any[]).slice(0, 150)
+        .map((r: any) => `  - ${r.title || "Untitled"}${r.subject ? ` [${r.subject}]` : ""}${r.year ? ` (${r.year})` : ""}`)
+        .join("\n");
+      sections.push(`${label} (${(items as any[]).length}):\n${list}`);
+    }
+    if (sections.length === 0) return "";
+    return `\n\n<LIBRARY_CATALOG note="Every resource available in this student's Mission Distinction library">\n${sections.join("\n\n")}\n</LIBRARY_CATALOG>`;
+  } catch {
+    return "";
+  }
+}
+
 // ── Meddy chat (streaming SSE) ─────────────────────────────────────────────
 router.post("/chat", authMiddleware, limiter, async (req: Request, res: Response) => {
   const message = sanitize(req.body.message, 4000) ?? "";
@@ -387,6 +425,8 @@ router.post("/chat", authMiddleware, limiter, async (req: Request, res: Response
   const documentTitle = sanitize(req.body.documentTitle, 200) ?? "";
   const rawHistory: { role: string; content: string }[] = Array.isArray(req.body.history)
     ? req.body.history : [];
+  // Optional: full library catalog for context when no document is loaded
+  const rawCatalog = req.body.resourcesCatalog ?? null;
 
   if (!message) { res.status(400).json({ error: "message required" }); return; }
 
@@ -396,17 +436,22 @@ router.post("/chat", authMiddleware, limiter, async (req: Request, res: Response
   res.flushHeaders();
 
   const history = rawHistory
-    .slice(-8)
+    .slice(-10)
     .filter(h => (h.role === "user" || h.role === "assistant") && h.content?.trim())
     .map(h => ({ role: h.role as "user" | "assistant", content: h.content.slice(0, 2000) }));
 
   let userContent = message;
   if (documentText && documentTitle) {
+    // Document loaded — analyse it
     const focused = extractTopicSections(documentText, message, 6);
     const focusedBlock = focused
       ? `\n\n<FOCUSED_SECTIONS note="Pre-searched excerpts most relevant to the query — USE THESE AS PRIMARY SOURCE">\n${focused}\n</FOCUSED_SECTIONS>`
       : "";
     userContent = `I have a question about a document from the app.\n\nDocument: **${documentTitle}**\n\n<DOCUMENT>\n${documentText}\n</DOCUMENT>${focusedBlock}\n\nMy question: ${message}`;
+  } else if (rawCatalog) {
+    // No document loaded — inject the full library catalog so Meddy knows what's available
+    const catalogBlock = buildCatalogBlock(rawCatalog);
+    if (catalogBlock) userContent = message + catalogBlock;
   }
 
   try {
