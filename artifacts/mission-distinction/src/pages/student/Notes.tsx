@@ -606,10 +606,11 @@ export default function StudentNotes() {
                         : <span className="flex items-center gap-1"><FileText size={12} /> {note.fileType || "text"}</span>}
                       <span className="flex items-center gap-1"><Download size={12} /> {note.downloadCount ?? 0} dl</span>
                     </p>
-                    {note.fileUrl && note.fileType !== "link" && note.fileType !== "text" ? (
+                    {note.fileUrl && note.fileType !== "text" ? (
                       <div className="flex gap-2">
                         <Button className="flex-1 text-xs gap-1" variant="secondary" size="sm">
-                          <BookOpen size={11} /> Read
+                          {note.fileType === "link" ? <ExternalLink size={11} /> : <BookOpen size={11} />}
+                          {note.fileType === "link" ? "Open" : "Read"}
                         </Button>
                         <Button
                           className="flex-1 text-xs gap-1"
@@ -622,7 +623,7 @@ export default function StudentNotes() {
                       </div>
                     ) : (
                       <Button className="w-full text-xs" variant="secondary" size="sm">
-                        {note.fileType === "link" ? "Open Link" : "Read Note"}
+                        Read Note
                       </Button>
                     )}
                   </CardContent>
