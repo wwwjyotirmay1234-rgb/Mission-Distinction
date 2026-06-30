@@ -4,12 +4,32 @@ import { authMiddleware } from "../middlewares/auth";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { db } from "@workspace/db";
 import { pdfsTable, booksTable, pyqsTable } from "@workspace/db";
+import { gcsClient } from "../lib/gcs";
 import { createRequire } from "module";
 const _require = createRequire(import.meta.url);
 // pdf-parse v1 exports a plain function via CJS — use createRequire to avoid
 // esbuild resolving the ESM entry (which has no default export).
 const pdfParse: (buf: Buffer, opts?: { max?: number }) => Promise<{ text: string; numpages: number }> =
   _require("pdf-parse");
+
+// Match internal PDF serve URLs: /api/upload/pdf/serve/<fileName>
+const INTERNAL_SERVE_RE = /\/api\/upload\/pdf\/serve\/([^/?#]+)/;
+
+async function readInternalPdf(url: string): Promise<Buffer | null> {
+  const match = url.match(INTERNAL_SERVE_RE);
+  if (!match) return null;
+  const fileName = match[1];
+  const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+  if (!bucketId) return null;
+  try {
+    const bucket = gcsClient.bucket(bucketId);
+    const fileRef = bucket.file(`pdfs/${fileName}`);
+    const [buf] = await fileRef.download();
+    return buf;
+  } catch {
+    return null;
+  }
+}
 
 const router = Router();
 
@@ -184,43 +204,52 @@ router.post("/extract-pdf", authMiddleware, limiter, async (req: Request, res: R
   }
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25_000);
+    let buffer: Buffer;
 
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 Mission-Distinction-Bot/1.0" },
-    });
-    clearTimeout(timeout);
+    // Short-circuit for internal PDF serve URLs — read directly from GCS,
+    // bypassing the HTTP auth layer that would return 401.
+    const internalBuf = await readInternalPdf(rawUrl);
+    if (internalBuf) {
+      buffer = internalBuf;
+    } else {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25_000);
 
-    if (!response.ok) {
-      res.status(400).json({ error: `Could not fetch PDF (HTTP ${response.status}). The file may not be publicly accessible.` });
-      return;
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: { "User-Agent": "Mozilla/5.0 Mission-Distinction-Bot/1.0" },
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        res.status(400).json({ error: `Could not fetch PDF (HTTP ${response.status}). The file may not be publicly accessible.` });
+        return;
+      }
+
+      const contentType = response.headers.get("content-type") ?? "";
+      if (!contentType.includes("pdf") && !contentType.includes("octet-stream") && !contentType.includes("application/")) {
+        res.status(400).json({ error: "URL does not appear to be a PDF file." });
+        return;
+      }
+
+      // Limit download to 15 MB to keep extraction fast
+      const MAX_BYTES = 15 * 1024 * 1024;
+      const reader = response.body?.getReader();
+      if (!reader) { res.status(500).json({ error: "Could not read response body" }); return; }
+
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done || !value) break;
+        chunks.push(value);
+        total += value.length;
+        if (total >= MAX_BYTES) break;
+      }
+      reader.cancel().catch(() => {});
+
+      buffer = Buffer.concat(chunks);
     }
-
-    const contentType = response.headers.get("content-type") ?? "";
-    if (!contentType.includes("pdf") && !contentType.includes("octet-stream") && !contentType.includes("application/")) {
-      res.status(400).json({ error: "URL does not appear to be a PDF file." });
-      return;
-    }
-
-    // Limit download to 15 MB to keep extraction fast
-    const MAX_BYTES = 15 * 1024 * 1024;
-    const reader = response.body?.getReader();
-    if (!reader) { res.status(500).json({ error: "Could not read response body" }); return; }
-
-    const chunks: Uint8Array[] = [];
-    let total = 0;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done || !value) break;
-      chunks.push(value);
-      total += value.length;
-      if (total >= MAX_BYTES) break;
-    }
-    reader.cancel().catch(() => {});
-
-    const buffer = Buffer.concat(chunks);
     if (buffer.length < 8) { res.status(400).json({ error: "File too small to be a valid PDF." }); return; }
 
     // Verify PDF magic bytes
