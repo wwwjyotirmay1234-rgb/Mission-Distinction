@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { useEffect, lazy, Suspense } from "react";
 import { trackPage } from "@/lib/analytics";
 import * as Sentry from "@sentry/react";
@@ -137,13 +137,27 @@ function PageTracker() {
   return null;
 }
 
+/**
+ * RootRoute — instantly redirects authenticated users to their dashboard
+ * WITHOUT loading the LandingPage lazy chunk first. This eliminates the
+ * "spinner → flash of login page → redirect" sequence on PWA re-open.
+ * Unauthenticated users get the normal LandingPage (lazy-loaded as before).
+ */
+function RootRoute() {
+  const { isAuthenticated, isAdmin } = useAuth();
+  if (isAuthenticated) {
+    return <Redirect to={isAdmin ? "/admin/dashboard" : "/student/dashboard"} />;
+  }
+  return <ForceDark><LandingPage /></ForceDark>;
+}
+
 function Router() {
   return (
     <Suspense fallback={<PageLoader />}>
       <PageTracker />
       <Switch>
         <Route path="/">
-          <ForceDark><LandingPage /></ForceDark>
+          <RootRoute />
         </Route>
         <Route path="/coming-soon">
           <ForceDark><ComingSoon /></ForceDark>
