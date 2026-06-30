@@ -31,6 +31,11 @@ export async function apiFetch(
   if (token && !headers.has("authorization")) {
     headers.set("authorization", `Bearer ${token}`);
   }
+  // Auto-set JSON content-type when body is a string (JSON.stringify output)
+  // and the caller hasn't already specified a content-type.
+  if (typeof init.body === "string" && !headers.has("content-type")) {
+    headers.set("content-type", "application/json");
+  }
 
   const response = await fetch(input, { ...init, headers, credentials: init.credentials ?? "include" });
   if (response.status !== 401) return response;
@@ -47,7 +52,7 @@ export async function apiFetch(
     const newToken = await refresher();
     if (!newToken) return response;
 
-    const retryHeaders = new Headers(init.headers ?? {});
+    const retryHeaders = new Headers(headers); // inherit auto-set content-type
     retryHeaders.set("authorization", `Bearer ${newToken}`);
     return fetch(input, { ...init, headers: retryHeaders, credentials: init.credentials ?? "include" });
   } catch {
