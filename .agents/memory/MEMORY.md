@@ -8,6 +8,7 @@
 - [SW base path for production](sw-base-path.md) — derive BASE from self.location so /assets/ and nav fallback work at /mission-distinction/ not just /
 - [SAST taint-breaking patterns](sast-taint-breaking.md) — how to break semgrep taint chains and clear html-in-template-string / unsafe-dynamic-method findings
 - [3D Anatomy Hub architecture](anatomy-hub-arch.md) — R3F + drei for 3D, lazy-loaded, JSX.Element → React.ReactElement to avoid TS namespace errors, procedural geometry per system
+- [Vite manualChunks + Three.js](vite-manualchunks-three.md) — NEVER add Three.js/R3F to manualChunks; AnatomyHub is React.lazy so it's already async — manualChunks would make it sync and crash mobile
 - [Exams route role check pattern](exams-role-check.md) — user object has role:"admin"|"student", NOT isAdmin boolean; always check user.role === "admin"
 - [LandingPage hooks order](landing-hooks-order.md) — ALL hooks must come before any conditional return; putting mutations/useForm/useEffect after early return causes crash on re-render
 - [WebRTC TURN servers for India](webrtc-turn-india.md) — STUN alone fails on Indian carrier NAT (Jio/Airtel/BSNL); use Open Relay Project free TURN servers

@@ -47,33 +47,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // React core — must be its own chunk so it's guaranteed to load before
-          // any other vendor chunk that calls React.useLayoutEffect (e.g. R3F)
-          if (
-            id.includes("/node_modules/react/") ||
-            id.includes("/node_modules/react-dom/") ||
-            id.includes("/node_modules/react-is/") ||
-            id.includes("/node_modules/scheduler/")
-          ) {
-            return "vendor-react";
-          }
-          // Three.js + R3F — large, only needed for Anatomy page
-          if (id.includes("three") || id.includes("@react-three") || id.includes("@react-spring")) {
-            return "vendor-three";
-          }
-          // Mermaid + d3 — large async deps; isolate so vendor-misc stays small
-          if (
-            id.includes("node_modules/mermaid") ||
-            id.includes("node_modules/d3") ||
-            id.includes("node_modules/@braintree") ||
-            id.includes("node_modules/dagre") ||
-            id.includes("node_modules/khroma") ||
-            id.includes("node_modules/cytoscape") ||
-            id.includes("node_modules/elkjs") ||
-            id.includes("node_modules/stylis")
-          ) {
-            return "vendor-mermaid";
-          }
+          // NOTE: Do NOT add Three.js / R3F here — AnatomyHub is React.lazy so
+          // Three.js is already in an async chunk. Adding it to manualChunks would
+          // promote it to a synchronous chunk and break React loading order on mobile.
+
           // Framer Motion
           if (id.includes("framer-motion")) {
             return "vendor-motion";
