@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Sparkles, X, Send, FileText, BookOpen, ClipboardList, ChevronDown, Loader2, Bot, RotateCcw } from "lucide-react";
+import { Sparkles, X, Send, FileText, BookOpen, ClipboardList, ChevronDown, Loader2, Bot, RotateCcw, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { apiFetch } from "@/lib/apiFetch";
@@ -55,6 +55,27 @@ function formatInline(text: string): React.ReactNode {
     if (p.startsWith("*") && p.endsWith("*")) return <em key={i}>{p.slice(1, -1)}</em>;
     return p;
   });
+}
+
+// ── Copy button ────────────────────────────────────────────────────────────
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button
+      onClick={copy}
+      title="Copy"
+      className="flex items-center gap-1 text-[10px] text-white/30 hover:text-white/70 transition-colors mt-1.5 ml-auto"
+    >
+      {copied ? <Check size={11} className="text-green-400" /> : <Copy size={11} />}
+      <span>{copied ? "Copied!" : "Copy"}</span>
+    </button>
+  );
 }
 
 // ── Resource icon ──────────────────────────────────────────────────────────
@@ -443,11 +464,11 @@ export function MeddyAssistant() {
                   style={
                     msg.role === "user"
                       ? { background: "linear-gradient(135deg, #7c3aed, #5b21b6)" }
-                      : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }
+                      : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", userSelect: "text", WebkitUserSelect: "text" }
                   }
                 >
                   {msg.role === "user" ? (
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ userSelect: "text", WebkitUserSelect: "text" }}>{msg.content}</p>
                   ) : msg.content === "" && msg.isStreaming ? (
                     <div className="flex items-center gap-1.5 py-0.5">
                       {[0, 1, 2].map(i => (
@@ -459,10 +480,13 @@ export function MeddyAssistant() {
                       ))}
                     </div>
                   ) : (
-                    <div className="space-y-0.5">
+                    <div className="space-y-0.5" style={{ userSelect: "text", WebkitUserSelect: "text" }}>
                       {renderContent(msg.content)}
                       {msg.isStreaming && (
                         <span className="inline-block w-0.5 h-3.5 bg-violet-400 animate-pulse ml-0.5 align-middle" />
+                      )}
+                      {!msg.isStreaming && msg.content && (
+                        <CopyButton text={msg.content} />
                       )}
                     </div>
                   )}

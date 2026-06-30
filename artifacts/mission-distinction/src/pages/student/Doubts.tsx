@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Globe } from "lucide-react";
+import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Globe, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -25,6 +25,27 @@ const SUGGESTED = [
   "Describe the histology of kidney cortex with diagram",
   "📷 Send me an image of a slide / X-ray / question to analyse it",
 ];
+
+// ─── Copy button ──────────────────────────────────────────────────────────────
+function CopyButton({ text, className = "" }: { text: string; className?: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button
+      onClick={copy}
+      title="Copy"
+      className={`flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors ${className}`}
+    >
+      {copied ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
+      <span>{copied ? "Copied!" : "Copy"}</span>
+    </button>
+  );
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -652,6 +673,7 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
                     ? "bg-destructive/10 border border-destructive/30 text-destructive rounded-tl-sm"
                     : "bg-card border border-border/50 text-foreground rounded-tl-sm"
                 }`}
+                style={msg.role !== "user" ? { userSelect: "text", WebkitUserSelect: "text" } as React.CSSProperties : undefined}
               >
                 {msg.role === "user" ? (
                   <>
@@ -665,7 +687,6 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
                     {msg.content ? <p className="whitespace-pre-wrap">{msg.content}</p> : null}
                   </>
                 ) : msg.streaming ? (
-                  // While streaming: render markdown but strip partial [DIAGRAM:...] tags
                   msg.content ? (
                     <>
                       <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
@@ -677,8 +698,12 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
                     <TypingDots />
                   )
                 ) : (
-                  // After streaming: parse [DIAGRAM: ...] tags and render diagrams
-                  msg.content ? renderMessageContent(msg.content) : null
+                  msg.content ? (
+                    <>
+                      {renderMessageContent(msg.content)}
+                      <CopyButton text={msg.content.replace(/\[DIAGRAM:[^\]]*\]/g, "").trim()} className="mt-2" />
+                    </>
+                  ) : null
                 )}
               </div>
             </div>
@@ -1142,13 +1167,16 @@ function LegacyAiPanel({ doubtId, onClose }: { doubtId: number; onClose: () => v
           </Button>
         </div>
       </div>
-      <div className="px-4 py-3 min-h-[60px] max-h-[360px] overflow-y-auto">
+      <div className="px-4 py-3 min-h-[60px] max-h-[360px] overflow-y-auto" style={{ userSelect: "text", WebkitUserSelect: "text" } as React.CSSProperties}>
         {error ? <p className="text-sm text-destructive">{error}</p>
           : text ? <p className="text-sm leading-relaxed whitespace-pre-wrap">{text}</p>
           : loading ? <div className="space-y-2 pt-1"><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-5/6" /><Skeleton className="h-3 w-4/6" /></div>
           : null}
       </div>
-      <p className="px-4 pb-2.5 text-[10px] text-muted-foreground/50">AI answers may contain errors. Always verify with textbooks.</p>
+      <div className="px-4 pb-3 flex items-center justify-between">
+        <p className="text-[10px] text-muted-foreground/50">AI answers may contain errors. Always verify with textbooks.</p>
+        {done && text && <CopyButton text={text} />}
+      </div>
     </div>
   );
 }
