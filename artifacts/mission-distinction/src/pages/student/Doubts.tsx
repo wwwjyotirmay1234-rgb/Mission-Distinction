@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Globe, Copy, Check, Loader2 } from "lucide-react";
+import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Paperclip, Globe, Copy, Check, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -54,6 +54,7 @@ type ChatMsg = {
   role: "user" | "ai";
   content: string;
   imageBase64?: string;
+  attachedFileName?: string;
   streaming?: boolean;
   error?: boolean;
 };
@@ -584,11 +585,15 @@ async function compressImage(file: File): Promise<string> {
 
 // ─── AI Chat Tab ──────────────────────────────────────────────────────────────
 
+type PendingDoc = { text: string; title: string; pages?: number; warning?: string };
+
 function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [pendingDoc, setPendingDoc] = useState<PendingDoc | null>(null);
+  const [extractingDoc, setExtractingDoc] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -601,21 +606,71 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) { toast.error("Please select an image file"); return; }
-    if (file.size > 10 * 1024 * 1024) { toast.error("Image too large (max 10 MB)"); return; }
-    try {
-      const compressed = await compressImage(file);
-      setPendingImage(compressed);
-    } catch {
-      toast.error("Could not process image. Please try another.");
-    }
     e.target.value = "";
+
+    // ── Images ──
+    if (file.type.startsWith("image/")) {
+      if (file.size > 10 * 1024 * 1024) { toast.error("Image too large (max 10 MB)"); return; }
+      try {
+        const compressed = await compressImage(file);
+        setPendingImage(compressed);
+        setPendingDoc(null);
+      } catch {
+        toast.error("Could not process image. Please try another.");
+      }
+      return;
+    }
+
+    // ── PDFs & text files ──
+    const isPdf = file.type === "application/pdf" || file.name.match(/\.pdf$/i);
+    const isTxt = file.type.startsWith("text/") || file.name.match(/\.(txt|md|csv)$/i);
+    if (!isPdf && !isTxt) {
+      toast.error("Supported formats: images, PDFs, text files (.txt, .md, .csv)");
+      return;
+    }
+
+    setExtractingDoc(true);
+    setPendingDoc(null);
+    setPendingImage(null);
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8 = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+      const fileBase64 = btoa(binary);
+
+      const token = localStorage.getItem("mission_token");
+      const res = await fetch("/api/doubts/extract-file", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ fileBase64, mimeType: file.type, fileName: file.name }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || "Could not read file"); return; }
+      if (!data.text && data.warning) {
+        toast.warning(data.warning);
+        setPendingDoc({ text: "", title: file.name, pages: data.pages, warning: data.warning });
+      } else {
+        setPendingDoc({ text: data.text, title: file.name, pages: data.pages, warning: data.warning });
+        toast.success(`"${file.name}" ready — ask any question about it!`);
+      }
+    } catch {
+      toast.error("Could not extract file text. Please try again.");
+    } finally {
+      setExtractingDoc(false);
+    }
   };
 
   const send = async (question: string) => {
     const q = question.trim();
     const img = pendingImage;
-    if (!q && !img || busy) return;
+    const doc = pendingDoc;
+    if (!q && !img && !doc || busy) return;
 
     const userId = `u-${Date.now()}`;
     const aiId = `a-${Date.now()}`;
@@ -626,11 +681,12 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
 
     setMsgs(prev => [
       ...prev,
-      { id: userId, role: "user", content: q, imageBase64: img ?? undefined },
+      { id: userId, role: "user", content: q, imageBase64: img ?? undefined, attachedFileName: doc?.title },
       { id: aiId, role: "ai", content: "", streaming: true },
     ]);
     setInput("");
     setPendingImage(null);
+    setPendingDoc(null);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -639,6 +695,9 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
 
     try {
       const token = localStorage.getItem("mission_token");
+      const body: Record<string, unknown> = { question: q, history, model };
+      if (img) body.imageBase64 = img;
+      if (doc?.text) { body.documentText = doc.text; body.documentTitle = doc.title; }
       const res = await fetch("/api/doubts/ai-chat", {
         method: "POST",
         credentials: "include",
@@ -646,7 +705,7 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ question: q, imageBase64: img ?? undefined, history, model }),
+        body: JSON.stringify(body),
         signal: abortRef.current.signal,
       });
 
@@ -705,6 +764,7 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
     setMsgs([]);
     setBusy(false);
     setPendingImage(null);
+    setPendingDoc(null);
     setTimeout(() => textareaRef.current?.focus(), 50);
   };
 
@@ -749,10 +809,10 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
             <div>
               <h2 className="text-xl font-bold text-foreground">Mission Distinction AI</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                MBBS · NEET PG · USMLE · Image Analysis
+                MBBS · NEET PG · USMLE · Image & Document Analysis
               </p>
               <p className="text-xs text-muted-foreground/70 mt-0.5">
-                📷 Attach a textbook page, ECG, X-ray, or histology slide for instant AI analysis
+                📎 Attach images, PDFs, or text files for instant AI analysis
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
@@ -797,6 +857,12 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
                         className="max-w-[220px] rounded-xl mb-2 object-cover border border-white/20"
                       />
                     )}
+                    {msg.attachedFileName && (
+                      <div className="flex items-center gap-1.5 mb-2 bg-white/10 rounded-lg px-2 py-1.5">
+                        <FileText size={13} className="shrink-0 opacity-80" />
+                        <span className="text-xs truncate max-w-[180px] opacity-90">{msg.attachedFileName}</span>
+                      </div>
+                    )}
                     {msg.content ? <p className="whitespace-pre-wrap">{msg.content}</p> : null}
                   </>
                 ) : msg.streaming ? (
@@ -827,8 +893,14 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
 
       {/* Input bar */}
       <div className="shrink-0 pt-3 border-t border-border/40">
-        {/* Pending image preview strip */}
-        {pendingImage && (
+        {/* Pending attachment preview strip */}
+        {extractingDoc && (
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <Loader2 size={13} className="animate-spin text-primary" />
+            <span className="text-[10px] text-muted-foreground">Extracting text from file…</span>
+          </div>
+        )}
+        {pendingImage && !extractingDoc && (
           <div className="flex items-center gap-2 mb-2 px-1">
             <div className="relative">
               <img
@@ -847,36 +919,62 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
             <span className="text-[10px] text-muted-foreground">Image ready to send</span>
           </div>
         )}
+        {pendingDoc && !extractingDoc && (
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <div className="flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-xl px-3 py-2">
+              <FileText size={14} className="text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground truncate max-w-[220px]">{pendingDoc.title}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {pendingDoc.warning ? "⚠ Scanned PDF — text only" : `${pendingDoc.pages ? `${pendingDoc.pages} page${pendingDoc.pages !== 1 ? "s" : ""} · ` : ""}${Math.round((pendingDoc.text.length) / 1000)}k chars`}
+                </p>
+              </div>
+              <button
+                onClick={() => setPendingDoc(null)}
+                className="w-4 h-4 rounded-full bg-muted flex items-center justify-center ml-1 shrink-0"
+                aria-label="Remove document"
+              >
+                <X size={9} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,application/pdf,.pdf,.txt,.md,.csv"
           className="hidden"
           onChange={handleFileChange}
         />
 
         <div className="flex gap-2 items-end bg-card border border-border/60 rounded-2xl px-3 py-3 focus-within:border-primary/50 transition-colors">
-          {/* Attach image button */}
+          {/* Attach button */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={busy}
-            title="Attach image (textbook page, ECG, X-ray, histology…)"
+            disabled={busy || extractingDoc}
+            title="Attach image, PDF, or text file"
             className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-              pendingImage
+              pendingImage || pendingDoc
                 ? "bg-primary/20 text-primary"
                 : "text-muted-foreground hover:text-primary hover:bg-primary/10"
             } disabled:opacity-40 disabled:cursor-not-allowed`}
           >
-            <ImageIcon size={15} />
+            <Paperclip size={15} />
           </button>
           <textarea
             ref={textareaRef}
             value={input}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder={pendingImage ? "Add a question about this image… (optional)" : "Ask any medical question… (Enter to send, Shift+Enter for newline)"}
+            placeholder={
+              pendingImage
+                ? "Add a question about this image… (optional)"
+                : pendingDoc
+                ? "Ask anything about this document… (optional)"
+                : "Ask any medical question… (Enter to send, Shift+Enter for newline)"
+            }
             rows={1}
             disabled={busy}
             className="flex-1 bg-transparent resize-none outline-none text-sm placeholder:text-muted-foreground disabled:opacity-60"
@@ -884,14 +982,14 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
           />
           <button
             onClick={() => send(input)}
-            disabled={(!input.trim() && !pendingImage) || busy}
+            disabled={(!input.trim() && !pendingImage && !pendingDoc) || busy || extractingDoc}
             className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
           >
             <Send size={15} className="text-white" />
           </button>
         </div>
         <p className="text-center text-[10px] text-muted-foreground/50 mt-1.5">
-          Mission Distinction AI · MBBS · NEET PG · USMLE · Send images for analysis · Always cross-verify with textbooks.
+          Mission Distinction AI · MBBS · NEET PG · USMLE · Send images, PDFs, or text files · Always cross-verify with textbooks.
         </p>
       </div>
     </div>

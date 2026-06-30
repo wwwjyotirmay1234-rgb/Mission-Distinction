@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
-  Sparkles, X, Send, FileText, BookOpen, ClipboardList, ChevronDown,
+  Sparkles, X, Send, FileText, BookOpen, ChevronDown,
   Loader2, Bot, RotateCcw, Copy, Check, Mic, MicOff, Maximize2, Minimize2,
   FileQuestion, List, Lightbulb, AlignLeft, StickyNote,
 } from "lucide-react";
@@ -17,8 +17,8 @@ type Msg = {
 };
 
 type Resource = { id: number; title: string; subject: string; url: string; year?: string };
-type Resources = { pdfs: Resource[]; books: Resource[]; pyqs: Resource[]; notes: Resource[] };
-type SelectedResource = Resource & { type: "pdf" | "book" | "pyq" | "note" };
+type Resources = { pdfs: Resource[]; books: Resource[]; notes: Resource[] };
+type SelectedResource = Resource & { type: "pdf" | "book" | "note" };
 type DocStats = { pages: number; chars: number };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -208,7 +208,6 @@ function buildCompactCatalog(resources: Resources): object {
   return {
     pdfs: resources.pdfs.map(r => ({ title: r.title, subject: r.subject })),
     books: resources.books.map(r => ({ title: r.title, subject: r.subject })),
-    pyqs: resources.pyqs.map(r => ({ title: r.title, subject: r.subject, year: r.year })),
     notes: (resources.notes ?? []).map(r => ({ title: r.title, subject: r.subject })),
   };
 }
@@ -218,9 +217,9 @@ const QUICK_ACTIONS = [
   { label: "What books do we have?", icon: "📚" },
   { label: "Show all NEET resources", icon: "🎯" },
   { label: "Generate 5 Anatomy MCQs", icon: "❓" },
-  { label: "Show all PYQs", icon: "📋" },
   { label: "Explain glycolysis simply", icon: "🧪" },
   { label: "How do I use flashcards?", icon: "🃏" },
+  { label: "Show all PDFs & notes", icon: "📄" },
 ];
 
 // ── Document quick actions ─────────────────────────────────────────────────
@@ -250,7 +249,7 @@ export function MeddyAssistant() {
   const [docStats, setDocStats] = useState<DocStats | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState("");
-  const [pickerTab, setPickerTab] = useState<"all" | "pdf" | "book" | "pyq" | "note">("all");
+  const [pickerTab, setPickerTab] = useState<"all" | "pdf" | "book" | "note">("all");
   const [listening, setListening] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -285,7 +284,6 @@ export function MeddyAssistant() {
   const allResources: SelectedResource[] = resources ? [
     ...resources.pdfs.map(r => ({ ...r, type: "pdf" as const })),
     ...resources.books.map(r => ({ ...r, type: "book" as const })),
-    ...resources.pyqs.map(r => ({ ...r, type: "pyq" as const })),
     ...(resources.notes ?? []).map(r => ({ ...r, type: "note" as const })),
   ] : [];
 
@@ -658,13 +656,13 @@ export function MeddyAssistant() {
                   </div>
                   {/* Tabs */}
                   <div className="flex gap-0 border-b" style={{ borderColor: "rgba(124,58,237,0.12)" }}>
-                    {(["all", "pdf", "book", "note", "pyq"] as const).map(t => (
+                    {(["all", "pdf", "book", "note"] as const).map(t => (
                       <button
                         key={t}
                         onClick={() => setPickerTab(t)}
                         className={`flex-1 py-1.5 text-[10px] font-medium transition-colors capitalize ${pickerTab === t ? "text-violet-300 bg-white/5" : "text-white/30 hover:text-white/60"}`}
                       >
-                        {t === "all" ? "All" : t === "pdf" ? "PDFs" : t === "book" ? "Books" : t === "note" ? "Notes" : "PYQs"}
+                        {t === "all" ? "All" : t === "pdf" ? "PDFs" : t === "book" ? "Books" : "Notes"}
                       </button>
                     ))}
                   </div>

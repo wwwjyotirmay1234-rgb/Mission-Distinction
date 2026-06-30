@@ -6,6 +6,10 @@ import { doubtsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { createRequire } from "module";
+const _require = createRequire(import.meta.url);
+const pdfParse: (buf: Buffer, opts?: { max?: number }) => Promise<{ text: string; numpages: number }> =
+  _require("pdf-parse");
 
 const router = Router();
 
@@ -242,15 +246,60 @@ flowchart TD
 \`\`\``;
 
 
+// ── Extract text from an uploaded file (base64-encoded PDF / text) ────────
+router.post("/extract-file", authMiddleware, async (req: Request, res: Response) => {
+  const fileBase64 = sanitize(req.body.fileBase64, 50_000_000); // up to ~35MB base64
+  const mimeType = sanitize(req.body.mimeType, 100) ?? "";
+  const fileName = sanitize(req.body.fileName, 500) ?? "document";
+
+  if (!fileBase64) { res.status(400).json({ error: "fileBase64 required" }); return; }
+
+  try {
+    const buffer = Buffer.from(fileBase64, "base64");
+
+    // Plain text files — decode directly
+    if (mimeType.startsWith("text/") || fileName.match(/\.(txt|md|csv)$/i)) {
+      const text = buffer.toString("utf-8").slice(0, 80_000);
+      res.json({ text, chars: text.length, pages: 1 });
+      return;
+    }
+
+    // PDF files — parse with pdf-parse
+    if (mimeType === "application/pdf" || fileName.match(/\.pdf$/i)) {
+      const magic = buffer.slice(0, 4).toString("ascii");
+      if (!magic.startsWith("%PDF")) {
+        res.status(400).json({ error: "File does not appear to be a valid PDF." });
+        return;
+      }
+      const parsed = await pdfParse(buffer, { max: 80 });
+      const rawText = (parsed.text as string).trim();
+      if (!rawText || rawText.length < 20) {
+        res.json({ text: "", pages: parsed.numpages, warning: "This appears to be a scanned PDF — no text could be extracted." });
+        return;
+      }
+      const text = rawText.length > 80_000 ? rawText.slice(0, 80_000) + "\n\n[Document truncated at 80,000 characters]" : rawText;
+      res.json({ text, pages: parsed.numpages, chars: text.length });
+      return;
+    }
+
+    res.status(400).json({ error: "Unsupported file type. Please upload a PDF or text file." });
+  } catch (err: any) {
+    console.error("[extract-file]", err?.message);
+    res.status(500).json({ error: "Could not extract text from file. Please try another." });
+  }
+});
+
 // ── Instant AI chat (no doubt record needed) ──────────────────────────────
 router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res: Response) => {
-  const question = sanitize(req.body.question, 3000) ?? "";
+  const question = sanitize(req.body.question, 4000) ?? "";
   const imageBase64: string | undefined = typeof req.body.imageBase64 === "string" && req.body.imageBase64.startsWith("data:image/") ? req.body.imageBase64 : undefined;
+  const documentText = sanitize(req.body.documentText, 80_000) ?? "";
+  const documentTitle = sanitize(req.body.documentTitle, 400) ?? "";
   const rawHistory: { role: string; content: string }[] = Array.isArray(req.body.history) ? req.body.history : [];
   const useClaude = req.body.model === "claude";
 
-  if (!question && !imageBase64) {
-    res.status(400).json({ error: "Question or image is required" });
+  if (!question && !imageBase64 && !documentText) {
+    res.status(400).json({ error: "Question, image, or document is required" });
     return;
   }
 
@@ -262,6 +311,14 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
   const history = rawHistory
     .slice(-10)
     .filter(h => (h.role === "user" || h.role === "assistant") && h.content?.trim());
+
+  // Build the effective user question — inject document as context if provided
+  const docPrefix = documentText
+    ? `I have uploaded a document${documentTitle ? `: **${documentTitle}**` : ""}\n\n<DOCUMENT>\n${documentText}\n</DOCUMENT>\n\nMy question: `
+    : "";
+  const effectiveQuestion = documentText
+    ? docPrefix + (question || "Please analyse and summarize this document for my MBBS exams.")
+    : question;
 
   try {
     if (useClaude) {
@@ -281,7 +338,7 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
           userContent.push({ type: "image", source: { type: "base64", media_type: match[1], data: match[2] } });
         }
       }
-      if (question) userContent.push({ type: "text", text: question });
+      if (effectiveQuestion) userContent.push({ type: "text", text: effectiveQuestion });
 
       const claudeMessages: AnthropicMsg[] = [
         ...claudeHistory,
@@ -312,9 +369,9 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
       const userContent: OAIMsg["content"] = imageBase64
         ? [
             { type: "image_url", image_url: { url: imageBase64, detail: "high" } },
-            ...(question ? [{ type: "text", text: question }] : []),
+            ...(effectiveQuestion ? [{ type: "text", text: effectiveQuestion }] : []),
           ]
-        : question;
+        : effectiveQuestion;
 
       const messages: OAIMsg[] = [
         { role: "system", content: SYSTEM_PROMPT },
