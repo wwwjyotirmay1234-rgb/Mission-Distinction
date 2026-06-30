@@ -40,6 +40,7 @@ import { proctoringRouter } from "./proctoring";
 import { xpRouter } from "./xp";
 import { anatomyAIRouter } from "./anatomyAI";
 import pyqsRouter from "./pyqs";
+import { meddyRouter } from "./meddy";
 
 const router: IRouter = Router();
 
@@ -89,5 +90,6 @@ router.use("/proctoring", proctoringRouter);
 router.use("/xp", xpRouter);
 router.use("/anatomy", anatomyAIRouter);
 router.use("/pyqs", pyqsRouter);
+router.use("/meddy", meddyRouter);
 
 export default router;

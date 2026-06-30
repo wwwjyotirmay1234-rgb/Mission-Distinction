@@ -25,6 +25,7 @@ import { WarningBanner } from "@/components/WarningBanner";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { Watermark } from "@/components/Watermark";
 import { CompleteProfileModal } from "@/components/CompleteProfileModal";
+import { MeddyAssistant } from "@/components/MeddyAssistant";
 
 function EmailVerificationBanner() {
   const { user, token } = useAuth();
@@ -141,6 +142,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
       <SidebarProvider>
         <StudentLayoutInner>{children}</StudentLayoutInner>
         <PersistentPlayer />
+        <MeddyAssistant />
         <CompleteProfileModal />
         <OnboardingModal />
       </SidebarProvider>
