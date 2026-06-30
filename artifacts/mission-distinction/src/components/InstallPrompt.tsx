@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Download, Smartphone, Share, MoreVertical, Plus, CheckCircle } from "lucide-react";
+import { X, Download, Smartphone, Share, Plus, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -8,7 +8,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const FIRST_VISIT_KEY = "md-has-visited";
-const SESSION_MINIMIZED_KEY = "md-install-minimized";
+const DISMISSED_KEY = "md-install-dismissed";
 
 function isStandalone() {
   return (
@@ -23,30 +23,33 @@ function isIOSDevice() {
   return (/ipad|iphone|ipod/i.test(ua) || isTouchMac) && !(window as any).MSStream;
 }
 
+function isDismissed() {
+  return localStorage.getItem(DISMISSED_KEY) === "1";
+}
+
+function permanentlyDismiss() {
+  localStorage.setItem(DISMISSED_KEY, "1");
+}
+
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [installed, setInstalled] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [minimized, setMinimized] = useState(false);
-  const [justInstalled, setJustInstalled] = useState(false);
 
   useEffect(() => {
-    if (isStandalone()) { setInstalled(true); return; }
+    if (isStandalone() || isDismissed()) {
+      setHidden(true);
+      return;
+    }
 
     const ios = isIOSDevice();
     setIsIOS(ios);
 
     const isFirstVisit = !localStorage.getItem(FIRST_VISIT_KEY);
-    const isMinimizedThisSession = sessionStorage.getItem(SESSION_MINIMIZED_KEY) === "1";
-
     if (isFirstVisit) {
       localStorage.setItem(FIRST_VISIT_KEY, "1");
       setTimeout(() => setShowModal(true), 800);
-    }
-
-    if (isMinimizedThisSession) {
-      setMinimized(true);
     }
 
     const handler = (e: Event) => {
@@ -56,46 +59,27 @@ export function InstallPrompt() {
     window.addEventListener("beforeinstallprompt", handler);
 
     window.matchMedia("(display-mode: standalone)").addEventListener("change", (e) => {
-      if (e.matches) setInstalled(true);
+      if (e.matches) {
+        permanentlyDismiss();
+        setHidden(true);
+      }
     });
 
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
-  const triggerInstall = async () => {
-    if (!deferredPrompt) return false;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-    if (outcome === "accepted") {
-      setJustInstalled(true);
-      setInstalled(true);
-      return true;
-    }
-    return false;
-  };
-
-  const handleModalInstall = async () => {
-    if (isIOS) {
-      setShowModal(false);
-    } else {
-      const ok = await triggerInstall();
-      if (!ok) setShowModal(false);
-    }
-  };
-
-  const handleModalLater = () => {
+  const dismiss = () => {
+    permanentlyDismiss();
+    setHidden(true);
     setShowModal(false);
   };
 
-  const handleMinimize = () => {
-    setMinimized(true);
-    sessionStorage.setItem(SESSION_MINIMIZED_KEY, "1");
-  };
-
-  const handleExpand = () => {
-    setMinimized(false);
-    sessionStorage.removeItem(SESSION_MINIMIZED_KEY);
+  const triggerInstall = async () => {
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+    if (outcome === "accepted") dismiss();
   };
 
   const handleBannerInstall = async () => {
@@ -106,7 +90,7 @@ export function InstallPrompt() {
     }
   };
 
-  if (installed || justInstalled) return null;
+  if (hidden) return null;
 
   return (
     <>
@@ -158,66 +142,61 @@ export function InstallPrompt() {
             {/* Actions */}
             <div className="flex flex-col gap-2 px-6 pb-6">
               {!isIOS && (
-                <Button className="w-full gap-2 h-11 text-sm font-semibold" onClick={handleModalInstall}
-                  disabled={!deferredPrompt && !isIOS}>
+                <Button
+                  className="w-full gap-2 h-11 text-sm font-semibold"
+                  onClick={triggerInstall}
+                  disabled={!deferredPrompt}
+                >
                   <Download className="w-4 h-4" />
                   {deferredPrompt ? "Install Now" : "Continue in Browser"}
                 </Button>
               )}
               {isIOS && (
-                <Button className="w-full gap-2 h-11 text-sm font-semibold" onClick={handleModalLater}>
-                  <CheckCircle className="w-4 h-4" /> Got it!
+                <Button className="w-full gap-2 h-11 text-sm font-semibold" onClick={dismiss}>
+                  <CheckCircle className="w-4 h-4" /> Done, I've Added It
                 </Button>
               )}
-              <Button variant="ghost" className="w-full h-9 text-sm text-muted-foreground" onClick={handleModalLater}>
-                Maybe later
+              <Button variant="ghost" className="w-full h-9 text-sm text-muted-foreground" onClick={dismiss}>
+                Don't show again
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Persistent bottom banner (always visible, not modal) ──────────── */}
+      {/* ── Persistent bottom banner ───────────────────────────────────────── */}
       {!showModal && (
-        minimized ? (
-          /* Minimized pill */
-          <button
-            onClick={handleExpand}
-            className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-4 py-2.5 shadow-lg shadow-primary/30 text-sm font-semibold animate-in slide-in-from-bottom-4 duration-300 hover:bg-primary/90 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Install App
-          </button>
-        ) : (
-          /* Full banner */
-          <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-lg mx-auto">
-            <div className="bg-card border border-primary/30 rounded-xl p-3.5 shadow-2xl shadow-primary/10 flex items-center gap-3">
-              <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
-                <Smartphone className="w-4.5 h-4.5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold leading-tight">Install Mission Distinction</p>
-                <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                  {isIOS ? "Tap Share → Add to Home Screen in Safari" : "Add to home screen for offline access"}
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Button size="sm" className="h-8 text-xs px-3 gap-1.5 font-semibold" onClick={handleBannerInstall}
-                  disabled={!isIOS && !deferredPrompt}>
-                  <Download className="w-3 h-3" />
-                  {isIOS ? "How?" : "Install"}
-                </Button>
-                <button
-                  onClick={handleMinimize}
-                  className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted/40"
-                  title="Minimize"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
+        <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-lg mx-auto">
+          <div className="bg-card border border-primary/30 rounded-xl p-3.5 shadow-2xl shadow-primary/10 flex items-center gap-3">
+            <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Smartphone className="w-4.5 h-4.5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold leading-tight">Install Mission Distinction</p>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                {isIOS ? "Tap Share → Add to Home Screen in Safari" : "Add to home screen for offline access"}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                size="sm"
+                className="h-8 text-xs px-3 gap-1.5 font-semibold"
+                onClick={handleBannerInstall}
+                disabled={!isIOS && !deferredPrompt}
+              >
+                <Download className="w-3 h-3" />
+                {isIOS ? "How?" : "Install"}
+              </Button>
+              <button
+                onClick={dismiss}
+                className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted/40"
+                title="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
-        )
+        </div>
       )}
     </>
   );
