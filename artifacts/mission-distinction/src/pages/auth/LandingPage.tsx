@@ -19,7 +19,7 @@ import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChan
 import { auth, googleProvider } from "@/lib/firebase";
 
 
-import { ODISHA_GOVT_COLLEGES, ODISHA_PRIVATE_COLLEGES, MBBS_YEARS, SESSION_YEARS, ACTIVE_SESSION_YEAR, ACTIVE_MBBS_YEAR } from "@/lib/colleges";
+import { ODISHA_GOVT_COLLEGES, ODISHA_PRIVATE_COLLEGES, ODISHA_DEEMED_COLLEGES, MBBS_YEARS, SESSION_YEARS, ACTIVE_SESSION_YEAR, ACTIVE_MBBS_YEAR } from "@/lib/colleges";
 
 function getRoute(year: string | undefined, sessionYear: string | undefined) {
   return (
@@ -705,6 +705,12 @@ export default function LandingPage() {
                                     <SelectGroup>
                                       <SelectLabel className="text-xs text-secondary font-semibold px-2 py-1 mt-1">🏥 Private Colleges</SelectLabel>
                                       {ODISHA_PRIVATE_COLLEGES.map((c) => (
+                                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                                      ))}
+                                    </SelectGroup>
+                                    <SelectGroup>
+                                      <SelectLabel className="text-xs text-yellow-500 font-semibold px-2 py-1 mt-1">🎓 Deemed University Colleges</SelectLabel>
+                                      {ODISHA_DEEMED_COLLEGES.map((c) => (
                                         <SelectItem key={c} value={c}>{c}</SelectItem>
                                       ))}
                                     </SelectGroup>

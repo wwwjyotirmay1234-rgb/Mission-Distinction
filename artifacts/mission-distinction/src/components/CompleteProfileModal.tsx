@@ -17,6 +17,7 @@ import { UserCircle, AlertCircle } from "lucide-react";
 import {
   ODISHA_GOVT_COLLEGES,
   ODISHA_PRIVATE_COLLEGES,
+  ODISHA_DEEMED_COLLEGES,
   MBBS_YEARS,
   SESSION_YEARS,
 } from "@/lib/colleges";
@@ -128,6 +129,12 @@ export function CompleteProfileModal() {
                 <SelectGroup>
                   <SelectLabel className="text-xs text-secondary font-semibold px-2 py-1 mt-1">🏥 Private Colleges</SelectLabel>
                   {ODISHA_PRIVATE_COLLEGES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel className="text-xs text-yellow-500 font-semibold px-2 py-1 mt-1">🎓 Deemed University Colleges</SelectLabel>
+                  {ODISHA_DEEMED_COLLEGES.map((c) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
                 </SelectGroup>

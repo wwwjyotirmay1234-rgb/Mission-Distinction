@@ -3,19 +3,27 @@ export const ODISHA_GOVT_COLLEGES = [
   "SCB Medical College and Hospital, Cuttack",
   "MKCG Medical College and Hospital, Berhampur",
   "VSS Institute of Medical Sciences & Research (VIMSAR), Burla",
-  "Pandit Raghunath Murmu Medical College & Hospital, Baripada",
-  "Saheed Laxman Nayak Medical College & Hospital, Koraput",
-  "Shri Jagannath Medical College & Research Institute, Puri",
-  "Government Medical College, Bolangir",
-  "Government Medical College, Balasore",
-  "Government Medical College, Puri",
-  "Government Medical College, Phulbani",
-  "Government Medical College, Sundargarh",
+  "Pandit Raghunath Murmu Medical College and Hospital, Mayurbhanj",
+  "Fakir Mohan Medical College and Hospital, Balasore",
+  "Bhima Bhoi Medical College and Hospital, Balangir",
+  "Saheed Laxman Nayak Medical College and Hospital, Koraput",
+  "Government Medical College and Hospital, Sundargarh",
+  "Jajati Keshari Medical College and Hospital, Jajpur",
+  "Government Medical College and Hospital, Keonjhar",
+  "Sri Jagannath Medical College and Hospital, Puri",
+  "Saheed Rendo Majhi Medical College and Hospital, Kalahandi",
+  "Dharanidhar Medical College and Hospital, Keonjhar",
 ];
 
 export const ODISHA_PRIVATE_COLLEGES = [
-  "Hi-Tech Medical College & Hospital, Bhubaneswar",
-  "IMS & SUM Hospital (SOA University), Bhubaneswar",
+  "Hi-Tech Medical College and Hospital, Bhubaneswar",
+  "Hi-Tech Medical College and Hospital, Rourkela",
+  "DRIEMS Institute of Health Sciences and Hospital, Cuttack",
+];
+
+export const ODISHA_DEEMED_COLLEGES = [
+  "IMS and SUM Hospital (SOA University), Bhubaneswar",
+  "IMS and SUM Hospital Campus II, Cuttack",
   "Kalinga Institute of Medical Sciences (KIMS), Bhubaneswar",
 ];
 
