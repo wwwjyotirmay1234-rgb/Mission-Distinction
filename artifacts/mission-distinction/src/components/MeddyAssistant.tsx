@@ -237,7 +237,7 @@ export function MeddyAssistant() {
   const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([{
     role: "assistant",
-    content: "Hi! I'm **Meddy** 👋 — your AI learning companion for Mission Distinction.\n\nI can help with resources **from 1st Year to NEET to USMLE** that are in our app:\n- 🔍 Ask *\"What books do we have?\"* — I'll list everything\n- 📄 Ask *\"What's in BD Chaurasia?\"* — I'll auto-load & show contents\n- ❓ Generate practice MCQs from any document\n- 🧠 Explain any concept with mnemonics\n- 🗺️ Navigate any app feature\n\nJust ask naturally — I'll find the right resource automatically! 🔥",
+    content: "Hi! I'm **Meddy** 👋 — your AI learning companion for Mission Distinction.\n\nI can help with resources **from 1st Year to NEET PG to USMLE** that are in our app:\n- 🔍 Ask *\"What books do we have?\"* — I'll list everything\n- 📄 Ask *\"What's in BD Chaurasia?\"* — I'll auto-load & show contents\n- ❓ Generate practice MCQs from any document\n- 🧠 Explain any concept with mnemonics\n- 🗺️ Navigate any app feature\n\nJust ask naturally — I'll find the right resource automatically! 🔥",
   }]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
