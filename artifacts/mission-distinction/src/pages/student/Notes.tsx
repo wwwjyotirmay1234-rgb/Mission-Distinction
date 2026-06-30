@@ -34,7 +34,6 @@ type PYQ = {
   title: string;
   subject: string;
   year: string;
-  college: string;
   url: string;
   downloadCount?: number;
 };
@@ -199,23 +198,10 @@ function trackBookRead(bookId: number) {
   customFetch(`/api/books/${bookId}/read`, { method: "POST" }).catch(() => {});
 }
 
-const ODISHA_COLLEGES = [
-  "All Colleges",
-  "VIMSAR",
-  "SCB Medical",
-  "MKCG Medical",
-  "AIIMS Bhubaneswar",
-  "Hi-Tech Medical",
-  "SUM Medical",
-  "KIMS",
-  "Fakir Mohan Medical",
-];
-
-async function fetchPYQs(search?: string, subject?: string, college?: string): Promise<PYQ[]> {
+async function fetchPYQs(search?: string, subject?: string): Promise<PYQ[]> {
   const params = new URLSearchParams();
   if (search) params.set("search", search);
   if (subject) params.set("subject", subject);
-  if (college) params.set("college", college);
   const qs = params.toString();
   return customFetch<PYQ[]>(`/api/pyqs${qs ? `?${qs}` : ""}`);
 }
@@ -267,11 +253,6 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
             <Badge variant="outline" className="text-[10px] px-2 border border-amber-500/30 text-amber-400 bg-amber-500/5 shrink-0">
               {pyq.year}
             </Badge>
-            {pyq.college && (
-              <Badge variant="outline" className="text-[10px] px-2 border border-blue-500/30 text-blue-400 bg-blue-500/5 shrink-0">
-                {pyq.college}
-              </Badge>
-            )}
           </div>
           <h3 className="font-semibold text-sm mb-3 line-clamp-2 group-hover:text-primary transition-colors flex-1">
             {pyq.title}
@@ -466,7 +447,6 @@ export default function StudentNotes() {
   const [activeTab, setActiveTab] = useState<"notes" | "books" | "pyqs">("notes");
   const [search, setSearch] = useState("");
   const [activeSubject, setActiveSubject] = useState("All Subjects");
-  const [activeCollege, setActiveCollege] = useState("All Colleges");
   const [viewingNote, setViewingNote] = useState<Note | null>(null);
 
   useEffect(() => {
@@ -486,12 +466,8 @@ export default function StudentNotes() {
   });
 
   const { data: pyqsData, isLoading: pyqsLoading } = useQuery<PYQ[]>({
-    queryKey: ["pyqs", search, activeSubject, activeCollege],
-    queryFn: () => fetchPYQs(
-      search || undefined,
-      activeSubject === "All Subjects" ? undefined : activeSubject,
-      activeCollege === "All Colleges" ? undefined : activeCollege,
-    ),
+    queryKey: ["pyqs", search, activeSubject],
+    queryFn: () => fetchPYQs(search || undefined, activeSubject === "All Subjects" ? undefined : activeSubject),
     enabled: activeTab === "pyqs",
     staleTime: 30_000,
   });
@@ -574,26 +550,6 @@ export default function StudentNotes() {
           </Badge>
         ))}
       </div>
-
-      {/* College filter — shown only on PYQs tab */}
-      {activeTab === "pyqs" && (
-        <div className="flex gap-2 overflow-x-auto pb-1 snap-x hide-scrollbar">
-          {ODISHA_COLLEGES.map((col) => (
-            <Badge
-              key={col}
-              variant={activeCollege === col ? "default" : "outline"}
-              className={`px-3 py-1.5 cursor-pointer shrink-0 snap-start text-xs ${
-                activeCollege === col
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
-              }`}
-              onClick={() => setActiveCollege(col)}
-            >
-              {col}
-            </Badge>
-          ))}
-        </div>
-      )}
 
       {/* Notes Grid */}
       {activeTab === "notes" && (
