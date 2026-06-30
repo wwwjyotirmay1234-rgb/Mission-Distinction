@@ -8,16 +8,7 @@ export type YTPlaying = {
   thumbnail: string;
 };
 
-export type SCPlaying = {
-  type: "soundcloud";
-  id: number;
-  title: string;
-  artist: string;
-  artwork: string | null;
-  permalinkUrl: string;
-};
-
-export type NowPlaying = YTPlaying | SCPlaying;
+export type NowPlaying = YTPlaying;
 
 interface MusicPlayerCtx {
   playing: NowPlaying | null;

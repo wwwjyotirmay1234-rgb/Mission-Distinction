@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useRef, useCallback } from "react";
-import { X, Music2, Radio, Youtube, Maximize2 } from "lucide-react";
+import { X, Music2, Youtube, Maximize2 } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import type { NowPlaying } from "@/contexts/MusicPlayerContext";
 
@@ -73,10 +73,8 @@ export function PersistentPlayer() {
     }
 
     const title = playing.title;
-    const artist = playing.type === "youtube" ? playing.channel : playing.artist;
-    const artwork = playing.type === "youtube"
-      ? playing.thumbnail
-      : playing.artwork ?? undefined;
+    const artist = playing.channel;
+    const artwork = playing.thumbnail;
 
     navigator.mediaSession.metadata = new MediaMetadata({
       title,
@@ -102,22 +100,15 @@ export function PersistentPlayer() {
 
   if (!playing) return null;
 
-  const iframeSrc =
-    playing.type === "youtube"
-      ? `https://www.youtube-nocookie.com/embed/${playing.videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`
-      : `https://w.soundcloud.com/player/?url=${encodeURIComponent(
-          playing.permalinkUrl
-        )}&auto_play=true&visual=false&color=%237c3aed&show_comments=false&hide_related=true`;
+  const iframeSrc = `https://www.youtube-nocookie.com/embed/${playing.videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
 
-  const iframeKey =
-    playing.type === "youtube" ? playing.videoId : String(playing.id);
+  const iframeKey = playing.videoId;
 
   const title = playing.title;
-  const sub = playing.type === "youtube" ? playing.channel : playing.artist;
-  const thumb =
-    playing.type === "youtube" ? playing.thumbnail : playing.artwork ?? null;
+  const sub = playing.channel;
+  const thumb = playing.thumbnail;
 
-  const embedH = playing.type === "youtube" ? 315 : 166;
+  const embedH = 315;
   const headerH = 48;
 
   return (
@@ -254,11 +245,7 @@ export function PersistentPlayer() {
                 {title}
               </p>
               <div className="flex items-center gap-1.5 mt-0.5">
-                {playing.type === "youtube" ? (
-                  <Youtube size={10} className="text-red-400 shrink-0" />
-                ) : (
-                  <Radio size={10} className="text-orange-400 shrink-0" />
-                )}
+                <Youtube size={10} className="text-red-400 shrink-0" />
                 <p className="text-[10px] text-white/40 truncate">{sub}</p>
                 <span className="text-[9px] text-violet-400 bg-violet-500/15 px-1.5 py-0.5 rounded-full shrink-0">
                   Playing
