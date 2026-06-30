@@ -114,14 +114,17 @@ Guide students to any feature: quizzes, AI doubt, bookmarks, study rooms, flashc
 ## DOCUMENT ANALYSIS — STRICT ACCURACY RULES:
 You receive the full document in <DOCUMENT> tags AND pre-extracted <FOCUSED_SECTIONS> (most relevant excerpts).
 
-**Rule 1 — Exact topic matching:**
-When asked about a specific topic/chapter, scan for that EXACT term. Never substitute another chapter. If asked for "Neuroanatomy" content, only give Neuroanatomy content.
+**Rule 1 — TWO modes of topic matching:**
+
+**(a) Labelled documents** (textbooks, notes with chapter headings): scan for the EXACT chapter/section heading. Only return content from that section.
+
+**(b) PYQ / question papers** (no chapter headings — questions listed sequentially): you MUST classify questions by their **medical content**, not by headings. Read each question, identify which anatomical region / physiological system / biochemical topic it belongs to using your medical knowledge, and return ALL matching questions. PYQ papers almost never have section labels — a question about the parotid gland IS a Head & Neck question even if no such heading exists.
 
 **Rule 2 — FOCUSED_SECTIONS is your primary source:**
-The <FOCUSED_SECTIONS> block is pre-searched for relevance — prioritise it and quote directly.
+The <FOCUSED_SECTIONS> block is pre-searched for relevance — prioritise it and quote directly. But for PYQ topic queries, also scan the full <DOCUMENT> systematically.
 
 **Rule 3 — Never fabricate:**
-If a topic isn't found, say: "I couldn't find a section labelled [X] in this document. It may not be covered here, or may be in a portion that wasn't extracted."
+If genuinely no matching questions exist, say: "I couldn't find any [X] questions in this paper." But first do a thorough content-based scan — do NOT give up just because a heading is absent.
 
 **Rule 4 — Chapter location:**
 For "where is X / which chapter is X in" — find X in the text, look backwards for the nearest chapter/section heading, report that heading. Quote surrounding lines.
@@ -130,7 +133,44 @@ For "where is X / which chapter is X in" — find X in the text, look backwards 
 For "questions from IAT 3 Neuroanatomy" — find both "IAT 3" AND "Neuroanatomy" appearing together. If one is missing, say so.
 
 **Rule 6 — Exact counts:**
-When asked "how many questions from X" — count only those explicitly in section X. State the count, then list each one.
+When asked "how many questions from X" — count every question whose content matches topic X. State the count, then list each one with its text.
+
+---
+
+## MEDICAL TOPIC CLASSIFICATION — YOUR EXPERT KNOWLEDGE:
+When analysing a PYQ or question paper, you classify questions by content. Use these mappings:
+
+**Head & Neck Anatomy** — paranasal sinuses, nasal cavity, orbit, eye, ear, cochlea, auricle, skull, cranial fossa, temporal bone, mandible, maxilla, TMJ, parotid, submandibular, sublingual gland, pharynx, larynx, trachea, thyroid, parathyroid, tongue, palate, hard palate, soft palate, uvula, tonsil, teeth, scalp, face, eyelid, lacrimal, cornea, lens, retina, optic nerve, facial nerve, trigeminal nerve, glossopharyngeal, vagus, hypoglossal, accessory nerve, carotid artery, jugular vein, cervical plexus, sternocleidomastoid, trapezius, strap muscles, hyoid, epiglottis, vocal cords, arytenoid, cricoid, thyroid cartilage, infratemporal fossa, pterygopalatine fossa, pterygoid muscles, masseter, branchial arch, pharyngeal arch, pharyngeal pouch, cleft lip, cleft palate, neck triangle, posterior triangle, anterior triangle, cavernous sinus, dural venous sinuses, circle of Willis (extracranial part), lymph nodes of neck
+
+**Upper Limb** — shoulder joint, glenohumeral, rotator cuff, axilla, brachial plexus, median nerve, ulnar nerve, radial nerve, musculocutaneous nerve, humerus, cubital fossa, elbow joint, radius, ulna, forearm, carpal tunnel, anatomical snuffbox, thenar, hypothenar, lumbrical, interosseous, hand, metacarpal, phalanges, brachial artery, radial artery, ulnar artery, cephalic vein, basilic vein, subscapularis, supraspinatus, infraspinatus, teres minor
+
+**Lower Limb** — hip joint, femoral triangle, adductor canal, femur, knee joint, patella, tibia, fibula, ankle joint, foot, plantar, sciatic nerve, femoral nerve, obturator nerve, tibial nerve, common peroneal nerve, great saphenous vein, small saphenous vein, popliteal fossa, quadriceps, hamstrings, gluteus, iliotibial band, pes anserinus, arches of foot, pes planus, club foot
+
+**Thorax** — heart, pericardium, coronary artery, cardiac chambers, mitral valve, tricuspid valve, aortic valve, pulmonary valve, SVC, IVC, thoracic aorta, pulmonary artery, lung, pleura, bronchus, intercostal nerve, rib, sternum, diaphragm, mediastinum, thoracic duct, azygos vein, oesophagus (thoracic part)
+
+**Abdomen & Pelvis** — peritoneum, omentum, mesentery, stomach, duodenum, jejunum, ileum, colon, appendix, caecum, rectum, liver, gallbladder, bile duct, pancreas, spleen, kidney, ureter, suprarenal gland, inguinal canal, hernia, uterus, ovary, fallopian tube, testis, epididymis, vas deferens, prostate, bladder, portal vein, coeliac trunk, hepatic artery, splenic artery, mesenteric artery
+
+**Neuroanatomy** — cerebrum, cerebellum, brainstem, midbrain, pons, medulla oblongata, spinal cord, thalamus, hypothalamus, basal ganglia, limbic system, hippocampus, amygdala, corpus callosum, internal capsule, cerebral cortex, meninges, CSF, ventricles, blood-brain barrier, cranial nerves, UMN, LMN, pyramidal tract, extrapyramidal, dermatome, myotome, autonomic nervous system, sympathetic, parasympathetic, brachial plexus (root values)
+
+**Embryology** — germ layers, fertilisation, implantation, placenta, somite, neural tube defect, congenital, development of heart, gut rotation, descent of testis, fetal circulation, teratogen, week of development
+
+**Histology** — epithelium, connective tissue, cartilage, bone, muscle histology, nerve histology, skin histology, gland, lymphoid tissue, blood cells, marrow
+
+**Physiology — CVS** — cardiac output, heart rate, stroke volume, ECG, action potential (cardiac), blood pressure, hypertension, venous return, Starling's law, baroreceptor, coronary circulation, JVP, heart sounds
+
+**Physiology — Respiratory** — lung volumes, spirometry, compliance, surfactant, ventilation-perfusion, oxygen dissociation curve, CO2 transport, respiratory centre, hypoxia, cyanosis
+
+**Physiology — Renal** — GFR, tubular reabsorption, tubular secretion, clearance, ADH, aldosterone, renin-angiotensin, acid-base balance, micturition
+
+**Physiology — Blood** — haemoglobin, RBC, WBC, platelets, coagulation, haemostasis, blood groups, anaemia, ESR, plasma proteins
+
+**Physiology — Neuro** — resting membrane potential, action potential, synapse, neurotransmitters, reflexes, sensory pathways, motor pathways, sleep, EEG, pain
+
+**Physiology — Endocrine** — insulin, glucagon, thyroid hormones, cortisol, ACTH, GH, ADH, oxytocin, reproductive hormones, diabetes
+
+**Biochemistry** — amino acids, proteins, enzymes, enzyme kinetics, Michaelis-Menten, carbohydrate metabolism, glycolysis, TCA cycle, gluconeogenesis, glycogen, lipid metabolism, fatty acids, beta-oxidation, ketone bodies, nitrogen metabolism, urea cycle, nucleic acids, DNA replication, transcription, translation, vitamins, minerals, haemoglobin structure, porphyrin, bilirubin, clinical enzymology
+
+When a student asks for "Head and Neck questions", "Upper Limb MCQs", "Neuroanatomy questions in this paper" etc. — go through every question in the document and apply the above mappings to classify it. Then list ALL matching questions.
 
 ---
 
@@ -158,10 +198,52 @@ When the student's message includes a <LIBRARY_CATALOG> block, you have access t
 - If the document was truncated, mention it and suggest checking the full PDF`;
 
 
+// Medical topic synonym expansion — maps a broad topic name to key anatomical/
+// physiological terms that appear in question text even when no heading is present.
+const MEDICAL_TOPIC_SYNONYMS: Record<string, string[]> = {
+  "head and neck": ["skull", "cranial", "orbit", "orbital", "nasal", "paranasal", "sinus",
+    "mandible", "maxilla", "temporal", "parotid", "submandibular", "sublingual", "pharynx",
+    "larynx", "trachea", "thyroid", "parathyroid", "tongue", "palate", "uvula", "tonsil",
+    "scalp", "face", "eyelid", "lacrimal", "cornea", "lens", "retina", "optic",
+    "facial nerve", "trigeminal", "glossopharyngeal", "hypoglossal", "accessory nerve",
+    "carotid", "jugular", "sternocleidomastoid", "trapezius", "hyoid", "epiglottis",
+    "vocal cord", "arytenoid", "cricoid", "pterygoid", "masseter", "infratemporal",
+    "pterygopalatine", "branchial", "pharyngeal arch", "cleft", "cavernous sinus",
+    "cervical", "neck", "auricle", "cochlea", "middle ear", "inner ear", "nose", "mouth"],
+  "upper limb": ["shoulder", "glenohumeral", "rotator cuff", "axilla", "brachial plexus",
+    "median nerve", "ulnar nerve", "radial nerve", "musculocutaneous", "humerus",
+    "cubital fossa", "elbow", "radius", "ulna", "carpal", "anatomical snuffbox",
+    "thenar", "hypothenar", "lumbrical", "interosseous", "metacarpal", "phalanges",
+    "subscapularis", "supraspinatus", "infraspinatus", "teres minor", "cephalic vein", "basilic"],
+  "lower limb": ["hip joint", "femoral triangle", "adductor canal", "femur", "knee joint",
+    "patella", "tibia", "fibula", "ankle", "plantar", "sciatic", "femoral nerve",
+    "obturator", "tibial nerve", "peroneal", "saphenous", "popliteal", "quadriceps",
+    "hamstring", "gluteus", "iliotibial", "pes anserinus", "arches of foot"],
+  "thorax": ["heart", "pericardium", "coronary", "cardiac", "mitral", "tricuspid",
+    "aortic valve", "pulmonary valve", "svc", "ivc", "aorta", "pulmonary artery",
+    "lung", "pleura", "bronchus", "intercostal", "sternum", "diaphragm", "mediastinum",
+    "thoracic duct", "azygos"],
+  "abdomen": ["peritoneum", "omentum", "mesentery", "stomach", "duodenum", "jejunum",
+    "ileum", "colon", "appendix", "caecum", "rectum", "liver", "gallbladder", "bile duct",
+    "pancreas", "spleen", "kidney", "ureter", "inguinal", "hernia", "portal vein", "coeliac"],
+  "neuroanatomy": ["cerebrum", "cerebellum", "brainstem", "midbrain", "pons", "medulla",
+    "spinal cord", "thalamus", "hypothalamus", "basal ganglia", "limbic", "hippocampus",
+    "corpus callosum", "internal capsule", "csf", "blood brain barrier", "meninges",
+    "ventricle", "cranial nerve", "umn", "lmn", "pyramidal", "extrapyramidal",
+    "dermatome", "myotome", "autonomic", "sympathetic", "parasympathetic"],
+  "embryology": ["germ layer", "fertilisation", "fertilization", "implantation", "placenta",
+    "somite", "neural tube", "congenital", "development", "fetal", "foetal", "teratogen",
+    "branchial", "pharyngeal pouch", "gut rotation", "descent of testis"],
+  "histology": ["epithelium", "connective tissue", "cartilage", "bone marrow", "muscle fibre",
+    "histology", "gland", "lymphoid", "erythrocyte", "leucocyte", "neutrophil", "lymphocyte"],
+};
+
 /**
  * Pre-searches a document for query keywords and extracts the most relevant
  * surrounding passages. This gives GPT-4o a highlighted "spotlight" on the
  * relevant parts of the document rather than having it read top-to-bottom.
+ * For medical topic queries (e.g. "head and neck questions"), expands the
+ * search to include all anatomical terms for that topic.
  */
 function extractTopicSections(docText: string, query: string, maxSections = 6): string {
   if (!docText || !query) return "";
@@ -172,12 +254,23 @@ function extractTopicSections(docText: string, query: string, maxSections = 6): 
     "me", "my", "for", "to", "about", "with", "this", "that", "do", "can", "has", "have",
     "questions", "question", "chapter", "section", "topics", "topic", "paper", "exam"]);
 
-  const keywords = query.toLowerCase()
+  const queryLower = query.toLowerCase();
+  const keywords = queryLower
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter(w => w.length >= 3 && !stopWords.has(w));
 
   if (keywords.length === 0) return "";
+
+  // Medical topic synonym expansion — for "head and neck questions" expand to all
+  // anatomical structures that appear in question text (PYQs have no headings)
+  const synonymExpansion: string[] = [];
+  for (const [topic, synonyms] of Object.entries(MEDICAL_TOPIC_SYNONYMS)) {
+    // Check if the query contains any word of the topic key
+    if (topic.split(" ").some(w => queryLower.includes(w))) {
+      synonymExpansion.push(...synonyms);
+    }
+  }
 
   const lowerDoc = docText.toLowerCase();
 
@@ -190,7 +283,7 @@ function extractTopicSections(docText: string, query: string, maxSections = 6): 
   const textbookMatch = query.match(/\b(vasudevan|harper|gray|snell|guyton|robbins|harrisons?|devlin|satoskar)\b/i);
   if (textbookMatch) phrases.push(textbookMatch[1].toLowerCase());
 
-  const allTerms = [...new Set([...keywords, ...phrases])];
+  const allTerms = [...new Set([...keywords, ...phrases, ...synonymExpansion])];
 
   // Find all match positions with context window
   const CONTEXT = 1200; // chars before and after match
@@ -443,7 +536,7 @@ router.post("/chat", authMiddleware, limiter, async (req: Request, res: Response
   let userContent = message;
   if (documentText && documentTitle) {
     // Document loaded — analyse it
-    const focused = extractTopicSections(documentText, message, 6);
+    const focused = extractTopicSections(documentText, message, 12);
     const focusedBlock = focused
       ? `\n\n<FOCUSED_SECTIONS note="Pre-searched excerpts most relevant to the query — USE THESE AS PRIMARY SOURCE">\n${focused}\n</FOCUSED_SECTIONS>`
       : "";
