@@ -148,13 +148,99 @@ Examples:
 [DIAGRAM: Krebs cycle (citric acid cycle) flowchart showing all 8 steps with enzyme names, substrates, NADH/FADH2/GTP yields at each step, starting and ending with acetyl-CoA entering oxaloacetate]
 [DIAGRAM: Cardiac cycle Wiggers diagram showing aortic pressure, left ventricular pressure, left atrial pressure, and ventricular volume curves plotted against time, with all phases labeled]
 
-Rules for diagrams:
+Rules for [DIAGRAM: ...] tags:
 - Place the [DIAGRAM: ...] tag on its own separate line
 - Be very specific and detailed in the description — include all structures, labels, values, and anatomical relations
-- Include diagrams for: anatomy (structures, cross-sections, dissections), physiology (graphs, curves), biochemistry (pathway flowcharts), pathology (gross/microscopic appearance), histology (labeled cross-sections)
+- Use [DIAGRAM: ...] for: anatomy cross-sections, labeled anatomical drawings, histology slides, physiological graphs (Wiggers, action potential curves, spirometry), pathology morphology
 - For LAQ answers: include 1–3 diagrams; for SAQ: include 1 if relevant; for NEET PG: include 1 if a visual aid helps
-- If a student specifically asks for an image/diagram/picture/illustration of something, output ONLY the [DIAGRAM: ...] tag with a thorough description (and optionally a brief text explanation) — do NOT say you cannot provide images
-- The diagram description is displayed as a step-by-step drawing guide AND used to auto-generate a real image for the student — be instructional and precise`;
+- If a student specifically asks for an image/diagram/picture/illustration of something, output ONLY the [DIAGRAM: ...] tag with a thorough description — do NOT say you cannot provide images
+- The diagram description is displayed as a step-by-step drawing guide AND used to auto-generate a real image for the student — be instructional and precise
+
+---
+
+## FLOWCHARTS, MEMORY MAPS & PATHWAYS — ALWAYS USE MERMAID SYNTAX
+
+For ANY of the following, output a **Mermaid diagram** in a fenced code block — the platform renders it as a beautiful visual diagram automatically:
+- Flowcharts, flow diagrams, decision trees
+- Memory maps, concept maps, mind maps
+- Biochemical pathways (glycolysis, Krebs, urea cycle, coagulation cascade, complement, etc.)
+- Anatomical hierarchies (nerve plexus branching, lymph nodes, etc.)
+- Sequential processes (steps of a mechanism, cascade reactions)
+- Comparison charts, classification trees
+
+**CRITICAL:** NEVER use ASCII art, Unicode block characters (░▒▓█), colored text boxes, or plain-text tables to represent flowcharts or memory maps. Always use Mermaid.
+
+Format (always use backtick fences, never indented):
+\`\`\`mermaid
+flowchart TD
+    ...
+\`\`\`
+
+### Mermaid diagram types:
+- **flowchart TD** — top-down flowcharts (default for most pathways)
+- **flowchart LR** — left-right (horizontal pathways, comparison)
+- **mindmap** — memory maps and concept hierarchies
+
+### Node styles you can use in flowcharts:
+- \`A[Text]\` — rectangle (default)
+- \`A{Text}\` — diamond (decision)
+- \`A((Text))\` — circle
+- \`A([Text])\` — stadium/rounded
+- \`A-->|label|B\` — arrow with label
+- \`style A fill:#7c3aed,color:#fff\` — custom colors
+
+### Examples:
+
+**Spinal cord tracts memory map:**
+\`\`\`mermaid
+mindmap
+  root((Spinal Cord Tracts))
+    Ascending
+      Dorsal Columns
+        Gracilis nucleus
+        Cuneatus nucleus
+        Fine touch · Vibration · Proprioception
+      Spinothalamic
+        Lateral - Pain · Temperature
+        Anterior - Crude touch · Pressure
+      Spinocerebellar
+        Dorsal - Unconscious proprioception
+        Ventral - Bilateral
+    Descending
+      Pyramidal
+        Lateral Corticospinal - voluntary
+        Anterior Corticospinal
+      Extrapyramidal
+        Reticulospinal
+        Vestibulospinal
+        Rubrospinal
+\`\`\`
+
+**Glycolysis pathway:**
+\`\`\`mermaid
+flowchart TD
+    G([Glucose]) -->|Hexokinase · -1 ATP| G6P[Glucose-6-Phosphate]
+    G6P -->|Phosphoglucose isomerase| F6P[Fructose-6-Phosphate]
+    F6P -->|PFK-1 · -1 ATP ⭐ RLS| F16BP[Fructose-1,6-Bisphosphate]
+    F16BP -->|Aldolase| DHAP[DHAP] & G3P[G3P × 2]
+    G3P -->|G3P dehydrogenase · +2 NADH| P13BPG[1,3-BPG × 2]
+    P13BPG -->|Phosphoglycerate kinase · +2 ATP| P3PG[3-PG × 2]
+    P3PG -->|Enolase| PEP[PEP × 2]
+    PEP -->|Pyruvate kinase · +2 ATP| PYR([Pyruvate × 2])
+    style F16BP fill:#7c3aed,color:#fff
+    style PYR fill:#059669,color:#fff
+\`\`\`
+
+**Coagulation cascade (simplified):**
+\`\`\`mermaid
+flowchart TD
+    EX[Extrinsic · Tissue Injury] -->|TF + VII| X
+    IN[Intrinsic · Surface contact] -->|XII→XI→IX+VIII| X
+    X{Factor X activated} -->|+ Factor V + Ca²⁺ + PF3| PT[Prothrombin → Thrombin]
+    PT -->|Thrombin| FBG[Fibrinogen → Fibrin]
+    FBG -->|Factor XIII + Ca²⁺| CF[Cross-linked Fibrin Clot]
+\`\`\``;
+
 
 // ── Instant AI chat (no doubt record needed) ──────────────────────────────
 router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res: Response) => {

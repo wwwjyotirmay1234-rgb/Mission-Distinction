@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Globe, Copy, Check } from "lucide-react";
+import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Globe, Copy, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -369,6 +369,111 @@ function DiagramBlock({ description }: { description: string }) {
   );
 }
 
+// ─── Mermaid flowchart / mindmap renderer ────────────────────────────────────
+
+let mermaidReady = false;
+
+async function getMermaid() {
+  const { default: mermaid } = await import("mermaid");
+  if (!mermaidReady) {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: "default",
+      securityLevel: "loose",
+      flowchart: { htmlLabels: true, curve: "basis" },
+      mindmap: { padding: 16 },
+      themeVariables: {
+        primaryColor: "#ede9fe",
+        primaryTextColor: "#1e1b4b",
+        primaryBorderColor: "#7c3aed",
+        lineColor: "#7c3aed",
+        secondaryColor: "#f5f3ff",
+        tertiaryColor: "#faf5ff",
+        edgeLabelBackground: "#f5f3ff",
+        clusterBkg: "#f5f3ff",
+        titleColor: "#5b21b6",
+        fontFamily: "system-ui, sans-serif",
+        fontSize: "14px",
+      },
+    });
+    mermaidReady = true;
+  }
+  return mermaid;
+}
+
+let mermaidCounter = 0;
+
+function MermaidBlock({ code }: { code: string }) {
+  const [svg, setSvg] = React.useState<string | null>(null);
+  const [err, setErr] = React.useState<string | null>(null);
+  const idRef = React.useRef(`mmd-${++mermaidCounter}`);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    setErr(null);
+    setSvg(null);
+    getMermaid()
+      .then(m => m.render(idRef.current, code))
+      .then(({ svg: rendered }) => {
+        if (!cancelled) setSvg(rendered);
+      })
+      .catch(e => {
+        if (!cancelled) setErr(String(e?.message || e));
+      });
+    return () => { cancelled = true; };
+  }, [code]);
+
+  const downloadSvg = () => {
+    if (!svg) return;
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `diagram-${Date.now()}.svg`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  if (err) {
+    return (
+      <pre className="my-2 p-3 rounded-lg bg-muted/50 text-xs overflow-x-auto font-mono border border-border/40 text-muted-foreground">
+        {code}
+      </pre>
+    );
+  }
+
+  if (!svg) {
+    return (
+      <div className="my-3 flex items-center gap-2 text-muted-foreground/60 py-3 text-sm">
+        <Loader2 size={14} className="animate-spin text-primary" />
+        <span className="text-xs">Rendering diagram…</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="my-3 rounded-xl border border-primary/30 overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-primary/8 border-b border-primary/15">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs">📊</span>
+          <span className="text-xs font-semibold text-primary">Flowchart / Memory Map</span>
+        </div>
+        <button
+          onClick={downloadSvg}
+          title="Download as SVG"
+          className="text-[10px] text-muted-foreground/50 hover:text-primary transition-colors"
+        >
+          ↓ Save SVG
+        </button>
+      </div>
+      <div
+        className="p-4 overflow-x-auto bg-white [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-full"
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true }, ADD_TAGS: ["foreignObject"], ADD_ATTR: ["xmlns", "style", "class", "id"] }) }}
+      />
+    </div>
+  );
+}
+
 // ─── Markdown components — ChatGPT-like styling ──────────────────────────────
 
 const mdComponents: React.ComponentProps<typeof ReactMarkdown>["components"] = {
@@ -409,19 +514,29 @@ const mdComponents: React.ComponentProps<typeof ReactMarkdown>["components"] = {
   ),
 };
 
-// ─── Parse AI text and render [DIAGRAM: ...] tags as DiagramBlocks ────────────
+// ─── Parse AI text — render [DIAGRAM:] tags + ```mermaid fenced blocks ────────
 
 function renderMessageContent(text: string) {
-  const DIAGRAM_RE = /\[DIAGRAM:\s*([^\]]+)\]/g;
-  const parts: Array<{ type: "text" | "diagram"; value: string }> = [];
+  type Part =
+    | { type: "text"; value: string }
+    | { type: "diagram"; value: string }
+    | { type: "mermaid"; value: string };
+
+  const parts: Part[] = [];
+  // Match [DIAGRAM: ...] OR ```mermaid...``` (with optional trailing newline)
+  const COMBINED_RE = /\[DIAGRAM:\s*([^\]]+)\]|```mermaid\r?\n([\s\S]*?)```/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = DIAGRAM_RE.exec(text)) !== null) {
+  while ((match = COMBINED_RE.exec(text)) !== null) {
     if (match.index > lastIndex) {
       parts.push({ type: "text", value: text.slice(lastIndex, match.index) });
     }
-    parts.push({ type: "diagram", value: match[1].trim() });
+    if (match[1] !== undefined) {
+      parts.push({ type: "diagram", value: match[1].trim() });
+    } else {
+      parts.push({ type: "mermaid", value: match[2].trim() });
+    }
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < text.length) {
@@ -430,15 +545,13 @@ function renderMessageContent(text: string) {
 
   return (
     <>
-      {parts.map((p, i) =>
-        p.type === "text" ? (
-          p.value.trim() ? (
-            <ReactMarkdown key={i} remarkPlugins={[remarkGfm]} components={mdComponents}>{p.value}</ReactMarkdown>
-          ) : null
-        ) : (
-          <DiagramBlock key={i} description={p.value} />
-        )
-      )}
+      {parts.map((p, i) => {
+        if (p.type === "diagram") return <DiagramBlock key={i} description={p.value} />;
+        if (p.type === "mermaid") return <MermaidBlock key={i} code={p.value} />;
+        return p.value.trim() ? (
+          <ReactMarkdown key={i} remarkPlugins={[remarkGfm]} components={mdComponents}>{p.value}</ReactMarkdown>
+        ) : null;
+      })}
     </>
   );
 }
