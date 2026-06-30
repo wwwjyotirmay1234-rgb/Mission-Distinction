@@ -72,6 +72,7 @@ function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void })
   const isLink = note.fileType === "link";
   const isPdf = note.fileUrl && (note.fileUrl.endsWith(".pdf") || note.fileUrl.includes("/pdf/serve/"));
   const embedUrl = note.fileUrl ? getServeUrlWithToken(note.fileUrl) : null;
+  const [embedFailed, setEmbedFailed] = React.useState(false);
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -108,12 +109,34 @@ function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void })
             )
           ) : isFile && embedUrl ? (
             isPdf ? (
-              <iframe
-                src={embedUrl}
-                className="w-full rounded border border-border/40"
-                style={{ height: "60vh" }}
-                title={note.title}
-              />
+              embedFailed ? (
+                <div className="flex flex-col items-center justify-center h-full gap-5 px-6 text-center py-16">
+                  <FileText size={48} className="text-primary/50" />
+                  <div>
+                    <p className="font-semibold text-lg">{note.title}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{note.subject}</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                    <Button className="flex-1 gap-2" asChild>
+                      <a href={getEmbedUrl(note.fileUrl!)} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink size={15} /> Open in Browser
+                      </a>
+                    </Button>
+                    <Button variant="outline" className="flex-1 gap-2" onClick={() => openDownload(note.fileUrl!)}>
+                      <Download size={15} /> Download
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Preview unavailable — tap "Open in Browser" to read.</p>
+                </div>
+              ) : (
+                <iframe
+                  src={embedUrl}
+                  className="w-full rounded border border-border/40"
+                  style={{ height: "60vh" }}
+                  title={note.title}
+                  onError={() => setEmbedFailed(true)}
+                />
+              )
             ) : (
               <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
                 <FileText size={40} className="text-primary/60" />
@@ -209,6 +232,7 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
   const isDrive = pyq.url.includes("drive.google.com");
   const embedUrl = isDrive ? getDriveEmbedUrl(pyq.url) : getServeUrlWithToken(pyq.url);
   const [viewing, setViewing] = React.useState(false);
+  const [embedFailed, setEmbedFailed] = React.useState(false);
 
   const open = () => {
     trackPYQRead(pyq.id);
@@ -260,13 +284,35 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
               </Button>
             </DialogHeader>
             <div className="flex-1 overflow-hidden min-h-0">
-              <iframe
-                src={embedUrl}
-                className="w-full h-full rounded border-0"
-                style={{ minHeight: "60vh" }}
-                title={pyq.title}
-                allow="autoplay"
-              />
+              {embedFailed ? (
+                <div className="flex flex-col items-center justify-center h-full gap-5 px-6 text-center">
+                  <ClipboardList size={48} className="text-amber-500/50" />
+                  <div>
+                    <p className="font-semibold text-lg">{pyq.title}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{pyq.subject} · {pyq.year}</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                    <Button className="flex-1 gap-2" asChild>
+                      <a href={pyq.url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink size={15} /> Open in Browser
+                      </a>
+                    </Button>
+                    <Button variant="outline" className="flex-1 gap-2" onClick={() => openDownload(pyq.url)}>
+                      <Download size={15} /> Download
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Preview unavailable — tap "Open in Browser" to read.</p>
+                </div>
+              ) : (
+                <iframe
+                  src={embedUrl}
+                  className="w-full h-full rounded border-0"
+                  style={{ minHeight: "60vh" }}
+                  title={pyq.title}
+                  allow="autoplay"
+                  onError={() => setEmbedFailed(true)}
+                />
+              )}
             </div>
             <div className="px-6 py-3 border-t border-border/50 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">{pyq.downloadCount ?? 0} views</span>
@@ -290,6 +336,7 @@ function BookCard({ book }: { book: Book }) {
   const color = SUBJECT_COLORS[book.subject] || DEFAULT_COLOR;
   const embedUrl = getEmbedUrl(book.url);
   const [viewing, setViewing] = React.useState(false);
+  const [embedFailed, setEmbedFailed] = React.useState(false);
 
   const open = () => {
     trackBookRead(book.id);
@@ -351,13 +398,35 @@ function BookCard({ book }: { book: Book }) {
               </Button>
             </DialogHeader>
             <div className="flex-1 overflow-hidden min-h-0">
-              <iframe
-                src={embedUrl}
-                className="w-full h-full border-0"
-                style={{ minHeight: "60vh" }}
-                title={book.title}
-                allow="autoplay"
-              />
+              {embedFailed ? (
+                <div className="flex flex-col items-center justify-center h-full gap-5 px-6 text-center">
+                  <BookText size={48} className="text-primary/50" />
+                  <div>
+                    <p className="font-semibold text-lg">{book.title}</p>
+                    {book.author && <p className="text-sm text-muted-foreground mt-1">by {book.author}</p>}
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                    <Button className="flex-1 gap-2" asChild>
+                      <a href={book.url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink size={15} /> Open in Browser
+                      </a>
+                    </Button>
+                    <Button variant="outline" className="flex-1 gap-2" onClick={() => openDownload(book.url)}>
+                      <Download size={15} /> Download
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Preview unavailable — tap "Open in Browser" to read.</p>
+                </div>
+              ) : (
+                <iframe
+                  src={embedUrl}
+                  className="w-full h-full border-0"
+                  style={{ minHeight: "60vh" }}
+                  title={book.title}
+                  allow="autoplay"
+                  onError={() => setEmbedFailed(true)}
+                />
+              )}
             </div>
             <div className="px-6 py-3 border-t border-border/50 flex justify-end gap-2">
               <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => openDownload(book.url)}>
