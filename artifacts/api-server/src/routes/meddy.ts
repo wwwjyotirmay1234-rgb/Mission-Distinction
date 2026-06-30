@@ -4,8 +4,12 @@ import { authMiddleware } from "../middlewares/auth";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { db } from "@workspace/db";
 import { pdfsTable, booksTable, pyqsTable } from "@workspace/db";
-// @ts-ignore
-import pdfParse from "pdf-parse";
+import { createRequire } from "module";
+const _require = createRequire(import.meta.url);
+const pdfParse = _require("pdf-parse") as (
+  buffer: Buffer,
+  options?: { max?: number }
+) => Promise<{ text: string; numpages: number }>;
 
 const router = Router();
 
