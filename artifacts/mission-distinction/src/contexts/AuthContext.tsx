@@ -114,16 +114,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setTokenRefresher(doRefresh);
 
-    // On mount: proactively refresh if the stored token is close to expiry.
-    // This ensures the session is healthy on every cold start, not just when
-    // the visibility changes later.
+    // On mount: proactively refresh only if the stored token expires within
+    // 24 hours. A brand-new 7-day token must NOT trigger an immediate refresh —
+    // that would consume the single-use refresh token before login() has even
+    // saved the new one, causing an instant logout loop for Google users.
     (function checkOnMount() {
       const t = localStorage.getItem("mission_token");
       if (!t) return;
       try {
         const payload = JSON.parse(atob(t.split(".")[1]));
         const expiresIn = (payload.exp ?? 0) * 1000 - Date.now();
-        if (expiresIn < 7 * 24 * 60 * 60 * 1000) {
+        if (expiresIn < 24 * 60 * 60 * 1000) {
           doRefresh().catch(() => {});
         }
       } catch {}
@@ -135,12 +136,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (document.visibilityState !== "visible") return;
       const t = localStorage.getItem("mission_token");
       if (!t) return;
-      // Decode the JWT exp claim (no library needed — it's just base64).
       try {
         const payload = JSON.parse(atob(t.split(".")[1]));
         const expiresIn = (payload.exp ?? 0) * 1000 - Date.now();
-        // Proactively refresh if token expires within 7 days.
-        if (expiresIn < 7 * 24 * 60 * 60 * 1000) {
+        // Proactively refresh if token expires within 24 hours.
+        if (expiresIn < 24 * 60 * 60 * 1000) {
           doRefresh().catch(() => {});
         }
       } catch {

@@ -61,6 +61,11 @@ The 10s guard prevents infinite reload loops.
 **Rule:** Set `googleProvider.setCustomParameters({ prompt: "select_account" })` on the GoogleAuthProvider.
 **Why:** Without it, if the user has one Google account signed in, they skip the account picker. On shared college devices this silently logs in the wrong person.
 
+## Proactive token refresh threshold must be 24h, not 7d
+**Rule:** In `AuthContext`, the on-mount and on-visibility proactive refresh must only fire when `expiresIn < 24 * 60 * 60 * 1000` (24 hours), NOT 7 days.
+**Why:** JWT access tokens live for 7 days. A brand-new token (e.g. just issued by Google login) is always "within 7 days of expiry", so a 7-day threshold triggers `doRefresh()` immediately on mount — before `login()` has stored the new refresh token. The single-use refresh token gets consumed, the rotation returns a new one, but the old one from the Google auth response is now invalid. Next refresh attempt gets 400 "Missing refresh token" → `auth:logout` fires → user gets kicked out seconds after Google login.
+**How to apply:** Keep the threshold at 24h for both `checkOnMount()` and the `visibilitychange` handler. The `apiFetch` 401 interceptor handles mid-session expiry automatically; the proactive refresh is only needed for truly near-expiry tokens.
+
 ## Google-only accounts have empty passwordHash
 **Rule:** Guard `verifyPassword` against empty string before calling bcrypt: `if (!hash) return false`.
 **Why:** Google sign-up creates users with `passwordHash: ""`. `bcrypt.compare(anything, "")` throws on invalid hash format → 500 crash instead of clean "use Google button" error.
