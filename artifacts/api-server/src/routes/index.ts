@@ -41,6 +41,7 @@ import { xpRouter } from "./xp";
 import { anatomyAIRouter } from "./anatomyAI";
 import pyqsRouter from "./pyqs";
 import { meddyRouter } from "./meddy";
+import { submissionsRouter } from "./submissions";
 
 const router: IRouter = Router();
 
@@ -91,5 +92,7 @@ router.use("/xp", xpRouter);
 router.use("/anatomy", anatomyAIRouter);
 router.use("/pyqs", pyqsRouter);
 router.use("/meddy", meddyRouter);
+router.use("/submissions", submissionsRouter);
+router.use("/admin/submissions", submissionsRouter);
 
 export default router;

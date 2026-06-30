@@ -41,6 +41,7 @@ const navItems = [
       { label: "PDF Library", href: "/admin/content/pdfs" },
       { label: "Books Library", href: "/admin/content/books" },
       { label: "PYQs", href: "/admin/content/pyqs" },
+      { label: "Scholar Hub", href: "/admin/scholar-hub" },
     ],
   },
   {

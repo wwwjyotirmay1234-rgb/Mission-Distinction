@@ -350,6 +350,25 @@ export async function runStartupMigrations() {
         auth TEXT NOT NULL,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS student_submissions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        user_name TEXT NOT NULL,
+        user_college TEXT,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        year TEXT,
+        url TEXT NOT NULL,
+        description TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        reviewed_by INTEGER,
+        reviewed_by_name TEXT,
+        rejection_reason TEXT,
+        reviewed_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
     `);
   } finally {
     client.release();

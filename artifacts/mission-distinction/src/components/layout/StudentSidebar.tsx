@@ -9,6 +9,7 @@ import {
   Bookmark, Calendar as CalendarIcon, Settings, Trophy, MessageSquare,
   Timer, Music, BookOpen, Lightbulb, MessageCircleHeart,
   Bot, Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight, BarChart2,
+  GraduationCap,
 } from "lucide-react";
 import { useXPStats } from "@/hooks/useXPStats";
 import { XPProgressBar } from "@/components/XPProgressBar";
@@ -61,6 +62,7 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
     { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
     { icon: BarChart2, label: "Quiz Analysis", href: "/student/quiz-analysis" },
     { icon: FileText, label: "Notes & Books", href: "/student/notes" },
+    { icon: GraduationCap, label: "Scholar Hub", href: "/student/scholar-hub" },
     { icon: File, label: "PDF Library", href: "/student/pdfs" },
     { icon: Users, label: "Community", href: "/student/community" },
     { icon: Newspaper, label: "News & Announcements", href: "/student/announcements", badge: unseenCount > 0 ? unseenCount : undefined },
