@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useEffect, useRef, useCallback } from "react";
 import { X, Music2, Radio, Youtube, Maximize2 } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
+import type { NowPlaying } from "@/contexts/MusicPlayerContext";
 
 /**
  * PersistentPlayer — lives in StudentLayout, never unmounts.
@@ -24,15 +25,41 @@ export function PersistentPlayer() {
   const [location] = useLocation();
   const onMusicPage = location === "/student/music";
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  // Keep a ref to playing so the visibilitychange closure always sees current value
+  const playingRef = useRef<NowPlaying | null>(playing);
+  useEffect(() => { playingRef.current = playing; }, [playing]);
 
   // ── Fullscreen handler ───────────────────────────────────────────────────
   const requestFullscreen = useCallback(() => {
     const el = iframeRef.current as any;
     if (!el) return;
     if (el.requestFullscreen) el.requestFullscreen();
-    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen(); // iOS Safari
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
     else if (el.msRequestFullscreen) el.msRequestFullscreen();
+  }, []);
+
+  // ── Auto-resume YouTube on screen unlock ────────────────────────────────
+  // When the phone is locked the OS suspends the tab and the YouTube
+  // iframe pauses itself. On unlock we send a postMessage to resume.
+  // Requires enablejsapi=1 in the embed URL (added below).
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      const p = playingRef.current;
+      if (!p || p.type !== "youtube") return;
+      const iframe = iframeRef.current;
+      if (!iframe?.contentWindow) return;
+      // Small delay so the iframe has a chance to resume its own context first
+      setTimeout(() => {
+        iframe.contentWindow?.postMessage(
+          JSON.stringify({ event: "command", func: "playVideo", args: [] }),
+          "*"
+        );
+      }, 600);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
 
   // ── MediaSession API — lock-screen controls ─────────────────────────────────
@@ -77,7 +104,7 @@ export function PersistentPlayer() {
 
   const iframeSrc =
     playing.type === "youtube"
-      ? `https://www.youtube-nocookie.com/embed/${playing.videoId}?autoplay=1&rel=0&modestbranding=1`
+      ? `https://www.youtube-nocookie.com/embed/${playing.videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`
       : `https://w.soundcloud.com/player/?url=${encodeURIComponent(
           playing.permalinkUrl
         )}&auto_play=true&visual=false&color=%237c3aed&show_comments=false&hide_related=true`;

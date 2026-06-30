@@ -31,55 +31,71 @@ const MusicPlayerContext = createContext<MusicPlayerCtx>({
   stop: () => {},
 });
 
-// Minimal valid silent WAV (44-byte header, 0 samples).
-// Loop=true means it restarts instantly — keeps the iOS audio session
-// alive without audible sound, which allows YouTube/SoundCloud iframes
-// to continue playing when the PWA goes to the background or locks screen.
-const SILENT_WAV =
-  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-
-function getOrCreateSilentAudio(ref: React.MutableRefObject<HTMLAudioElement | null>): HTMLAudioElement {
-  if (!ref.current) {
-    const a = new Audio(SILENT_WAV);
-    a.loop = true;
-    a.volume = 0.001; // inaudible — just keeps the session alive
-    ref.current = a;
+/**
+ * Web Audio API keepalive.
+ *
+ * An AudioContext + silent oscillator is far more reliable than an <audio>
+ * element for keeping the browser's audio session alive on Android + iOS PWAs:
+ *
+ * - Android Chrome: with no audible audio output the tab is suspended within
+ *   ~1 second of the screen locking. An AudioContext keeps the audio thread
+ *   alive even at gain=0, preventing suspension.
+ * - iOS Safari: same principle — the audio session must be started inside a
+ *   user gesture and then kept alive with continuous output.
+ *
+ * gain=0.001 (not 0) ensures the oscillator is routed to the output bus so
+ * Android's audio focus manager treats it as an active audio session.
+ */
+function startAudioKeepAlive(
+  ctxRef: React.MutableRefObject<AudioContext | null>
+): void {
+  if (ctxRef.current && ctxRef.current.state !== "closed") return;
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.001; // nearly inaudible but non-zero → keeps audio session
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    ctxRef.current = ctx;
+  } catch {
+    // AudioContext not supported — fall back to no keepalive
   }
-  return ref.current;
+}
+
+function stopAudioKeepAlive(
+  ctxRef: React.MutableRefObject<AudioContext | null>
+): void {
+  ctxRef.current?.close().catch(() => {});
+  ctxRef.current = null;
 }
 
 export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   const [playing, setPlaying] = useState<NowPlaying | null>(null);
-  const silentRef = useRef<HTMLAudioElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const play = useCallback((item: NowPlaying) => {
     setPlaying(item);
-    // Must be called synchronously inside the user-gesture handler so iOS
+    // Must be synchronous inside the user-gesture handler so iOS/Android
     // grants the audio session before the app can be backgrounded.
-    getOrCreateSilentAudio(silentRef).play().catch(() => {
-      // Autoplay policy blocked (very rare — user pressed play so gesture exists)
-    });
+    startAudioKeepAlive(audioCtxRef);
   }, []);
 
   const stop = useCallback(() => {
     setPlaying(null);
-    silentRef.current?.pause();
+    stopAudioKeepAlive(audioCtxRef);
   }, []);
 
-  // When the screen wakes up / app comes back to foreground, resume the silent
-  // audio if the OS paused it (common on iOS after a screen lock).
+  // When the screen wakes up / app returns to foreground, resume the
+  // AudioContext if the OS suspended it (common on Android after lock).
   useEffect(() => {
     const onVisibility = () => {
-      if (document.visibilityState === "visible" && silentRef.current && !silentRef.current.paused) {
-        return; // already playing — nothing to do
+      if (document.visibilityState !== "visible") return;
+      const ctx = audioCtxRef.current;
+      if (ctx && ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
       }
-      // If music was playing but silent audio got paused by the OS, restart it
-      setPlaying(prev => {
-        if (prev && silentRef.current && silentRef.current.paused) {
-          silentRef.current.play().catch(() => {});
-        }
-        return prev;
-      });
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
