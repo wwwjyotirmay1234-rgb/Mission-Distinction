@@ -26,6 +26,7 @@ import { OnboardingModal } from "@/components/OnboardingModal";
 import { Watermark } from "@/components/Watermark";
 import { CompleteProfileModal } from "@/components/CompleteProfileModal";
 import { MeddyAssistant } from "@/components/MeddyAssistant";
+import { useLocation } from "wouter";
 
 function EmailVerificationBanner() {
   const { user, token } = useAuth();
@@ -136,13 +137,19 @@ function StudentLayoutInner({ children }: { children: React.ReactNode }) {
   );
 }
 
+function MeddyOnDashboardOnly() {
+  const [location] = useLocation();
+  if (location !== "/student/dashboard") return null;
+  return <MeddyAssistant />;
+}
+
 export function StudentLayout({ children }: { children: React.ReactNode }) {
   return (
     <MusicPlayerProvider>
       <SidebarProvider>
         <StudentLayoutInner>{children}</StudentLayoutInner>
         <PersistentPlayer />
-        <MeddyAssistant />
+        <MeddyOnDashboardOnly />
         <CompleteProfileModal />
         <OnboardingModal />
       </SidebarProvider>
