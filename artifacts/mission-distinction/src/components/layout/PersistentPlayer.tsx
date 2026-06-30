@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { useEffect } from "react";
-import { X, Music2, Radio, Youtube } from "lucide-react";
+import { useEffect, useRef, useCallback } from "react";
+import { X, Music2, Radio, Youtube, Maximize2 } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 /**
@@ -23,6 +23,17 @@ export function PersistentPlayer() {
   const { playing, stop } = useMusicPlayer();
   const [location] = useLocation();
   const onMusicPage = location === "/student/music";
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // ── Fullscreen handler ───────────────────────────────────────────────────
+  const requestFullscreen = useCallback(() => {
+    const el = iframeRef.current as any;
+    if (!el) return;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen(); // iOS Safari
+    else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+    else if (el.msRequestFullscreen) el.msRequestFullscreen();
+  }, []);
 
   // ── MediaSession API — lock-screen controls ─────────────────────────────────
   useEffect(() => {
@@ -52,7 +63,6 @@ export function PersistentPlayer() {
 
     navigator.mediaSession.setActionHandler("stop", stop);
     navigator.mediaSession.setActionHandler("pause", stop);
-    // play/nexttrack/previoustrack are not wired (iframe controls the stream)
     navigator.mediaSession.setActionHandler("play", null);
     navigator.mediaSession.setActionHandler("nexttrack", null);
     navigator.mediaSession.setActionHandler("previoustrack", null);
@@ -87,7 +97,7 @@ export function PersistentPlayer() {
     <>
       {/* ── Single iframe container ─────────────────────────────────────────
           CSS-only changes when onMusicPage toggles. The iframe key never
-          changes for the same track → React never remounts it → audio lives.
+          changes for the same track → React reuses the DOM node → audio lives.
           ─────────────────────────────────────────────────────────────────── */}
       <div
         aria-hidden="true"
@@ -137,6 +147,19 @@ export function PersistentPlayer() {
               </p>
               <p className="text-[10px] text-white/40 truncate">{sub}</p>
             </div>
+
+            {/* Fullscreen button — only for YouTube on the music page */}
+            {playing.type === "youtube" && (
+              <button
+                onClick={requestFullscreen}
+                aria-label="Fullscreen"
+                title="Fullscreen"
+                className="w-8 h-8 rounded-xl bg-violet-500/20 hover:bg-violet-500/40 border border-violet-500/30 flex items-center justify-center transition-colors"
+              >
+                <Maximize2 size={13} className="text-violet-300" />
+              </button>
+            )}
+
             <button
               onClick={stop}
               aria-label="Stop music"
@@ -150,6 +173,7 @@ export function PersistentPlayer() {
         {/* The one-and-only iframe. key=iframeKey never changes for the same
             track → React reuses the DOM node → audio keeps playing. */}
         <iframe
+          ref={iframeRef}
           key={iframeKey}
           src={iframeSrc}
           width="100%"
