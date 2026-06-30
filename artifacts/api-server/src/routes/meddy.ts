@@ -26,27 +26,119 @@ const MEDDY_SYSTEM_PROMPT = `You are Meddy — Mission Distinction's smart app a
 ## WHAT YOU HELP WITH:
 - Finding resources: PDFs, Notes, Books, PYQs available in the app
 - Explaining app features (how to use quizzes, bookmarks, study rooms, AI tools, etc.)
-- Analysing specific documents when their content is provided in <DOCUMENT> tags — count topics, find years, search questions, summarise chapters
+- Analysing specific documents when their content is provided in <DOCUMENT> tags
 - Navigation questions: "where do I find X?", "how do I Y?"
-- Platform info: features, how things work
+- Chapter/topic lookup: "which chapter is radioactivity in Vasudevan?" — scan the document and answer
 
 ## WHAT YOU REDIRECT (politely):
-- Exam MCQ answers, theory exam questions, NEET PG prep questions → tell them to use the **AI Doubt** section (the full medical AI tutor) or the **Doubts** page
-- Say something like: "For exam questions and medical theory, use our AI Doubt section — it's powered by Claude and GPT-4o and gives detailed exam-ready answers!"
+- Exam MCQ answers, theory exam questions, NEET PG prep → tell them to use the **AI Doubt** section
+- Say: "For exam questions and medical theory, use our AI Doubt section — powered by Claude and GPT-4o!"
 
-## DOCUMENT ANALYSIS (when <DOCUMENT> tags present):
-- Read provided text carefully — it may be a PYQ paper, book chapter, or lecture note
-- Answer the exact question: counts, years, topics, patterns, summaries
-- Be precise — if the user asks "how many questions from Neuroanatomy", count them
-- If text seems incomplete (scanned PDF with limited extraction), say so and do your best
-- Cite specific questions/lines from the document in your answer
+## DOCUMENT ANALYSIS — CRITICAL ACCURACY RULES:
+You have access to the full document in <DOCUMENT> tags AND pre-extracted <FOCUSED_SECTIONS> that are the most relevant excerpts for this query.
+
+**Rule 1 — Always search for the exact topic first:**
+When asked about a specific chapter or topic (e.g. "Neuroanatomy", "Abdomen", "radioactivity"), you MUST scan the document for that EXACT word/phrase. Do NOT answer from a different chapter. If "Neuroanatomy" is the query, only return content from the Neuroanatomy section.
+
+**Rule 2 — Use FOCUSED_SECTIONS as your primary source:**
+The <FOCUSED_SECTIONS> block contains pre-searched excerpts most relevant to the query. Prioritise these over the raw document. Quote directly from them.
+
+**Rule 3 — Never fabricate or substitute:**
+If you cannot find the requested chapter/topic in the document text, say so explicitly: "I couldn't find a section labelled [X] in this document. The document may not cover this topic, or it may be in a portion that wasn't extracted." Do NOT give questions from a different chapter as if they were from the requested one.
+
+**Rule 4 — Chapter location queries:**
+For "which chapter is X in" or "where is X" queries: search the document for the term X, then look backwards in the text for the nearest chapter/section heading above it. Report that heading as the answer. Quote the surrounding lines.
+
+**Rule 5 — IAT / exam paper queries:**
+For "questions from IAT 3 from Neuroanatomy" — look for "IAT 3" or "Internal Assessment Test 3" section AND "Neuroanatomy" within it. If both conditions aren't met together in the document, say which part is missing.
+
+**Rule 6 — Be precise with counts:**
+If asked "how many questions from X", count only those explicitly in the X section. State the count and list them.
 
 ## STYLE:
 - Friendly, concise, helpful
 - Use bullet points for lists
 - Bold key information
+- Quote the actual document lines/questions you find
 - No lengthy preambles — get to the answer quickly
-- End with a helpful follow-up suggestion when relevant`;
+- If the document text was truncated, mention it and suggest the student checks the full PDF`;
+
+/**
+ * Pre-searches a document for query keywords and extracts the most relevant
+ * surrounding passages. This gives GPT-4o a highlighted "spotlight" on the
+ * relevant parts of the document rather than having it read top-to-bottom.
+ */
+function extractTopicSections(docText: string, query: string, maxSections = 6): string {
+  if (!docText || !query) return "";
+
+  // Pull meaningful keywords from the query (skip stop words, keep medical terms)
+  const stopWords = new Set(["the", "a", "an", "and", "or", "of", "from", "in", "is", "are",
+    "find", "give", "show", "list", "what", "where", "which", "how", "many", "all", "any",
+    "me", "my", "for", "to", "about", "with", "this", "that", "do", "can", "has", "have",
+    "questions", "question", "chapter", "section", "topics", "topic", "paper", "exam"]);
+
+  const keywords = query.toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(w => w.length >= 3 && !stopWords.has(w));
+
+  if (keywords.length === 0) return "";
+
+  const lowerDoc = docText.toLowerCase();
+
+  // Also search for multi-word phrases (e.g. "neuroanatomy", "iat 3")
+  const phrases: string[] = [];
+  // IAT pattern: "iat 1", "iat 2", "iat 3", "internal assessment"
+  const iatMatch = query.match(/\biat\s*([1-9])\b/i);
+  if (iatMatch) phrases.push(`iat ${iatMatch[1]}`, `iat-${iatMatch[1]}`, `internal assessment`);
+  // Medical textbook terms
+  const textbookMatch = query.match(/\b(vasudevan|harper|gray|snell|guyton|robbins|harrisons?|devlin|satoskar)\b/i);
+  if (textbookMatch) phrases.push(textbookMatch[1].toLowerCase());
+
+  const allTerms = [...new Set([...keywords, ...phrases])];
+
+  // Find all match positions with context window
+  const CONTEXT = 1200; // chars before and after match
+  const hits: { pos: number; text: string; score: number }[] = [];
+
+  for (const term of allTerms) {
+    let pos = 0;
+    while (pos < lowerDoc.length) {
+      const idx = lowerDoc.indexOf(term, pos);
+      if (idx === -1) break;
+
+      const start = Math.max(0, idx - CONTEXT);
+      const end = Math.min(docText.length, idx + CONTEXT + term.length);
+      const excerpt = docText.slice(start, end);
+
+      // Score this excerpt by how many of our terms appear in it
+      const score = allTerms.reduce((s, t) => s + (excerpt.toLowerCase().includes(t) ? 1 : 0), 0);
+      hits.push({ pos: idx, text: excerpt, score });
+
+      pos = idx + Math.max(1, term.length);
+      if (hits.length > 200) break; // safety cap
+    }
+  }
+
+  if (hits.length === 0) return "";
+
+  // Sort by score descending, then deduplicate overlapping windows
+  hits.sort((a, b) => b.score - a.score);
+
+  const selected: typeof hits = [];
+  for (const hit of hits) {
+    const overlaps = selected.some(s => Math.abs(s.pos - hit.pos) < CONTEXT);
+    if (!overlaps) {
+      selected.push(hit);
+      if (selected.length >= maxSections) break;
+    }
+  }
+
+  // Sort selected back into document order for readability
+  selected.sort((a, b) => a.pos - b.pos);
+
+  return selected.map((s, i) => `--- Excerpt ${i + 1} (position ~${s.pos} in document) ---\n${s.text}`).join("\n\n");
+}
 
 function sanitize(val: unknown, max: number): string | null {
   if (typeof val !== "string") return null;
@@ -185,7 +277,11 @@ router.post("/chat", authMiddleware, limiter, async (req: Request, res: Response
 
   let userContent = message;
   if (documentText && documentTitle) {
-    userContent = `I have a question about a document from the app.\n\nDocument: **${documentTitle}**\n\n<DOCUMENT>\n${documentText}\n</DOCUMENT>\n\nMy question: ${message}`;
+    const focused = extractTopicSections(documentText, message, 6);
+    const focusedBlock = focused
+      ? `\n\n<FOCUSED_SECTIONS note="Pre-searched excerpts most relevant to the query — USE THESE AS PRIMARY SOURCE">\n${focused}\n</FOCUSED_SECTIONS>`
+      : "";
+    userContent = `I have a question about a document from the app.\n\nDocument: **${documentTitle}**\n\n<DOCUMENT>\n${documentText}\n</DOCUMENT>${focusedBlock}\n\nMy question: ${message}`;
   }
 
   try {
