@@ -38,8 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(response.token);
     localStorage.setItem("mission_user", JSON.stringify(response.user));
     localStorage.setItem("mission_token", response.token);
-    // Refresh token is stored server-side in an httpOnly cookie (md_refresh).
-    // We do NOT persist it in localStorage to avoid XSS exposure.
+    // Also persist refresh token locally as a fallback for environments where
+    // the httpOnly cookie is not sent back (iOS PWA isolated storage, in-app
+    // browsers, some Android OEMs). The server accepts it from req.body too.
+    if (response.refreshToken) {
+      localStorage.setItem("mission_refresh", response.refreshToken);
+    }
   };
 
   const logout = () => {
@@ -55,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     localStorage.removeItem("mission_user");
     localStorage.removeItem("mission_token");
+    localStorage.removeItem("mission_refresh");
   };
 
   const updateUser = (newUser: User) => {
@@ -73,19 +78,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (refreshPromise) return refreshPromise;
       refreshPromise = (async () => {
         try {
-          // Refresh token is in the httpOnly md_refresh cookie — no body needed.
+          // Primary: httpOnly cookie (md_refresh) is sent automatically.
+          // Fallback: localStorage copy for iOS PWA, in-app browsers, and
+          // Android OEMs where the cookie jar is isolated or not sent.
+          const storedRefresh = localStorage.getItem("mission_refresh");
           const res = await fetch("/api/auth/refresh", {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
+            body: storedRefresh ? JSON.stringify({ refreshToken: storedRefresh }) : undefined,
           });
           if (!res.ok) {
+            localStorage.removeItem("mission_refresh");
             window.dispatchEvent(new Event("auth:logout"));
             return null;
           }
           const data = await res.json();
           localStorage.setItem("mission_token", data.token);
           localStorage.setItem("mission_user", JSON.stringify(data.user));
+          // Update the locally-stored refresh token to the newly rotated value.
+          if (data.refreshToken) {
+            localStorage.setItem("mission_refresh", data.refreshToken);
+          }
           window.dispatchEvent(new CustomEvent("auth:tokenRefreshed", { detail: data }));
           return data.token as string;
         } catch {
@@ -149,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(null);
       localStorage.removeItem("mission_user");
       localStorage.removeItem("mission_token");
+      localStorage.removeItem("mission_refresh");
     };
     const onRefreshed = (e: Event) => {
       const { token: t, user: u } = (e as CustomEvent<LoginResponse>).detail;
