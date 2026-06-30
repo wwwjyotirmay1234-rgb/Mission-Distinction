@@ -28,7 +28,7 @@ import { resetAnalytics } from "@/lib/analytics";
 
 export default function StudentSettings() {
   const { user, updateUser, logout } = useAuth();
-  const { supported, permission, subscribed, loading: pushLoading, requestAndSubscribe, unsubscribe } = usePushNotifications();
+  const { supported, blockReason, permission, subscribed, loading: pushLoading, requestAndSubscribe, unsubscribe } = usePushNotifications();
   const [feedback, setFeedback] = useState({ category: "general", subject: "", message: "", rating: 0 });
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -243,28 +243,41 @@ export default function StudentSettings() {
           <CardDescription>Configure how you receive alerts and push notifications.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 border border-border/40 rounded-lg bg-background/30">
-            <div className="space-y-0.5 flex-1">
+          <div className="flex items-start justify-between p-4 border border-border/40 rounded-lg bg-background/30 gap-3">
+            <div className="space-y-1 flex-1 min-w-0">
               <Label className="text-sm font-medium flex items-center gap-2" id="push-notifications-label">
-                {subscribed ? <Bell className="h-3.5 w-3.5 text-green-400" aria-hidden="true" /> : <BellOff className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />}
+                {subscribed
+                  ? <Bell className="h-3.5 w-3.5 text-green-400" aria-hidden="true" />
+                  : <BellOff className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />}
                 Push Notifications
               </Label>
-              <p className="text-xs text-muted-foreground" id="push-notifications-desc">
-                {!supported
-                  ? "Not supported in this browser."
-                  : permission === "denied"
-                  ? "Blocked — enable notifications in browser settings."
+              <p className="text-xs text-muted-foreground leading-relaxed" id="push-notifications-desc">
+                {blockReason === "unsupported"
+                  ? "Not supported in this browser. Try Chrome or Samsung Internet."
+                  : blockReason === "ios-not-installed"
+                  ? <>Tap <strong className="text-foreground">Share</strong> → <strong className="text-foreground">Add to Home Screen</strong>, then open the app from your home screen to enable notifications.</>
+                  : blockReason === "ios-browser"
+                  ? "Push notifications on iPhone require Safari. Open this page in Safari and add to Home Screen."
+                  : blockReason === "in-app-browser"
+                  ? <>You're in an in-app browser. Tap <strong className="text-foreground">⋯ Open in Chrome</strong> (or Safari) to enable notifications.</>
+                  : blockReason === "denied"
+                  ? "Blocked by your browser or phone. Go to Settings → Notifications → allow this site, then return here."
                   : subscribed
-                  ? "You'll receive alerts for new announcements and updates."
+                  ? "You'll receive alerts for new announcements and content updates."
                   : "Get instant alerts for new announcements and content."}
               </p>
             </div>
             <Button
               variant={subscribed ? "outline" : "default"}
               size="sm"
-              disabled={pushLoading || !supported || permission === "denied"}
+              disabled={
+                pushLoading ||
+                blockReason === "unsupported" ||
+                blockReason === "ios-browser" ||
+                blockReason === "denied"
+              }
               onClick={subscribed ? unsubscribe : requestAndSubscribe}
-              className="ml-4 shrink-0"
+              className="shrink-0 mt-0.5"
               aria-labelledby="push-notifications-label"
               aria-describedby="push-notifications-desc"
             >
@@ -272,6 +285,8 @@ export default function StudentSettings() {
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-label="Loading" />
               ) : subscribed ? (
                 "Disable"
+              ) : blockReason === "ios-not-installed" || blockReason === "in-app-browser" ? (
+                "How?"
               ) : (
                 "Enable"
               )}

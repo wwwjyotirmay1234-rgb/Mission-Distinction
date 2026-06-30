@@ -352,7 +352,7 @@ self.addEventListener("push", event => {
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: data.icon,
-      badge: "/logo.jpeg",
+      badge: BASE + "icon-192.png",
       data: { url: data.url },
       vibrate: [200, 100, 200],
     })
