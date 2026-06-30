@@ -6,10 +6,10 @@ import { db } from "@workspace/db";
 import { pdfsTable, booksTable, pyqsTable } from "@workspace/db";
 import { createRequire } from "module";
 const _require = createRequire(import.meta.url);
-const pdfParse = _require("pdf-parse") as (
-  buffer: Buffer,
-  options?: { max?: number }
-) => Promise<{ text: string; numpages: number }>;
+// pdf-parse v1 exports a plain function via CJS — use createRequire to avoid
+// esbuild resolving the ESM entry (which has no default export).
+const pdfParse: (buf: Buffer, opts?: { max?: number }) => Promise<{ text: string; numpages: number }> =
+  _require("pdf-parse");
 
 const router = Router();
 
