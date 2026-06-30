@@ -6,7 +6,7 @@ import { useSidebar } from "@/contexts/SidebarContext";
 import { useListAnnouncements, getListAnnouncementsQueryKey } from "@workspace/api-client-react";
 import {
   LayoutDashboard, FileText, File, Users, Newspaper, TrendingUp,
-  Bookmark, Calendar as CalendarIcon, Settings, Trophy, MessageSquare,
+  Calendar as CalendarIcon, Settings, Trophy, MessageSquare,
   Timer, Music, BookOpen, Lightbulb, MessageCircleHeart,
   Bot, Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight, BarChart2,
   GraduationCap,
@@ -69,7 +69,6 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
     { icon: TrendingUp, label: "My Progress", href: "/student/progress" },
     { icon: Trophy, label: "Leaderboard", href: "/student/leaderboard" },
     { icon: MessageSquare, label: "Doubt Board", href: "/student/doubts" },
-    { icon: Bookmark, label: "Bookmarks", href: "/student/bookmarks" },
     { icon: CalendarIcon, label: "Calendar", href: "/student/calendar" },
     { icon: Timer, label: "Study Tools", href: "/student/tools" },
     { icon: Lightbulb, label: "Mnemonics", href: "/student/mnemonics" },

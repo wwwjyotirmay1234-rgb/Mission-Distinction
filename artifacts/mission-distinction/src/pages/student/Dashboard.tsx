@@ -280,7 +280,6 @@ export default function StudentDashboard() {
                 { icon: CheckCircle, label: "Take Quiz", href: "/student/quiz", color: "text-blue-500", bg: "bg-blue-500/10" },
                 { icon: FileText, label: "My Notes", href: "/student/notes", color: "text-purple-500", bg: "bg-purple-500/10" },
                 { icon: File, label: "PDF Library", href: "/student/pdfs", color: "text-orange-500", bg: "bg-orange-500/10" },
-                { icon: Bookmark, label: "Bookmarks", href: "/student/bookmarks", color: "text-red-500", bg: "bg-red-500/10" },
                 { icon: Flame, label: "Progress", href: "/student/progress", color: "text-yellow-500", bg: "bg-yellow-500/10" },
                 { icon: Calendar, label: "Calendar", href: "/student/calendar", color: "text-green-500", bg: "bg-green-500/10" },
               ].map((item, i) => (
