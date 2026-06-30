@@ -248,7 +248,7 @@ flowchart TD
 
 // ── Extract text from an uploaded file (base64-encoded PDF / text) ────────
 router.post("/extract-file", authMiddleware, async (req: Request, res: Response) => {
-  const fileBase64 = sanitize(req.body.fileBase64, 50_000_000); // up to ~35MB base64
+  const fileBase64 = sanitize(req.body.fileBase64, 140_000_000); // up to ~100MB base64
   const mimeType = sanitize(req.body.mimeType, 100) ?? "";
   const fileName = sanitize(req.body.fileName, 500) ?? "document";
 

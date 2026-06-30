@@ -214,12 +214,12 @@ function buildCompactCatalog(resources: Resources): object {
 
 // ── Welcome quick actions ──────────────────────────────────────────────────
 const QUICK_ACTIONS = [
-  { label: "What books do we have?", icon: "📚" },
-  { label: "Show all NEET resources", icon: "🎯" },
+  { label: "I can't find my PDFs", icon: "🆘" },
+  { label: "How do I use AI Doubt?", icon: "🤖" },
+  { label: "Show all books & notes", icon: "📚" },
   { label: "Generate 5 Anatomy MCQs", icon: "❓" },
+  { label: "How do I save a PDF offline?", icon: "📥" },
   { label: "Explain glycolysis simply", icon: "🧪" },
-  { label: "How do I use flashcards?", icon: "🃏" },
-  { label: "Show all PDFs & notes", icon: "📄" },
 ];
 
 // ── Document quick actions ─────────────────────────────────────────────────
@@ -236,7 +236,7 @@ export function MeddyAssistant() {
   const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([{
     role: "assistant",
-    content: "Hi! I'm **Meddy** 👋 — your AI learning companion for Mission Distinction.\n\nI can help with resources **from 1st Year to NEET PG to USMLE** that are in our app:\n- 🔍 Ask *\"What books do we have?\"* — I'll list everything\n- 📄 Ask *\"What's in BD Chaurasia?\"* — I'll auto-load & show contents\n- ❓ Generate practice MCQs from any document\n- 🧠 Explain any concept with mnemonics\n- 🗺️ Navigate any app feature\n\nJust ask naturally — I'll find the right resource automatically! 🔥",
+    content: "Hi! I'm **Meddy** 👋 — your Mission Distinction app assistant.\n\nI'm your first stop for **anything** in the app:\n- 🆘 App issues or emergencies — tell me what's wrong\n- 🗺️ Navigate to any feature (PDFs, Quizzes, Study Rooms…)\n- 🔍 Find resources by subject or topic\n- 📄 Analyse a document (pick one below)\n- ❓ Generate practice MCQs\n- 🧠 Explain any medical concept\n\nWhat do you need help with?",
   }]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -520,7 +520,7 @@ export function MeddyAssistant() {
     abortRef.current?.abort();
     setMessages([{
       role: "assistant",
-      content: "Hi! I'm **Meddy** 👋 — your AI learning companion for Mission Distinction.\n\nI can help you:\n- 🔍 Find PDFs, Books, Notes & PYQs\n- 📄 Analyse any document (pick one below)\n- ❓ Generate practice MCQs\n- 🧠 Explain tough 1st Year concepts\n- 🗺️ Navigate any app feature\n\nFor detailed exam MCQs → **AI Doubt** section!",
+      content: "Hi! I'm **Meddy** 👋 — your Mission Distinction app assistant.\n\nI'm your first stop for **anything** in the app:\n- 🆘 App issues or emergencies — tell me what's wrong\n- 🗺️ Navigate to any feature (PDFs, Quizzes, Study Rooms…)\n- 🔍 Find resources by subject or topic\n- 📄 Analyse a document (pick one below)\n- ❓ Generate practice MCQs\n- 🧠 Explain any medical concept\n\nWhat do you need help with?",
     }]);
     setSelectedResource(null);
     setExtractedText(null);
