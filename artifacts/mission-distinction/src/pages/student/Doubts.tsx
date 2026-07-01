@@ -585,7 +585,7 @@ async function compressImage(file: File): Promise<string> {
 
 // ─── AI Chat Tab ──────────────────────────────────────────────────────────────
 
-type PendingDoc = { text: string; title: string; pages?: number; warning?: string };
+type PendingDoc = { text: string; title: string; pages?: number; warning?: string; images?: string[] };
 
 function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
@@ -654,7 +654,10 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
       if (!res.ok) { toast.error(data.error || "Could not read file"); return; }
       if (!data.text && data.warning) {
         toast.warning(data.warning);
-        setPendingDoc({ text: "", title: file.name, pages: data.pages, warning: data.warning });
+        setPendingDoc({ text: "", title: file.name, pages: data.pages, warning: data.warning, images: data.images });
+        if (Array.isArray(data.images) && data.images.length > 0) {
+          toast.success(`"${file.name}" ready — ask any question, AI will read the scanned pages!`);
+        }
       } else {
         setPendingDoc({ text: data.text, title: file.name, pages: data.pages, warning: data.warning });
         toast.success(`"${file.name}" ready — ask any question about it!`);
@@ -698,6 +701,7 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
       const body: Record<string, unknown> = { question: q, history, model };
       if (img) body.imageBase64 = img;
       if (doc?.text) { body.documentText = doc.text; body.documentTitle = doc.title; }
+      else if (doc?.images?.length) { body.documentImages = doc.images; body.documentTitle = doc.title; }
       const res = await fetch("/api/doubts/ai-chat", {
         method: "POST",
         credentials: "include",
@@ -926,7 +930,11 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
               <div className="min-w-0">
                 <p className="text-xs font-medium text-foreground truncate max-w-[220px]">{pendingDoc.title}</p>
                 <p className="text-[10px] text-muted-foreground">
-                  {pendingDoc.warning ? "⚠ Scanned PDF — text only" : `${pendingDoc.pages ? `${pendingDoc.pages} page${pendingDoc.pages !== 1 ? "s" : ""} · ` : ""}${Math.round((pendingDoc.text.length) / 1000)}k chars`}
+                  {pendingDoc.warning
+                    ? pendingDoc.images?.length
+                      ? `📷 Scanned PDF — AI reads ${pendingDoc.images.length} page${pendingDoc.images.length !== 1 ? "s" : ""} as image${pendingDoc.images.length !== 1 ? "s" : ""}`
+                      : "⚠ Scanned PDF — text only"
+                    : `${pendingDoc.pages ? `${pendingDoc.pages} page${pendingDoc.pages !== 1 ? "s" : ""} · ` : ""}${Math.round((pendingDoc.text.length) / 1000)}k chars`}
                 </p>
               </div>
               <button

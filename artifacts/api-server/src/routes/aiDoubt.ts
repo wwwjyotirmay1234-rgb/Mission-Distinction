@@ -13,6 +13,30 @@ const pdfParse: (buf: Buffer, opts?: { max?: number }) => Promise<{ text: string
 
 const router = Router();
 
+// ── Render scanned (image-only) PDF pages to PNG images for vision AI ──────
+const MAX_SCANNED_PDF_PAGES = 5;
+
+async function renderPdfPagesToImages(buffer: Buffer, maxPages = MAX_SCANNED_PDF_PAGES): Promise<string[]> {
+  const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const { createCanvas } = await import("@napi-rs/canvas");
+
+  const data = new Uint8Array(buffer);
+  const doc = await pdfjsLib.getDocument({ data }).promise;
+  const numPages = Math.min(doc.numPages, maxPages);
+  const images: string[] = [];
+
+  for (let i = 1; i <= numPages; i++) {
+    const page = await doc.getPage(i);
+    const viewport = page.getViewport({ scale: 1.5 });
+    const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+    const ctx = canvas.getContext("2d");
+    await page.render({ canvasContext: ctx as any, viewport, canvas: canvas as any }).promise;
+    images.push(`data:image/png;base64,${canvas.toBuffer("image/png").toString("base64")}`);
+  }
+
+  return images;
+}
+
 // ── Rate limiters ─────────────────────────────────────────────────────────────
 const aiChatLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -274,7 +298,23 @@ router.post("/extract-file", authMiddleware, async (req: Request, res: Response)
       const parsed = await pdfParse(buffer, { max: 80 });
       const rawText = (parsed.text as string).trim();
       if (!rawText || rawText.length < 20) {
-        res.json({ text: "", pages: parsed.numpages, warning: "This appears to be a scanned PDF — no text could be extracted." });
+        // Scanned / image-only PDF — no extractable text. Fall back to rendering
+        // the pages as images so the vision-capable AI models can read them directly.
+        try {
+          const images = await renderPdfPagesToImages(buffer);
+          res.json({
+            text: "",
+            pages: parsed.numpages,
+            images,
+            warning:
+              parsed.numpages > images.length
+                ? `Scanned PDF — AI will read the first ${images.length} of ${parsed.numpages} pages as images.`
+                : "Scanned PDF — AI will read the pages as images.",
+          });
+        } catch (renderErr: any) {
+          console.error("[extract-file] page render failed:", renderErr?.message);
+          res.json({ text: "", pages: parsed.numpages, warning: "This appears to be a scanned PDF — no text could be extracted." });
+        }
         return;
       }
       const text = rawText.length > 80_000 ? rawText.slice(0, 80_000) + "\n\n[Document truncated at 80,000 characters]" : rawText;
@@ -295,10 +335,13 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
   const imageBase64: string | undefined = typeof req.body.imageBase64 === "string" && req.body.imageBase64.startsWith("data:image/") ? req.body.imageBase64 : undefined;
   const documentText = sanitize(req.body.documentText, 80_000) ?? "";
   const documentTitle = sanitize(req.body.documentTitle, 400) ?? "";
+  const documentImages: string[] = Array.isArray(req.body.documentImages)
+    ? req.body.documentImages.filter((s: unknown): s is string => typeof s === "string" && s.startsWith("data:image/")).slice(0, MAX_SCANNED_PDF_PAGES)
+    : [];
   const rawHistory: { role: string; content: string }[] = Array.isArray(req.body.history) ? req.body.history : [];
   const useClaude = req.body.model === "claude";
 
-  if (!question && !imageBase64 && !documentText) {
+  if (!question && !imageBase64 && !documentText && documentImages.length === 0) {
     res.status(400).json({ error: "Question, image, or document is required" });
     return;
   }
@@ -315,8 +358,10 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
   // Build the effective user question — inject document as context if provided
   const docPrefix = documentText
     ? `I have uploaded a document${documentTitle ? `: **${documentTitle}**` : ""}\n\n<DOCUMENT>\n${documentText}\n</DOCUMENT>\n\nMy question: `
+    : documentImages.length > 0
+    ? `I have uploaded a scanned document${documentTitle ? `: **${documentTitle}**` : ""} (${documentImages.length} page${documentImages.length !== 1 ? "s" : ""}, sent below as images — please read the page images directly).\n\nMy question: `
     : "";
-  const effectiveQuestion = documentText
+  const effectiveQuestion = documentText || documentImages.length > 0
     ? docPrefix + (question || "Please analyse and summarize this document for my MBBS exams.")
     : question;
 
@@ -334,6 +379,12 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
       const userContent: AnthropicContent[] = [];
       if (imageBase64) {
         const match = imageBase64.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+        if (match) {
+          userContent.push({ type: "image", source: { type: "base64", media_type: match[1], data: match[2] } });
+        }
+      }
+      for (const img of documentImages) {
+        const match = img.match(/^data:(image\/[a-z]+);base64,(.+)$/);
         if (match) {
           userContent.push({ type: "image", source: { type: "base64", media_type: match[1], data: match[2] } });
         }
@@ -366,9 +417,14 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
         content: h.content.slice(0, 3000),
       }));
 
-      const userContent: OAIMsg["content"] = imageBase64
+      const imageParts = [
+        ...(imageBase64 ? [imageBase64] : []),
+        ...documentImages,
+      ].map(url => ({ type: "image_url", image_url: { url, detail: "high" } }));
+
+      const userContent: OAIMsg["content"] = imageParts.length > 0
         ? [
-            { type: "image_url", image_url: { url: imageBase64, detail: "high" } },
+            ...imageParts,
             ...(effectiveQuestion ? [{ type: "text", text: effectiveQuestion }] : []),
           ]
         : effectiveQuestion;
