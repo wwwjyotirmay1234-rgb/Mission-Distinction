@@ -146,6 +146,16 @@ export default function StudentAnnouncements() {
                               className="max-h-64 w-auto rounded-lg border border-border/40"
                             />
                           </a>
+                        ) : (item as any).attachmentType === "video" ? (
+                          <video
+                            src={(item as any).attachmentUrl}
+                            controls
+                            playsInline
+                            preload="metadata"
+                            className="max-h-64 w-auto rounded-lg border border-border/40 mt-3 bg-black"
+                          >
+                            Your browser does not support video playback.
+                          </video>
                         ) : (
                           <a
                             href={(item as any).attachmentUrl}

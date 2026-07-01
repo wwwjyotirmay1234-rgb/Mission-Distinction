@@ -43,7 +43,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-const VALID_ATTACHMENT_TYPES = new Set(["image", "pdf"]);
+const VALID_ATTACHMENT_TYPES = new Set(["image", "video", "pdf"]);
 
 router.post("/", adminMiddleware, async (req: Request, res: Response) => {
   try {

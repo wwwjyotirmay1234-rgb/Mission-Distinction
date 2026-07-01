@@ -14,7 +14,7 @@ import {
   useDeleteAnnouncement,
   getListAnnouncementsQueryKey,
 } from "@workspace/api-client-react";
-import { Plus, Newspaper, MoreVertical, Trash2, Microscope, Dna, Atom, Paperclip, X, Loader2, FileIcon, Image as ImageIcon } from "lucide-react";
+import { Plus, Newspaper, MoreVertical, Trash2, Microscope, Dna, Atom, Paperclip, X, Loader2, FileIcon, Image as ImageIcon, Video as VideoIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { uploadAnnouncementFile } from "@/lib/uploadAnnouncementFile";
@@ -203,7 +203,14 @@ export default function AdminNews() {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-xs text-primary mt-2 hover:underline"
                           >
-                            <Paperclip className="w-3 h-3" /> {(item as any).attachmentName || "Attachment"}
+                            {(item as any).attachmentType === "image" ? (
+                              <ImageIcon className="w-3 h-3" />
+                            ) : (item as any).attachmentType === "video" ? (
+                              <VideoIcon className="w-3 h-3" />
+                            ) : (
+                              <Paperclip className="w-3 h-3" />
+                            )}{" "}
+                            {(item as any).attachmentName || "Attachment"}
                           </a>
                         )}
                       </div>
@@ -270,6 +277,8 @@ export default function AdminNews() {
                 <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-background/50 px-3 py-2">
                   {form.attachmentType === "image" ? (
                     <ImageIcon className="w-4 h-4 text-primary shrink-0" />
+                  ) : form.attachmentType === "video" ? (
+                    <VideoIcon className="w-4 h-4 text-primary shrink-0" />
                   ) : (
                     <FileIcon className="w-4 h-4 text-primary shrink-0" />
                   )}
@@ -287,11 +296,11 @@ export default function AdminNews() {
                   onClick={() => fileRef.current?.click()}
                 >
                   {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
-                  {uploading ? "Uploading..." : "Attach image or PDF"}
+                  {uploading ? "Uploading..." : "Attach photo, video or PDF"}
                 </Button>
               )}
-              <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileSelect} />
-              <p className="text-xs text-muted-foreground">Images or PDFs, up to 20MB</p>
+              <input ref={fileRef} type="file" accept="image/*,video/mp4,video/webm,video/quicktime,.pdf" className="hidden" onChange={handleFileSelect} />
+              <p className="text-xs text-muted-foreground">Images, videos or PDFs, up to 100MB</p>
             </div>
           </div>
           <DialogFooter>

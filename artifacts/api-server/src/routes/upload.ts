@@ -43,6 +43,7 @@ async function detectMime(buffer: Buffer): Promise<string | undefined> {
 
 const ALLOWED_IMAGE_MIMES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const ALLOWED_PDF_MIME = "application/pdf";
+const ALLOWED_VIDEO_MIMES = new Set(["video/mp4", "video/webm", "video/quicktime"]);
 const ALLOWED_NOTE_MIMES = new Set([...ALLOWED_IMAGE_MIMES, ALLOWED_PDF_MIME]);
 
 // ─── Multer configs (initial gating — magic bytes are the final check) ─────────
@@ -75,10 +76,14 @@ const communityUpload = multer({
 
 const announcementUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 },
+  limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (ALLOWED_IMAGE_MIMES.has(file.mimetype) || file.mimetype === ALLOWED_PDF_MIME) cb(null, true);
-    else cb(new Error("Only images and PDFs are allowed."));
+    if (
+      ALLOWED_IMAGE_MIMES.has(file.mimetype) ||
+      file.mimetype === ALLOWED_PDF_MIME ||
+      ALLOWED_VIDEO_MIMES.has(file.mimetype)
+    ) cb(null, true);
+    else cb(new Error("Only images, videos and PDFs are allowed."));
   },
 });
 
@@ -332,16 +337,26 @@ router.post("/announcement-file", adminMiddleware, announcementUpload.single("fi
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
     const realMime = await detectMime(req.file.buffer);
-    if (!realMime || (!ALLOWED_IMAGE_MIMES.has(realMime) && realMime !== ALLOWED_PDF_MIME)) {
-      res.status(400).json({ error: "Only images and PDFs are allowed" }); return;
+    const isImage = !!realMime && ALLOWED_IMAGE_MIMES.has(realMime);
+    const isVideo = !!realMime && ALLOWED_VIDEO_MIMES.has(realMime);
+    const isPdf = realMime === ALLOWED_PDF_MIME;
+    if (!realMime || (!isImage && !isVideo && !isPdf)) {
+      res.status(400).json({ error: "Only images, videos and PDFs are allowed" }); return;
     }
-    const isImage = ALLOWED_IMAGE_MIMES.has(realMime);
     let result;
     if (isImage) {
       result = await uploadToCloudinary(req.file.buffer, {
         folder: "mission-distinction/announcements",
         resource_type: "image",
         transformation: [{ quality: "auto", fetch_format: "auto", width: 1600, crop: "limit" }],
+      });
+    } else if (isVideo) {
+      result = await uploadToCloudinary(req.file.buffer, {
+        folder: "mission-distinction/announcements",
+        resource_type: "video",
+        public_id: `${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")}`,
+        use_filename: true,
+        unique_filename: false,
       });
     } else {
       result = await uploadToCloudinary(req.file.buffer, {
@@ -352,7 +367,8 @@ router.post("/announcement-file", adminMiddleware, announcementUpload.single("fi
         unique_filename: false,
       });
     }
-    res.json({ url: result.secure_url, fileType: isImage ? "image" : "pdf", fileName: req.file.originalname });
+    const fileType = isImage ? "image" : isVideo ? "video" : "pdf";
+    res.json({ url: result.secure_url, fileType, fileName: req.file.originalname });
   } catch (err: any) {
     console.error("Announcement file upload error:", err);
     res.status(500).json({ error: "Upload failed. Please try again." });
