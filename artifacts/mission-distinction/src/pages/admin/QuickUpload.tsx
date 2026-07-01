@@ -282,6 +282,7 @@ export default function QuickUpload() {
                             <>
                               <SelectItem value="pdfs">PDF Library</SelectItem>
                               <SelectItem value="books">Books Library</SelectItem>
+                              <SelectItem value="notes">Notes</SelectItem>
                             </>
                           ) : (
                             <SelectItem value="notes">Notes</SelectItem>
