@@ -5,7 +5,7 @@ import {
   feedbackTable, emailTokensTable, refreshTokensTable,
   communityGroupsTable, communityMessagesTable, groupMembersTable,
 } from "@workspace/db";
-import { eq, desc, sql, count } from "drizzle-orm";
+import { eq, desc, sql, count, inArray } from "drizzle-orm";
 import { superAdminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
@@ -199,30 +199,57 @@ router.delete("/users/:id", superAdminMiddleware, async (req: Request, res: Resp
 });
 
 // ─── Community: All Groups ────────────────────────────────────────────────────
+// Note: this intentionally exposes group names and member rosters only —
+// never chat content (message text/files) — to respect student privacy.
 router.get("/community", superAdminMiddleware, async (_req: Request, res: Response) => {
   try {
     const groups = await db
-      .select().from(communityGroupsTable)
+      .select({
+        id: communityGroupsTable.id,
+        name: communityGroupsTable.name,
+        subject: communityGroupsTable.subject,
+        description: communityGroupsTable.description,
+        createdBy: communityGroupsTable.createdBy,
+        isAdminCreated: communityGroupsTable.isAdminCreated,
+        createdAt: communityGroupsTable.createdAt,
+      })
+      .from(communityGroupsTable)
       .orderBy(desc(communityGroupsTable.createdAt));
 
-    const memberCounts = await db
-      .select({ groupId: groupMembersTable.groupId, cnt: count() })
-      .from(groupMembersTable).groupBy(groupMembersTable.groupId);
-    const countMap = new Map(memberCounts.map(r => [r.groupId, r.cnt]));
+    const members = await db
+      .select({
+        groupId: groupMembersTable.groupId,
+        userId: groupMembersTable.userId,
+        role: groupMembersTable.role,
+        fullName: usersTable.fullName,
+      })
+      .from(groupMembersTable)
+      .leftJoin(usersTable, eq(usersTable.id, groupMembersTable.userId));
+
+    const membersByGroup = new Map<number, Array<{ userId: number; fullName: string; role: string }>>();
+    for (const m of members) {
+      const list = membersByGroup.get(m.groupId) ?? [];
+      list.push({ userId: m.userId, fullName: m.fullName ?? "Unknown", role: m.role });
+      membersByGroup.set(m.groupId, list);
+    }
 
     const creatorIds = [...new Set(groups.map(g => g.createdBy).filter(Boolean))] as number[];
     let creatorMap = new Map<number, string>();
     if (creatorIds.length > 0) {
       const creators = await db.select({ id: usersTable.id, fullName: usersTable.fullName })
-        .from(usersTable).where(sql`${usersTable.id} = ANY(${creatorIds})`);
+        .from(usersTable).where(inArray(usersTable.id, creatorIds));
       creators.forEach(c => creatorMap.set(c.id, c.fullName));
     }
 
-    res.json(groups.map(g => ({
-      ...g,
-      memberCount: countMap.get(g.id) ?? 0,
-      creatorName: g.createdBy ? (creatorMap.get(g.createdBy) ?? "Unknown") : "System",
-    })));
+    res.json(groups.map(g => {
+      const groupMembers = membersByGroup.get(g.id) ?? [];
+      return {
+        ...g,
+        memberCount: groupMembers.length,
+        members: groupMembers,
+        creatorName: g.createdBy ? (creatorMap.get(g.createdBy) ?? "Unknown") : "System",
+      };
+    }));
   } catch {
     res.status(500).json({ error: "Internal server error" });
   }

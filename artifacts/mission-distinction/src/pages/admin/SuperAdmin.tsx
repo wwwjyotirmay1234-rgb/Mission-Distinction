@@ -46,6 +46,12 @@ interface UserRow {
   createdAt: string;
 }
 
+interface GroupMemberRow {
+  userId: number;
+  fullName: string;
+  role: string;
+}
+
 interface GroupRow {
   id: number;
   name: string;
@@ -53,8 +59,8 @@ interface GroupRow {
   description?: string | null;
   isAdminCreated: boolean;
   memberCount: number;
+  members: GroupMemberRow[];
   creatorName: string;
-  lastMessage?: string | null;
   createdAt: string;
 }
 
@@ -101,6 +107,7 @@ export default function SuperAdminPanel() {
   const [groupSearch, setGroupSearch] = useState("");
   const [deletingGroupId, setDeletingGroupId] = useState<number | null>(null);
   const [deleteGroupTarget, setDeleteGroupTarget] = useState<GroupRow | null>(null);
+  const [expandedGroupId, setExpandedGroupId] = useState<number | null>(null);
 
   // ─ Platform tab
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
@@ -384,39 +391,63 @@ export default function SuperAdminPanel() {
                 </div>
               ) : (
                 <div className="divide-y divide-border/40">
-                  {filteredGroups.map(g => (
-                    <div key={g.id} className="p-4 flex items-center gap-3 hover:bg-muted/10">
-                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <MessageSquare size={16} className="text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-medium truncate">{g.name}</p>
-                          {g.isAdminCreated && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-purple-500/30 text-purple-400">Official</Badge>
-                          )}
+                  {filteredGroups.map(g => {
+                    const isExpanded = expandedGroupId === g.id;
+                    return (
+                      <div key={g.id}>
+                        <div
+                          className="p-4 flex items-center gap-3 hover:bg-muted/10 cursor-pointer"
+                          onClick={() => setExpandedGroupId(isExpanded ? null : g.id)}
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <MessageSquare size={16} className="text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-medium truncate">{g.name}</p>
+                              {g.isAdminCreated && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-purple-500/30 text-purple-400">Official</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 mt-0.5">
+                              <span className="text-xs text-muted-foreground">{g.subject}</span>
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Users size={10} /> {g.memberCount} {isExpanded ? "▲" : "▼"}
+                              </span>
+                              <span className="text-xs text-muted-foreground">by {g.creatorName}</span>
+                              <span className="text-xs text-muted-foreground">{timeAgo(g.createdAt)}</span>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm" variant="ghost"
+                            className="h-7 w-7 p-0 text-destructive hover:text-destructive shrink-0"
+                            title="Delete Group"
+                            disabled={deletingGroupId === g.id}
+                            onClick={(e) => { e.stopPropagation(); deleteGroup(g); }}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
                         </div>
-                        <div className="flex items-center gap-3 mt-0.5">
-                          <span className="text-xs text-muted-foreground">{g.subject}</span>
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Users size={10} /> {g.memberCount}
-                          </span>
-                          <span className="text-xs text-muted-foreground">by {g.creatorName}</span>
-                          <span className="text-xs text-muted-foreground">{timeAgo(g.createdAt)}</span>
-                        </div>
-                        {g.lastMessage && <p className="text-[11px] text-muted-foreground truncate mt-0.5">{g.lastMessage}</p>}
+                        {isExpanded && (
+                          <div className="px-4 pb-4 pl-16">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Members ({g.members.length})</p>
+                            {g.members.length === 0 ? (
+                              <p className="text-xs text-muted-foreground">No members yet.</p>
+                            ) : (
+                              <div className="flex flex-wrap gap-1.5">
+                                {g.members.map(m => (
+                                  <Badge key={m.userId} variant="outline" className="text-[11px] px-2 py-0.5 font-normal gap-1">
+                                    {m.fullName}
+                                    {m.role !== "member" && <span className="text-muted-foreground">· {m.role}</span>}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <Button
-                        size="sm" variant="ghost"
-                        className="h-7 w-7 p-0 text-destructive hover:text-destructive shrink-0"
-                        title="Delete Group"
-                        disabled={deletingGroupId === g.id}
-                        onClick={() => deleteGroup(g)}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
