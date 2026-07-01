@@ -381,6 +381,7 @@ async function getMermaid() {
       startOnLoad: false,
       theme: "default",
       securityLevel: "loose",
+      suppressErrorRendering: true,
       flowchart: { htmlLabels: true, curve: "basis" },
       mindmap: { padding: 16 },
       themeVariables: {
