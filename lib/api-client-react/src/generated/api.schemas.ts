@@ -17,7 +17,6 @@ export interface StudentRegisterInput {
   password: string;
   confirmPassword: string;
   year: string;
-  sessionYear: string;
   college: string;
   agreeTerms?: boolean;
 }
@@ -58,7 +57,6 @@ export interface User {
   /** @nullable */
   mobileNumber?: string | null;
   role: UserRole;
-  isSuperAdmin?: boolean;
   /** @nullable */
   year?: string | null;
   /** @nullable */
@@ -67,8 +65,6 @@ export interface User {
   avatarUrl?: string | null;
   /** @nullable */
   studyStreak?: number | null;
-  /** @nullable */
-  bannedAt?: string | null;
   createdAt: string;
 }
 
@@ -199,7 +195,6 @@ export interface QuizInput {
   difficulty: string;
   durationMinutes?: number;
   isFeatured?: boolean;
-  isProctored?: boolean;
 }
 
 export interface Question {
@@ -309,6 +304,12 @@ export interface Announcement {
   title: string;
   content: string;
   type: AnnouncementType;
+  /** @nullable */
+  attachmentUrl?: string | null;
+  /** @nullable */
+  attachmentName?: string | null;
+  /** @nullable */
+  attachmentType?: string | null;
   createdAt: string;
 }
 
@@ -316,6 +317,9 @@ export interface AnnouncementInput {
   title: string;
   content: string;
   type: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentType?: string;
 }
 
 export interface SubjectProgress {

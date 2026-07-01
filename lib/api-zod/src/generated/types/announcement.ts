@@ -12,5 +12,11 @@ export interface Announcement {
   title: string;
   content: string;
   type: AnnouncementType;
+  /** @nullable */
+  attachmentUrl?: string | null;
+  /** @nullable */
+  attachmentName?: string | null;
+  /** @nullable */
+  attachmentType?: string | null;
   createdAt: string;
 }

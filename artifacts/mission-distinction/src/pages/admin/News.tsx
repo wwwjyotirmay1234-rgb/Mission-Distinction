@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,9 +14,10 @@ import {
   useDeleteAnnouncement,
   getListAnnouncementsQueryKey,
 } from "@workspace/api-client-react";
-import { Plus, Newspaper, MoreVertical, Trash2, Microscope, Dna, Atom } from "lucide-react";
+import { Plus, Newspaper, MoreVertical, Trash2, Microscope, Dna, Atom, Paperclip, X, Loader2, FileIcon, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { uploadAnnouncementFile } from "@/lib/uploadAnnouncementFile";
 
 const CATEGORY_ICONS = [Newspaper, Microscope, Dna, Atom];
 
@@ -31,7 +32,9 @@ function timeAgo(dateStr: string) {
 
 export default function AdminNews() {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", content: "" });
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [form, setForm] = useState({ title: "", content: "", attachmentUrl: "", attachmentName: "", attachmentType: "" });
   const queryClient = useQueryClient();
 
   const { data: allAnnouncements, isLoading } = useListAnnouncements(
@@ -44,19 +47,41 @@ export default function AdminNews() {
   const createAnnouncement = useCreateAnnouncement();
   const deleteAnnouncement = useDeleteAnnouncement();
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadAnnouncementFile(file, setUploading, (url, fileType, fileName) => {
+      setForm((f) => ({ ...f, attachmentUrl: url, attachmentType: fileType, attachmentName: fileName }));
+    });
+    e.target.value = "";
+  };
+
+  const clearAttachment = () => setForm((f) => ({ ...f, attachmentUrl: "", attachmentName: "", attachmentType: "" }));
+
   const handleAdd = () => {
     if (!form.title.trim() || !form.content.trim()) {
       toast.error("Title and content are required.");
       return;
     }
     createAnnouncement.mutate(
-      { data: { title: form.title, content: form.content, type: "news" } },
+      {
+        data: {
+          title: form.title,
+          content: form.content,
+          type: "news",
+          ...(form.attachmentUrl ? {
+            attachmentUrl: form.attachmentUrl,
+            attachmentName: form.attachmentName,
+            attachmentType: form.attachmentType,
+          } : {}),
+        },
+      },
       {
         onSuccess: () => {
           toast.success("News post published!");
           queryClient.invalidateQueries({ queryKey: getListAnnouncementsQueryKey() });
           setOpen(false);
-          setForm({ title: "", content: "" });
+          setForm({ title: "", content: "", attachmentUrl: "", attachmentName: "", attachmentType: "" });
         },
         onError: () => toast.error("Failed to publish news."),
       }
@@ -171,6 +196,16 @@ export default function AdminNews() {
                           </Badge>
                           <span className="text-xs text-muted-foreground/60">{timeAgo(item.createdAt)}</span>
                         </div>
+                        {(item as any).attachmentUrl && (
+                          <a
+                            href={(item as any).attachmentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-primary mt-2 hover:underline"
+                          >
+                            <Paperclip className="w-3 h-3" /> {(item as any).attachmentName || "Attachment"}
+                          </a>
+                        )}
                       </div>
                     </div>
                     <DropdownMenu>
@@ -226,6 +261,37 @@ export default function AdminNews() {
                 value={form.content}
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Paperclip className="w-3.5 h-3.5" /> Attachment (optional)
+              </Label>
+              {form.attachmentUrl ? (
+                <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-background/50 px-3 py-2">
+                  {form.attachmentType === "image" ? (
+                    <ImageIcon className="w-4 h-4 text-primary shrink-0" />
+                  ) : (
+                    <FileIcon className="w-4 h-4 text-primary shrink-0" />
+                  )}
+                  <span className="text-sm truncate flex-1">{form.attachmentName || "Attached file"}</span>
+                  <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={clearAttachment}>
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-2"
+                  disabled={uploading}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                  {uploading ? "Uploading..." : "Attach image or PDF"}
+                </Button>
+              )}
+              <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileSelect} />
+              <p className="text-xs text-muted-foreground">Images or PDFs, up to 20MB</p>
             </div>
           </div>
           <DialogFooter>

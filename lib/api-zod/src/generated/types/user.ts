@@ -17,8 +17,6 @@ export interface User {
   /** @nullable */
   year?: string | null;
   /** @nullable */
-  sessionYear?: string | null;
-  /** @nullable */
   college?: string | null;
   /** @nullable */
   avatarUrl?: string | null;

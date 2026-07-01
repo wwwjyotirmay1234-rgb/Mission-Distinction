@@ -43,9 +43,11 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+const VALID_ATTACHMENT_TYPES = new Set(["image", "pdf"]);
+
 router.post("/", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const { title, content, type } = req.body;
+    const { title, content, type, attachmentUrl, attachmentName, attachmentType } = req.body;
     if (!title || !content || !type) { res.status(400).json({ error: "Missing fields" }); return; }
     if (!VALID_TYPES.has(type)) {
       res.status(400).json({ error: `type must be one of: ${[...VALID_TYPES].join(", ")}` }); return;
@@ -56,7 +58,30 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
     if (!safeContent) { res.status(400).json({ error: "Invalid content" }); return; }
     if (safeTitle.length > 300) { res.status(400).json({ error: "Title must be under 300 characters" }); return; }
     if (safeContent.length > 10000) { res.status(400).json({ error: "Content must be under 10000 characters" }); return; }
-    const [announcement] = await db.insert(announcementsTable).values({ title: safeTitle, content: safeContent, type }).returning();
+
+    let safeAttachmentUrl: string | null = null;
+    let safeAttachmentName: string | null = null;
+    let safeAttachmentType: string | null = null;
+    if (attachmentUrl) {
+      if (typeof attachmentUrl !== "string" || !/^https?:\/\//.test(attachmentUrl)) {
+        res.status(400).json({ error: "Invalid attachment URL" }); return;
+      }
+      if (!attachmentType || !VALID_ATTACHMENT_TYPES.has(String(attachmentType))) {
+        res.status(400).json({ error: "Invalid attachment type" }); return;
+      }
+      safeAttachmentUrl = attachmentUrl;
+      safeAttachmentType = String(attachmentType);
+      safeAttachmentName = attachmentName ? stripHtml(String(attachmentName)).slice(0, 200) : null;
+    }
+
+    const [announcement] = await db.insert(announcementsTable).values({
+      title: safeTitle,
+      content: safeContent,
+      type,
+      attachmentUrl: safeAttachmentUrl,
+      attachmentName: safeAttachmentName,
+      attachmentType: safeAttachmentType,
+    }).returning();
     invalidateCache(CACHE_PREFIX);
     sendPushToAll(`📢 ${safeTitle}`, safeContent.substring(0, 120), "/student/announcements").catch(() => {});
     res.status(201).json(announcement);

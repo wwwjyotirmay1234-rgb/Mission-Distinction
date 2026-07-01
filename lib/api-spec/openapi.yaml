@@ -1374,6 +1374,12 @@ components:
         type:
           type: string
           enum: [announcement, news, event]
+        attachmentUrl:
+          type: ["string", "null"]
+        attachmentName:
+          type: ["string", "null"]
+        attachmentType:
+          type: ["string", "null"]
         createdAt:
           type: string
 
@@ -1386,6 +1392,12 @@ components:
         content:
           type: string
         type:
+          type: string
+        attachmentUrl:
+          type: string
+        attachmentName:
+          type: string
+        attachmentType:
           type: string
 
     # ─── Progress ─────────────────────────────────────────────────────────────

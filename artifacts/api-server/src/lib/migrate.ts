@@ -369,6 +369,11 @@ export async function runStartupMigrations() {
         reviewed_at TIMESTAMP,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
+
+      ALTER TABLE announcements
+        ADD COLUMN IF NOT EXISTS attachment_url TEXT,
+        ADD COLUMN IF NOT EXISTS attachment_name TEXT,
+        ADD COLUMN IF NOT EXISTS attachment_type TEXT;
     `);
   } finally {
     client.release();

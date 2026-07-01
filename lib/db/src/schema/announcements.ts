@@ -7,6 +7,9 @@ export const announcementsTable = pgTable("announcements", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   type: text("type").notNull().default("announcement"),
+  attachmentUrl: text("attachment_url"),
+  attachmentName: text("attachment_name"),
+  attachmentType: text("attachment_type"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

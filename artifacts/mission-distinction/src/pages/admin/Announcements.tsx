@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,24 +9,30 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useListAnnouncements, useCreateAnnouncement, useDeleteAnnouncement, getListAnnouncementsQueryKey } from "@workspace/api-client-react";
-import { Plus, MoreVertical, Trash2, Bell, Megaphone, Users, Clock, Eye } from "lucide-react";
+import { Plus, MoreVertical, Trash2, Bell, Megaphone, Users, Clock, Eye, Paperclip, X, Loader2, FileIcon, Image as ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
+import { uploadAnnouncementFile } from "@/lib/uploadAnnouncementFile";
 
 const SUBJECTS = ["All Students", "Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "Microbiology"];
 
 export default function AdminAnnouncements() {
   const [open, setOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: "",
     content: "",
     type: "announcement",
     targetAudience: "all",
     scheduledFor: "",
+    attachmentUrl: "",
+    attachmentName: "",
+    attachmentType: "",
   });
   const queryClient = useQueryClient();
 
@@ -48,18 +54,34 @@ export default function AdminAnnouncements() {
         title: form.title,
         content: form.content,
         type: form.type,
+        ...(form.attachmentUrl ? {
+          attachmentUrl: form.attachmentUrl,
+          attachmentName: form.attachmentName,
+          attachmentType: form.attachmentType,
+        } : {}),
       }
     }, {
       onSuccess: () => {
         toast.success("Announcement published!");
         queryClient.invalidateQueries({ queryKey: getListAnnouncementsQueryKey() });
         setOpen(false);
-        setForm({ title: "", content: "", type: "announcement", targetAudience: "all", scheduledFor: "" });
+        setForm({ title: "", content: "", type: "announcement", targetAudience: "all", scheduledFor: "", attachmentUrl: "", attachmentName: "", attachmentType: "" });
         setPreviewMode(false);
       },
       onError: () => toast.error("Failed to publish announcement."),
     });
   };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadAnnouncementFile(file, setUploading, (url, fileType, fileName) => {
+      setForm((f) => ({ ...f, attachmentUrl: url, attachmentType: fileType, attachmentName: fileName }));
+    });
+    e.target.value = "";
+  };
+
+  const clearAttachment = () => setForm((f) => ({ ...f, attachmentUrl: "", attachmentName: "", attachmentType: "" }));
 
   const handleDelete = (id: number) => {
     deleteAnnouncement.mutate({ id }, {
@@ -140,6 +162,11 @@ export default function AdminAnnouncements() {
                           <div>
                             <div className="font-medium text-foreground">{a.title}</div>
                             <div className="text-xs text-muted-foreground mt-1 line-clamp-2 max-w-lg">{a.content}</div>
+                            {(a as any).attachmentUrl && (
+                              <a href={(a as any).attachmentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary mt-1.5 hover:underline">
+                                <Paperclip className="w-3 h-3" /> {(a as any).attachmentName || "Attachment"}
+                              </a>
+                            )}
                           </div>
                         </div>
                       </TableCell>
@@ -259,6 +286,25 @@ export default function AdminAnnouncements() {
                 <Label className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Schedule (optional)</Label>
                 <Input type="datetime-local" className="bg-background/50" value={form.scheduledFor} onChange={(e) => setForm({ ...form, scheduledFor: e.target.value })} />
                 <p className="text-xs text-muted-foreground">Leave empty to publish immediately</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5"><Paperclip className="w-3.5 h-3.5" /> Attachment (optional)</Label>
+                {form.attachmentUrl ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-background/50 px-3 py-2">
+                    {form.attachmentType === "image" ? <ImageIcon className="w-4 h-4 text-primary shrink-0" /> : <FileIcon className="w-4 h-4 text-primary shrink-0" />}
+                    <span className="text-sm truncate flex-1">{form.attachmentName || "Attached file"}</span>
+                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={clearAttachment}>
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button type="button" variant="outline" className="w-full gap-2" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                    {uploading ? "Uploading..." : "Attach image or PDF"}
+                  </Button>
+                )}
+                <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileSelect} />
+                <p className="text-xs text-muted-foreground">Images or PDFs, up to 20MB</p>
               </div>
             </div>
           )}

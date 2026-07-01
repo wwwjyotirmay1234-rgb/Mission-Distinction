@@ -10,4 +10,7 @@ export interface AnnouncementInput {
   title: string;
   content: string;
   type: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentType?: string;
 }

@@ -522,12 +522,8 @@ export const ListCommunityPostsResponseItem = zod.object({
   "content": zod.string(),
   "author": zod.string(),
   "authorAvatarUrl": zod.string().nullish(),
-  "authorId": zod.number().nullish(),
-  "groupName": zod.string().nullish(),
-  "mediaUrl": zod.string().nullish(),
-  "mediaType": zod.string().nullish(),
+  "groupName": zod.string(),
   "likeCount": zod.number(),
-  "likedByMe": zod.boolean().optional(),
   "replyCount": zod.number().nullish(),
   "createdAt": zod.string()
 })
@@ -540,9 +536,7 @@ export const ListCommunityPostsResponse = zod.array(ListCommunityPostsResponseIt
 export const CreateCommunityPostBody = zod.object({
   "title": zod.string(),
   "content": zod.string(),
-  "groupName": zod.string().nullish(),
-  "mediaUrl": zod.string().nullish(),
-  "mediaType": zod.string().nullish()
+  "groupName": zod.string()
 })
 
 
@@ -573,6 +567,9 @@ export const ListAnnouncementsResponseItem = zod.object({
   "title": zod.string(),
   "content": zod.string(),
   "type": zod.enum(['announcement', 'news', 'event']),
+  "attachmentUrl": zod.string().nullish(),
+  "attachmentName": zod.string().nullish(),
+  "attachmentType": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListAnnouncementsResponse = zod.array(ListAnnouncementsResponseItem)
@@ -584,7 +581,10 @@ export const ListAnnouncementsResponse = zod.array(ListAnnouncementsResponseItem
 export const CreateAnnouncementBody = zod.object({
   "title": zod.string(),
   "content": zod.string(),
-  "type": zod.string()
+  "type": zod.string(),
+  "attachmentUrl": zod.string().optional(),
+  "attachmentName": zod.string().optional(),
+  "attachmentType": zod.string().optional()
 })
 
 

@@ -73,6 +73,15 @@ const communityUpload = multer({
   },
 });
 
+const announcementUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_IMAGE_MIMES.has(file.mimetype) || file.mimetype === ALLOWED_PDF_MIME) cb(null, true);
+    else cb(new Error("Only images and PDFs are allowed."));
+  },
+});
+
 function uploadToCloudinary(buffer: Buffer, options: Record<string, any>): Promise<any> {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(options, (err, result) => {
@@ -314,6 +323,38 @@ router.post("/community-file", authMiddleware, communityUpload.single("file"), a
     res.json({ url: result.secure_url, fileType: isImage ? "image" : "pdf", fileName: req.file.originalname });
   } catch (err: any) {
     console.error("Community file upload error:", err);
+    res.status(500).json({ error: "Upload failed. Please try again." });
+  }
+});
+
+// ─── Announcement / News attachment (admin-only) ──────────────────────────────
+router.post("/announcement-file", adminMiddleware, announcementUpload.single("file"), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
+    const realMime = await detectMime(req.file.buffer);
+    if (!realMime || (!ALLOWED_IMAGE_MIMES.has(realMime) && realMime !== ALLOWED_PDF_MIME)) {
+      res.status(400).json({ error: "Only images and PDFs are allowed" }); return;
+    }
+    const isImage = ALLOWED_IMAGE_MIMES.has(realMime);
+    let result;
+    if (isImage) {
+      result = await uploadToCloudinary(req.file.buffer, {
+        folder: "mission-distinction/announcements",
+        resource_type: "image",
+        transformation: [{ quality: "auto", fetch_format: "auto", width: 1600, crop: "limit" }],
+      });
+    } else {
+      result = await uploadToCloudinary(req.file.buffer, {
+        folder: "mission-distinction/announcements",
+        resource_type: "raw",
+        public_id: `${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")}`,
+        use_filename: true,
+        unique_filename: false,
+      });
+    }
+    res.json({ url: result.secure_url, fileType: isImage ? "image" : "pdf", fileName: req.file.originalname });
+  } catch (err: any) {
+    console.error("Announcement file upload error:", err);
     res.status(500).json({ error: "Upload failed. Please try again." });
   }
 });

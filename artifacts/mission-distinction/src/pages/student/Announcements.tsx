@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useListAnnouncements, getListAnnouncementsQueryKey } from "@workspace/api-client-react";
-import { Bell, Megaphone, Newspaper, CalendarDays } from "lucide-react";
+import { Bell, Megaphone, Newspaper, CalendarDays, Paperclip, Image as ImageIcon, FileIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type FilterType = "all" | "announcement" | "news" | "event";
@@ -137,6 +137,26 @@ export default function StudentAnnouncements() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{item.content}</p>
+                      {(item as any).attachmentUrl && (
+                        (item as any).attachmentType === "image" ? (
+                          <a href={(item as any).attachmentUrl} target="_blank" rel="noopener noreferrer" className="block mt-3">
+                            <img
+                              src={(item as any).attachmentUrl}
+                              alt={(item as any).attachmentName || "Attachment"}
+                              className="max-h-64 w-auto rounded-lg border border-border/40"
+                            />
+                          </a>
+                        ) : (
+                          <a
+                            href={(item as any).attachmentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 mt-3 text-sm text-primary hover:underline"
+                          >
+                            <FileIcon className="w-4 h-4" /> {(item as any).attachmentName || "View attachment"}
+                          </a>
+                        )
+                      )}
                       <p className="text-xs text-muted-foreground/60 mt-3">{timeAgo(item.createdAt)}</p>
                     </div>
                   </div>
