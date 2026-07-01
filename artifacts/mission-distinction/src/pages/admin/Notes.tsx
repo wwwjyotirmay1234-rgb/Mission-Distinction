@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useListNotes, useDeleteNote, getListNotesQueryKey, customFetch } from "@workspace/api-client-react";
-import { Search, Plus, MoreVertical, Trash2, FileText, Pencil, Upload, Image, FileIcon, Link, X, Loader2 } from "lucide-react";
+import { Search, Plus, MoreVertical, Trash2, FileText, Pencil, Upload, Image, FileIcon, Link, X, Loader2, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -336,6 +336,9 @@ export default function AdminNotes() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input placeholder="Search notes..." className="pl-9 bg-card/50 border-border/50" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
+          <Button variant="outline" asChild>
+            <a href="/admin/content/quick-upload"><Zap className="mr-2 h-4 w-4" /> Quick Upload</a>
+          </Button>
           <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" /> Add Note</Button>
         </div>
       </div>

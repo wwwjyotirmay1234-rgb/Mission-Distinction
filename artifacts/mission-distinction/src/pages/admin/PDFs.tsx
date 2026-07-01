@@ -269,6 +269,9 @@ export default function AdminPDFs() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input placeholder="Search PDFs..." className="pl-9 bg-card/50 border-border/50" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
+          <Button variant="outline" asChild>
+            <a href="/admin/content/quick-upload"><Upload className="mr-2 h-4 w-4" /> Quick Upload</a>
+          </Button>
           <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" /> Add PDF</Button>
         </div>
       </div>

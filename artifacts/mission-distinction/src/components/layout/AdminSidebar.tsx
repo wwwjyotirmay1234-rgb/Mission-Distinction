@@ -37,6 +37,7 @@ const navItems = [
     label: "Content",
     href: "/admin/content",
     subItems: [
+      { label: "Quick Upload", href: "/admin/content/quick-upload" },
       { label: "Notes", href: "/admin/content/notes" },
       { label: "PDF Library", href: "/admin/content/pdfs" },
       { label: "Books Library", href: "/admin/content/books" },

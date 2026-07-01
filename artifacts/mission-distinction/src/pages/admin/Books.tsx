@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useListBooks, useCreateBook, useDeleteBook, getListBooksQueryKey, customFetch } from "@workspace/api-client-react";
-import { Search, Plus, MoreVertical, Trash2, BookOpen, Pencil, ImagePlus, X, Upload, CheckCircle2 } from "lucide-react";
+import { Search, Plus, MoreVertical, Trash2, BookOpen, Pencil, ImagePlus, X, Upload, CheckCircle2, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -213,6 +213,9 @@ export default function AdminBooks() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input placeholder="Search books..." className="pl-9 bg-card/50 border-border/50" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
+          <Button variant="outline" asChild>
+            <a href="/admin/content/quick-upload"><Zap className="mr-2 h-4 w-4" /> Quick Upload</a>
+          </Button>
           <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" /> Add Book</Button>
         </div>
       </div>

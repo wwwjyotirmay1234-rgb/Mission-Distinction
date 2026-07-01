@@ -95,6 +95,7 @@ const AdminUsers         = lazy(() => import("@/pages/admin/Users"));
 const AdminNotes         = lazy(() => import("@/pages/admin/Notes"));
 const AdminPDFs          = lazy(() => import("@/pages/admin/PDFs"));
 const AdminBooks         = lazy(() => import("@/pages/admin/Books"));
+const AdminQuickUpload   = lazy(() => import("@/pages/admin/QuickUpload"));
 const AdminPYQs          = lazy(() => import("@/pages/admin/PYQs"));
 const AdminQuizzes       = lazy(() => import("@/pages/admin/Quizzes"));
 const AdminAnnouncements = lazy(() => import("@/pages/admin/Announcements"));
@@ -221,6 +222,7 @@ function Router() {
                 <Route path="/admin/content/notes"          component={AdminNotes} />
                 <Route path="/admin/content/pdfs"           component={AdminPDFs} />
                 <Route path="/admin/content/books"          component={AdminBooks} />
+                <Route path="/admin/content/quick-upload"   component={AdminQuickUpload} />
                 <Route path="/admin/content/pyqs"           component={AdminPYQs} />
                 <Route path="/admin/quizzes/:id/edit"       component={AdminQuizEditor} />
                 <Route path="/admin/quizzes"                component={AdminQuizzes} />
