@@ -10,7 +10,7 @@ const router = Router();
 
 const analyzeFrameLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
+  max: 20,
   message: { error: "Too many frame analysis requests. Slow down." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -71,7 +71,7 @@ Be lenient — only flag clear, unmistakable violations. Poor lighting or angle 
           },
           {
             type: "image_url",
-            image_url: { url: `data:image/jpeg;base64,${imageBase64}`, detail: "low" },
+            image_url: { url: `data:image/jpeg;base64,${imageBase64}`, detail: "high" },
           },
         ],
       }],

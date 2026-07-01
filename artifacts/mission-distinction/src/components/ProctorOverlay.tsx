@@ -12,7 +12,7 @@ interface Props {
 
 const MAX_TAB_VIOLATIONS = 3;
 const MAX_TOTAL_VIOLATIONS = 5;
-const FRAME_INTERVAL_MS = 30_000;
+const FRAME_INTERVAL_MS = 8_000;
 
 const MINOR_EVENTS = new Set(["session_started", "camera_error", "right_click"]);
 
@@ -112,15 +112,17 @@ export default function ProctorOverlay({ sessionId, quizId, onAutoSubmit, childr
   }, []);
 
   useEffect(() => {
-    analyzeIntervalRef.current = setInterval(async () => {
-      if (!videoRef.current || !streamRef.current || autoSubmittedRef.current || !cameraOk) return;
+    let cancelled = false;
+
+    const captureAndAnalyze = async () => {
+      if (cancelled || !videoRef.current || !streamRef.current || autoSubmittedRef.current || !cameraOk) return;
       try {
         const canvas = document.createElement("canvas");
         canvas.width = 320; canvas.height = 240;
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
         ctx.drawImage(videoRef.current, 0, 0, 320, 240);
-        const imageBase64 = canvas.toDataURL("image/jpeg", 0.7).split(",")[1];
+        const imageBase64 = canvas.toDataURL("image/jpeg", 0.8).split(",")[1];
         const res = await apiFetch("/api/proctoring/analyze-frame", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -139,9 +141,16 @@ export default function ProctorOverlay({ sessionId, quizId, onAutoSubmit, childr
           handleViolation("ai_flag", msg, { issues }, analysis);
         }
       } catch { }
-    }, FRAME_INTERVAL_MS);
+    };
+
+    // Run an immediate check as soon as the camera is ready, instead of
+    // waiting a full interval — otherwise the first FRAME_INTERVAL_MS
+    // window is completely unmonitored.
+    if (cameraOk) captureAndAnalyze();
+    analyzeIntervalRef.current = setInterval(captureAndAnalyze, FRAME_INTERVAL_MS);
 
     return () => {
+      cancelled = true;
       if (analyzeIntervalRef.current) clearInterval(analyzeIntervalRef.current);
     };
   }, [sessionId, quizId, cameraOk, handleViolation]);
