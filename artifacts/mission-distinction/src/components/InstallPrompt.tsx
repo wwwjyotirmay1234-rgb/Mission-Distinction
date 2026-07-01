@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { X, Download, Smartphone, Share, Plus, CheckCircle } from "lucide-react";
+import { X, Download, Smartphone, Share, Plus, CheckCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/apiFetch";
+import { isIOSDevice, isStandaloneDisplay, isInAppBrowser } from "@/lib/browserEnv";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -12,16 +13,7 @@ const FIRST_VISIT_KEY = "md-has-visited";
 const DISMISSED_KEY = "md-install-dismissed";
 
 function isStandalone() {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as any).standalone === true
-  );
-}
-
-function isIOSDevice() {
-  const ua = navigator.userAgent;
-  const isTouchMac = /mac/i.test(ua) && navigator.maxTouchPoints > 1;
-  return (/ipad|iphone|ipod/i.test(ua) || isTouchMac) && !(window as any).MSStream;
+  return isStandaloneDisplay();
 }
 
 function isDismissed() {
@@ -36,6 +28,7 @@ export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [hidden, setHidden] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isInApp, setIsInApp] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -46,6 +39,10 @@ export function InstallPrompt() {
 
     const ios = isIOSDevice();
     setIsIOS(ios);
+    // In-app browsers (WhatsApp/Instagram/Facebook webviews) can never install a
+    // PWA — no beforeinstallprompt, no Safari/Chrome share sheet. Students share
+    // study links in WhatsApp groups constantly, so this is a common real path.
+    setIsInApp(isInAppBrowser());
 
     const isFirstVisit = !localStorage.getItem(FIRST_VISIT_KEY);
     if (isFirstVisit) {
@@ -96,7 +93,7 @@ export function InstallPrompt() {
   };
 
   const handleBannerInstall = async () => {
-    if (isIOS) {
+    if (isIOS || isInApp) {
       setShowModal(true);
     } else {
       await triggerInstall();
@@ -136,8 +133,24 @@ export function InstallPrompt() {
               ))}
             </div>
 
+            {/* In-app browser instructions (WhatsApp/Instagram/Facebook webview) */}
+            {isInApp && (
+              <div className="mx-6 mb-4 p-3 bg-primary/10 rounded-xl text-xs text-foreground/80 space-y-1.5">
+                <p className="font-semibold text-foreground">You're inside an app's built-in browser:</p>
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>Tap the <strong>⋯</strong> or <strong>share</strong> icon in the top corner</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Plus className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>Choose <strong>"Open in Chrome"</strong> or <strong>"Open in Safari"</strong></span>
+                </div>
+                <p className="text-muted-foreground text-[11px] pt-0.5">⚠️ Installing isn't possible from WhatsApp/Instagram's built-in browser — you must open the link in your regular browser first</p>
+              </div>
+            )}
+
             {/* iOS instructions inline */}
-            {isIOS && (
+            {isIOS && !isInApp && (
               <div className="mx-6 mb-4 p-3 bg-primary/10 rounded-xl text-xs text-foreground/80 space-y-1.5">
                 <p className="font-semibold text-foreground">How to install on iPhone / iPad:</p>
                 <div className="flex items-center gap-2">
@@ -154,7 +167,7 @@ export function InstallPrompt() {
 
             {/* Actions */}
             <div className="flex flex-col gap-2 px-6 pb-6">
-              {!isIOS && (
+              {!isIOS && !isInApp && (
                 <Button
                   className="w-full gap-2 h-11 text-sm font-semibold"
                   onClick={triggerInstall}
@@ -164,7 +177,12 @@ export function InstallPrompt() {
                   {deferredPrompt ? "Install Now" : "Continue in Browser"}
                 </Button>
               )}
-              {isIOS && (
+              {isInApp && (
+                <Button className="w-full gap-2 h-11 text-sm font-semibold" onClick={dismiss}>
+                  <CheckCircle className="w-4 h-4" /> Got It
+                </Button>
+              )}
+              {isIOS && !isInApp && (
                 <Button className="w-full gap-2 h-11 text-sm font-semibold" onClick={dismiss}>
                   <CheckCircle className="w-4 h-4" /> Done, I've Added It
                 </Button>
@@ -187,7 +205,11 @@ export function InstallPrompt() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold leading-tight">Install Mission Distinction</p>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                {isIOS ? "Tap Share → Add to Home Screen in Safari" : "Add to home screen for offline access"}
+                {isInApp
+                  ? "Open in Chrome or Safari to install"
+                  : isIOS
+                  ? "Tap Share → Add to Home Screen in Safari"
+                  : "Add to home screen for offline access"}
               </p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -195,10 +217,10 @@ export function InstallPrompt() {
                 size="sm"
                 className="h-8 text-xs px-3 gap-1.5 font-semibold"
                 onClick={handleBannerInstall}
-                disabled={!isIOS && !deferredPrompt}
+                disabled={!isIOS && !isInApp && !deferredPrompt}
               >
                 <Download className="w-3 h-3" />
-                {isIOS ? "How?" : "Install"}
+                {isIOS || isInApp ? "How?" : "Install"}
               </Button>
               <button
                 onClick={dismiss}

@@ -15,3 +15,4 @@
 - [SW API cache strategy](sw-api-cache.md) — use network-first (not stale-while-revalidate) for API routes; stale-while-revalidate causes blank pages when empty [] is cached pre-profile-setup
 - [AuthContext localStorage-only hydration](auth-localstorage-hydration.md) — no /api/auth/me fetch on mount; must set BOTH mission_token and mission_user to fake a logged-in session for testing
 - [lib/db dist must be rebuilt](lib-db-dist-rebuild.md) — schema/index.ts exports source, but project-referenced packages (api-server) resolve against lib/db/dist; new schema files need `tsc -b` in lib/db or consumers get false "no exported member" errors
+- [In-app browser PWA install detection](in-app-browser-install.md) — WhatsApp/Instagram webviews can't fire beforeinstallprompt; must detect and show "open in Chrome/Safari" instead of a dead Install button

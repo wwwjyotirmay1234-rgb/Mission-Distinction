@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
+import { isIOSDevice, isStandaloneDisplay, isInAppBrowser } from "@/lib/browserEnv";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
@@ -21,17 +22,9 @@ function detectBlockReason(): NotifBlockReason {
     return "unsupported";
   }
 
-  const isIOS = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isInAppBrowser()) return "in-app-browser";
 
-  // In-app browser detection (Instagram, Facebook, WhatsApp, Line, Snapchat, etc.)
-  const isInApp =
-    /FBAN|FBAV|Instagram|LinkedInApp|Snapchat|Line\/|MicroMessenger|GSA\//.test(ua) ||
-    // Android WebView: has "wv" flag or no standalone chrome
-    (/android/i.test(ua) && /wv/.test(ua)) ||
-    // iOS in-app: no safari in ua but has AppleWebKit and a known container
-    (isIOS && !/safari/i.test(ua) && /\bAppleWebKit\b/i.test(ua) && /\bMobile\b/i.test(ua) && !/crios|fxios/i.test(ua));
-
-  if (isInApp) return "in-app-browser";
+  const isIOS = isIOSDevice();
 
   // iOS browsers that aren't Safari also can't do push (Chrome/Firefox on iOS = WebKit)
   // CriOS = Chrome iOS, FxiOS = Firefox iOS — these use WebKit and don't support push
@@ -40,12 +33,8 @@ function detectBlockReason(): NotifBlockReason {
   }
 
   // iOS Safari — only works if installed as PWA (standalone)
-  if (isIOS) {
-    const isStandalone =
-      (window.navigator as any).standalone === true ||
-      window.matchMedia("(display-mode: standalone)").matches ||
-      window.matchMedia("(display-mode: fullscreen)").matches;
-    if (!isStandalone) return "ios-not-installed";
+  if (isIOS && !isStandaloneDisplay()) {
+    return "ios-not-installed";
   }
 
   // Permission denied at OS/browser level
