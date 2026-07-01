@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Download, Smartphone, Share, Plus, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { apiFetch } from "@/lib/apiFetch";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -65,7 +66,19 @@ export function InstallPrompt() {
       }
     });
 
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    const handleInstalled = () => {
+      apiFetch("/api/device-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "install" }),
+      }).catch(() => {});
+    };
+    window.addEventListener("appinstalled", handleInstalled);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", handleInstalled);
+    };
   }, []);
 
   const dismiss = () => {

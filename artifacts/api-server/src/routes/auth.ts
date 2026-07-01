@@ -5,6 +5,7 @@ import { usersTable, emailTokensTable, refreshTokensTable, bookmarksTable, activ
 import { eq, and, or } from "drizzle-orm";
 import { hashPassword, verifyPassword, generateToken } from "../lib/auth";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
+import { logDeviceEvent } from "../lib/deviceEvents";
 import {
   generateEmailToken,
   getAppUrl,
@@ -158,6 +159,7 @@ router.post("/student/register", registerLimiter, async (req: Request, res: Resp
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     setRefreshCookie(res, refreshValue);
+    logDeviceEvent(user.id, "login", req.headers["user-agent"] as string | undefined).catch(() => {});
     res.status(201).json({
       token: jwtToken,
       refreshToken: refreshValue,
@@ -197,6 +199,7 @@ router.post("/student/login", loginLimiter, perCredentialLimiter, async (req: Re
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     setRefreshCookie(res, refreshValue);
+    logDeviceEvent(user.id, "login", req.headers["user-agent"] as string | undefined).catch(() => {});
     res.json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
@@ -239,6 +242,7 @@ router.post("/admin/register", registerLimiter, async (req: Request, res: Respon
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     setRefreshCookie(res, refreshValue);
+    logDeviceEvent(user.id, "login", req.headers["user-agent"] as string | undefined).catch(() => {});
     res.status(201).json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
@@ -267,6 +271,7 @@ router.post("/admin/login", loginLimiter, perCredentialLimiter, async (req: Requ
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     setRefreshCookie(res, refreshValue);
+    logDeviceEvent(user.id, "login", req.headers["user-agent"] as string | undefined).catch(() => {});
     res.json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
@@ -311,6 +316,7 @@ router.post("/google", googleAuthLimiter, async (req: Request, res: Response) =>
     const refreshValue = randomUUID();
     await db.insert(refreshTokensTable).values({ userId: user.id, token: refreshValue, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     setRefreshCookie(res, refreshValue);
+    logDeviceEvent(user.id, "login", req.headers["user-agent"] as string | undefined).catch(() => {});
     res.json({ token, refreshToken: refreshValue, user: sanitizeUser(user) });
   } catch (err: any) {
     console.error("Google auth error:", err);

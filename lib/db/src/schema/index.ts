@@ -25,3 +25,4 @@ export * from "./contentReports";
 export * from "./pinnedNotices";
 export * from "./xp";
 export * from "./pyqs";
+export * from "./deviceEvents";

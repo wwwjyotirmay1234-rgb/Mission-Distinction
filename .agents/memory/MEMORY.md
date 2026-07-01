@@ -13,3 +13,5 @@
 - [LandingPage hooks order](landing-hooks-order.md) — ALL hooks must come before any conditional return; putting mutations/useForm/useEffect after early return causes crash on re-render
 - [WebRTC TURN servers for India](webrtc-turn-india.md) — STUN alone fails on Indian carrier NAT (Jio/Airtel/BSNL); use Open Relay Project free TURN servers
 - [SW API cache strategy](sw-api-cache.md) — use network-first (not stale-while-revalidate) for API routes; stale-while-revalidate causes blank pages when empty [] is cached pre-profile-setup
+- [AuthContext localStorage-only hydration](auth-localstorage-hydration.md) — no /api/auth/me fetch on mount; must set BOTH mission_token and mission_user to fake a logged-in session for testing
+- [lib/db dist must be rebuilt](lib-db-dist-rebuild.md) — schema/index.ts exports source, but project-referenced packages (api-server) resolve against lib/db/dist; new schema files need `tsc -b` in lib/db or consumers get false "no exported member" errors

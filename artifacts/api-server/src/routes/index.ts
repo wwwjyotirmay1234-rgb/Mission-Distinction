@@ -42,6 +42,7 @@ import { anatomyAIRouter } from "./anatomyAI";
 import pyqsRouter from "./pyqs";
 import { meddyRouter } from "./meddy";
 import { submissionsRouter } from "./submissions";
+import { deviceAnalyticsRouter } from "./deviceAnalytics";
 
 const router: IRouter = Router();
 
@@ -94,5 +95,6 @@ router.use("/pyqs", pyqsRouter);
 router.use("/meddy", meddyRouter);
 router.use("/submissions", submissionsRouter);
 router.use("/admin/submissions", submissionsRouter);
+router.use(deviceAnalyticsRouter);
 
 export default router;

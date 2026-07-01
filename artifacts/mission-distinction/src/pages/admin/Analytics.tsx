@@ -8,13 +8,68 @@ import {
   PieChart, Pie, Cell, LineChart, Line, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from "recharts";
 import {
-  Users, FileText, BookOpen, Brain, TrendingUp, Award, Activity, BarChart2
+  Users, FileText, BookOpen, Brain, TrendingUp, Award, Activity, BarChart2, Smartphone, Tablet, Monitor, Apple, type LucideIcon
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/apiFetch";
 import { format, subDays, eachDayOfInterval } from "date-fns";
 
 const COLORS = ["#6366f1", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
+
+type DeviceBreakdownData = {
+  logins: Record<string, number>;
+  installs: Record<string, number>;
+};
+
+const DEVICE_META: { key: string; label: string; icon: LucideIcon; color: string }[] = [
+  { key: "android_phone", label: "Android (Phone)", icon: Smartphone, color: "text-green-400" },
+  { key: "android_tablet", label: "Android (Tablet)", icon: Tablet, color: "text-emerald-400" },
+  { key: "ios", label: "iOS", icon: Apple, color: "text-sky-400" },
+  { key: "desktop", label: "Desktop", icon: Monitor, color: "text-purple-400" },
+  { key: "other", label: "Other", icon: BarChart2, color: "text-muted-foreground" },
+];
+
+function DeviceBreakdown() {
+  const { data, isLoading } = useQuery<DeviceBreakdownData>({
+    queryKey: ["admin-device-analytics"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/admin/analytics/devices");
+      if (!res.ok) throw new Error("Failed to load device analytics");
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  return (
+    <Card className="bg-card/40 border-border/40">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <Smartphone className="h-4 w-4 text-primary" /> Logins & Installs by Device
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {DEVICE_META.map((d) => <Skeleton key={d.key} className="h-20 rounded-xl" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {DEVICE_META.map(({ key, label, icon: Icon, color }) => (
+              <div key={key} className="flex flex-col gap-1 p-3 rounded-xl border border-border/40 bg-muted/10">
+                <div className="flex items-center gap-2">
+                  <Icon className={`w-4 h-4 ${color}`} />
+                  <span className="text-xs text-muted-foreground truncate">{label}</span>
+                </div>
+                <p className="text-xl font-bold">{data?.logins?.[key] ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground">{data?.installs?.[key] ?? 0} installs</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 function EngagementHeatmap() {
   const { data: rawData } = useQuery<{ day: string; count: number }[]>({
@@ -350,6 +405,7 @@ export default function AdminAnalytics() {
           </div>
         </CardContent>
       </Card>
+      <DeviceBreakdown />
       <EngagementHeatmap />
     </div>
   );
