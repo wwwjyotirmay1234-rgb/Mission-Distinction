@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { pool } from "@workspace/db";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
+import { awardXp, getContributionXp } from "../lib/xp";
 
 const router = Router();
 
@@ -164,7 +165,15 @@ router.patch("/:id/approve", adminMiddleware, async (req: Request, res: Response
       [admin.id, admin.displayName || admin.email, id]
     );
 
-    res.json({ success: true });
+    const contributionXp = getContributionXp();
+    awardXp(
+      sub.user_id,
+      contributionXp,
+      "contribution_approved",
+      `Contribution approved: ${String(sub.title).slice(0, 60)}`
+    ).catch(() => {});
+
+    res.json({ success: true, xpAwarded: contributionXp });
   } catch (err) {
     console.error("submissions approve error:", err);
     res.status(500).json({ error: "Failed to approve submission" });

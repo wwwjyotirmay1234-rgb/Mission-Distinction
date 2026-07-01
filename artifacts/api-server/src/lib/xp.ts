@@ -33,7 +33,16 @@ export const XP_VALUES = {
   CONFESSION_POSTED: 5,
   STUDY_ROOM_JOINED: 5,
   MNEMONIC_UPVOTED: 5,
+  // Approved content contributions (notes/books/PYQs) — random 10-20
+  CONTRIBUTION_MIN: 10,
+  CONTRIBUTION_MAX: 20,
 } as const;
+
+export function getContributionXp(): number {
+  return Math.floor(
+    Math.random() * (XP_VALUES.CONTRIBUTION_MAX - XP_VALUES.CONTRIBUTION_MIN + 1)
+  ) + XP_VALUES.CONTRIBUTION_MIN;
+}
 
 export function getRankForXp(xp: number) {
   let rank = XP_RANKS[0];
