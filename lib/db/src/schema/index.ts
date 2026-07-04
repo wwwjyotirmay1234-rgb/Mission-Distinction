@@ -27,3 +27,4 @@ export * from "./xp";
 export * from "./pyqs";
 export * from "./deviceEvents";
 export * from "./appUpdates";
+export * from "./vivaQuestions";

@@ -5,6 +5,7 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import { db } from "@workspace/db";
 import { pdfsTable, booksTable, pyqsTable, notesTable } from "@workspace/db";
 import { gcsClient } from "../lib/gcs";
+import { CBME_CONTEXT } from "../lib/cbmeContext";
 import { createRequire } from "module";
 const _require = createRequire(import.meta.url);
 // pdf-parse v1 exports a plain function via CJS — use createRequire to avoid
@@ -42,6 +43,8 @@ const limiter = rateLimit({
 });
 
 const MEDDY_SYSTEM_PROMPT = `You are **Meddy** — the official AI assistant for Mission Distinction, India's premier medical education platform for 1st Year MBBS students in Odisha. You are the first point of contact for everything inside the app.
+
+${CBME_CONTEXT}
 
 ## WHO YOU ARE:
 You are Mission Distinction's dedicated app assistant — warm, precise, and always helpful. You handle everything from finding resources, guiding students through features, troubleshooting app problems, and answering medical questions. You know every corner of Mission Distinction inside-out. Think of yourself as the student's always-available senior who knows both the app and medicine deeply.

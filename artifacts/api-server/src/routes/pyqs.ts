@@ -10,6 +10,7 @@ import { awardXp, XP_VALUES } from "../lib/xp";
 import { xpTransactionsTable } from "@workspace/db";
 import { extractPdfBuffer } from "./aiDoubt";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { CBME_CONTEXT } from "../lib/cbmeContext";
 
 const router = Router();
 
@@ -166,7 +167,9 @@ If nothing matches the topic, return an empty "matches" array and explain in "no
       temperature: 0.3,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "You are a meticulous medical education assistant. Always respond with valid JSON only." },
+        { role: "system", content: `You are a meticulous medical education assistant. Always respond with valid JSON only.
+
+${CBME_CONTEXT}` },
         { role: "user", content: buildDocMessageContent(doc, prompt) as any },
       ],
     });
@@ -209,7 +212,9 @@ Return ONLY valid JSON of the shape:
       temperature: 0.3,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "You are a meticulous medical education assistant. Always respond with valid JSON only." },
+        { role: "system", content: `You are a meticulous medical education assistant. Always respond with valid JSON only.
+
+${CBME_CONTEXT}` },
         { role: "user", content: buildDocMessageContent(doc, prompt) as any },
       ],
     });

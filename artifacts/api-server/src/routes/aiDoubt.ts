@@ -6,6 +6,7 @@ import { doubtsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { CBME_CONTEXT } from "../lib/cbmeContext";
 import { createRequire } from "module";
 const _require = createRequire(import.meta.url);
 const pdfParse: (buf: Buffer, opts?: { max?: number }) => Promise<{ text: string; numpages: number }> =
@@ -64,6 +65,10 @@ When a student sends an image — a textbook page, histology slide, X-ray, CT/MR
 2. Identify every visible structure, abnormality, or question
 3. Answer comprehensively based on what you see
 4. Never say "I cannot analyse images" — you CAN and MUST
+
+---
+
+${CBME_CONTEXT}
 
 ---
 

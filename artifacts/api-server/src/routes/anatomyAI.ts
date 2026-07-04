@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middlewares/auth";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import rateLimit from "express-rate-limit";
+import { CBME_CONTEXT } from "../lib/cbmeContext";
 
 const router = Router();
 
@@ -50,6 +51,8 @@ router.post(
 - Gray's Anatomy (42nd ed.) — for detailed descriptions and clinical notes
 - Snell's Clinical Anatomy — for applied anatomy
 - Last's Anatomy — for surgical anatomy
+
+${CBME_CONTEXT}
 
 When explaining any structure, always:
 1. Draw facts from BD Chaurasia and Gray's Anatomy specifically

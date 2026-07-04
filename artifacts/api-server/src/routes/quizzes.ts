@@ -9,6 +9,7 @@ import { stripHtml } from "../lib/sanitize";
 import { awardXp, XP_VALUES } from "../lib/xp";
 import rateLimit from "express-rate-limit";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { CBME_CONTEXT } from "../lib/cbmeContext";
 
 const SUBJECTIVE_TYPES = ["short_answer", "long_answer"];
 
@@ -102,6 +103,8 @@ router.post("/ai-parse", adminMiddleware, async (req: Request, res: Response) =>
 
     const systemPrompt = `You are a question parser for a 1st year MBBS medical education platform in India. 
 Parse raw question text (any format) into a structured JSON array.
+
+${CBME_CONTEXT}
 
 Supported questionType values: "mcq", "true-false", "fill-blank", "name-following", "one-word", "short_answer", "long_answer"
 

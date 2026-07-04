@@ -28,6 +28,7 @@ import {
   ClipboardCheck,
   ChevronLeft,
   ChevronRight,
+  Mic,
 } from "lucide-react";
 
 const navItems = [
@@ -79,6 +80,7 @@ const premiumNavItems = [
   { icon: AlertTriangle, label: "Student Warnings", href: "/admin/warnings", color: "text-amber-400" },
   { icon: ClipboardList, label: "Audit Log", href: "/admin/audit-log", color: "text-purple-400" },
   { icon: Pin, label: "Pinned Notices", href: "/admin/notices", color: "text-emerald-400" },
+  { icon: Mic, label: "Viva Question Bank", href: "/admin/viva-questions", color: "text-sky-400" },
   { icon: Sparkles, label: "What's New (Meddy)", href: "/admin/app-updates", color: "text-violet-400" },
 ];
 

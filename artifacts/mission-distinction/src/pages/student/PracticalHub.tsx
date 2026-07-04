@@ -2,18 +2,26 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Stethoscope, Mic, Square, PhoneOff, Loader2, Award, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Stethoscope, Mic, Square, PhoneOff, Loader2, Award, CheckCircle2, AlertTriangle, ArrowRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 import { useVoiceRecorder, useAudioPlayback } from "@workspace/integrations-openai-ai-react";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "NEET PG", "General"];
+const SECTIONS = ["Anatomy", "Physiology", "Biochemistry"] as const;
+type Subject = (typeof SECTIONS)[number];
 
 type TurnRole = "user" | "assistant";
 interface Turn { role: TurnRole; content: string }
 
-type SessionState = "setup" | "connecting" | "examiner_speaking" | "listening" | "processing" | "ended";
+type SessionState =
+  | "setup"
+  | "connecting"
+  | "examiner_speaking"
+  | "listening"
+  | "processing"
+  | "section_ended"
+  | "session_ended";
 
 type VoiceEvent =
   | { type: "user_transcript"; data: string }
@@ -45,23 +53,36 @@ async function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-interface VivaSummary {
+interface PanelOpinion {
+  examiner: string;
   score: number;
   strengths: string[];
   improvements: string[];
   verdict: string;
 }
 
+interface VivaSummary {
+  subject: Subject;
+  score: number;
+  strengths: string[];
+  improvements: string[];
+  verdict: string;
+  panel?: { openai: PanelOpinion | null; gemini: PanelOpinion | null };
+}
+
 export default function PracticalHub() {
-  const [subject, setSubject] = useState("Anatomy");
   const [topic, setTopic] = useState("");
   const [state, setState] = useState<SessionState>("setup");
+  const [sectionIndex, setSectionIndex] = useState(0);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [liveExaminerText, setLiveExaminerText] = useState("");
   const [liveUserText, setLiveUserText] = useState("");
   const [elapsed, setElapsed] = useState(0);
-  const [summary, setSummary] = useState<VivaSummary | null>(null);
+  const [sectionSummary, setSectionSummary] = useState<VivaSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const [allSummaries, setAllSummaries] = useState<VivaSummary[]>([]);
+
+  const subject: Subject = SECTIONS[sectionIndex];
 
   const recorder = useVoiceRecorder();
   const playback = useAudioPlayback("/audio-playback-worklet.js");
@@ -72,7 +93,7 @@ export default function PracticalHub() {
   const currentRequestRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (state === "setup" || state === "ended") {
+    if (state === "setup" || state === "section_ended" || state === "session_ended") {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
@@ -164,15 +185,21 @@ export default function PracticalHub() {
     }
   }, [playback]);
 
-  const startViva = async () => {
+  const startSection = async (idx: number) => {
+    setSectionIndex(idx);
     setState("connecting");
     setTurns([]);
     turnsRef.current = [];
     setLiveUserText("");
     setLiveExaminerText("");
     setElapsed(0);
-    setSummary(null);
-    await streamTurn("/api/practical-hub/viva/start-voice", { subject, topic });
+    setSectionSummary(null);
+    await streamTurn("/api/practical-hub/viva/start-voice", { subject: SECTIONS[idx], topic });
+  };
+
+  const startViva = async () => {
+    setAllSummaries([]);
+    await startSection(0);
   };
 
   const handleMicClick = async () => {
@@ -196,11 +223,14 @@ export default function PracticalHub() {
     }
   };
 
-  const endViva = async () => {
+  const endSection = async () => {
     currentRequestRef.current?.abort();
     if (recorder.state === "recording") await recorder.stopRecording();
-    setState("ended");
-    if (turnsRef.current.length === 0) return;
+    setState("section_ended");
+    if (turnsRef.current.length === 0) {
+      setSectionSummary(null);
+      return;
+    }
     setSummaryLoading(true);
     try {
       const res = await apiFetch("/api/practical-hub/viva/end", {
@@ -209,12 +239,23 @@ export default function PracticalHub() {
         body: JSON.stringify({ subject, history: turnsRef.current }),
       });
       if (res.ok) {
-        setSummary(await res.json());
+        const data = await res.json();
+        const summary: VivaSummary = { subject, ...data };
+        setSectionSummary(summary);
+        setAllSummaries((prev) => [...prev.filter((s) => s.subject !== subject), summary]);
       }
     } catch {
       // silent — summary is a bonus, not required
     } finally {
       setSummaryLoading(false);
+    }
+  };
+
+  const continueToNextSection = () => {
+    if (sectionIndex < SECTIONS.length - 1) {
+      startSection(sectionIndex + 1);
+    } else {
+      setState("session_ended");
     }
   };
 
@@ -226,30 +267,32 @@ export default function PracticalHub() {
             <Stethoscope size={20} className="text-primary" /> Practical Hub
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Step into a real, spoken viva voce with an AI examiner — talk, don't type.
+            A real, spoken viva voce with an AI examiner panel — talk, don't type.
           </p>
         </div>
 
         <Card className="bg-card/40 border-border/40">
           <CardContent className="p-5 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subject</label>
-                <Select value={subject} onValueChange={setSubject}>
-                  <SelectTrigger className="bg-background/50 border-border/50"><SelectValue /></SelectTrigger>
-                  <SelectContent>{SUBJECTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic (Optional)</label>
-                <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Cranial Nerves, ECG leads..." className="bg-background/50 border-border/50" />
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">This session covers all 3 subjects, back to back:</p>
+              <div className="flex flex-wrap gap-2">
+                {SECTIONS.map((s, i) => (
+                  <Badge key={s} variant="outline" className="text-xs px-2.5 py-1">{i + 1}. {s}</Badge>
+                ))}
               </div>
             </div>
-            <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground leading-relaxed">
-              You'll speak your answers out loud, just like a real exam hall. The AI examiner will ask questions, listen, and respond with a live spoken voice. Make sure your mic is on and you're somewhere quiet.
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic Focus (Optional, applies to all sections)</label>
+              <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Cranial Nerves, Cardiac Cycle..." className="bg-background/50 border-border/50" />
+            </div>
+            <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground leading-relaxed flex gap-2">
+              <Sparkles size={14} className="text-primary shrink-0 mt-0.5" />
+              <span>
+                Dr. Rao conducts the spoken exam. A second examiner AI quietly sharpens the tougher follow-up questions and cross-checks your final score, so your result reflects a full panel's opinion — just like a real practical exam board.
+              </span>
             </div>
             <Button onClick={startViva} className="gap-2 w-full sm:w-auto">
-              <Mic size={15} /> Start Voice Viva
+              <Mic size={15} /> Start Practical Viva
             </Button>
           </CardContent>
         </Card>
@@ -257,58 +300,80 @@ export default function PracticalHub() {
     );
   }
 
-  if (state === "ended") {
+  if (state === "section_ended") {
+    const isLastSection = sectionIndex === SECTIONS.length - 1;
     return (
       <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto pb-20">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <Stethoscope size={20} className="text-primary" /> Practical Hub
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">Viva complete — here's how you did.</p>
+          <p className="text-muted-foreground text-sm mt-1">{subject} section complete.</p>
         </div>
 
         <Card className="bg-card/40 border-border/40">
           <CardContent className="p-5 space-y-4">
             {summaryLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-6 justify-center">
-                <Loader2 size={16} className="animate-spin" /> Scoring your viva...
+                <Loader2 size={16} className="animate-spin" /> The panel is scoring your {subject} section...
               </div>
-            ) : summary ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                    <span className="text-xl font-bold text-primary">{summary.score}</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold flex items-center gap-1.5"><Award size={14} className="text-primary" /> Viva Score</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{summary.verdict}</p>
-                  </div>
-                </div>
-                {summary.strengths.length > 0 && (
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Strengths</p>
-                    <ul className="space-y-1.5">
-                      {summary.strengths.map((s, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm"><CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" />{s}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {summary.improvements.length > 0 && (
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">To Improve</p>
-                    <ul className="space-y-1.5">
-                      {summary.improvements.map((s, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm"><AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />{s}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
+            ) : sectionSummary ? (
+              <SectionSummaryView summary={sectionSummary} />
             ) : (
-              <p className="text-sm text-muted-foreground py-4 text-center">Not enough of a conversation to score. Try a longer viva next time.</p>
+              <p className="text-sm text-muted-foreground py-4 text-center">Not enough of a conversation to score. Try answering a few questions next time.</p>
             )}
-            <Button onClick={() => setState("setup")} className="w-full sm:w-auto">Start Another Viva</Button>
+            <Button onClick={continueToNextSection} className="w-full sm:w-auto gap-1.5">
+              {isLastSection ? "See Final Panel Result" : `Continue to ${SECTIONS[sectionIndex + 1]}`}
+              <ArrowRight size={15} />
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (state === "session_ended") {
+    const overallScore = allSummaries.length
+      ? Math.round(allSummaries.reduce((sum, s) => sum + s.score, 0) / allSummaries.length)
+      : 0;
+    return (
+      <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto pb-20">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Stethoscope size={20} className="text-primary" /> Practical Hub
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">Full practical viva complete — here's the panel's final verdict.</p>
+        </div>
+
+        <Card className="bg-card/40 border-border/40">
+          <CardContent className="p-5 space-y-5">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                <span className="text-xl font-bold text-primary">{overallScore}</span>
+              </div>
+              <div>
+                <p className="text-sm font-bold flex items-center gap-1.5"><Award size={14} className="text-primary" /> Overall Panel Score</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Average across Anatomy, Physiology & Biochemistry</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {SECTIONS.map((s) => {
+                const summary = allSummaries.find((a) => a.subject === s);
+                return (
+                  <div key={s} className="rounded-lg border border-border/40 bg-background/40 p-3 flex items-center justify-between">
+                    <span className="text-sm font-medium">{s}</span>
+                    {summary ? (
+                      <Badge variant="outline" className="text-xs">{summary.score}/100</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs text-muted-foreground">Not attempted</Badge>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <Button onClick={() => setState("setup")} className="w-full sm:w-auto">Start Another Practical Viva</Button>
           </CardContent>
         </Card>
       </div>
@@ -325,9 +390,20 @@ export default function PracticalHub() {
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <Stethoscope size={20} className="text-primary" /> Practical Hub
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">Live viva voce: {subject}{topic ? ` — ${topic}` : ""}</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            Section {sectionIndex + 1} of {SECTIONS.length}: {subject}{topic ? ` — ${topic}` : ""}
+          </p>
         </div>
         <div className="text-sm font-mono text-muted-foreground">{formatTime(elapsed)}</div>
+      </div>
+
+      <div className="flex gap-1.5">
+        {SECTIONS.map((s, i) => (
+          <div
+            key={s}
+            className={`h-1.5 flex-1 rounded-full ${i < sectionIndex ? "bg-primary" : i === sectionIndex ? "bg-primary/60" : "bg-border/50"}`}
+          />
+        ))}
       </div>
 
       <Card className="bg-gradient-to-b from-card/60 to-card/30 border-border/40 overflow-hidden">
@@ -372,8 +448,8 @@ export default function PracticalHub() {
 
           <div className="border-t border-border/40 px-4 py-3 flex justify-between items-center bg-card/40">
             <p className="text-[11px] text-muted-foreground">{turns.filter((t) => t.role === "user").length} answers given</p>
-            <Button variant="ghost" size="sm" onClick={endViva} className="text-xs h-7 gap-1.5 text-destructive hover:text-destructive">
-              <PhoneOff size={13} /> End Viva
+            <Button variant="ghost" size="sm" onClick={endSection} className="text-xs h-7 gap-1.5 text-destructive hover:text-destructive">
+              <PhoneOff size={13} /> End {subject} Section
             </Button>
           </div>
         </CardContent>
@@ -389,6 +465,60 @@ export default function PracticalHub() {
               {t.content}
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SectionSummaryView({ summary }: { summary: VivaSummary }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-4">
+        <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+          <span className="text-xl font-bold text-primary">{summary.score}</span>
+        </div>
+        <div>
+          <p className="text-sm font-bold flex items-center gap-1.5"><Award size={14} className="text-primary" /> {summary.subject} Panel Score</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{summary.verdict}</p>
+        </div>
+      </div>
+
+      {summary.panel && (summary.panel.openai || summary.panel.gemini) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {summary.panel.openai && (
+            <div className="rounded-lg border border-border/40 bg-background/40 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Dr. Rao (Lead Examiner)</p>
+              <p className="text-lg font-bold text-primary">{summary.panel.openai.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
+            </div>
+          )}
+          {summary.panel.gemini && (
+            <div className="rounded-lg border border-border/40 bg-background/40 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Dr. Mehta (Co-Examiner)</p>
+              <p className="text-lg font-bold text-primary">{summary.panel.gemini.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {summary.strengths.length > 0 && (
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Strengths</p>
+          <ul className="space-y-1.5">
+            {summary.strengths.map((s, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm"><CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" />{s}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {summary.improvements.length > 0 && (
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">To Improve</p>
+          <ul className="space-y-1.5">
+            {summary.improvements.map((s, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm"><AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />{s}</li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

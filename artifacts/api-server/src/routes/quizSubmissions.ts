@@ -6,6 +6,7 @@ import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { pool } from "@workspace/db";
+import { CBME_CONTEXT } from "../lib/cbmeContext";
 
 const router = Router();
 
@@ -130,7 +131,7 @@ router.post("/:id/ai-grade", adminMiddleware, async (req: Request, res: Response
     }
 
     const questionType = question.questionType === "short_answer" ? "Short Answer (SAQ)" : "Long Answer (LAQ)";
-    const systemPrompt = `You are a medical examiner grading a ${questionType} question for 1st Year MBBS students in India. Grade objectively and fairly. Always return valid JSON only.`;
+    const systemPrompt = `You are a medical examiner grading a ${questionType} question for 1st Year MBBS students in India. Grade objectively and fairly. Always return valid JSON only.\n\n${CBME_CONTEXT}`;
 
     const userPrompt = `Question: ${question.text}
 

@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middlewares/auth";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import rateLimit from "express-rate-limit";
+import { CBME_CONTEXT } from "../lib/cbmeContext";
 
 const router = Router();
 
@@ -477,6 +478,9 @@ function getDifficultyInstruction(difficulty: string): string {
 }
 
 const SYSTEM_PROMPT = `You are an expert Indian medical educator and NEET PG question-setter.
+
+${CBME_CONTEXT}
+
 Reference ONLY gold-standard textbooks:
 • Anatomy: Gray's Anatomy (42nd Ed), BD Chaurasia's Human Anatomy, Snell's Clinical Anatomy, Netter's Atlas
 • Physiology: Ganong's Review (26th Ed), Guyton & Hall Medical Physiology (14th Ed)

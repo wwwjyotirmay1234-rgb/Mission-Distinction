@@ -120,6 +120,7 @@ const AdminFlashcards    = lazy(() => import("@/pages/admin/Flashcards"));
 const QuizSubmissions    = lazy(() => import("@/pages/admin/QuizSubmissions"));
 const ProctoringReport   = lazy(() => import("@/pages/admin/ProctoringReport"));
 const AdminScholarHub    = lazy(() => import("@/pages/admin/ScholarHub"));
+const VivaQuestionBank   = lazy(() => import("@/pages/admin/VivaQuestionBank"));
 
 const queryClient = new QueryClient();
 
@@ -242,6 +243,7 @@ function Router() {
                 <Route path="/admin/activity-feed"          component={ActivityFeed} />
                 <Route path="/admin/moderation"             component={ModerationCenter} />
                 <Route path="/admin/warnings"               component={WarningsPage} />
+                <Route path="/admin/viva-questions"         component={VivaQuestionBank} />
                 <Route path="/admin/audit-log"              component={AuditLog} />
                 <Route path="/admin/notices"                component={NoticesPage} />
                 <Route path="/admin/app-updates"            component={AppUpdatesPage} />

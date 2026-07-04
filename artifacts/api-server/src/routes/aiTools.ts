@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middlewares/auth";
 import { openai, generateImageBuffer } from "@workspace/integrations-openai-ai-server";
 import rateLimit from "express-rate-limit";
+import { CBME_CONTEXT } from "../lib/cbmeContext";
 
 const router = Router();
 
@@ -37,6 +38,9 @@ Reference ONLY gold-standard textbooks:
 • Obstetrics & Gynecology: Dutta's Obstetrics & Gynecology, Williams Obstetrics
 • Community Medicine: Park's Textbook of Preventive and Social Medicine (26th Ed)
 All content must be factually accurate, evidence-based, and at NEET PG examination standard.
+
+${CBME_CONTEXT}
+
 Return ONLY valid JSON, no markdown, no preamble.`;
 
 const MARKDOWN_SYSTEM_PROMPT = SYSTEM_PROMPT
@@ -109,6 +113,9 @@ Return valid JSON array only (no markdown):
 const SUMMARISE_SYSTEM_PROMPT = `You are an expert Indian medical educator helping MBBS/NEET PG students revise.
 Reference gold-standard textbooks (Gray's Anatomy, Ganong's Physiology, Harper's Biochemistry, Robbins Pathology, KD Tripathi Pharmacology, etc.).
 All content must be factually accurate and at NEET PG examination standard.
+
+${CBME_CONTEXT}
+
 Respond ONLY in clean Markdown. Rules:
 - Use ## for section headings
 - Use - for bullet lists (never use * for bullets)
@@ -247,6 +254,8 @@ Return JSON array only:
 // ── Generate a textbook-quality SVG anatomical diagram via gpt-5.4 ────────────
 
 const DIAGRAM_SVG_SYSTEM_PROMPT = `You are a precision medical illustration AI for MBBS university exams. Generate SVG diagrams — either flowcharts or anatomical diagrams depending on the request.
+
+${CBME_CONTEXT}
 
 CRITICAL: Do NOT include width or height attributes on <svg>. Use ONLY viewBox="0 0 820 680".
 Always start with: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 680">
