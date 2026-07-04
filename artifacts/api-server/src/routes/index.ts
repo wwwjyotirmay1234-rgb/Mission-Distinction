@@ -43,6 +43,7 @@ import pyqsRouter from "./pyqs";
 import { meddyRouter } from "./meddy";
 import { submissionsRouter } from "./submissions";
 import { deviceAnalyticsRouter } from "./deviceAnalytics";
+import { appUpdatesRouter } from "./appUpdates";
 
 const router: IRouter = Router();
 
@@ -96,5 +97,7 @@ router.use("/meddy", meddyRouter);
 router.use("/submissions", submissionsRouter);
 router.use("/admin/submissions", submissionsRouter);
 router.use(deviceAnalyticsRouter);
+router.use("/app-updates", appUpdatesRouter);
+router.use("/admin/app-updates", appUpdatesRouter);
 
 export default router;

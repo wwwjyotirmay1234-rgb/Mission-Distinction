@@ -17,3 +17,4 @@
 - [lib/db dist must be rebuilt](lib-db-dist-rebuild.md) — schema/index.ts exports source, but project-referenced packages (api-server) resolve against lib/db/dist; new schema files need `tsc -b` in lib/db or consumers get false "no exported member" errors
 - [In-app browser PWA install detection](in-app-browser-install.md) — WhatsApp/Instagram webviews can't fire beforeinstallprompt; must detect and show "open in Chrome/Safari" instead of a dead Install button
 - [Email provider is SendGrid, not Resend](email-provider-sendgrid.md) — lib/email.ts sendEmail() must use @sendgrid/mail; RESEND_API_KEY is unverified sandbox-only and silently blocks all real-recipient email
+- [Test account year/session gating](test-account-year-gate.md) — student login only reaches /student/dashboard if year/sessionYear exactly match ACTIVE_MBBS_YEAR/ACTIVE_SESSION_YEAR in colleges.ts, else redirects to /coming-soon

@@ -158,6 +158,16 @@ const QUICK_ACTIONS = [
 
 const WELCOME_MSG = "Hi! I'm **Meddy** 👋 — your Mission Distinction app assistant.\n\nI'm your first stop for **anything** in the app:\n- 🆘 App issues or emergencies — tell me what's wrong\n- 🗺️ Navigate to any feature (PDFs, Quizzes, Study Rooms…)\n- 🔍 Find resources by subject or topic\n- ❓ Generate practice MCQs\n- 🧠 Explain any medical concept\n\nWhat do you need help with?";
 
+type AppUpdate = { id: number; title: string; description: string; createdAt: string };
+
+function buildUpdatesMessage(updates: AppUpdate[]): string {
+  const intro = updates.length === 1
+    ? "👋 Welcome back! While you were away, I picked up something new in the app:"
+    : `👋 Welcome back! While you were away, ${updates.length} things got better in the app:`;
+  const body = updates.map(u => `**${u.title}**\n${u.description}`).join("\n\n---\n\n");
+  return `${intro}\n\n${body}\n\nLet me know if you want a hand trying any of this out! 💜`;
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 export function MeddyAssistant() {
   const [open, setOpen] = useState(false);
@@ -169,6 +179,7 @@ export function MeddyAssistant() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const checkedUpdatesRef = useRef(false);
 
   const hasVoice = typeof window !== "undefined" && !!(
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -181,6 +192,31 @@ export function MeddyAssistant() {
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 120);
   }, [open]);
+
+  // Proactively surface "what's new" the first time Meddy mounts per session
+  // (i.e. on login / app open), so students always know what changed.
+  useEffect(() => {
+    if (checkedUpdatesRef.current) return;
+    checkedUpdatesRef.current = true;
+    const token = localStorage.getItem("mission_token");
+    if (!token) return;
+
+    (async () => {
+      try {
+        const res = await apiFetch("/api/app-updates/unseen");
+        if (!res.ok) return;
+        const updates: AppUpdate[] = await res.json();
+        if (!Array.isArray(updates) || updates.length === 0) return;
+
+        setMessages(prev => [...prev, { role: "assistant", content: buildUpdatesMessage(updates) }]);
+        setOpen(true);
+
+        apiFetch("/api/app-updates/seen", { method: "POST" }).catch(() => {});
+      } catch {
+        // Silently skip — this is a nice-to-have, never block the app.
+      }
+    })();
+  }, []);
 
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();

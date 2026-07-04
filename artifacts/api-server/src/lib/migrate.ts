@@ -374,6 +374,17 @@ export async function runStartupMigrations() {
         ADD COLUMN IF NOT EXISTS attachment_url TEXT,
         ADD COLUMN IF NOT EXISTS attachment_name TEXT,
         ADD COLUMN IF NOT EXISTS attachment_type TEXT;
+
+      CREATE TABLE IF NOT EXISTS app_updates (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        created_by INTEGER,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS last_seen_app_update_at TIMESTAMP DEFAULT NOW();
     `);
   } finally {
     client.release();
