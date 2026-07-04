@@ -7,9 +7,9 @@ import { useListAnnouncements, getListAnnouncementsQueryKey } from "@workspace/a
 import {
   LayoutDashboard, FileText, File, Users, Newspaper, TrendingUp,
   Calendar as CalendarIcon, Settings, Trophy, MessageSquare,
-  Timer, Music, BookOpen, Lightbulb, MessageCircleHeart,
+  Timer, Music, MessageCircleHeart,
   Bot, Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight, BarChart2,
-  GraduationCap, Stethoscope,
+  GraduationCap, Stethoscope, Zap,
 } from "lucide-react";
 import { useXPStats } from "@/hooks/useXPStats";
 import { XPProgressBar } from "@/components/XPProgressBar";
@@ -71,8 +71,7 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
     { icon: MessageSquare, label: "Doubt Board", href: "/student/doubts" },
     { icon: CalendarIcon, label: "Calendar", href: "/student/calendar" },
     { icon: Timer, label: "Study Tools", href: "/student/tools" },
-    { icon: Lightbulb, label: "Mnemonics", href: "/student/mnemonics" },
-    { icon: BookOpen, label: "Flashcards", href: "/student/flashcards" },
+    { icon: Zap, label: "Cheat Codes", href: "/student/cheat-codes" },
     { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
     { icon: Users, label: "Study Rooms", href: "/student/study-rooms" },
     { icon: Bot, label: "AI Tools", href: "/student/ai-tools" },

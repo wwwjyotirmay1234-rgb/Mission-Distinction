@@ -58,7 +58,7 @@ const navItems = [
   },
   {
     icon: Lightbulb,
-    label: "Study Tools",
+    label: "Cheat Codes",
     href: "/admin/study-tools",
     subItems: [
       { label: "Mnemonics", href: "/admin/study-tools/mnemonics" },

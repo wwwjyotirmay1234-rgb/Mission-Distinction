@@ -50,7 +50,7 @@ const STEPS: Step[] = [
     botMessage: "📚 We've got curated notes, PDFs, reference books, flashcards, and mnemonics — all in one place. And if you're stuck on something, just ask me! I'm powered by AI and always here. 🤖",
     features: [
       { icon: <BookOpen size={16} className="text-blue-400" />, label: "Notes & PDFs", desc: "Curated study material, ready to read." },
-      { icon: <Brain size={16} className="text-pink-400" />, label: "Flashcards & Mnemonics", desc: "Fast revision before exams." },
+      { icon: <Brain size={16} className="text-pink-400" />, label: "Cheat Codes", desc: "Flashcards & mnemonics for fast revision." },
       { icon: <FlaskConical size={16} className="text-teal-400" />, label: "AI Doubt Solver", desc: "Ask me anything, anytime." },
     ],
   },

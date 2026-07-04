@@ -31,7 +31,7 @@ function timeAgo(d: string) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export default function StudentMnemonics() {
+export default function StudentMnemonics({ hideHeader }: { hideHeader?: boolean } = {}) {
   const [filterSubject, setFilterSubject] = useState("All");
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ subject: "Anatomy", topic: "", mnemonic: "", description: "" });
@@ -85,12 +85,14 @@ export default function StudentMnemonics() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className={hideHeader ? "space-y-6" : "space-y-6 max-w-3xl mx-auto"}>
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Lightbulb size={22} className="text-primary" /> Mnemonics</h1>
-          <p className="text-muted-foreground text-sm mt-1">Memory tricks shared by students and faculty.</p>
-        </div>
+        {!hideHeader ? (
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2"><Lightbulb size={22} className="text-primary" /> Mnemonics</h1>
+            <p className="text-muted-foreground text-sm mt-1">Memory tricks shared by students and faculty.</p>
+          </div>
+        ) : <div />}
         <Button onClick={() => setShowCreate(true)} className="gap-2 shrink-0"><Plus size={16} /> Share One</Button>
       </div>
 

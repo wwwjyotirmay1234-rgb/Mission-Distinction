@@ -80,8 +80,7 @@ const StudentLeaderboard   = lazy(() => import("@/pages/student/Leaderboard"));
 const StudentDoubts        = lazy(() => import("@/pages/student/Doubts"));
 const StudentTools         = lazy(() => import("@/pages/student/Tools"));
 const StudentMusic         = lazy(() => import("@/pages/student/Music"));
-const StudentFlashcards    = lazy(() => import("@/pages/student/Flashcards"));
-const StudentMnemonics     = lazy(() => import("@/pages/student/Mnemonics"));
+const StudentCheatCodes    = lazy(() => import("@/pages/student/CheatCodes"));
 const StudentExams         = lazy(() => import("@/pages/student/Exams"));
 const StudentConfessions   = lazy(() => import("@/pages/student/Confessions"));
 const StudentStudyRooms    = lazy(() => import("@/pages/student/StudyRooms"));
@@ -203,8 +202,9 @@ function Router() {
                 <Route path="/student/settings"     component={StudentSettings} />
                 <Route path="/student/tools"        component={StudentTools} />
                 <Route path="/student/music"        component={StudentMusic} />
-                <Route path="/student/flashcards"   component={StudentFlashcards} />
-                <Route path="/student/mnemonics"    component={StudentMnemonics} />
+                <Route path="/student/cheat-codes"  component={StudentCheatCodes} />
+                <Route path="/student/flashcards"   component={StudentCheatCodes} />
+                <Route path="/student/mnemonics"    component={StudentCheatCodes} />
                 <Route path="/student/exams"        component={StudentExams} />
                 <Route path="/student/confessions"  component={StudentConfessions} />
                 <Route path="/student/study-rooms"  component={StudentStudyRooms} />
