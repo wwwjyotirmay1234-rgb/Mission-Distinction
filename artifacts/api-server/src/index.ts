@@ -33,14 +33,14 @@ runStartupMigrations()
   .catch((err) => logger.error({ err }, "[DB] Startup migration failed"));
 
 // ─── Startup config validation ────────────────────────────────────────────────
-if (!process.env.RESEND_API_KEY) {
+if (!process.env.SENDGRID_API_KEY || !(process.env.SENDGRID_FROM_EMAIL || process.env.SMTP_EMAIL)) {
   logger.warn(
-    `[Email] Transactional email DISABLED — missing Replit Secret: RESEND_API_KEY. ` +
+    `[Email] Transactional email DISABLED — missing Replit Secret: SENDGRID_API_KEY and/or SENDGRID_FROM_EMAIL. ` +
     `Affected: registration verification, password reset. ` +
-    `Fix: add RESEND_API_KEY at Tools → Secrets, then restart the server.`
+    `Fix: add SENDGRID_API_KEY and SENDGRID_FROM_EMAIL at Tools → Secrets, then restart the server.`
   );
 } else {
-  logger.info("[Email] Resend configured ✓ — transactional email enabled.");
+  logger.info("[Email] SendGrid configured ✓ — transactional email enabled.");
 }
 // ─────────────────────────────────────────────────────────────────────────────
 

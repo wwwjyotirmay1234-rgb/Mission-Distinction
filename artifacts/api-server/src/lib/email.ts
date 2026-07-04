@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { Resend } from "resend";
+import sgMail from "@sendgrid/mail";
 
 export function generateEmailToken(): string {
   return crypto.randomBytes(32).toString("hex");
@@ -26,17 +26,21 @@ export async function sendEmail(
   html: string,
   text: string
 ): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "Mission Distinction <onboarding@resend.dev>";
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.SMTP_EMAIL;
 
   if (!apiKey) {
-    console.warn(`[Email] RESEND_API_KEY not set — email skipped.`);
+    console.warn(`[Email] SENDGRID_API_KEY not set — email skipped.`);
+    return false;
+  }
+  if (!fromEmail) {
+    console.warn(`[Email] SENDGRID_FROM_EMAIL not set — email skipped.`);
     return false;
   }
 
   try {
-    const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({
+    sgMail.setApiKey(apiKey);
+    await sgMail.send({
       from: fromEmail,
       to,
       subject,
@@ -44,15 +48,10 @@ export async function sendEmail(
       text,
     });
 
-    if (error) {
-      console.error(`[Email] Resend error:`, error);
-      return false;
-    }
-
-    console.info(`[Email] Sent via Resend | Subject: ${subject}`);
+    console.info(`[Email] Sent via SendGrid | Subject: ${subject}`);
     return true;
   } catch (err: any) {
-    console.error(`[Email] Resend exception:`, err?.message ?? err);
+    console.error(`[Email] SendGrid error:`, err?.response?.body ?? err?.message ?? err);
     return false;
   }
 }
