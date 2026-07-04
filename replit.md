@@ -1,6 +1,6 @@
-# [Project name]
+# Mission Distinction
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A free, dark-themed (purple #7c3aed) medical education PWA for 1st Year MBBS students in Odisha, India — quizzes, notes, PYQs, mnemonics, and AI-powered study tools.
 
 ## Run & Operate
 

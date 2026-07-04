@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bot, Sparkles, CheckCircle2, XCircle, RotateCcw, FileText } from "lucide-react";
+import { Bot, Sparkles, CheckCircle2, XCircle, RotateCcw, FileText, SplitSquareVertical, Image as ImageIcon, MessageSquare, ClipboardCheck, Send, User } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 
@@ -138,6 +138,413 @@ function MCQGenerator() {
   );
 }
 
+function Confusables() {
+  const [subject, setSubject] = useState("Anatomy");
+  const [termA, setTermA] = useState("");
+  const [termB, setTermB] = useState("");
+  const [result, setResult] = useState<{ title: string; rows: { aspect: string; itemA: string; itemB: string }[]; keyDifference: string; mnemonicTip: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const compare = async () => {
+    if (!termA.trim() || !termB.trim()) { toast.error("Please enter both terms"); return; }
+    setLoading(true); setResult(null);
+    try {
+      const res = await apiFetch("/api/ai/confusables", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: `${termA} vs ${termB}`, subject })
+      });
+      if (!res.ok) { const e = await res.json(); toast.error(e.error || "Failed to compare"); return; }
+      const data = await res.json();
+      setResult(data);
+    } catch { toast.error("Network error"); } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="space-y-5">
+      <Card className="bg-card/40 border-border/40">
+        <CardContent className="p-5 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subject</label>
+              <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger className="bg-background/50 border-border/50"><SelectValue /></SelectTrigger>
+                <SelectContent>{SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Term A</label>
+              <Input value={termA} onChange={e => setTermA(e.target.value)} placeholder="e.g. Colles Fracture" className="bg-background/50 border-border/50" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Term B</label>
+              <Input value={termB} onChange={e => setTermB(e.target.value)} placeholder="e.g. Smith Fracture" className="bg-background/50 border-border/50" />
+            </div>
+          </div>
+          <Button onClick={compare} disabled={loading || !termA.trim() || !termB.trim()} className="gap-2">
+            <SplitSquareVertical size={15} /> {loading ? "Comparing…" : "Compare Terms"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {loading && <div className="space-y-3">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}</div>}
+
+      {!loading && result && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-5 space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-primary mb-2">{result.title}</h3>
+              <p className="text-sm text-foreground italic">"{result.keyDifference}"</p>
+            </div>
+
+            <div className="overflow-x-auto rounded-lg border border-border/40">
+              <table className="w-full text-sm border-collapse">
+                <thead className="bg-primary/10">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-primary border-b border-border/40">Aspect</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-primary border-b border-border/40">{termA}</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-primary border-b border-border/40">{termB}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.rows.map((row, i) => (
+                    <tr key={i} className="hover:bg-white/5 transition-colors">
+                      <td className="px-3 py-2 text-xs font-medium border-b border-border/20 bg-primary/5">{row.aspect}</td>
+                      <td className="px-3 py-2 text-xs border-b border-border/20 align-top">{row.itemA}</td>
+                      <td className="px-3 py-2 text-xs border-b border-border/20 align-top">{row.itemB}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {result.mnemonicTip && (
+              <div className="bg-primary/10 p-3 rounded-lg border border-primary/20">
+                <p className="text-xs font-bold text-primary mb-1 flex items-center gap-1">
+                  <Sparkles size={12} /> Mnemonic Tip
+                </p>
+                <p className="text-sm text-foreground">{result.mnemonicTip}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function DiagramExplainer() {
+  const [image, setImage] = useState<string | null>(null);
+  const [explanation, setExplanation] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [context, setContext] = useState("");
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const explain = async () => {
+    if (!image) { toast.error("Please upload an image"); return; }
+    setLoading(true); setExplanation("");
+    try {
+      const res = await apiFetch("/api/ai/explain-diagram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: image, context })
+      });
+      if (!res.ok) { const e = await res.json(); toast.error(e.error || "Failed to explain"); return; }
+      const data = await res.json();
+      setExplanation(data.explanation);
+    } catch { toast.error("Network error"); } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="space-y-5">
+      <Card className="bg-card/40 border-border/40">
+        <CardContent className="p-5 space-y-4">
+          <div className="space-y-3">
+            <label className="text-xs font-medium text-muted-foreground block">Upload Diagram (ECG, X-Ray, Histology, etc.)</label>
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/50 rounded-lg p-6 bg-background/30 hover:bg-background/50 transition-colors cursor-pointer relative">
+              <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+              {image ? (
+                <img src={image} alt="Preview" className="max-h-64 rounded-md object-contain" />
+              ) : (
+                <div className="text-center">
+                  <ImageIcon size={32} className="mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">Click or drag image to upload</p>
+                </div>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Additional Context (Optional)</label>
+            <Input value={context} onChange={e => setContext(e.target.value)} placeholder="e.g. I'm struggling with identifying the T-wave..." className="bg-background/50 border-border/50" />
+          </div>
+          <Button onClick={explain} disabled={loading || !image} className="gap-2">
+            <Bot size={15} /> {loading ? "Analysing…" : "Explain Diagram"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {loading && <div className="space-y-2">{Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-4 w-full" style={{ width: `${60 + Math.random() * 40}%` }} />)}</div>}
+
+      {!loading && explanation && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Bot size={16} className="text-primary" />
+              <p className="text-sm font-semibold text-primary">AI Explanation</p>
+            </div>
+            <div className="text-sm leading-relaxed text-foreground summary-markdown">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h2: ({ children }) => <h2 className="text-base font-bold text-primary mt-5 mb-2 first:mt-0 border-b border-primary/20 pb-1">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-sm font-semibold text-foreground mt-4 mb-1.5">{children}</h3>,
+                  ul: ({ children }) => <ul className="space-y-1.5 my-2 ml-1">{children}</ul>,
+                  li: ({ children }) => (
+                    <li className="flex gap-2 text-sm leading-relaxed">
+                      <span className="text-primary mt-1 shrink-0">›</span>
+                      <span>{children}</span>
+                    </li>
+                  ),
+                  p: ({ children }) => <p className="text-sm leading-relaxed my-2">{children}</p>,
+                }}
+              >
+                {explanation}
+              </ReactMarkdown>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function VivaPractice() {
+  const [subject, setSubject] = useState("Anatomy");
+  const [topic, setTopic] = useState("");
+  const [history, setHistory] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [active, setActive] = useState(false);
+
+  const startViva = async () => {
+    setLoading(true); setHistory([]); setInput(""); setActive(false);
+    try {
+      const res = await apiFetch("/api/ai/viva/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject, topic })
+      });
+      if (!res.ok) { const e = await res.json(); toast.error(e.error || "Failed to start"); return; }
+      const data = await res.json();
+      setHistory([{ role: "assistant", content: data.examinerMessage }]);
+      setActive(true);
+    } catch { toast.error("Network error"); } finally { setLoading(false); }
+  };
+
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return;
+    const studentAnswer = input.trim();
+    setInput("");
+    const newHistory = [...history, { role: "user" as const, content: studentAnswer }];
+    setHistory(newHistory);
+    setLoading(true);
+
+    try {
+      const res = await apiFetch("/api/ai/viva/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject, history: newHistory, answer: studentAnswer })
+      });
+      if (!res.ok) { const e = await res.json(); toast.error(e.error || "Failed"); return; }
+      const data = await res.json();
+      setHistory([...newHistory, { role: "assistant", content: data.examinerMessage }]);
+    } catch { toast.error("Network error"); } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="space-y-5">
+      {!active ? (
+        <Card className="bg-card/40 border-border/40">
+          <CardContent className="p-5 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subject</label>
+                <Select value={subject} onValueChange={setSubject}>
+                  <SelectTrigger className="bg-background/50 border-border/50"><SelectValue /></SelectTrigger>
+                  <SelectContent>{SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic (Optional)</label>
+                <Input value={topic} onChange={e => setTopic(e.target.value)} placeholder="e.g. Cranial Nerves, ECG leads..." className="bg-background/50 border-border/50" />
+              </div>
+            </div>
+            <Button onClick={startViva} disabled={loading} className="gap-2">
+              <MessageSquare size={15} /> {loading ? "Starting…" : "Start Viva Practice"}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="bg-card/40 border-border/40 flex flex-col h-[600px]">
+          <div className="p-4 border-b border-border/40 flex justify-between items-center bg-card/60">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                <Bot size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-bold">AI Examiner</p>
+                <p className="text-[10px] text-muted-foreground">Viva in progress: {subject}</p>
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setActive(false)} className="text-xs h-7">End Viva</Button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+            {history.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === "assistant" ? "justify-start" : "justify-end"}`}>
+                <div className={`max-w-[85%] rounded-2xl p-3 text-sm ${msg.role === "assistant" ? "bg-card/80 border border-border/40 text-foreground rounded-tl-none" : "bg-primary text-white rounded-tr-none"}`}>
+                  <div className="flex items-center gap-1.5 mb-1 opacity-70 text-[10px] font-bold uppercase tracking-wider">
+                    {msg.role === "assistant" ? <><Bot size={10} /> Examiner</> : <><User size={10} /> You</>}
+                  </div>
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-card/80 border border-border/40 rounded-2xl rounded-tl-none p-3 flex gap-1">
+                  <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" />
+                  <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:0.2s]" />
+                  <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:0.4s]" />
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="p-4 border-t border-border/40 bg-card/60">
+            <div className="relative">
+              <Input
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                placeholder="Type your answer here..."
+                className="pr-12 bg-background/50 border-border/50"
+                onKeyDown={e => { if (e.key === "Enter") sendMessage(); }}
+                disabled={loading}
+              />
+              <Button
+                size="icon"
+                className="absolute right-1 top-1 h-8 w-8"
+                onClick={sendMessage}
+                disabled={loading || !input.trim()}
+              >
+                <Send size={14} />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function AnswerGrading() {
+  const [subject, setSubject] = useState("Anatomy");
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ marks: number; feedback: string; lacking: string; modelAnswerOutline: string } | null>(null);
+
+  const grade = async () => {
+    if (!question.trim() || !answer.trim()) { toast.error("Please provide both question and answer"); return; }
+    setLoading(true); setResult(null);
+    try {
+      const res = await apiFetch("/api/ai/grade-answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject, question, answer, maxMarks: 10 })
+      });
+      if (!res.ok) { const e = await res.json(); toast.error(e.error || "Failed to grade"); return; }
+      const data = await res.json();
+      setResult(data);
+    } catch { toast.error("Network error"); } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="space-y-5">
+      <Card className="bg-card/40 border-border/40">
+        <CardContent className="p-5 space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subject</label>
+              <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger className="bg-background/50 border-border/50"><SelectValue /></SelectTrigger>
+                <SelectContent>{SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Theory Question</label>
+              <Textarea value={question} onChange={e => setQuestion(e.target.value)} placeholder="Paste the exam question here..." className="bg-background/50 border-border/50 min-h-[80px]" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Your Answer</label>
+              <Textarea value={answer} onChange={e => setAnswer(e.target.value)} placeholder="Write your answer here..." className="bg-background/50 border-border/50 min-h-[150px]" />
+            </div>
+          </div>
+          <Button onClick={grade} disabled={loading || !question.trim() || !answer.trim()} className="gap-2">
+            <ClipboardCheck size={15} /> {loading ? "Grading…" : "Grade My Answer"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {loading && <div className="space-y-2">{Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-4 w-full" style={{ width: `${60 + Math.random() * 40}%` }} />)}</div>}
+
+      {!loading && result && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-5 space-y-6">
+            <div className="flex items-center justify-between border-b border-primary/20 pb-4">
+              <div className="flex items-center gap-2">
+                <Bot size={18} className="text-primary" />
+                <h3 className="font-bold text-lg">AI Grading Result</h3>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-2xl font-black text-primary">{result.marks}/10</span>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground">Estimated Score</span>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-2">Strengths</h4>
+                <div className="text-sm text-foreground bg-green-500/5 p-3 rounded-lg border border-green-500/20">{result.feedback}</div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-2">Missing Points</h4>
+                <div className="text-sm text-foreground bg-red-500/5 p-3 rounded-lg border border-red-500/20">{result.lacking}</div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Model Answer Outline</h4>
+                <div className="text-sm text-foreground bg-primary/5 p-3 rounded-lg border border-primary/20 prose prose-invert prose-sm max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.modelAnswerOutline}</ReactMarkdown>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 function NoteSummariser() {
   const [subject, setSubject] = useState("Anatomy");
   const [text, setText] = useState("");
@@ -247,25 +654,49 @@ function NoteSummariser() {
 }
 
 export default function StudentAITools() {
-  const [tab, setTab] = useState<"mcq" | "summarise">("mcq");
+  const [tab, setTab] = useState<"mcq" | "summarise" | "confusables" | "diagram" | "viva" | "grading">("mcq");
+
+  const renderTab = () => {
+    switch (tab) {
+      case "mcq": return <MCQGenerator />;
+      case "summarise": return <NoteSummariser />;
+      case "confusables": return <Confusables />;
+      case "diagram": return <DiagramExplainer />;
+      case "viva": return <VivaPractice />;
+      case "grading": return <AnswerGrading />;
+      default: return <MCQGenerator />;
+    }
+  };
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto pb-20">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><Bot size={20} className="text-primary" /> AI Study Tools</h1>
         <p className="text-muted-foreground text-sm mt-1">AI-powered tools to help you study smarter, not harder.</p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <button onClick={() => setTab("mcq")} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${tab === "mcq" ? "bg-primary text-white border-primary" : "bg-card/40 border-border/50 text-muted-foreground hover:border-border"}`}>
-          <Sparkles size={14} /> MCQ Generator
+          <Sparkles size={14} /> MCQ
         </button>
         <button onClick={() => setTab("summarise")} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${tab === "summarise" ? "bg-primary text-white border-primary" : "bg-card/40 border-border/50 text-muted-foreground hover:border-border"}`}>
-          <FileText size={14} /> Note Summariser
+          <FileText size={14} /> Summary
+        </button>
+        <button onClick={() => setTab("confusables")} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${tab === "confusables" ? "bg-primary text-white border-primary" : "bg-card/40 border-border/50 text-muted-foreground hover:border-border"}`}>
+          <SplitSquareVertical size={14} /> Confusables
+        </button>
+        <button onClick={() => setTab("diagram")} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${tab === "diagram" ? "bg-primary text-white border-primary" : "bg-card/40 border-border/50 text-muted-foreground hover:border-border"}`}>
+          <ImageIcon size={14} /> Diagram
+        </button>
+        <button onClick={() => setTab("viva")} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${tab === "viva" ? "bg-primary text-white border-primary" : "bg-card/40 border-border/50 text-muted-foreground hover:border-border"}`}>
+          <MessageSquare size={14} /> Viva
+        </button>
+        <button onClick={() => setTab("grading")} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${tab === "grading" ? "bg-primary text-white border-primary" : "bg-card/40 border-border/50 text-muted-foreground hover:border-border"}`}>
+          <ClipboardCheck size={14} /> Grading
         </button>
       </div>
 
-      {tab === "mcq" ? <MCQGenerator /> : <NoteSummariser />}
+      {renderTab()}
     </div>
   );
 }

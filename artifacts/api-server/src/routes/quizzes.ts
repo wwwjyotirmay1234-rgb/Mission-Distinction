@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
-import { quizzesTable, questionsTable, quizAttemptsTable, activityTable, questionReportsTable, quizSubmissionsTable } from "@workspace/db";
+import { quizzesTable, questionsTable, quizAttemptsTable, activityTable, questionReportsTable, quizSubmissionsTable, quizAnswersTable } from "@workspace/db";
 import { eq, sql, desc } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, superAdminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
@@ -487,6 +487,21 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
         };
       });
       await db.insert(quizSubmissionsTable).values(submissionValues);
+    }
+
+    if (attempt) {
+      const answerRows = correctAnswers.map(a => ({
+        userId: user.id,
+        quizId,
+        attemptId: attempt.id,
+        questionId: a.questionId,
+        subject: quiz.subject,
+        questionType: a.questionType,
+        correct: a.correct,
+      }));
+      if (answerRows.length > 0) {
+        await db.insert(quizAnswersTable).values(answerRows).catch(err => console.error("quiz_answers insert failed:", err));
+      }
     }
 
     await db.insert(activityTable).values({

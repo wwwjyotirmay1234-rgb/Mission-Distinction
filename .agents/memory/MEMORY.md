@@ -18,3 +18,4 @@
 - [In-app browser PWA install detection](in-app-browser-install.md) — WhatsApp/Instagram webviews can't fire beforeinstallprompt; must detect and show "open in Chrome/Safari" instead of a dead Install button
 - [Email provider is SendGrid, not Resend](email-provider-sendgrid.md) — lib/email.ts sendEmail() must use @sendgrid/mail; RESEND_API_KEY is unverified sandbox-only and silently blocks all real-recipient email
 - [Test account year/session gating](test-account-year-gate.md) — student login only reaches /student/dashboard if year/sessionYear exactly match ACTIVE_MBBS_YEAR/ACTIVE_SESSION_YEAR in colleges.ts, else redirects to /coming-soon
+- [No dedicated login/register routes](landing-page-auth.md) — auth lives on "/" (LandingPage.tsx) as Login/Register tabs, not /login or /register; e2e tests must navigate to "/" first

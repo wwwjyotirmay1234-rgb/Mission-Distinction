@@ -108,6 +108,33 @@ router.delete("/subscribe", authMiddleware, pushSubscribeLimiter, async (req: Re
   }
 });
 
+export async function sendPushToUser(userId: number, title: string, body: string, url = "/") {
+  try {
+    await ensureVapid();
+    const subs = await db.select().from(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.userId, userId));
+    if (subs.length === 0) return false;
+    const payload = JSON.stringify({ title, body, url, icon: "/logo.jpeg" });
+    const results = await Promise.allSettled(
+      subs.map((sub) =>
+        webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          payload
+        )
+      )
+    );
+    const failedEndpoints = subs.filter((_, i) => {
+      const r = results[i];
+      return r.status === "rejected" || (r.status === "fulfilled" && (r.value.statusCode === 410 || r.value.statusCode === 404));
+    }).map(s => s.endpoint);
+    for (const ep of failedEndpoints) {
+      await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.endpoint, ep)).catch(() => {});
+    }
+    return results.some(r => r.status === "fulfilled");
+  } catch {
+    return false;
+  }
+}
+
 export async function sendPushToAll(title: string, body: string, url = "/") {
   try {
     await ensureVapid();

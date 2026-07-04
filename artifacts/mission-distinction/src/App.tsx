@@ -71,6 +71,7 @@ const StudentQuiz          = lazy(() => import("@/pages/student/Quiz"));
 const StudentNotes         = lazy(() => import("@/pages/student/Notes"));
 const StudentPDFs          = lazy(() => import("@/pages/student/PDFs"));
 const StudentCommunity     = lazy(() => import("@/pages/student/Community"));
+const StudentMyProgress     = lazy(() => import("@/pages/student/MyProgress"));
 const StudentProgress      = lazy(() => import("@/pages/student/Progress"));
 const StudentCalendar      = lazy(() => import("@/pages/student/Calendar"));
 const StudentSettings      = lazy(() => import("@/pages/student/Settings"));
@@ -192,7 +193,8 @@ function Router() {
                 <Route path="/student/pdfs"         component={StudentPDFs} />
                 <Route path="/student/community"    component={StudentCommunity} />
                 <Route path="/student/announcements" component={StudentAnnouncements} />
-                <Route path="/student/progress"     component={StudentProgress} />
+                <Route path="/student/progress"     component={StudentMyProgress} />
+                <Route path="/student/old-progress"     component={StudentProgress} />
                 <Route path="/student/leaderboard"  component={StudentLeaderboard} />
                 <Route path="/student/doubts"       component={StudentDoubts} />
                 <Route path="/student/calendar"     component={StudentCalendar} />

@@ -377,4 +377,165 @@ router.get("/search-images", authMiddleware, async (req: Request, res: Response)
   }
 });
 
+// ── Confusables comparison tool ────────────────────────────────────────────
+router.post("/confusables", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
+  try {
+    const items = sanitizePromptInput(req.body.items, 300);
+    const subject = sanitizePromptInput(req.body.subject, 100);
+    if (!items) { res.status(400).json({ error: "items required (e.g. 'ampicillin vs amoxicillin')" }); return; }
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.4,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: `A 1st Year MBBS student keeps confusing these: "${items}"${subject ? ` (Subject: ${subject})` : ""}.
+Return ONLY valid JSON: { "title": string, "rows": [{ "aspect": string, "itemA": string, "itemB": string }], "keyDifference": string, "mnemonicTip": string }
+Build a side-by-side comparison table (6-10 rows covering: class/category, mechanism/structure, key distinguishing feature, clinical use/significance, common trap in exams, and any other high-yield aspect). "keyDifference" is one crisp sentence capturing the single most important distinction. "mnemonicTip" is a short trick to never confuse them again.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+    });
+    const content = completion.choices[0]?.message?.content;
+    if (!content) { res.status(500).json({ error: "No response from AI" }); return; }
+    res.json(JSON.parse(content));
+  } catch (err: any) {
+    console.error("Confusables error:", err);
+    res.status(500).json({ error: err?.message || "Failed to generate comparison. Please try again." });
+  }
+});
+
+// ── Diagram explainer (upload a photo of a diagram/slide/ECG/X-ray) ───────
+router.post("/explain-diagram", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
+  try {
+    const imageBase64: string | undefined = typeof req.body.imageBase64 === "string" && req.body.imageBase64.startsWith("data:image/") ? req.body.imageBase64 : undefined;
+    const context = sanitizePromptInput(req.body.context, 300);
+    if (!imageBase64) { res.status(400).json({ error: "imageBase64 required" }); return; }
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      temperature: 0.3,
+      max_tokens: 1500,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `This is a photo of a textbook diagram, histology slide, ECG, X-ray, or similar medical image submitted by a 1st Year MBBS student.${context ? ` Extra context from the student: "${context}"` : ""}
+Identify what it is, then label and explain every visible structure/finding in plain but exam-accurate language. Structure your answer in Markdown with:
+## What this is
+## Labelled structures / findings
+(a bulleted list — one bullet per structure/finding, bold the label, then explain it)
+## Why it matters (exam relevance)
+Keep it clear enough for a 1st Year student but factually rigorous.`,
+            },
+            { type: "image_url", image_url: { url: imageBase64, detail: "high" } },
+          ] as any,
+        },
+      ],
+    });
+    const content = completion.choices[0]?.message?.content;
+    if (!content) { res.status(500).json({ error: "No response from AI" }); return; }
+    res.json({ explanation: content });
+  } catch (err: any) {
+    console.error("Diagram explainer error:", err);
+    res.status(500).json({ error: err?.message || "Failed to explain diagram. Please try again." });
+  }
+});
+
+// ── Viva / OSCE practice mode ───────────────────────────────────────────────
+router.post("/viva/start", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
+  try {
+    const subject = sanitizePromptInput(req.body.subject, 100);
+    const topic = sanitizePromptInput(req.body.topic, 200);
+    if (!subject) { res.status(400).json({ error: "subject required" }); return; }
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.9,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT + `\nYou are now roleplaying as a strict but fair MBBS viva examiner conducting an oral exam / OSCE station. Ask ONE question at a time. Never answer your own question. Never break character.` },
+        {
+          role: "user",
+          content: `Start a viva for Subject: ${subject}${topic ? `, Topic: ${topic}` : ""}. Greet the student briefly as an examiner would, then ask your first spot/case question. Keep it to 2-4 sentences total.`,
+        },
+      ],
+    });
+    const examinerMessage = completion.choices[0]?.message?.content || "";
+    res.json({ examinerMessage });
+  } catch (err: any) {
+    console.error("Viva start error:", err);
+    res.status(500).json({ error: err?.message || "Failed to start viva. Please try again." });
+  }
+});
+
+router.post("/viva/respond", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
+  try {
+    const subject = sanitizePromptInput(req.body.subject, 100);
+    const history = Array.isArray(req.body.history) ? req.body.history.slice(-20) : [];
+    const answer = sanitizePromptInput(req.body.answer, 2000);
+    if (!subject || !answer) { res.status(400).json({ error: "subject and answer required" }); return; }
+
+    const messages: any[] = [
+      { role: "system", content: SYSTEM_PROMPT + `\nYou are roleplaying as a strict but fair MBBS viva examiner for Subject: ${subject}. Grade the student's spoken answer briefly (1-2 sentences of feedback — correct/partially correct/incorrect and why), then either ask a natural follow-up question on the same topic to probe deeper, or move to a new spot question. Never break character. Keep total response to 3-5 sentences.` },
+    ];
+    for (const h of history) {
+      if (h && (h.role === "user" || h.role === "assistant") && typeof h.content === "string") {
+        messages.push({ role: h.role, content: h.content.slice(0, 2000) });
+      }
+    }
+    messages.push({ role: "user", content: answer });
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.8,
+      messages,
+    });
+    const examinerMessage = completion.choices[0]?.message?.content || "";
+    res.json({ examinerMessage });
+  } catch (err: any) {
+    console.error("Viva respond error:", err);
+    res.status(500).json({ error: err?.message || "Failed to continue viva. Please try again." });
+  }
+});
+
+// ── Standalone AI-graded theory answer practice (not tied to a quiz) ──────
+router.post("/grade-answer", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
+  try {
+    const question = sanitizePromptInput(req.body.question, 1000);
+    const answer = sanitizePromptInput(req.body.answer, 4000);
+    const maxMarks = Math.min(Math.max(parseInt(req.body.maxMarks) || 5, 1), 20);
+    const subject = sanitizePromptInput(req.body.subject, 100);
+    if (!question || !answer) { res.status(400).json({ error: "question and answer required" }); return; }
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: `Grade this MBBS university-exam-style theory answer like a strict but fair examiner.
+Subject: ${subject || "General Medicine"}
+Question (max marks: ${maxMarks}): ${question}
+Student's answer: ${answer}
+
+Return ONLY valid JSON: { "marks": number (0 to ${maxMarks}), "feedback": string (what was good), "lacking": string (specific marks-worthy points that were missing), "modelAnswerOutline": string (bullet-point outline of a full-marks answer) }`,
+        },
+      ],
+    });
+    const content = completion.choices[0]?.message?.content;
+    if (!content) { res.status(500).json({ error: "No response from AI" }); return; }
+    res.json(JSON.parse(content));
+  } catch (err: any) {
+    console.error("Grade answer error:", err);
+    res.status(500).json({ error: err?.message || "Failed to grade answer. Please try again." });
+  }
+});
+
 export { router as aiToolsRouter };

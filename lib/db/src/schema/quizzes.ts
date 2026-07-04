@@ -88,6 +88,38 @@ export const quizSubmissionsTable = pgTable("quiz_submissions", {
   gradedAt: timestamp("graded_at"),
 });
 
+export const quizAnswersTable = pgTable("quiz_answers", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  quizId: integer("quiz_id").notNull(),
+  attemptId: integer("attempt_id").notNull(),
+  questionId: integer("question_id").notNull(),
+  subject: text("subject").notNull(),
+  questionType: text("question_type").notNull(),
+  correct: boolean("correct"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const dailyQuestionsTable = pgTable("daily_questions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  dateKey: text("date_key").notNull(),
+  subject: text("subject").notNull(),
+  questionJson: jsonb("question_json").notNull(),
+  answered: boolean("answered").default(false).notNull(),
+  wasCorrect: boolean("was_correct"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const studyPlansTable = pgTable("study_plans", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  targetDate: text("target_date"),
+  planJson: jsonb("plan_json").notNull(),
+  weakSubjects: jsonb("weak_subjects").$type<string[]>(),
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+});
+
 export const insertQuizSchema = createInsertSchema(quizzesTable).omit({ id: true, createdAt: true, questionCount: true });
 export type InsertQuiz = z.infer<typeof insertQuizSchema>;
 export type Quiz = typeof quizzesTable.$inferSelect;
@@ -95,3 +127,6 @@ export type Question = typeof questionsTable.$inferSelect;
 export type QuizAttempt = typeof quizAttemptsTable.$inferSelect;
 export type QuestionReport = typeof questionReportsTable.$inferSelect;
 export type QuizSubmission = typeof quizSubmissionsTable.$inferSelect;
+export type QuizAnswer = typeof quizAnswersTable.$inferSelect;
+export type StudyPlan = typeof studyPlansTable.$inferSelect;
+export type DailyQuestion = typeof dailyQuestionsTable.$inferSelect;

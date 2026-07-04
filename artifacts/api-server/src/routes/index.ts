@@ -44,6 +44,7 @@ import { meddyRouter } from "./meddy";
 import { submissionsRouter } from "./submissions";
 import { deviceAnalyticsRouter } from "./deviceAnalytics";
 import { appUpdatesRouter } from "./appUpdates";
+import { analyticsRouter } from "./analytics";
 
 const router: IRouter = Router();
 
@@ -99,5 +100,6 @@ router.use("/admin/submissions", submissionsRouter);
 router.use(deviceAnalyticsRouter);
 router.use("/app-updates", appUpdatesRouter);
 router.use("/admin/app-updates", appUpdatesRouter);
+router.use("/analytics", analyticsRouter);
 
 export default router;

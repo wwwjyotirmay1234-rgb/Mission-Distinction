@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,7 @@ const QUICK_ACTIONS = [
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const [qodSending, setQodSending] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useGetAdminDashboardStats({
     query: { queryKey: getGetAdminDashboardStatsQueryKey() }
@@ -105,6 +107,27 @@ export default function AdminDashboard() {
           </h1>
           <p className="text-muted-foreground">Here is what's happening on your platform today.</p>
         </div>
+        <Button
+          variant="outline"
+          className="gap-2 bg-card/40 border-border/40"
+          disabled={qodSending}
+          onClick={async () => {
+            setQodSending(true);
+            try {
+              const res = await apiFetch("/api/analytics/question-of-day/broadcast", { method: "POST" });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data?.error || "Failed to send");
+              toast.success(`Sent today's question to ${data.pushesSent}/${data.totalStudents} students`);
+            } catch (e: any) {
+              toast.error(e?.message || "Failed to send question of the day");
+            } finally {
+              setQodSending(false);
+            }
+          }}
+        >
+          <Brain size={16} className="text-primary" />
+          {qodSending ? "Sending…" : "Send Question of the Day"}
+        </Button>
       </div>
 
       {/* Stats Cards */}

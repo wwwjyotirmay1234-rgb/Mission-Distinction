@@ -6,8 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useListNotes, getListNotesQueryKey, customFetch } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, FileText, Download, BookMarked, X, ChevronLeft, BookOpen, ExternalLink, BookText, ClipboardList } from "lucide-react";
+import { Search, Filter, FileText, Download, BookMarked, X, ChevronLeft, BookOpen, ExternalLink, BookText, ClipboardList, Sparkles, History, AlertCircle, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Spinner } from "@/components/ui/spinner";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type Note = {
   id: number;
@@ -234,9 +241,53 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
   const [viewing, setViewing] = React.useState(false);
   const [embedFailed, setEmbedFailed] = React.useState(false);
 
+  // AI Search Topic State
+  const [topic, setTopic] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<{ matches: { year: string | null; question: string; modelAnswer: string }[]; note: string; warning?: string } | null>(null);
+
+  // AI Repeated Questions State
+  const [analyzing, setAnalyzing] = useState(false);
+  const [repeatedData, setRepeatedData] = useState<{ chapters: { chapter: string; importance: "high" | "medium" | "low"; repeatedQuestions: { question: string; timesSeen: number; yearsSeen: string[] }[] }[]; summary: string; warning?: string } | null>(null);
+
   const open = () => {
     trackPYQRead(pyq.id);
     setViewing(true);
+  };
+
+  const handleSearchTopic = async () => {
+    if (!topic.trim()) return;
+    setSearching(true);
+    setSearchResults(null);
+    try {
+      const data = await customFetch<{ matches: any[]; note: string; warning?: string }>(`/api/pyqs/${pyq.id}/search-topic`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic }),
+      });
+      setSearchResults(data);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to search topic");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleRepeatedQuestions = async () => {
+    setAnalyzing(true);
+    setRepeatedData(null);
+    try {
+      const data = await customFetch<{ chapters: any[]; summary: string; warning?: string }>(`/api/pyqs/${pyq.id}/repeated-questions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      setRepeatedData(data);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to analyze repeated questions");
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   return (
@@ -270,7 +321,7 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
 
       {viewing && (
         <Dialog open onOpenChange={v => { if (!v) setViewing(false); }}>
-          <DialogContent className="max-w-3xl w-full max-h-[90vh] flex flex-col bg-card border-border/50 p-0 gap-0">
+          <DialogContent className="max-w-4xl w-full max-h-[90vh] flex flex-col bg-card border-border/50 p-0 gap-0">
             <DialogHeader className="px-6 py-4 border-b border-border/50 flex-row items-center justify-between">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -283,38 +334,221 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
                 <X size={16} />
               </Button>
             </DialogHeader>
-            <div className="flex-1 overflow-hidden min-h-0">
-              {embedFailed ? (
-                <div className="flex flex-col items-center justify-center h-full gap-5 px-6 text-center">
-                  <ClipboardList size={48} className="text-amber-500/50" />
-                  <div>
-                    <p className="font-semibold text-lg">{pyq.title}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{pyq.subject} · {pyq.year}</p>
+
+            <Tabs defaultValue="preview" className="flex-1 flex flex-col min-h-0">
+              <div className="px-6 border-b border-border/50 bg-muted/20">
+                <TabsList className="h-10 bg-transparent border-0 gap-4">
+                  <TabsTrigger value="preview" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs">
+                    <FileText size={14} className="mr-2" /> PDF Preview
+                  </TabsTrigger>
+                  <TabsTrigger value="search" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs">
+                    <Sparkles size={14} className="mr-2 text-purple-400" /> Search Topic
+                  </TabsTrigger>
+                  <TabsTrigger value="repeated" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs">
+                    <History size={14} className="mr-2 text-amber-400" /> Repeated Questions
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value="preview" className="flex-1 m-0 overflow-hidden relative">
+                {embedFailed ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-5 px-6 text-center py-12">
+                    <ClipboardList size={48} className="text-amber-500/50" />
+                    <div>
+                      <p className="font-semibold text-lg">{pyq.title}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{pyq.subject} · {pyq.year}</p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                      <Button className="flex-1 gap-2" asChild>
+                        <a href={pyq.url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink size={15} /> Open in Browser
+                        </a>
+                      </Button>
+                      <Button variant="outline" className="flex-1 gap-2" onClick={() => openDownload(pyq.url)}>
+                        <Download size={15} /> Download
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Preview unavailable — tap "Open in Browser" to read.</p>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
-                    <Button className="flex-1 gap-2" asChild>
-                      <a href={pyq.url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink size={15} /> Open in Browser
-                      </a>
-                    </Button>
-                    <Button variant="outline" className="flex-1 gap-2" onClick={() => openDownload(pyq.url)}>
-                      <Download size={15} /> Download
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Preview unavailable — tap "Open in Browser" to read.</p>
+                ) : (
+                  <iframe
+                    src={embedUrl}
+                    className="w-full h-full rounded border-0"
+                    style={{ minHeight: "60vh" }}
+                    title={pyq.title}
+                    allow="autoplay"
+                    onError={() => setEmbedFailed(true)}
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="search" className="flex-1 m-0 overflow-hidden flex flex-col p-6 gap-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter topic (e.g. 'Heart Valves', 'Krebs Cycle')..."
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearchTopic()}
+                    disabled={searching}
+                    className="bg-muted/30 border-border/50"
+                  />
+                  <Button onClick={handleSearchTopic} disabled={searching || !topic.trim()} className="shrink-0 bg-purple-600 hover:bg-purple-700">
+                    {searching ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                    <span className="ml-2 hidden sm:inline">Search AI</span>
+                  </Button>
                 </div>
-              ) : (
-                <iframe
-                  src={embedUrl}
-                  className="w-full h-full rounded border-0"
-                  style={{ minHeight: "60vh" }}
-                  title={pyq.title}
-                  allow="autoplay"
-                  onError={() => setEmbedFailed(true)}
-                />
-              )}
-            </div>
-            <div className="px-6 py-3 border-t border-border/50 flex items-center justify-between">
+
+                {searching && (
+                  <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-12">
+                    <Spinner className="w-8 h-8 text-purple-500" />
+                    <div className="space-y-1">
+                      <p className="font-medium">Analyzing PDF document...</p>
+                      <p className="text-xs text-muted-foreground">This can take up to 30 seconds as I read through the entire paper.</p>
+                    </div>
+                  </div>
+                )}
+
+                {!searching && searchResults && (
+                  <ScrollArea className="flex-1 pr-4">
+                    <div className="space-y-4">
+                      {searchResults.warning && (
+                        <Alert className="bg-amber-500/10 border-amber-500/30 text-amber-400 py-2">
+                          <AlertCircle size={14} className="text-amber-400" />
+                          <AlertDescription className="text-[10px] ml-2">
+                            {searchResults.warning}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      {searchResults.matches.length === 0 ? (
+                        <div className="text-center py-12 border rounded-xl border-dashed border-border/50">
+                          <Search size={32} className="mx-auto text-muted-foreground/30 mb-3" />
+                          <p className="text-sm text-muted-foreground">{searchResults.note || "No matching questions found for this topic."}</p>
+                        </div>
+                      ) : (
+                        <div className="grid gap-4">
+                          {searchResults.matches.map((m, i) => (
+                            <Card key={i} className="bg-muted/20 border-border/40 overflow-hidden">
+                              <div className="p-4 border-b border-border/30 bg-muted/30 flex justify-between items-start gap-3">
+                                <h4 className="font-semibold text-sm leading-tight text-foreground/90">{m.question}</h4>
+                                {m.year && <Badge variant="outline" className="text-[10px] shrink-0 bg-background/50 border-border/50">{m.year}</Badge>}
+                              </div>
+                              <CardContent className="p-4 prose prose-invert prose-sm max-w-none">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {m.modelAnswer}
+                                </ReactMarkdown>
+                              </CardContent>
+                            </Card>
+                          ))}
+                          <p className="text-[10px] text-muted-foreground italic text-center pb-2">{searchResults.note}</p>
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                )}
+
+                {!searching && !searchResults && (
+                  <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center opacity-60 py-12">
+                    <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center">
+                      <Sparkles size={32} className="text-purple-400" />
+                    </div>
+                    <div className="max-w-xs space-y-2">
+                      <p className="font-semibold">AI Topic Search</p>
+                      <p className="text-xs text-muted-foreground">Search for any specific topic and I'll find all related questions in this paper and generate model answers for you.</p>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="repeated" className="flex-1 m-0 overflow-hidden flex flex-col p-6 gap-4">
+                {!analyzing && !repeatedData && (
+                  <div className="flex-1 flex flex-col items-center justify-center gap-6 text-center py-12">
+                    <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center">
+                      <History size={40} className="text-amber-400" />
+                    </div>
+                    <div className="max-w-sm space-y-3">
+                      <h3 className="text-lg font-bold">Exam Weightage Analysis</h3>
+                      <p className="text-sm text-muted-foreground">
+                        I can analyze this PDF to group questions by chapter and identify which topics are most repeated across the years.
+                      </p>
+                      <Button onClick={handleRepeatedQuestions} className="bg-amber-600 hover:bg-amber-700 w-full sm:w-auto">
+                        Analyze Repeated Questions
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {analyzing && (
+                  <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-12">
+                    <Spinner className="w-8 h-8 text-amber-500" />
+                    <div className="space-y-1">
+                      <p className="font-medium text-amber-500/90">Analyzing exam patterns...</p>
+                      <p className="text-xs text-muted-foreground">Identifying repeated questions and chapter importance. This takes ~30 seconds.</p>
+                    </div>
+                  </div>
+                )}
+
+                {!analyzing && repeatedData && (
+                  <ScrollArea className="flex-1 pr-4">
+                    <div className="space-y-6">
+                      {repeatedData.warning && (
+                        <Alert className="bg-amber-500/10 border-amber-500/30 text-amber-400 py-2">
+                          <AlertCircle size={14} className="text-amber-400" />
+                          <AlertDescription className="text-[10px] ml-2">
+                            {repeatedData.warning}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      <div className="bg-primary/5 rounded-xl p-4 border border-primary/10">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary/70 mb-2">Analysis Summary</h4>
+                        <p className="text-sm leading-relaxed">{repeatedData.summary}</p>
+                      </div>
+
+                      <div className="space-y-6 pb-4">
+                        {repeatedData.chapters.map((chap, idx) => {
+                          const importanceColor = chap.importance === "high" 
+                            ? "bg-red-500/20 text-red-400 border-red-500/30" 
+                            : chap.importance === "medium" 
+                              ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                              : "bg-muted text-muted-foreground border-border/50";
+                          
+                          return (
+                            <div key={idx} className="space-y-3">
+                              <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                                <h3 className="font-bold text-sm text-foreground/90">{chap.chapter}</h3>
+                                <Badge className={`text-[10px] uppercase font-black tracking-widest px-2 py-0 ${importanceColor}`}>
+                                  {chap.importance}
+                                </Badge>
+                              </div>
+                              <div className="grid gap-3">
+                                {chap.repeatedQuestions.map((q, qi) => (
+                                  <div key={qi} className="bg-muted/10 rounded-lg p-3 border border-border/20 hover:border-border/50 transition-colors">
+                                    <p className="text-sm font-medium mb-2">{q.question}</p>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <Badge variant="secondary" className="text-[10px] h-5 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border-none">
+                                        Seen {q.timesSeen} {q.timesSeen === 1 ? "time" : "times"}
+                                      </Badge>
+                                      {q.yearsSeen.map((y, yi) => (
+                                        <Badge key={yi} variant="outline" className="text-[10px] h-5 border-border/50 text-muted-foreground">
+                                          {y}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </ScrollArea>
+                )}
+              </TabsContent>
+            </Tabs>
+
+            <div className="px-6 py-3 border-t border-border/50 flex items-center justify-between bg-muted/10">
               <span className="text-xs text-muted-foreground">{pyq.downloadCount ?? 0} views</span>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => openDownload(pyq.url)}>

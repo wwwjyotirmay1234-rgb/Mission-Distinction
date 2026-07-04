@@ -385,6 +385,45 @@ export async function runStartupMigrations() {
 
       ALTER TABLE users
         ADD COLUMN IF NOT EXISTS last_seen_app_update_at TIMESTAMP DEFAULT NOW();
+
+      CREATE TABLE IF NOT EXISTS quiz_answers (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        quiz_id INTEGER NOT NULL,
+        attempt_id INTEGER NOT NULL,
+        question_id INTEGER NOT NULL,
+        subject TEXT NOT NULL,
+        question_type TEXT NOT NULL,
+        correct BOOLEAN,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS quiz_answers_user_idx ON quiz_answers(user_id);
+      CREATE INDEX IF NOT EXISTS quiz_answers_user_subject_idx ON quiz_answers(user_id, subject);
+
+      CREATE TABLE IF NOT EXISTS study_plans (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        target_date TEXT,
+        plan_json JSONB NOT NULL,
+        weak_subjects JSONB,
+        generated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS study_plans_user_idx ON study_plans(user_id);
+
+      CREATE TABLE IF NOT EXISTS daily_questions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        date_key TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        question_json JSONB NOT NULL,
+        answered BOOLEAN NOT NULL DEFAULT FALSE,
+        was_correct BOOLEAN,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS daily_questions_user_date_unique ON daily_questions(user_id, date_key);
     `);
   } finally {
     client.release();

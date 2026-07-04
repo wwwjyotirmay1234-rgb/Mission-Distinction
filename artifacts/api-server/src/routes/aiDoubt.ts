@@ -307,6 +307,35 @@ flowchart TD
 \`\`\``;
 
 
+// ── Shared PDF extraction (buffer -> text/images) — reused by PYQ analysis ──
+export async function extractPdfBuffer(buffer: Buffer): Promise<{ text: string; images?: string[]; pages: number; warning?: string }> {
+  const magic = buffer.slice(0, 4).toString("ascii");
+  if (!magic.startsWith("%PDF")) {
+    throw new Error("File does not appear to be a valid PDF.");
+  }
+  const parsed = await pdfParse(buffer);
+  const rawText = (parsed.text as string).trim();
+  if (!rawText || rawText.length < 20) {
+    try {
+      const images = await renderPdfPagesToImages(buffer);
+      return {
+        text: "",
+        pages: parsed.numpages,
+        images,
+        warning: parsed.numpages > images.length
+          ? `Scanned PDF — AI will read the first ${images.length} of ${parsed.numpages} pages as images.`
+          : "Scanned PDF — AI will read the pages as images.",
+      };
+    } catch {
+      return { text: "", pages: parsed.numpages, warning: "This appears to be a scanned PDF — no text could be extracted." };
+    }
+  }
+  const text = rawText.length > MAX_DOCUMENT_TEXT_CHARS
+    ? rawText.slice(0, MAX_DOCUMENT_TEXT_CHARS) + `\n\n[Document truncated at ${MAX_DOCUMENT_TEXT_CHARS.toLocaleString()} characters]`
+    : rawText;
+  return { text, pages: parsed.numpages };
+}
+
 // ── Extract text from an uploaded file (base64-encoded PDF / text) ────────
 router.post("/extract-file", authMiddleware, async (req: Request, res: Response) => {
   const fileBase64 = sanitize(req.body.fileBase64, 140_000_000); // up to ~100MB base64
