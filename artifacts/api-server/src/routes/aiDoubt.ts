@@ -14,7 +14,10 @@ const pdfParse: (buf: Buffer, opts?: { max?: number }) => Promise<{ text: string
 const router = Router();
 
 // ── Render scanned (image-only) PDF pages to PNG images for vision AI ──────
-const MAX_SCANNED_PDF_PAGES = 5;
+// 20 pages balances covering large scanned PYQ compilations against vision-API cost/latency.
+const MAX_SCANNED_PDF_PAGES = 20;
+// Large text-based PYQ compilations (40-60 pages) can easily exceed the old 80k-char cap.
+const MAX_DOCUMENT_TEXT_CHARS = 350_000;
 
 async function renderPdfPagesToImages(buffer: Buffer, maxPages = MAX_SCANNED_PDF_PAGES): Promise<string[]> {
   const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
@@ -128,6 +131,19 @@ When the uploaded image(s)/document contain MULTIPLE questions (not just one), y
 4. If handwriting or print is unclear on a question/option, make your best reading explicit (e.g. "reading this as...") rather than silently guessing or skipping it.
 5. At the end of a multi-question paper, add a **Paper Summary** with: total questions solved, a rough topic-wise breakup (e.g. "Anatomy: 3, Physiology: 2..."), and 2-3 lines flagging which questions are the highest-yield / most likely to reappear in NEET PG, INICET, or OPSC.
 6. If the paper is extremely long (30+ questions) and truncation risk is high, solve in the same message as many as you fully can with complete reasoning, then end with a note telling the student exactly which question numbers remain and to send "continue" to get the rest — never produce rushed, low-quality answers just to fit everything in.
+
+### 8. Topic Search Across a Multi-Year PYQ Compilation (e.g. a 40-60 page "previous year questions" PDF mixing many years together)
+Students will often upload a large previous-year-questions (PYQ) document that mixes questions from many different years/exam sessions together, then ask something like "find all questions on [topic] and tell me which year each is from." When this happens:
+1. Read through the **entire** uploaded document (all pages/text provided), not just the first section — the whole point of this feature is not missing a match buried on page 40.
+2. Identify the year (or exam session, e.g. "NEET PG 2020", "INICET Jan 2022") for each question from whatever labeling the document uses — section headers, "Year:" tags, footers, page dividers, or exam-name/date text near a question block. If a question's year truly cannot be determined from the document, say so explicitly for that question rather than guessing or silently omitting it.
+3. Find EVERY question that matches the requested topic, even if worded differently or appearing in more than one year — do not stop at the first match.
+4. Present results **grouped and sorted by year** (oldest to newest, or as the student requests), and for each match:
+   - State the year/session it appeared in
+   - Quote or closely paraphrase the question
+   - Give the full "NEET PG / INICET / OPSC / MCQ Question" answer structure (Answer, Why correct, Why others wrong, High-yield facts, Traps, Difficulty & Exam Insight)
+5. End with a short **Trend Insight** line — e.g. how often this topic recurs across the years present in the document, and whether it looks like a "recurring favorite" worth prioritizing.
+6. If no question on the requested topic is found anywhere in the document, say so plainly and suggest the closest related topics you DID find in the document, rather than fabricating a match.
+7. Be fast, confident, and conversational in how you present this — the student wants an instant, reliable answer to "does this topic come up, and when," not a hedging or uncertain response.
 
 ---
 
@@ -304,7 +320,7 @@ router.post("/extract-file", authMiddleware, async (req: Request, res: Response)
 
     // Plain text files — decode directly
     if (mimeType.startsWith("text/") || fileName.match(/\.(txt|md|csv)$/i)) {
-      const text = buffer.toString("utf-8").slice(0, 80_000);
+      const text = buffer.toString("utf-8").slice(0, MAX_DOCUMENT_TEXT_CHARS);
       res.json({ text, chars: text.length, pages: 1 });
       return;
     }
@@ -316,7 +332,9 @@ router.post("/extract-file", authMiddleware, async (req: Request, res: Response)
         res.status(400).json({ error: "File does not appear to be a valid PDF." });
         return;
       }
-      const parsed = await pdfParse(buffer, { max: 80 });
+      // No page cap here — large multi-year PYQ compilations (40-60+ pages) must be
+      // fully parsed so topic searches across the whole document can find every match.
+      const parsed = await pdfParse(buffer);
       const rawText = (parsed.text as string).trim();
       if (!rawText || rawText.length < 20) {
         // Scanned / image-only PDF — no extractable text. Fall back to rendering
@@ -338,7 +356,9 @@ router.post("/extract-file", authMiddleware, async (req: Request, res: Response)
         }
         return;
       }
-      const text = rawText.length > 80_000 ? rawText.slice(0, 80_000) + "\n\n[Document truncated at 80,000 characters]" : rawText;
+      const text = rawText.length > MAX_DOCUMENT_TEXT_CHARS
+        ? rawText.slice(0, MAX_DOCUMENT_TEXT_CHARS) + `\n\n[Document truncated at ${MAX_DOCUMENT_TEXT_CHARS.toLocaleString()} characters]`
+        : rawText;
       res.json({ text, pages: parsed.numpages, chars: text.length });
       return;
     }
@@ -354,7 +374,7 @@ router.post("/extract-file", authMiddleware, async (req: Request, res: Response)
 router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res: Response) => {
   const question = sanitize(req.body.question, 4000) ?? "";
   const imageBase64: string | undefined = typeof req.body.imageBase64 === "string" && req.body.imageBase64.startsWith("data:image/") ? req.body.imageBase64 : undefined;
-  const documentText = sanitize(req.body.documentText, 80_000) ?? "";
+  const documentText = sanitize(req.body.documentText, MAX_DOCUMENT_TEXT_CHARS) ?? "";
   const documentTitle = sanitize(req.body.documentTitle, 400) ?? "";
   const documentImages: string[] = Array.isArray(req.body.documentImages)
     ? req.body.documentImages.filter((s: unknown): s is string => typeof s === "string" && s.startsWith("data:image/")).slice(0, MAX_SCANNED_PDF_PAGES)
