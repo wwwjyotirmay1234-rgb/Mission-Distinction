@@ -65,6 +65,8 @@ export interface User {
   avatarUrl?: string | null;
   /** @nullable */
   studyStreak?: number | null;
+  /** @nullable */
+  isSuperAdmin?: boolean | null;
   createdAt: string;
 }
 
@@ -195,6 +197,7 @@ export interface QuizInput {
   difficulty: string;
   durationMinutes?: number;
   isFeatured?: boolean;
+  isProctored?: boolean;
 }
 
 export interface Question {

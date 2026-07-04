@@ -22,5 +22,7 @@ export interface User {
   avatarUrl?: string | null;
   /** @nullable */
   studyStreak?: number | null;
+  /** @nullable */
+  isSuperAdmin?: boolean | null;
   createdAt: string;
 }

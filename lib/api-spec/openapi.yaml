@@ -996,6 +996,8 @@ components:
           type: ["string", "null"]
         studyStreak:
           type: ["integer", "null"]
+        isSuperAdmin:
+          type: ["boolean", "null"]
         createdAt:
           type: string
 
@@ -1197,6 +1199,8 @@ components:
         durationMinutes:
           type: integer
         isFeatured:
+          type: boolean
+        isProctored:
           type: boolean
 
     Question:

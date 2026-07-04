@@ -52,6 +52,7 @@ export const StudentLoginResponse = zod.object({
   "college": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "studyStreak": zod.number().nullish(),
+  "isSuperAdmin": zod.boolean().nullish(),
   "createdAt": zod.string()
 })
 })
@@ -91,6 +92,7 @@ export const AdminLoginResponse = zod.object({
   "college": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "studyStreak": zod.number().nullish(),
+  "isSuperAdmin": zod.boolean().nullish(),
   "createdAt": zod.string()
 })
 })
@@ -109,6 +111,7 @@ export const GetMeResponse = zod.object({
   "college": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "studyStreak": zod.number().nullish(),
+  "isSuperAdmin": zod.boolean().nullish(),
   "createdAt": zod.string()
 })
 
@@ -133,6 +136,7 @@ export const ListUsersResponse = zod.object({
   "college": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "studyStreak": zod.number().nullish(),
+  "isSuperAdmin": zod.boolean().nullish(),
   "createdAt": zod.string()
 })),
   "total": zod.number(),
@@ -158,6 +162,7 @@ export const GetUserResponse = zod.object({
   "college": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "studyStreak": zod.number().nullish(),
+  "isSuperAdmin": zod.boolean().nullish(),
   "createdAt": zod.string()
 })
 
@@ -186,6 +191,7 @@ export const UpdateUserResponse = zod.object({
   "college": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "studyStreak": zod.number().nullish(),
+  "isSuperAdmin": zod.boolean().nullish(),
   "createdAt": zod.string()
 })
 
@@ -425,7 +431,8 @@ export const CreateQuizBody = zod.object({
   "description": zod.string().optional(),
   "difficulty": zod.string(),
   "durationMinutes": zod.number().optional(),
-  "isFeatured": zod.boolean().optional()
+  "isFeatured": zod.boolean().optional(),
+  "isProctored": zod.boolean().optional()
 })
 
 
