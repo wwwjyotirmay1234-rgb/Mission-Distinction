@@ -9,7 +9,7 @@ import {
   Calendar as CalendarIcon, Settings, Trophy, MessageSquare,
   Timer, Music, BookOpen, Lightbulb, MessageCircleHeart,
   Bot, Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight, BarChart2,
-  GraduationCap,
+  GraduationCap, Stethoscope,
 } from "lucide-react";
 import { useXPStats } from "@/hooks/useXPStats";
 import { XPProgressBar } from "@/components/XPProgressBar";
@@ -76,6 +76,7 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
     { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
     { icon: Users, label: "Study Rooms", href: "/student/study-rooms" },
     { icon: Bot, label: "AI Tools", href: "/student/ai-tools" },
+    { icon: Stethoscope, label: "Practical Hub", href: "/student/practical-hub" },
     { icon: Gamepad2, label: "Medical Games", href: "/student/games" },
     { icon: Music, label: "Music", href: "/student/music" },
     { icon: Settings, label: "Settings", href: "/student/settings" },

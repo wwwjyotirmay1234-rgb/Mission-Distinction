@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bot, Sparkles, CheckCircle2, XCircle, RotateCcw, FileText, SplitSquareVertical, Image as ImageIcon, MessageSquare, ClipboardCheck, Send, User } from "lucide-react";
+import { Bot, Sparkles, CheckCircle2, XCircle, RotateCcw, FileText, SplitSquareVertical, Image as ImageIcon, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 
@@ -328,133 +328,6 @@ function DiagramExplainer() {
   );
 }
 
-function VivaPractice() {
-  const [subject, setSubject] = useState("Anatomy");
-  const [topic, setTopic] = useState("");
-  const [history, setHistory] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [active, setActive] = useState(false);
-
-  const startViva = async () => {
-    setLoading(true); setHistory([]); setInput(""); setActive(false);
-    try {
-      const res = await apiFetch("/api/ai/viva/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, topic })
-      });
-      if (!res.ok) { const e = await res.json(); toast.error(e.error || "Failed to start"); return; }
-      const data = await res.json();
-      setHistory([{ role: "assistant", content: data.examinerMessage }]);
-      setActive(true);
-    } catch { toast.error("Network error"); } finally { setLoading(false); }
-  };
-
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const studentAnswer = input.trim();
-    setInput("");
-    const newHistory = [...history, { role: "user" as const, content: studentAnswer }];
-    setHistory(newHistory);
-    setLoading(true);
-
-    try {
-      const res = await apiFetch("/api/ai/viva/respond", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, history: newHistory, answer: studentAnswer })
-      });
-      if (!res.ok) { const e = await res.json(); toast.error(e.error || "Failed"); return; }
-      const data = await res.json();
-      setHistory([...newHistory, { role: "assistant", content: data.examinerMessage }]);
-    } catch { toast.error("Network error"); } finally { setLoading(false); }
-  };
-
-  return (
-    <div className="space-y-5">
-      {!active ? (
-        <Card className="bg-card/40 border-border/40">
-          <CardContent className="p-5 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subject</label>
-                <Select value={subject} onValueChange={setSubject}>
-                  <SelectTrigger className="bg-background/50 border-border/50"><SelectValue /></SelectTrigger>
-                  <SelectContent>{SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic (Optional)</label>
-                <Input value={topic} onChange={e => setTopic(e.target.value)} placeholder="e.g. Cranial Nerves, ECG leads..." className="bg-background/50 border-border/50" />
-              </div>
-            </div>
-            <Button onClick={startViva} disabled={loading} className="gap-2">
-              <MessageSquare size={15} /> {loading ? "Starting…" : "Start Viva Practice"}
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="bg-card/40 border-border/40 flex flex-col h-[600px]">
-          <div className="p-4 border-b border-border/40 flex justify-between items-center bg-card/60">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                <Bot size={18} />
-              </div>
-              <div>
-                <p className="text-sm font-bold">AI Examiner</p>
-                <p className="text-[10px] text-muted-foreground">Viva in progress: {subject}</p>
-              </div>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => setActive(false)} className="text-xs h-7">End Viva</Button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
-            {history.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "assistant" ? "justify-start" : "justify-end"}`}>
-                <div className={`max-w-[85%] rounded-2xl p-3 text-sm ${msg.role === "assistant" ? "bg-card/80 border border-border/40 text-foreground rounded-tl-none" : "bg-primary text-white rounded-tr-none"}`}>
-                  <div className="flex items-center gap-1.5 mb-1 opacity-70 text-[10px] font-bold uppercase tracking-wider">
-                    {msg.role === "assistant" ? <><Bot size={10} /> Examiner</> : <><User size={10} /> You</>}
-                  </div>
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="bg-card/80 border border-border/40 rounded-2xl rounded-tl-none p-3 flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" />
-                  <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:0.2s]" />
-                  <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:0.4s]" />
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="p-4 border-t border-border/40 bg-card/60">
-            <div className="relative">
-              <Input
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder="Type your answer here..."
-                className="pr-12 bg-background/50 border-border/50"
-                onKeyDown={e => { if (e.key === "Enter") sendMessage(); }}
-                disabled={loading}
-              />
-              <Button
-                size="icon"
-                className="absolute right-1 top-1 h-8 w-8"
-                onClick={sendMessage}
-                disabled={loading || !input.trim()}
-              >
-                <Send size={14} />
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-}
-
 function AnswerGrading() {
   const [subject, setSubject] = useState("Anatomy");
   const [question, setQuestion] = useState("");
@@ -654,7 +527,7 @@ function NoteSummariser() {
 }
 
 export default function StudentAITools() {
-  const [tab, setTab] = useState<"mcq" | "summarise" | "confusables" | "diagram" | "viva" | "grading">("mcq");
+  const [tab, setTab] = useState<"mcq" | "summarise" | "confusables" | "diagram" | "grading">("mcq");
 
   const renderTab = () => {
     switch (tab) {
@@ -662,7 +535,6 @@ export default function StudentAITools() {
       case "summarise": return <NoteSummariser />;
       case "confusables": return <Confusables />;
       case "diagram": return <DiagramExplainer />;
-      case "viva": return <VivaPractice />;
       case "grading": return <AnswerGrading />;
       default: return <MCQGenerator />;
     }
@@ -687,9 +559,6 @@ export default function StudentAITools() {
         </button>
         <button onClick={() => setTab("diagram")} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${tab === "diagram" ? "bg-primary text-white border-primary" : "bg-card/40 border-border/50 text-muted-foreground hover:border-border"}`}>
           <ImageIcon size={14} /> Diagram
-        </button>
-        <button onClick={() => setTab("viva")} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${tab === "viva" ? "bg-primary text-white border-primary" : "bg-card/40 border-border/50 text-muted-foreground hover:border-border"}`}>
-          <MessageSquare size={14} /> Viva
         </button>
         <button onClick={() => setTab("grading")} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${tab === "grading" ? "bg-primary text-white border-primary" : "bg-card/40 border-border/50 text-muted-foreground hover:border-border"}`}>
           <ClipboardCheck size={14} /> Grading
