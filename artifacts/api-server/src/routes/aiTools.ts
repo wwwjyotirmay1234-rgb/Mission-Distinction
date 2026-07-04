@@ -39,6 +39,9 @@ Reference ONLY gold-standard textbooks:
 All content must be factually accurate, evidence-based, and at NEET PG examination standard.
 Return ONLY valid JSON, no markdown, no preamble.`;
 
+const MARKDOWN_SYSTEM_PROMPT = SYSTEM_PROMPT
+  .replace("Return ONLY valid JSON, no markdown, no preamble.", "Respond in clear, well-structured Markdown as instructed by the user prompt. Do NOT return JSON.");
+
 function getDifficultyInstruction(difficulty: string): string {
   if (difficulty === "foundation") {
     return "Difficulty: 1st–2nd Year MBBS Foundation level. Test understanding of core mechanisms and concepts — not just memorised facts. Questions should require reasoning, not mere recall.";
@@ -419,7 +422,7 @@ router.post("/explain-diagram", authMiddleware, aiLimiter, async (req: Request, 
       temperature: 0.3,
       max_tokens: 1500,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: MARKDOWN_SYSTEM_PROMPT },
         {
           role: "user",
           content: [
