@@ -199,10 +199,9 @@ router.post("/:id/search-topic", authMiddleware, pyqAiLimiter, async (req: Reque
     if (doc.mode === "text") {
       const prompt = `You are an expert Indian MBBS (${pyq.subject}) examiner analysing a previous-year-question (PYQ) paper titled "${pyq.title}".
 Find every question in this document related to the topic: "${topic}".
-For EACH matching question, provide a concise, exam-ready model answer suitable for a 1st Year MBBS student in India (use standard textbook terminology, keep it structured with headings/bullet points where useful).
-Also note the year/exam session for each question if it is identifiable from the document.
+Note the year/exam session for each question if it is identifiable from the document.
 Return ONLY valid JSON of the shape:
-{ "matches": [ { "year": string|null, "question": string, "modelAnswer": string } ], "note": string }
+{ "matches": [ { "year": string|null, "question": string } ], "note": string }
 If nothing matches the topic, return an empty "matches" array and explain in "note".`;
 
       const completion = await openai.chat.completions.create({
@@ -223,20 +222,22 @@ ${CBME_CONTEXT}` },
     }
 
     // ── Scanned PDF — walk EVERY page in batches so the topic search covers the
-    // whole multi-year compilation, not just the first N pages ────────────────
+    // whole multi-year compilation, not just the first N pages. Batches are fired
+    // concurrently (not sequentially) so a 50-80 page doc doesn't feel painfully slow. ─
     const numBatches = Math.ceil(doc.pages / SCANNED_BATCH_PAGES);
-    const allMatches: { year: string | null; question: string; modelAnswer: string }[] = [];
-    const batchWarnings: string[] = [];
-
-    for (let b = 0; b < numBatches; b++) {
+    const batchRanges = Array.from({ length: numBatches }, (_, b) => {
       const start = b * SCANNED_BATCH_PAGES + 1;
       const end = Math.min(start + SCANNED_BATCH_PAGES - 1, doc.pages);
+      return { start, end };
+    });
+
+    const batchResults = await Promise.all(batchRanges.map(async ({ start, end }) => {
       try {
         const images = await renderPdfPageRange(doc.buffer, start, end);
         const batchPrompt = `These are pages ${start}-${end} of a ${pyq.subject} previous-year-question (PYQ) paper titled "${pyq.title}".
 Find every question on THESE PAGES related to the topic: "${topic}".
-For EACH matching question, give a concise, exam-ready model answer suitable for a 1st Year MBBS student in India, and note the year/exam session if it is identifiable on the page (else null).
-Return ONLY valid JSON: { "matches": [ { "year": string|null, "question": string, "modelAnswer": string } ] }
+For EACH matching question, note the year/exam session if it is identifiable on the page (else null). Do NOT provide an answer — only the question text.
+Return ONLY valid JSON: { "matches": [ { "year": string|null, "question": string } ] }
 If nothing on these pages matches the topic, return { "matches": [] }.`;
 
         const completion = await openai.chat.completions.create({
@@ -251,16 +252,16 @@ ${CBME_CONTEXT}` },
           ],
         });
         const content = completion.choices[0]?.message?.content;
-        if (!content) {
-          batchWarnings.push(`pages ${start}-${end}: AI returned no content`);
-          continue;
-        }
+        if (!content) return { matches: [] as { year: string | null; question: string }[], warning: `pages ${start}-${end}: AI returned no content` };
         const parsed = JSON.parse(content);
-        for (const m of parsed.matches || []) allMatches.push(m);
+        return { matches: (parsed.matches || []) as { year: string | null; question: string }[], warning: null };
       } catch (batchErr: any) {
-        batchWarnings.push(`pages ${start}-${end}: ${batchErr?.message || "request failed"}`);
+        return { matches: [] as { year: string | null; question: string }[], warning: `pages ${start}-${end}: ${batchErr?.message || "request failed"}` };
       }
-    }
+    }));
+
+    const allMatches = batchResults.flatMap((r) => r.matches);
+    const batchWarnings = batchResults.map((r) => r.warning).filter((w): w is string => !!w);
 
     res.json({
       pyq: { id: pyq.id, title: pyq.title, subject: pyq.subject },
@@ -328,17 +329,20 @@ ${CBME_CONTEXT}` },
     // visible) per small page-batch so each vision call reliably returns content.
     // Phase 2: one cheap text-only synthesis call over ALL transcribed questions
     // does the chapter grouping / repetition ranking across the whole document. ─
+    // Batches are fired concurrently (not sequentially) so a 50-80 page doc
+    // doesn't feel painfully slow to transcribe.
     const numBatches = Math.ceil(doc.pages / SCANNED_BATCH_PAGES);
-    const transcribed: string[] = [];
-    const batchWarnings: string[] = [];
-
-    for (let b = 0; b < numBatches; b++) {
+    const batchRanges = Array.from({ length: numBatches }, (_, b) => {
       const start = b * SCANNED_BATCH_PAGES + 1;
       const end = Math.min(start + SCANNED_BATCH_PAGES - 1, doc.pages);
+      return { start, end };
+    });
+
+    const batchResults = await Promise.all(batchRanges.map(async ({ start, end }) => {
       try {
         const images = await renderPdfPageRange(doc.buffer, start, end);
         const batchPrompt = `These are pages ${start}-${end} of a ${pyq.subject} previous-year-question (PYQ) compilation titled "${pyq.title}" that may span multiple years/exam sessions.
-Transcribe EVERY distinct exam question visible on these pages (verbatim, or close paraphrase if scan quality is poor). For each, note the year/exam session if it is identifiable anywhere on the page (header, footer, watermark) — else null.
+Transcribe EVERY distinct exam question visible on these pages (verbatim, or close paraphrase if scan quality is poor). For each, note the year/exam session if it is identifiable anywhere on the page (header, footer, watermark) — else null. Do NOT provide an answer — only the question text.
 Return ONLY valid JSON: { "questions": [ { "question": string, "year": string|null } ] }
 If no questions are visible on these pages, return { "questions": [] }.`;
 
@@ -352,18 +356,17 @@ If no questions are visible on these pages, return { "questions": [] }.`;
           ],
         });
         const content = completion.choices[0]?.message?.content;
-        if (!content) {
-          batchWarnings.push(`pages ${start}-${end}: AI returned no content`);
-          continue;
-        }
+        if (!content) return { lines: [] as string[], warning: `pages ${start}-${end}: AI returned no content` };
         const parsed = JSON.parse(content);
-        for (const q of parsed.questions || []) {
-          transcribed.push(`${q.year ? `[${q.year}] ` : ""}${q.question}`);
-        }
+        const lines = (parsed.questions || []).map((q: any) => `${q.year ? `[${q.year}] ` : ""}${q.question}`);
+        return { lines, warning: null };
       } catch (batchErr: any) {
-        batchWarnings.push(`pages ${start}-${end}: ${batchErr?.message || "request failed"}`);
+        return { lines: [] as string[], warning: `pages ${start}-${end}: ${batchErr?.message || "request failed"}` };
       }
-    }
+    }));
+
+    const transcribed = batchResults.flatMap((r) => r.lines);
+    const batchWarnings = batchResults.map((r) => r.warning).filter((w): w is string => !!w);
 
     if (transcribed.length === 0) {
       res.json({

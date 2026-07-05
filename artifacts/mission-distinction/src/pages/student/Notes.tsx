@@ -10,8 +10,6 @@ import { Search, Filter, FileText, Download, BookMarked, X, ChevronLeft, BookOpe
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Spinner } from "@/components/ui/spinner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -244,7 +242,7 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
   // AI Search Topic State
   const [topic, setTopic] = useState("");
   const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<{ matches: { year: string | null; question: string; modelAnswer: string }[]; note: string; warning?: string } | null>(null);
+  const [searchResults, setSearchResults] = useState<{ matches: { year: string | null; question: string }[]; note: string; warning?: string } | null>(null);
 
   // AI Repeated Questions State
   const [analyzing, setAnalyzing] = useState(false);
@@ -426,18 +424,13 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
                           <p className="text-sm text-muted-foreground">{searchResults.note || "No matching questions found for this topic."}</p>
                         </div>
                       ) : (
-                        <div className="grid gap-4">
+                        <div className="grid gap-2">
                           {searchResults.matches.map((m, i) => (
                             <Card key={i} className="bg-muted/20 border-border/40 overflow-hidden">
-                              <div className="p-4 border-b border-border/30 bg-muted/30 flex justify-between items-start gap-3">
-                                <h4 className="font-semibold text-sm leading-tight text-foreground/90">{m.question}</h4>
+                              <div className="p-4 flex justify-between items-start gap-3">
+                                <h4 className="font-medium text-sm leading-snug text-foreground/90">{m.question}</h4>
                                 {m.year && <Badge variant="outline" className="text-[10px] shrink-0 bg-background/50 border-border/50">{m.year}</Badge>}
                               </div>
-                              <CardContent className="p-4 prose prose-invert prose-sm max-w-none">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                  {m.modelAnswer}
-                                </ReactMarkdown>
-                              </CardContent>
                             </Card>
                           ))}
                           <p className="text-[10px] text-muted-foreground italic text-center pb-2">{searchResults.note}</p>
@@ -454,7 +447,7 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
                     </div>
                     <div className="max-w-xs space-y-2">
                       <p className="font-semibold">AI Topic Search</p>
-                      <p className="text-xs text-muted-foreground">Search for any specific topic and I'll find all related questions in this paper and generate model answers for you.</p>
+                      <p className="text-xs text-muted-foreground">Search for any specific topic and I'll find all related questions in this paper.</p>
                     </div>
                   </div>
                 )}
