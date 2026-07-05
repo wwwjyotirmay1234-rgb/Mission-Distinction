@@ -12,6 +12,8 @@ import { CBME_CONTEXT } from "../lib/cbmeContext";
 import { PHYSIOLOGY_HEMATOLOGY_SYLLABUS } from "../lib/physiologyHematologySyllabus";
 import { PHYSIOLOGY_CLINICAL_SYLLABUS } from "../lib/physiologyClinicalSyllabus";
 import { PHYSIOLOGY_THEORY_SYLLABUS } from "../lib/physiologyTheorySyllabus";
+import { BIOCHEMISTRY_THEORY_SYLLABUS } from "../lib/biochemistryTheorySyllabus";
+import { BIOCHEMISTRY_SERUM_URINE_SYLLABUS } from "../lib/biochemistrySerumUrineSyllabus";
 
 const router = Router();
 
@@ -39,7 +41,7 @@ function isVivaSubject(value: unknown): value is VivaSubject {
 }
 
 // Physiology is split into 3 selectable viva types, each with its own baseline syllabus.
-// Other subjects (Anatomy, Biochemistry) don't use a viva type yet.
+// Biochemistry is split into 2 selectable viva types. Anatomy doesn't use a viva type yet.
 const PHYSIOLOGY_VIVA_TYPES = ["Hematology Experiment", "Human Experiments & Clinical Physiology", "Theory"] as const;
 type PhysiologyVivaType = (typeof PHYSIOLOGY_VIVA_TYPES)[number];
 
@@ -52,6 +54,33 @@ const PHYSIOLOGY_SYLLABUS_BY_TYPE: Record<PhysiologyVivaType, string> = {
   "Human Experiments & Clinical Physiology": PHYSIOLOGY_CLINICAL_SYLLABUS,
   Theory: PHYSIOLOGY_THEORY_SYLLABUS,
 };
+
+const BIOCHEMISTRY_VIVA_TYPES = ["Theory", "Serum and Urine Estimation"] as const;
+type BiochemistryVivaType = (typeof BIOCHEMISTRY_VIVA_TYPES)[number];
+
+function isBiochemistryVivaType(value: unknown): value is BiochemistryVivaType {
+  return typeof value === "string" && (BIOCHEMISTRY_VIVA_TYPES as readonly string[]).includes(value);
+}
+
+const BIOCHEMISTRY_SYLLABUS_BY_TYPE: Record<BiochemistryVivaType, string> = {
+  Theory: BIOCHEMISTRY_THEORY_SYLLABUS,
+  "Serum and Urine Estimation": BIOCHEMISTRY_SERUM_URINE_SYLLABUS,
+};
+
+type VivaType = PhysiologyVivaType | BiochemistryVivaType;
+
+// Resolves a raw request-body vivaType value against the subject it's paired with,
+// so a Physiology-only type can never leak into a Biochemistry viva or vice versa.
+function parseVivaType(subject: VivaSubject, value: unknown): VivaType | null {
+  if (subject === "Physiology" && isPhysiologyVivaType(value)) return value;
+  if (subject === "Biochemistry" && isBiochemistryVivaType(value)) return value;
+  return null;
+}
+
+function vivaTypesRequiredMessage(subject: VivaSubject): string {
+  const types = subject === "Physiology" ? PHYSIOLOGY_VIVA_TYPES : BIOCHEMISTRY_VIVA_TYPES;
+  return `vivaType is required for ${subject} and must be one of ${types.join(", ")}`;
+}
 
 // Optional faculty-supplied focus areas/reference notes for a subject — inspiration only, never verbatim questions.
 // The examiner AI always writes its own original questions; admins are never expected to author exact Q&A.
@@ -168,13 +197,20 @@ async function fetchBookExcerpt(subject: VivaSubject, queryHint: string): Promis
 function buildExaminerPersona(
   subject: VivaSubject,
   sourceNotes: string | null,
-  vivaType: PhysiologyVivaType | null,
+  vivaType: VivaType | null,
   imageCaption: string | null,
   bookExcerpt: string | null = null
 ): string {
   const examinerName = EXAMINER_NAMES[subject];
-  const physiologySyllabus = subject === "Physiology" && vivaType ? PHYSIOLOGY_SYLLABUS_BY_TYPE[vivaType] : null;
-  const baselineSyllabus = physiologySyllabus ? `\n${physiologySyllabus}` : "";
+  const physiologySyllabus =
+    subject === "Physiology" && vivaType ? PHYSIOLOGY_SYLLABUS_BY_TYPE[vivaType as PhysiologyVivaType] : null;
+  const biochemistrySyllabus =
+    subject === "Biochemistry" && vivaType ? BIOCHEMISTRY_SYLLABUS_BY_TYPE[vivaType as BiochemistryVivaType] : null;
+  const baselineSyllabus = physiologySyllabus
+    ? `\n${physiologySyllabus}`
+    : biochemistrySyllabus
+      ? `\n${biochemistrySyllabus}`
+      : "";
   const sourceBlock = sourceNotes
     ? `\nThe supervising faculty has shared these additional focus areas / reference notes for ${subject} — treat them as inspiration on top of the baseline syllabus above (if any) and make sure your questions cover these topics too, but always phrase and write the actual questions yourself in your own words (never read them as a verbatim script):\n${sourceNotes}`
     : baselineSyllabus
@@ -199,6 +235,13 @@ function buildExaminerPersona(
       ? `\nFor Physiology specifically, ground every question, expected answer, and correction firmly in these exact reference books — you must be fully knowledgeable in all of them and draw on whichever is most authoritative for the point at hand: CL Ghai's "A Textbook of Practical Physiology" (for all practical/experiment technique, procedure, and viva questions), GK Pal's Textbook of Practical and Comprehensive Textbook of Physiology (practical technique plus theory depth), Guyton & Hall's Textbook of Medical Physiology, Ganong's Review of Medical Physiology, Costanzo's Physiology, AK Jain's Textbook of Physiology, Indu Khurana's Textbook of Medical Physiology, and Sembulingam's Essentials of Medical Physiology. When theory and mechanism are being tested, lean on Guyton, Ganong, Costanzo, AK Jain, Indu Khurana, and Sembulingam; when practical procedure, apparatus, technique, or experiment steps are being tested, lean on CL Ghai and GK Pal's practical books. If sources differ slightly in emphasis, go with whichever explanation is clearest and most standard for an Indian 1st-year MBBS student, and never contradict any of these texts.`
       : "";
 
+  const biochemistryReferenceBlock =
+    subject === "Biochemistry"
+      ? vivaType === "Serum and Urine Estimation"
+        ? `\nFor this Serum and Urine Estimation station specifically, ground every question, expected answer, and correction firmly in the standard Indian clinical/practical biochemistry references — Godkar's Practical Clinical Biochemistry, Chawla's Practical Biochemistry, Harper's Illustrated Biochemistry, and DM Vasudevan's Textbook of Biochemistry. Focus on principle, stepwise procedure (as done with a colorimeter/semi-auto-analyzer per CBME), normal reference ranges, and — most importantly — the diseases/clinical conditions each estimation is used to diagnose or monitor. Do not test unrelated broad theory topics at this station.`
+        : `\nFor Biochemistry Theory specifically, ground every question, expected answer, and correction firmly in these exact reference books — you must be fully knowledgeable in all of them and draw on whichever is most authoritative for the point at hand: Harper's Illustrated Biochemistry, Lippincott's Illustrated Reviews: Biochemistry, DM Vasudevan's Textbook of Biochemistry for Medical Students, and U Satyanarayana's Biochemistry. If sources differ slightly in emphasis, go with whichever explanation is clearest and most standard for an Indian 1st-year MBBS student, and never contradict any of these texts.`
+      : "";
+
   const difficultyAndPacingRules = `
 - Start EASY: your very first 1-2 questions on any new topic should be basic recall/identification level, so the student can settle in.
 - Adapt difficulty live: if the student answers confidently and correctly, escalate — ask a noticeably tougher, more applied or clinically-correlated follow-up on the same topic before moving on. If the student struggles or answers wrong, do NOT pile on harder questions on that topic — give one simpler clarifying chance, then move to a fresh topic at basic level again.
@@ -214,6 +257,7 @@ ${sourceBlock}
 ${bookExcerptBlock}
 ${imageBlock}
 ${physiologyReferenceBlock}
+${biochemistryReferenceBlock}
 
 Rules:
 - Reference ONLY gold-standard textbooks (Gray's Anatomy, BD Chaurasia, Snell's, Ganong's, Guyton & Hall, Harper's, Robbins & Cotran, Harsh Mohan, KD Tripathi, Goodman & Gilman's, Ananthanarayan & Paniker, Harrison's, Davidson's, Bailey & Love's, Sabiston, Nelson, Ghai, Dutta's, Williams Obstetrics, Park's PSM) at NEET PG examination standard.
@@ -473,14 +517,14 @@ router.get("/viva/sections", authMiddleware, async (_req: Request, res: Response
 router.post("/viva/start-voice", authMiddleware, voiceLimiter, async (req: Request, res: Response) => {
   const subject = req.body.subject;
   const topic = sanitizeText(req.body.topic, 200);
-  const vivaType = isPhysiologyVivaType(req.body.vivaType) ? req.body.vivaType : null;
   const imageCaption = sanitizeText(req.body.imageCaption, 300);
   if (!isVivaSubject(subject)) {
     res.status(400).json({ error: `subject must be one of ${VIVA_SUBJECTS.join(", ")}` });
     return;
   }
-  if (subject === "Physiology" && !vivaType) {
-    res.status(400).json({ error: `vivaType is required for Physiology and must be one of ${PHYSIOLOGY_VIVA_TYPES.join(", ")}` });
+  const vivaType = parseVivaType(subject, req.body.vivaType);
+  if ((subject === "Physiology" || subject === "Biochemistry") && !vivaType) {
+    res.status(400).json({ error: vivaTypesRequiredMessage(subject) });
     return;
   }
 
@@ -514,14 +558,14 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
   const topic = sanitizeText(req.body.topic, 200);
   const history = sanitizeHistory(req.body.history);
   const audioBase64 = typeof req.body.audio === "string" ? req.body.audio : null;
-  const vivaType = isPhysiologyVivaType(req.body.vivaType) ? req.body.vivaType : null;
   const imageCaption = sanitizeText(req.body.imageCaption, 300);
   if (!isVivaSubject(subject) || !audioBase64) {
     res.status(400).json({ error: `subject (one of ${VIVA_SUBJECTS.join(", ")}) and audio required` });
     return;
   }
-  if (subject === "Physiology" && !vivaType) {
-    res.status(400).json({ error: `vivaType is required for Physiology and must be one of ${PHYSIOLOGY_VIVA_TYPES.join(", ")}` });
+  const vivaType = parseVivaType(subject, req.body.vivaType);
+  if ((subject === "Physiology" || subject === "Biochemistry") && !vivaType) {
+    res.status(400).json({ error: vivaTypesRequiredMessage(subject) });
     return;
   }
 

@@ -32,6 +32,16 @@ const PHYSIOLOGY_VIVA_TYPE_DESCRIPTIONS: Record<PhysiologyVivaType, string> = {
   Theory: "The full 1st-year Physiology theory syllabus — every system, basic to tough.",
 };
 
+const BIOCHEMISTRY_VIVA_TYPES = ["Theory", "Serum and Urine Estimation"] as const;
+type BiochemistryVivaType = (typeof BIOCHEMISTRY_VIVA_TYPES)[number];
+
+const BIOCHEMISTRY_VIVA_TYPE_DESCRIPTIONS: Record<BiochemistryVivaType, string> = {
+  Theory: "The full 1st-year Biochemistry theory syllabus — every topic, basic to tough.",
+  "Serum and Urine Estimation": "Procedure, principle, normal ranges and related diseases for serum/urine estimations (glucose, urea, creatinine, protein, bilirubin, lipid profile, LFTs, calcium/phosphorus, qualitative urine tests) per CBME.",
+};
+
+type VivaType = PhysiologyVivaType | BiochemistryVivaType;
+
 const ANSWER_WINDOW_SECONDS = 50;
 
 type TurnRole = "user" | "assistant";
@@ -108,8 +118,9 @@ export default function PracticalHub() {
   const [topic, setTopic] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<Subject>(ALL_SUBJECTS[0]);
   const [subject, setSubject] = useState<Subject>(ALL_SUBJECTS[0]);
-  const [selectedVivaType, setSelectedVivaType] = useState<PhysiologyVivaType>(PHYSIOLOGY_VIVA_TYPES[0]);
-  const [vivaType, setVivaType] = useState<PhysiologyVivaType | null>(null);
+  const [selectedPhysiologyVivaType, setSelectedPhysiologyVivaType] = useState<PhysiologyVivaType>(PHYSIOLOGY_VIVA_TYPES[0]);
+  const [selectedBiochemistryVivaType, setSelectedBiochemistryVivaType] = useState<BiochemistryVivaType>(BIOCHEMISTRY_VIVA_TYPES[0]);
+  const [vivaType, setVivaType] = useState<VivaType | null>(null);
   const [clinicalImage, setClinicalImage] = useState<PhysiologyClinicalImage | null>(null);
   const [state, setState] = useState<SessionState>("home");
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -295,8 +306,13 @@ export default function PracticalHub() {
   const startViva = async () => {
     setSubject(selectedSubject);
     const isPhysiology = selectedSubject === "Physiology";
-    const chosenVivaType = isPhysiology ? selectedVivaType : null;
-    const chosenImage = isPhysiology ? pickImageForVivaType(chosenVivaType, topic) : null;
+    const isBiochemistry = selectedSubject === "Biochemistry";
+    const chosenVivaType: VivaType | null = isPhysiology
+      ? selectedPhysiologyVivaType
+      : isBiochemistry
+        ? selectedBiochemistryVivaType
+        : null;
+    const chosenImage = isPhysiology ? pickImageForVivaType(chosenVivaType as PhysiologyVivaType | null, topic) : null;
     setVivaType(chosenVivaType);
     setClinicalImage(chosenImage);
     setState("connecting");
@@ -495,7 +511,7 @@ export default function PracticalHub() {
             {selectedSubject === "Physiology" && (
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Viva Type</label>
-                <Select value={selectedVivaType} onValueChange={(v) => setSelectedVivaType(v as PhysiologyVivaType)}>
+                <Select value={selectedPhysiologyVivaType} onValueChange={(v) => setSelectedPhysiologyVivaType(v as PhysiologyVivaType)}>
                   <SelectTrigger className="bg-background/50 border-border/50">
                     <SelectValue placeholder="Select a viva type" />
                   </SelectTrigger>
@@ -505,7 +521,23 @@ export default function PracticalHub() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground mt-1.5">{PHYSIOLOGY_VIVA_TYPE_DESCRIPTIONS[selectedVivaType]}</p>
+                <p className="text-[11px] text-muted-foreground mt-1.5">{PHYSIOLOGY_VIVA_TYPE_DESCRIPTIONS[selectedPhysiologyVivaType]}</p>
+              </div>
+            )}
+            {selectedSubject === "Biochemistry" && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Viva Type</label>
+                <Select value={selectedBiochemistryVivaType} onValueChange={(v) => setSelectedBiochemistryVivaType(v as BiochemistryVivaType)}>
+                  <SelectTrigger className="bg-background/50 border-border/50">
+                    <SelectValue placeholder="Select a viva type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BIOCHEMISTRY_VIVA_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground mt-1.5">{BIOCHEMISTRY_VIVA_TYPE_DESCRIPTIONS[selectedBiochemistryVivaType]}</p>
               </div>
             )}
             <div>
