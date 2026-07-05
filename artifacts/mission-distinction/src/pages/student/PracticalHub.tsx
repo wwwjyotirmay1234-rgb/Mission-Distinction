@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Stethoscope, Mic, Square, PhoneOff, Loader2, Award, CheckCircle2, AlertTriangle, ArrowRight, Sparkles,
-  Search, Users, FileText, ChevronLeft, Volume2, Brain, TrendingUp,
+  Search, Users, ChevronLeft, Volume2, Brain, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
@@ -106,7 +105,6 @@ interface VivaSummary {
 }
 
 export default function PracticalHub() {
-  const [, navigate] = useLocation();
   const [topic, setTopic] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<Subject>(ALL_SUBJECTS[0]);
   const [subject, setSubject] = useState<Subject>(ALL_SUBJECTS[0]);
@@ -402,13 +400,6 @@ export default function PracticalHub() {
         description: "Live multiplayer viva panels — practice with real batchmates over voice/video.",
         badge: "Live",
         onClick: () => setState("rooms"),
-      },
-      {
-        key: "exams",
-        icon: <FileText size={22} className="text-primary" />,
-        title: "Practical Exams",
-        description: "Full-length practical exam simulations and past papers.",
-        onClick: () => navigate("/student/exams"),
       },
     ];
 
