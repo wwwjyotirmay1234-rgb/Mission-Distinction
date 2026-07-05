@@ -67,7 +67,8 @@ interface VivaSummary {
   strengths: string[];
   improvements: string[];
   verdict: string;
-  panel?: { openai: PanelOpinion | null; gemini: PanelOpinion | null };
+  examinerName?: string;
+  panel?: { openai: PanelOpinion | null; gemini: PanelOpinion | null; claude: PanelOpinion | null };
 }
 
 export default function PracticalHub() {
@@ -288,7 +289,7 @@ export default function PracticalHub() {
             <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground leading-relaxed flex gap-2">
               <Sparkles size={14} className="text-primary shrink-0 mt-0.5" />
               <span>
-                Dr. Rao conducts the spoken exam. A second examiner AI quietly sharpens the tougher follow-up questions and cross-checks your final score, so your result reflects a full panel's opinion — just like a real practical exam board.
+                Each subject has its own examiner — Dr. Aswini (Anatomy), Dr. Rajiv (Physiology), and Dr. Madhu (Biochemistry) — who conducts the spoken exam live. Behind the scenes, a multi-AI panel quietly sharpens the tougher follow-up questions and cross-checks your final score, so your result reflects a full exam board's opinion.
               </span>
             </div>
             <Button onClick={startViva} className="gap-2 w-full sm:w-auto">
@@ -479,23 +480,32 @@ function SectionSummaryView({ summary }: { summary: VivaSummary }) {
           <span className="text-xl font-bold text-primary">{summary.score}</span>
         </div>
         <div>
-          <p className="text-sm font-bold flex items-center gap-1.5"><Award size={14} className="text-primary" /> {summary.subject} Panel Score</p>
+          <p className="text-sm font-bold flex items-center gap-1.5">
+            <Award size={14} className="text-primary" /> {summary.subject} Panel Score
+            {summary.examinerName ? ` — ${summary.examinerName}` : ""}
+          </p>
           <p className="text-xs text-muted-foreground mt-0.5">{summary.verdict}</p>
         </div>
       </div>
 
-      {summary.panel && (summary.panel.openai || summary.panel.gemini) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {summary.panel && (summary.panel.openai || summary.panel.gemini || summary.panel.claude) && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {summary.panel.openai && (
             <div className="rounded-lg border border-border/40 bg-background/40 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Dr. Rao (Lead Examiner)</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Examiner (GPT)</p>
               <p className="text-lg font-bold text-primary">{summary.panel.openai.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
             </div>
           )}
           {summary.panel.gemini && (
             <div className="rounded-lg border border-border/40 bg-background/40 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Dr. Mehta (Co-Examiner)</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Cross-check (Gemini)</p>
               <p className="text-lg font-bold text-primary">{summary.panel.gemini.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
+            </div>
+          )}
+          {summary.panel.claude && (
+            <div className="rounded-lg border border-border/40 bg-background/40 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Cross-check (Claude)</p>
+              <p className="text-lg font-bold text-primary">{summary.panel.claude.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
             </div>
           )}
         </div>
