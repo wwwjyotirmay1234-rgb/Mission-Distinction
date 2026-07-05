@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Stethoscope, Mic, Square, PhoneOff, Loader2, Award, CheckCircle2, AlertTriangle, ArrowRight, Sparkles,
-  Search, Skull, ClipboardCheck, Users, FileText, Bone, ChevronLeft, Volume2, Brain, TrendingUp,
+  Search, Users, FileText, ChevronLeft, Volume2, Brain, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
@@ -409,13 +409,6 @@ export default function PracticalHub() {
         title: "Spotter Challenge",
         description: "Rapid-fire identification challenges — same format as the Diagnosis Challenge.",
         onClick: () => navigate("/student/games"),
-      },
-      {
-        key: "cadaver",
-        icon: <Bone size={22} className="text-primary" />,
-        title: "Cadaver Identification",
-        description: "Structure spotting & labeling using the 3D Anatomy Hub.",
-        onClick: () => navigate("/student/anatomy"),
       },
       {
         key: "exams",
