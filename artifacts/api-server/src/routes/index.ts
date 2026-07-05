@@ -103,7 +103,6 @@ router.use("/submissions", submissionsRouter);
 router.use("/admin/submissions", submissionsRouter);
 router.use(deviceAnalyticsRouter);
 router.use("/app-updates", appUpdatesRouter);
-router.use("/admin/app-updates", appUpdatesRouter);
 router.use("/analytics", analyticsRouter);
 
 export default router;

@@ -113,7 +113,6 @@ const WarningsPage       = lazy(() => import("@/pages/admin/WarningsPage"));
 const AuditLog           = lazy(() => import("@/pages/admin/AuditLog"));
 const QuizIntelligence   = lazy(() => import("@/pages/admin/QuizIntelligence"));
 const NoticesPage        = lazy(() => import("@/pages/admin/NoticesPage"));
-const AppUpdatesPage     = lazy(() => import("@/pages/admin/AppUpdatesPage"));
 const AdminMnemonics     = lazy(() => import("@/pages/admin/Mnemonics"));
 const AdminFlashcards    = lazy(() => import("@/pages/admin/Flashcards"));
 const QuizSubmissions    = lazy(() => import("@/pages/admin/QuizSubmissions"));
@@ -246,7 +245,6 @@ function Router() {
                 <Route path="/admin/viva-questions"         component={VivaQuestionBank} />
                 <Route path="/admin/audit-log"              component={AuditLog} />
                 <Route path="/admin/notices"                component={NoticesPage} />
-                <Route path="/admin/app-updates"            component={AppUpdatesPage} />
                 <Route path="/admin/study-tools/mnemonics"  component={AdminMnemonics} />
                 <Route path="/admin/study-tools/flashcards" component={AdminFlashcards} />
                 <Route path="/admin/quiz-submissions"       component={QuizSubmissions} />
