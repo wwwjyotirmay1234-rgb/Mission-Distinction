@@ -5,7 +5,7 @@ import { ensureCompatibleFormat, speechToText } from "@workspace/integrations-op
 import { ai as gemini } from "@workspace/integrations-gemini-ai";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { db } from "@workspace/db";
-import { vivaSourcesTable } from "@workspace/db";
+import { vivaSourcesTable, vivaSourceDocumentsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import rateLimit from "express-rate-limit";
 import { CBME_CONTEXT } from "../lib/cbmeContext";
@@ -65,11 +65,112 @@ async function fetchSourceNotes(subject: VivaSubject): Promise<string | null> {
   }
 }
 
+// --- Full-book grounding (RAG-lite) -----------------------------------------
+// Admins can upload entire textbooks (viva_source_documents.full_text has no
+// small truncation — see vivaSources.ts). Embedding a whole book into every
+// AI call would blow up token cost/latency and often exceed context limits,
+// so instead we chunk each book into paragraphs and, per question, retrieve
+// only the excerpts most relevant to the current topic/station. Over the
+// course of a multi-question viva (and across many students/sessions), every
+// part of the book becomes reachable — just never all at once.
+const BOOK_CHUNK_TARGET_CHARS = 1400;
+const BOOK_EXCERPT_BUDGET_CHARS = 6000;
+const BOOK_MAX_CHUNKS = 5;
+
+interface BookChunk {
+  fileName: string;
+  text: string;
+}
+
+function chunkBookText(fileName: string, fullText: string): BookChunk[] {
+  const paragraphs = fullText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  const chunks: BookChunk[] = [];
+  let buffer = "";
+  for (const para of paragraphs) {
+    if (buffer && buffer.length + para.length + 2 > BOOK_CHUNK_TARGET_CHARS) {
+      chunks.push({ fileName, text: buffer });
+      buffer = para;
+    } else {
+      buffer = buffer ? `${buffer}\n\n${para}` : para;
+    }
+  }
+  if (buffer) chunks.push({ fileName, text: buffer });
+  return chunks;
+}
+
+function tokenize(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 3);
+}
+
+// Simple keyword-overlap scoring (no embeddings/infra needed) — good enough
+// to bias retrieval toward the current topic/station while staying cheap.
+function scoreChunk(chunk: BookChunk, queryWords: Set<string>): number {
+  if (queryWords.size === 0) return 0;
+  const chunkWords = tokenize(chunk.text);
+  let hits = 0;
+  for (const w of chunkWords) {
+    if (queryWords.has(w)) hits++;
+  }
+  return hits;
+}
+
+// Fetches every uploaded book for the subject, chunks them, and returns the
+// excerpts most relevant to the current topic (or a rotating sample of the
+// book if no topic/station hint is available), capped to a fixed char budget
+// so prompt size and AI cost never scale with book length.
+async function fetchBookExcerpt(subject: VivaSubject, queryHint: string): Promise<string | null> {
+  try {
+    const docs = await db
+      .select({ fileName: vivaSourceDocumentsTable.fileName, fullText: vivaSourceDocumentsTable.fullText })
+      .from(vivaSourceDocumentsTable)
+      .where(eq(vivaSourceDocumentsTable.subject, subject));
+    if (docs.length === 0) return null;
+
+    const allChunks = docs.flatMap((doc) => chunkBookText(doc.fileName, doc.fullText));
+    if (allChunks.length === 0) return null;
+
+    const queryWords = new Set(tokenize(queryHint));
+    let ranked: BookChunk[];
+    if (queryWords.size > 0) {
+      ranked = [...allChunks]
+        .map((chunk) => ({ chunk, score: scoreChunk(chunk, queryWords) }))
+        .sort((a, b) => b.score - a.score)
+        .filter((entry, idx) => entry.score > 0 || idx === 0)
+        .map((entry) => entry.chunk);
+    } else {
+      // No topic hint yet (e.g. very first question of the viva) — rotate
+      // through the book by time bucket so different sessions surface
+      // different sections instead of always starting at page 1.
+      const bucket = Math.floor(Date.now() / (5 * 60 * 1000)) % allChunks.length;
+      ranked = [...allChunks.slice(bucket), ...allChunks.slice(0, bucket)];
+    }
+
+    const selected: string[] = [];
+    let used = 0;
+    for (const chunk of ranked) {
+      if (selected.length >= BOOK_MAX_CHUNKS || used >= BOOK_EXCERPT_BUDGET_CHARS) break;
+      const remaining = BOOK_EXCERPT_BUDGET_CHARS - used;
+      const piece = chunk.text.length > remaining ? chunk.text.slice(0, remaining) : chunk.text;
+      selected.push(`[From ${chunk.fileName}]\n${piece}`);
+      used += piece.length;
+    }
+    return selected.length > 0 ? selected.join("\n\n---\n\n") : null;
+  } catch (err) {
+    console.error("Practical Hub: failed to fetch book excerpt", err);
+    return null;
+  }
+}
+
 function buildExaminerPersona(
   subject: VivaSubject,
   sourceNotes: string | null,
   vivaType: PhysiologyVivaType | null,
-  imageCaption: string | null
+  imageCaption: string | null,
+  bookExcerpt: string | null = null
 ): string {
   const examinerName = EXAMINER_NAMES[subject];
   const physiologySyllabus = subject === "Physiology" && vivaType ? PHYSIOLOGY_SYLLABUS_BY_TYPE[vivaType] : null;
@@ -79,6 +180,10 @@ function buildExaminerPersona(
     : baselineSyllabus
       ? ""
       : `\nNo specific focus areas have been supplied for ${subject} — generate your own spot/case questions on ${subject} at NEET PG standard.`;
+
+  const bookExcerptBlock = bookExcerpt
+    ? `\nThe supervising faculty has uploaded full reference textbook(s) for ${subject}. Below are excerpts from those book(s) most relevant to the current topic — use them as your primary source of truth for facts, terminology, and depth on this topic (they take priority over your own general knowledge if there's any conflict), but always phrase and ask questions in your own natural spoken words, never read excerpt text verbatim:\n${bookExcerpt}`
+    : "";
 
   const stationLabel = vivaType ? ` — Station: ${vivaType}` : "";
 
@@ -106,6 +211,7 @@ function buildExaminerPersona(
 ${CBME_CONTEXT}
 ${baselineSyllabus}
 ${sourceBlock}
+${bookExcerptBlock}
 ${imageBlock}
 ${physiologyReferenceBlock}
 
@@ -380,8 +486,11 @@ router.post("/viva/start-voice", authMiddleware, voiceLimiter, async (req: Reque
 
   sseHeaders(res);
   try {
-    const sourceNotes = await fetchSourceNotes(subject);
-    const persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption);
+    const [sourceNotes, bookExcerpt] = await Promise.all([
+      fetchSourceNotes(subject),
+      fetchBookExcerpt(subject, topic || vivaType || ""),
+    ]);
+    const persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt);
     const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
     await streamExaminerAudioTurn(res, [
       { role: "system", content: persona },
@@ -436,9 +545,16 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
 
     sendEvent(res, { type: "user_transcript", data: userTranscript });
 
-    const sourceNotes = await fetchSourceNotes(subject);
+    const recentTranscript = [...history.slice(-4), { role: "user" as const, content: userTranscript }]
+      .map((h) => h.content)
+      .join(" ");
+    const queryHint = [topic, vivaType, recentTranscript].filter(Boolean).join(" ");
+    const [sourceNotes, bookExcerpt] = await Promise.all([
+      fetchSourceNotes(subject),
+      fetchBookExcerpt(subject, queryHint),
+    ]);
     const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
-    let persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption) + `\nCurrent viva Subject: ${stationName}${topic ? `, Topic: ${topic}` : ""}.`;
+    let persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt) + `\nCurrent viva Subject: ${stationName}${topic ? `, Topic: ${topic}` : ""}.`;
 
     // Every 3rd student answer, bring in the Gemini panel member's tougher cross-question suggestion.
     const answerCount = history.filter((h) => h.role === "user").length + 1;

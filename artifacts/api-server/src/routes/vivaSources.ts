@@ -1,8 +1,8 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
 import { db } from "@workspace/db";
-import { vivaSourcesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { vivaSourcesTable, vivaSourceDocumentsTable } from "@workspace/db";
+import { eq, and, asc } from "drizzle-orm";
 import { adminMiddleware } from "../middlewares/auth";
 import { stripHtml } from "../lib/sanitize";
 import { VIVA_SUBJECTS } from "./practicalHub";
@@ -13,6 +13,17 @@ const router = Router();
 const pdfUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype === "application/pdf") cb(null, true);
+    else cb(new Error("Only PDF files are allowed."));
+  },
+});
+
+// Full textbooks are much bigger than PDFs used for quick notes, so allow a
+// larger upload for the book-library endpoint specifically.
+const bookUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 60 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype === "application/pdf") cb(null, true);
     else cb(new Error("Only PDF files are allowed."));
@@ -102,6 +113,104 @@ router.post("/extract-pdf", adminMiddleware, (req: Request, res: Response, next)
     res.json({ text: safeText, pages, truncated });
   } catch (err: any) {
     res.status(400).json({ error: err?.message || "Failed to extract text from PDF." });
+  }
+});
+
+// Admin: list uploaded reference books for a subject (metadata only — full
+// text can be large, so it's never sent to the admin UI's list view).
+router.get("/:subject/documents", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const subject = String(req.params.subject);
+    if (!(VIVA_SUBJECTS as readonly string[]).includes(subject)) {
+      res.status(400).json({ error: `subject must be one of ${VIVA_SUBJECTS.join(", ")}` });
+      return;
+    }
+    const rows = await db
+      .select({
+        id: vivaSourceDocumentsTable.id,
+        fileName: vivaSourceDocumentsTable.fileName,
+        charCount: vivaSourceDocumentsTable.charCount,
+        pages: vivaSourceDocumentsTable.pages,
+        createdAt: vivaSourceDocumentsTable.createdAt,
+      })
+      .from(vivaSourceDocumentsTable)
+      .where(eq(vivaSourceDocumentsTable.subject, subject))
+      .orderBy(asc(vivaSourceDocumentsTable.createdAt));
+    res.json(rows);
+  } catch {
+    res.status(500).json({ error: "Failed to load uploaded books" });
+  }
+});
+
+// Admin: upload a full reference book/textbook PDF for a subject. The FULL
+// extracted text is stored (no small truncation) so the AI examiner can draw
+// on every part of the book — see practicalHub.ts's excerpt-retrieval helper
+// for how relevant sections are pulled into each viva question's prompt
+// without dumping the entire book into every AI call.
+router.post("/:subject/documents", adminMiddleware, (req: Request, res: Response, next) => {
+  bookUpload.single("file")(req, res, (err: any) => {
+    if (err) {
+      res.status(400).json({ error: err.message || "Upload failed." });
+      return;
+    }
+    next();
+  });
+}, async (req: Request, res: Response) => {
+  try {
+    const admin = (req as any).user;
+    const subject = String(req.params.subject);
+    if (!(VIVA_SUBJECTS as readonly string[]).includes(subject)) {
+      res.status(400).json({ error: `subject must be one of ${VIVA_SUBJECTS.join(", ")}` });
+      return;
+    }
+    if (!req.file) {
+      res.status(400).json({ error: "No file provided" });
+      return;
+    }
+    const { text, pages, warning } = await extractPdfBuffer(req.file.buffer);
+    const cleaned = stripHtml(text).trim();
+    if (!cleaned) {
+      res.status(422).json({ error: warning || "No extractable text was found in this PDF (it may be scanned/image-only)." });
+      return;
+    }
+    const [saved] = await db
+      .insert(vivaSourceDocumentsTable)
+      .values({
+        subject,
+        fileName: req.file.originalname.slice(0, 255),
+        fullText: cleaned,
+        charCount: cleaned.length,
+        pages: pages || null,
+        createdBy: admin.id,
+      })
+      .returning({
+        id: vivaSourceDocumentsTable.id,
+        fileName: vivaSourceDocumentsTable.fileName,
+        charCount: vivaSourceDocumentsTable.charCount,
+        pages: vivaSourceDocumentsTable.pages,
+        createdAt: vivaSourceDocumentsTable.createdAt,
+      });
+    res.json(saved);
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message || "Failed to upload book." });
+  }
+});
+
+// Admin: delete an uploaded reference book
+router.delete("/:subject/documents/:id", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const subject = String(req.params.subject);
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ error: "Invalid document id" });
+      return;
+    }
+    await db
+      .delete(vivaSourceDocumentsTable)
+      .where(and(eq(vivaSourceDocumentsTable.id, id), eq(vivaSourceDocumentsTable.subject, subject)));
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: "Failed to delete book" });
   }
 });
 

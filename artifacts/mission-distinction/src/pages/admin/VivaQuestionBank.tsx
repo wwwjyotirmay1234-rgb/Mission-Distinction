@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch } from "@/lib/apiFetch";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Mic, Sparkles, Save, Upload, FileText } from "lucide-react";
+import { Mic, Sparkles, Save, Upload, FileText, Trash2, BookOpen } from "lucide-react";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"] as const;
 type Subject = (typeof SUBJECTS)[number];
@@ -24,18 +24,38 @@ interface VivaSource {
   updatedAt: string | null;
 }
 
+interface VivaBookDocument {
+  id: number;
+  fileName: string;
+  charCount: number;
+  pages: number | null;
+  createdAt: string;
+}
+
 export default function VivaQuestionBank() {
   const [activeSubject, setActiveSubject] = useState<Subject>("Anatomy");
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingBook, setUploadingBook] = useState(false);
+  const [deletingBookId, setDeletingBookId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bookInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: sources, isLoading } = useQuery<VivaSource[]>({
     queryKey: ["viva-sources"],
     queryFn: async () => {
       const res = await apiFetch("/api/admin/viva-sources");
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+  });
+
+  const { data: books, isLoading: booksLoading } = useQuery<VivaBookDocument[]>({
+    queryKey: ["viva-source-documents", activeSubject],
+    queryFn: async () => {
+      const res = await apiFetch(`/api/admin/viva-sources/${activeSubject}/documents`);
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
@@ -99,6 +119,50 @@ export default function VivaQuestionBank() {
       toast.error("Failed to extract text from PDF");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleBookSelected(file: File) {
+    if (file.type !== "application/pdf") {
+      toast.error("Please select a PDF file.");
+      return;
+    }
+    setUploadingBook(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await apiFetch(`/api/admin/viva-sources/${activeSubject}/documents`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to upload book");
+        return;
+      }
+      toast.success(`"${file.name}" added to the ${activeSubject} book library.`);
+      queryClient.invalidateQueries({ queryKey: ["viva-source-documents", activeSubject] });
+    } catch {
+      toast.error("Failed to upload book");
+    } finally {
+      setUploadingBook(false);
+    }
+  }
+
+  async function handleDeleteBook(id: number) {
+    setDeletingBookId(id);
+    try {
+      const res = await apiFetch(`/api/admin/viva-sources/${activeSubject}/documents/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        toast.success("Book removed");
+        queryClient.invalidateQueries({ queryKey: ["viva-source-documents", activeSubject] });
+      } else {
+        toast.error("Failed to remove book");
+      }
+    } finally {
+      setDeletingBookId(null);
     }
   }
 
@@ -185,6 +249,88 @@ export default function VivaQuestionBank() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="bg-card/50 border-border/50">
+        <CardContent className="p-5 space-y-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <BookOpen className="w-4 h-4 text-primary" />
+            <span>
+              {activeSubject} book library — upload full textbooks/reference books. {EXAMINER_NAMES[activeSubject]} draws
+              relevant excerpts from these automatically while asking questions, so the whole book stays usable without
+              being crammed into a single notes field.
+            </span>
+          </div>
+
+          {booksLoading ? (
+            <Skeleton className="h-16 rounded-lg" />
+          ) : books && books.length > 0 ? (
+            <ul className="space-y-2">
+              {books.map((book) => (
+                <li
+                  key={book.id}
+                  className="flex items-center justify-between gap-3 rounded-lg bg-muted/30 px-3 py-2 text-sm"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="w-4 h-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{book.fileName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {book.pages ? `${book.pages} pages · ` : ""}
+                        {book.charCount.toLocaleString()} characters extracted
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={deletingBookId === book.id}
+                    onClick={() => handleDeleteBook(book.id)}
+                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No books uploaded yet for {activeSubject}.</p>
+          )}
+
+          <input
+            ref={bookInputRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleBookSelected(file);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={uploadingBook}
+            onClick={() => bookInputRef.current?.click()}
+            className="gap-1.5 w-fit"
+          >
+            {uploadingBook ? (
+              <>
+                <FileText className="w-4 h-4 animate-pulse" /> Uploading & extracting…
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" /> Upload full textbook (PDF)
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Full books are stored completely (no truncation) and are added to the library immediately — no separate save step.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
