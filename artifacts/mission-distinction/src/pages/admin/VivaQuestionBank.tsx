@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch } from "@/lib/apiFetch";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Mic, Sparkles, Save } from "lucide-react";
+import { Mic, Sparkles, Save, Upload, FileText } from "lucide-react";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"] as const;
 type Subject = (typeof SUBJECTS)[number];
@@ -28,6 +28,8 @@ export default function VivaQuestionBank() {
   const [activeSubject, setActiveSubject] = useState<Subject>("Anatomy");
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: sources, isLoading } = useQuery<VivaSource[]>({
@@ -63,6 +65,40 @@ export default function VivaQuestionBank() {
       }
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handlePdfSelected(file: File) {
+    if (file.type !== "application/pdf") {
+      toast.error("Please select a PDF file.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await apiFetch("/api/admin/viva-sources/extract-pdf", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to extract text from PDF");
+        return;
+      }
+      setDraft((prev) => {
+        const trimmedPrev = prev.trim();
+        return trimmedPrev ? `${trimmedPrev}\n\n${data.text}` : data.text;
+      });
+      toast.success(
+        data.truncated
+          ? `Extracted text from "${file.name}" (truncated to fit). Review below and click Save Notes.`
+          : `Extracted text from "${file.name}". Review below and click Save Notes.`
+      );
+    } catch {
+      toast.error("Failed to extract text from PDF");
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -109,11 +145,43 @@ export default function VivaQuestionBank() {
               onChange={(e) => setDraft(e.target.value)}
               className="bg-muted/30 resize-none min-h-[220px]"
             />
-            <div className="flex justify-end">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handlePdfSelected(file);
+                e.target.value = "";
+              }}
+            />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="gap-1.5 w-fit"
+              >
+                {uploading ? (
+                  <>
+                    <FileText className="w-4 h-4 animate-pulse" /> Extracting text…
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" /> Upload PDF (textbook/reference)
+                  </>
+                )}
+              </Button>
               <Button onClick={handleSave} disabled={saving} className="gap-1.5">
                 <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Notes"}
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Uploading a PDF extracts its text and appends it to the notes above — nothing is saved until you click "Save Notes".
+            </p>
           </CardContent>
         </Card>
       )}
