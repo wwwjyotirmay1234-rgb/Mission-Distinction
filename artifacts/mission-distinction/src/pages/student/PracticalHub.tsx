@@ -474,13 +474,13 @@ export default function PracticalHub() {
 
       {clinicalImage && (state === "examiner_speaking" || state === "listening" || isRecording || state === "processing") && (
         <Card className="bg-card/40 border-border/40 overflow-hidden">
-          <CardContent className="p-3 flex flex-col sm:flex-row gap-3 items-center">
+          <CardContent className="p-3 flex flex-col gap-3 items-center">
             <img
               src={clinicalImage.src}
               alt={clinicalImage.caption}
-              className="w-full sm:w-40 h-40 object-contain rounded-lg bg-background/40 border border-border/30"
+              className="w-full max-w-md max-h-[70vh] object-contain rounded-lg bg-background/40 border border-border/30"
             />
-            <div className="text-xs text-muted-foreground leading-relaxed">
+            <div className="text-xs text-muted-foreground leading-relaxed text-center">
               <p className="font-bold uppercase tracking-wider text-[10px] text-primary mb-1">{clinicalImage.topic}</p>
               {clinicalImage.caption}
             </div>
