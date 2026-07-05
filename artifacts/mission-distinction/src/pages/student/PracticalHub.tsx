@@ -7,6 +7,7 @@ import { Stethoscope, Mic, Square, PhoneOff, Loader2, Award, CheckCircle2, Alert
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 import { useVoiceRecorder, useAudioPlayback } from "@workspace/integrations-openai-ai-react";
+import { PHYSIOLOGY_CLINICAL_IMAGES, type PhysiologyClinicalImage } from "@/data/physiologyClinicalImages";
 
 const ALL_SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"] as const;
 type Subject = (typeof ALL_SUBJECTS)[number];
@@ -16,6 +17,17 @@ const EXAMINER_BY_SUBJECT: Record<Subject, string> = {
   Physiology: "Dr. Rajiv",
   Biochemistry: "Dr. Madhu",
 };
+
+const PHYSIOLOGY_VIVA_TYPES = ["Hematology Experiment", "Human Experiments & Clinical Physiology", "Theory"] as const;
+type PhysiologyVivaType = (typeof PHYSIOLOGY_VIVA_TYPES)[number];
+
+const PHYSIOLOGY_VIVA_TYPE_DESCRIPTIONS: Record<PhysiologyVivaType, string> = {
+  "Hematology Experiment": "Hb estimation, TLC/DLC, blood indices, BT/CT, blood grouping, ESR, osmotic fragility.",
+  "Human Experiments & Clinical Physiology": "Pulse, BP, spirometry, ECG, reflexes — with reference images shown on screen.",
+  Theory: "The full 1st-year Physiology theory syllabus — every system, basic to tough.",
+};
+
+const ANSWER_WINDOW_SECONDS = 50;
 
 type TurnRole = "user" | "assistant";
 interface Turn { role: TurnRole; content: string }
@@ -80,11 +92,15 @@ export default function PracticalHub() {
   const [topic, setTopic] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<Subject>(ALL_SUBJECTS[0]);
   const [subject, setSubject] = useState<Subject>(ALL_SUBJECTS[0]);
+  const [selectedVivaType, setSelectedVivaType] = useState<PhysiologyVivaType>(PHYSIOLOGY_VIVA_TYPES[0]);
+  const [vivaType, setVivaType] = useState<PhysiologyVivaType | null>(null);
+  const [clinicalImage, setClinicalImage] = useState<PhysiologyClinicalImage | null>(null);
   const [state, setState] = useState<SessionState>("setup");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [liveExaminerText, setLiveExaminerText] = useState("");
   const [liveUserText, setLiveUserText] = useState("");
   const [elapsed, setElapsed] = useState(0);
+  const [answerSecondsLeft, setAnswerSecondsLeft] = useState<number | null>(null);
   const [sectionSummary, setSectionSummary] = useState<VivaSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
 
@@ -95,6 +111,9 @@ export default function PracticalHub() {
   turnsRef.current = turns;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const currentRequestRef = useRef<AbortController | null>(null);
+  const answerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recorderStateRef = useRef(recorder.state);
+  recorderStateRef.current = recorder.state;
 
   useEffect(() => {
     if (state === "setup" || state === "section_ended") {
@@ -106,7 +125,35 @@ export default function PracticalHub() {
   }, [state]);
 
   useEffect(() => {
-    return () => { currentRequestRef.current?.abort(); };
+    return () => {
+      currentRequestRef.current?.abort();
+      if (answerTimerRef.current) clearInterval(answerTimerRef.current);
+    };
+  }, []);
+
+  const clearAnswerTimer = useCallback(() => {
+    if (answerTimerRef.current) {
+      clearInterval(answerTimerRef.current);
+      answerTimerRef.current = null;
+    }
+    setAnswerSecondsLeft(null);
+  }, []);
+
+  const startAnswerTimer = useCallback((onExpire: () => void) => {
+    if (answerTimerRef.current) clearInterval(answerTimerRef.current);
+    setAnswerSecondsLeft(ANSWER_WINDOW_SECONDS);
+    answerTimerRef.current = setInterval(() => {
+      setAnswerSecondsLeft((s) => {
+        if (s === null) return null;
+        if (s <= 1) {
+          if (answerTimerRef.current) clearInterval(answerTimerRef.current);
+          answerTimerRef.current = null;
+          onExpire();
+          return null;
+        }
+        return s - 1;
+      });
+    }, 1000);
   }, []);
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -189,20 +236,53 @@ export default function PracticalHub() {
     }
   }, [playback]);
 
+  const pickClinicalImage = useCallback((): PhysiologyClinicalImage | null => {
+    if (PHYSIOLOGY_CLINICAL_IMAGES.length === 0) return null;
+    return PHYSIOLOGY_CLINICAL_IMAGES[Math.floor(Math.random() * PHYSIOLOGY_CLINICAL_IMAGES.length)];
+  }, []);
+
+  const autoSubmitOnTimeout = useCallback(async () => {
+    if (recorderStateRef.current !== "recording") return;
+    toast.info("Time's up — submitting your answer.");
+    const blob = await recorder.stopRecording();
+    setState("processing");
+    const audio = await blobToBase64(blob);
+    await streamTurn("/api/practical-hub/viva/turn-voice", {
+      subject,
+      topic,
+      history: turnsRef.current,
+      vivaType: vivaType ?? undefined,
+      imageCaption: clinicalImage?.caption ?? undefined,
+      audio,
+    });
+  }, [recorder, streamTurn, subject, topic, vivaType, clinicalImage]);
+
   const startViva = async () => {
     setSubject(selectedSubject);
+    const isPhysiology = selectedSubject === "Physiology";
+    const chosenVivaType = isPhysiology ? selectedVivaType : null;
+    const chosenImage = isPhysiology && chosenVivaType === "Human Experiments & Clinical Physiology" ? pickClinicalImage() : null;
+    setVivaType(chosenVivaType);
+    setClinicalImage(chosenImage);
     setState("connecting");
     setTurns([]);
     turnsRef.current = [];
     setLiveUserText("");
     setLiveExaminerText("");
     setElapsed(0);
+    clearAnswerTimer();
     setSectionSummary(null);
-    await streamTurn("/api/practical-hub/viva/start-voice", { subject: selectedSubject, topic });
+    await streamTurn("/api/practical-hub/viva/start-voice", {
+      subject: selectedSubject,
+      topic,
+      vivaType: chosenVivaType ?? undefined,
+      imageCaption: chosenImage?.caption ?? undefined,
+    });
   };
 
   const handleMicClick = async () => {
     if (recorder.state === "recording") {
+      clearAnswerTimer();
       const blob = await recorder.stopRecording();
       setState("processing");
       const audio = await blobToBase64(blob);
@@ -210,12 +290,15 @@ export default function PracticalHub() {
         subject,
         topic,
         history: turnsRef.current,
+        vivaType: vivaType ?? undefined,
+        imageCaption: clinicalImage?.caption ?? undefined,
         audio,
       });
     } else {
       try {
         setLiveUserText("");
         await recorder.startRecording();
+        startAnswerTimer(autoSubmitOnTimeout);
       } catch {
         toast.error("Microphone access is required for the voice viva.");
       }
@@ -224,6 +307,7 @@ export default function PracticalHub() {
 
   const endSection = async () => {
     currentRequestRef.current?.abort();
+    clearAnswerTimer();
     if (recorder.state === "recording") await recorder.stopRecording();
     setState("section_ended");
     if (turnsRef.current.length === 0) {
@@ -276,6 +360,22 @@ export default function PracticalHub() {
                 </SelectContent>
               </Select>
             </div>
+            {selectedSubject === "Physiology" && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Viva Type</label>
+                <Select value={selectedVivaType} onValueChange={(v) => setSelectedVivaType(v as PhysiologyVivaType)}>
+                  <SelectTrigger className="bg-background/50 border-border/50">
+                    <SelectValue placeholder="Select a viva type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PHYSIOLOGY_VIVA_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground mt-1.5">{PHYSIOLOGY_VIVA_TYPE_DESCRIPTIONS[selectedVivaType]}</p>
+              </div>
+            )}
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic Focus (Optional)</label>
               <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Cranial Nerves, Cardiac Cycle..." className="bg-background/50 border-border/50" />
@@ -337,11 +437,27 @@ export default function PracticalHub() {
             <Stethoscope size={20} className="text-primary" /> Practical Hub
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {subject} viva{topic ? ` — ${topic}` : ""}
+            {subject} viva{vivaType ? ` — ${vivaType}` : ""}{topic ? ` — ${topic}` : ""}
           </p>
         </div>
         <div className="text-sm font-mono text-muted-foreground">{formatTime(elapsed)}</div>
       </div>
+
+      {clinicalImage && (state === "examiner_speaking" || state === "listening" || isRecording || state === "processing") && (
+        <Card className="bg-card/40 border-border/40 overflow-hidden">
+          <CardContent className="p-3 flex flex-col sm:flex-row gap-3 items-center">
+            <img
+              src={clinicalImage.src}
+              alt={clinicalImage.caption}
+              className="w-full sm:w-40 h-40 object-contain rounded-lg bg-background/40 border border-border/30"
+            />
+            <div className="text-xs text-muted-foreground leading-relaxed">
+              <p className="font-bold uppercase tracking-wider text-[10px] text-primary mb-1">{clinicalImage.topic}</p>
+              {clinicalImage.caption}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="bg-gradient-to-b from-card/60 to-card/30 border-border/40 overflow-hidden">
         <CardContent className="p-0">
@@ -369,6 +485,12 @@ export default function PracticalHub() {
 
             {liveUserText && isRecording === false && state !== "examiner_speaking" && (
               <div className="text-xs text-muted-foreground/70 italic max-w-md">"You said: {liveUserText}"</div>
+            )}
+
+            {isRecording && answerSecondsLeft !== null && (
+              <div className={`text-xs font-mono font-bold ${answerSecondsLeft <= 10 ? "text-red-500" : "text-muted-foreground"}`}>
+                {formatTime(answerSecondsLeft)} left to answer
+              </div>
             )}
 
             <div className="flex items-center gap-3 mt-2">

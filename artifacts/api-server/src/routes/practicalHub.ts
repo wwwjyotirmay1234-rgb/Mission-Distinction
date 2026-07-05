@@ -9,7 +9,9 @@ import { vivaSourcesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import rateLimit from "express-rate-limit";
 import { CBME_CONTEXT } from "../lib/cbmeContext";
-import { PHYSIOLOGY_PRACTICAL_SYLLABUS } from "../lib/physiologyPracticalSyllabus";
+import { PHYSIOLOGY_HEMATOLOGY_SYLLABUS } from "../lib/physiologyHematologySyllabus";
+import { PHYSIOLOGY_CLINICAL_SYLLABUS } from "../lib/physiologyClinicalSyllabus";
+import { PHYSIOLOGY_THEORY_SYLLABUS } from "../lib/physiologyTheorySyllabus";
 
 const router = Router();
 
@@ -36,6 +38,21 @@ function isVivaSubject(value: unknown): value is VivaSubject {
   return typeof value === "string" && (VIVA_SUBJECTS as readonly string[]).includes(value);
 }
 
+// Physiology is split into 3 selectable viva types, each with its own baseline syllabus.
+// Other subjects (Anatomy, Biochemistry) don't use a viva type yet.
+const PHYSIOLOGY_VIVA_TYPES = ["Hematology Experiment", "Human Experiments & Clinical Physiology", "Theory"] as const;
+type PhysiologyVivaType = (typeof PHYSIOLOGY_VIVA_TYPES)[number];
+
+function isPhysiologyVivaType(value: unknown): value is PhysiologyVivaType {
+  return typeof value === "string" && (PHYSIOLOGY_VIVA_TYPES as readonly string[]).includes(value);
+}
+
+const PHYSIOLOGY_SYLLABUS_BY_TYPE: Record<PhysiologyVivaType, string> = {
+  "Hematology Experiment": PHYSIOLOGY_HEMATOLOGY_SYLLABUS,
+  "Human Experiments & Clinical Physiology": PHYSIOLOGY_CLINICAL_SYLLABUS,
+  Theory: PHYSIOLOGY_THEORY_SYLLABUS,
+};
+
 // Optional faculty-supplied focus areas/reference notes for a subject — inspiration only, never verbatim questions.
 // The examiner AI always writes its own original questions; admins are never expected to author exact Q&A.
 async function fetchSourceNotes(subject: VivaSubject): Promise<string | null> {
@@ -48,27 +65,47 @@ async function fetchSourceNotes(subject: VivaSubject): Promise<string | null> {
   }
 }
 
-function buildExaminerPersona(subject: VivaSubject, sourceNotes: string | null): string {
+function buildExaminerPersona(
+  subject: VivaSubject,
+  sourceNotes: string | null,
+  vivaType: PhysiologyVivaType | null,
+  imageCaption: string | null
+): string {
   const examinerName = EXAMINER_NAMES[subject];
-  const baselineSyllabus = subject === "Physiology" ? `\n${PHYSIOLOGY_PRACTICAL_SYLLABUS}` : "";
+  const physiologySyllabus = subject === "Physiology" && vivaType ? PHYSIOLOGY_SYLLABUS_BY_TYPE[vivaType] : null;
+  const baselineSyllabus = physiologySyllabus ? `\n${physiologySyllabus}` : "";
   const sourceBlock = sourceNotes
     ? `\nThe supervising faculty has shared these additional focus areas / reference notes for ${subject} — treat them as inspiration on top of the baseline syllabus above (if any) and make sure your questions cover these topics too, but always phrase and write the actual questions yourself in your own words (never read them as a verbatim script):\n${sourceNotes}`
     : baselineSyllabus
       ? ""
       : `\nNo specific focus areas have been supplied for ${subject} — generate your own spot/case questions on ${subject} at NEET PG standard.`;
 
-  return `You are ${examinerName}, a strict but fair MBBS practical/viva examiner conducting a real, spoken oral examination (viva voce / OSCE station). You are examining an Indian MBBS student on Subject: ${subject}.
+  const stationLabel = vivaType ? ` — Station: ${vivaType}` : "";
+
+  const imageBlock =
+    subject === "Physiology" && vivaType === "Human Experiments & Clinical Physiology" && imageCaption
+      ? `\nThe student currently has this image/diagram displayed in front of them on screen: "${imageCaption}". Start by asking a spot-identification or interpretation question directly about this image, then move on to other topics in the syllabus above.`
+      : "";
+
+  const difficultyAndPacingRules = `
+- Start EASY: your very first 1-2 questions on any new topic should be basic recall/identification level, so the student can settle in.
+- Adapt difficulty live: if the student answers confidently and correctly, escalate — ask a noticeably tougher, more applied or clinically-correlated follow-up on the same topic before moving on. If the student struggles or answers wrong, do NOT pile on harder questions on that topic — give one simpler clarifying chance, then move to a fresh topic at basic level again.
+- Never let a single topic run more than 2-3 exchanges regardless of performance — keep the viva moving across topics.
+- Keep pacing realistic for a spoken exam: after asking a question, expect the student to answer within a short, focused window (roughly 45-60 seconds of real speaking) — do not expect long essays. If the student's answer is very short or trails off, treat that as their complete answer for that question rather than waiting or repeating yourself.`;
+
+  return `You are ${examinerName}, a strict but fair MBBS practical/viva examiner conducting a real, spoken oral examination (viva voce / OSCE station). You are examining an Indian MBBS student on Subject: ${subject}${stationLabel}.
 
 ${CBME_CONTEXT}
 ${baselineSyllabus}
 ${sourceBlock}
+${imageBlock}
 
 Rules:
 - Reference ONLY gold-standard textbooks (Gray's Anatomy, BD Chaurasia, Snell's, Ganong's, Guyton & Hall, Harper's, Robbins & Cotran, Harsh Mohan, KD Tripathi, Goodman & Gilman's, Ananthanarayan & Paniker, Harrison's, Davidson's, Bailey & Love's, Sabiston, Nelson, Ghai, Dutta's, Williams Obstetrics, Park's PSM) at NEET PG examination standard.
 - Speak naturally, the way a real examiner speaks out loud in an exam hall — short, direct sentences. Do NOT use markdown, bullet points, asterisks, or headings; this is spoken audio, not text.
 - Ask ONE question at a time. Never answer your own question. Never break character.
 - When the student answers, briefly react like a real examiner would ("Hmm, not quite", "Good, correct", "Partially right, but...") in 1 sentence, then either probe deeper with a natural follow-up on the same topic, or move on to the next question. Keep total spoken response to 2-4 short sentences — real examiners don't lecture.
-- Maintain a firm, professional, slightly intimidating exam-hall tone, but stay fair and encouraging when the student does well.
+- Maintain a firm, professional, slightly intimidating exam-hall tone, but stay fair and encouraging when the student does well.${difficultyAndPacingRules}
 - If a "Panel note" from a co-examiner appears in your instructions, weave its suggested harder question in naturally as your own next question — never mention the co-examiner or that you received a note.
 - If the student clearly says they want to stop or end the viva, wish them well briefly and end.
 - After roughly 4-6 questions (or once the mandatory list is exhausted plus 1-2 extra questions), tell the student the viva is complete and wrap up.`;
@@ -276,20 +313,27 @@ router.get("/viva/sections", authMiddleware, async (_req: Request, res: Response
 router.post("/viva/start-voice", authMiddleware, voiceLimiter, async (req: Request, res: Response) => {
   const subject = req.body.subject;
   const topic = sanitizeText(req.body.topic, 200);
+  const vivaType = isPhysiologyVivaType(req.body.vivaType) ? req.body.vivaType : null;
+  const imageCaption = sanitizeText(req.body.imageCaption, 300);
   if (!isVivaSubject(subject)) {
     res.status(400).json({ error: `subject must be one of ${VIVA_SUBJECTS.join(", ")}` });
+    return;
+  }
+  if (subject === "Physiology" && !vivaType) {
+    res.status(400).json({ error: `vivaType is required for Physiology and must be one of ${PHYSIOLOGY_VIVA_TYPES.join(", ")}` });
     return;
   }
 
   sseHeaders(res);
   try {
     const sourceNotes = await fetchSourceNotes(subject);
-    const persona = buildExaminerPersona(subject, sourceNotes);
+    const persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption);
+    const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
     await streamExaminerAudioTurn(res, [
       { role: "system", content: persona },
       {
         role: "user",
-        content: `Begin the ${subject} viva${topic ? `, Topic: ${topic}` : ""}. Greet the student briefly like a real examiner (mention this is the ${subject} viva), then ask your first spot/case question. Keep it short and spoken, 2-3 sentences total.`,
+        content: `Begin the ${stationName} viva${topic ? `, Topic: ${topic}` : ""}. Greet the student briefly like a real examiner (mention this is the ${stationName} viva), then ask your first spot/case question${imageCaption ? " about the image displayed to the student" : ""}. Start at a basic/easy level. Keep it short and spoken, 2-3 sentences total.`,
       },
     ]);
     sendEvent(res, { done: true, examinerName: EXAMINER_NAMES[subject] });
@@ -307,8 +351,14 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
   const topic = sanitizeText(req.body.topic, 200);
   const history = sanitizeHistory(req.body.history);
   const audioBase64 = typeof req.body.audio === "string" ? req.body.audio : null;
+  const vivaType = isPhysiologyVivaType(req.body.vivaType) ? req.body.vivaType : null;
+  const imageCaption = sanitizeText(req.body.imageCaption, 300);
   if (!isVivaSubject(subject) || !audioBase64) {
     res.status(400).json({ error: `subject (one of ${VIVA_SUBJECTS.join(", ")}) and audio required` });
+    return;
+  }
+  if (subject === "Physiology" && !vivaType) {
+    res.status(400).json({ error: `vivaType is required for Physiology and must be one of ${PHYSIOLOGY_VIVA_TYPES.join(", ")}` });
     return;
   }
 
@@ -333,7 +383,8 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
     sendEvent(res, { type: "user_transcript", data: userTranscript });
 
     const sourceNotes = await fetchSourceNotes(subject);
-    let persona = buildExaminerPersona(subject, sourceNotes) + `\nCurrent viva Subject: ${subject}${topic ? `, Topic: ${topic}` : ""}.`;
+    const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
+    let persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption) + `\nCurrent viva Subject: ${stationName}${topic ? `, Topic: ${topic}` : ""}.`;
 
     // Every 3rd student answer, bring in the Gemini panel member's tougher cross-question suggestion.
     const answerCount = history.filter((h) => h.role === "user").length + 1;
@@ -413,4 +464,4 @@ router.post("/viva/end", authMiddleware, voiceLimiter, async (req: Request, res:
   }
 });
 
-export { router as practicalHubRouter, VIVA_SUBJECTS };
+export { router as practicalHubRouter, VIVA_SUBJECTS, PHYSIOLOGY_VIVA_TYPES };
