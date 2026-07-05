@@ -22,3 +22,4 @@
 - [openai-ai-react lib build order](openai-ai-react-lib-build.md) — composite lib needs its own react/@types-react devDeps + `tsc -b` before consumer typecheck will pass; missing dist causes TS6305
 - [esbuild external + transitive deps](esbuild-external-transitive-deps.md) — new lib/* integration whose own dep is in api-server's esbuild `external` list needs that dep added directly to api-server's package.json too, or ERR_MODULE_NOT_FOUND at boot
 - [Stuck pointer-events:none on body (mobile Radix)](stuck-pointer-events-mobile.md) — "can't type, random field, mobile only" = leftover body-wide CSS lock from an interrupted Select/Dialog close, not a form bug
+- [Drizzle vs legacy raw-SQL migration drift](drizzle-legacy-migration-drift.md) — deploy migration diff proposes DROP on live tables/columns only tracked in migrate.ts; add matching Drizzle schema defs instead of approving

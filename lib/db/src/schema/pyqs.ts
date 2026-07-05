@@ -8,6 +8,7 @@ export const pyqsTable = pgTable("pyqs", {
   url: text("url").notNull(),
   downloadCount: integer("download_count").default(0),
   createdBy: integer("created_by"),
+  college: text("college").notNull().default("VIMSAR"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
