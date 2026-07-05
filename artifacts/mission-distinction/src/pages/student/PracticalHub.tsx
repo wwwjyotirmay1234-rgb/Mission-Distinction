@@ -79,6 +79,14 @@ interface PanelOpinion {
   verdict: string;
 }
 
+interface QuestionBreakdownItem {
+  question: string;
+  studentAnswer: string;
+  marks: number;
+  maxMarks: number;
+  idealAnswer: string;
+}
+
 interface VivaSummary {
   subject: Subject;
   score: number;
@@ -87,6 +95,7 @@ interface VivaSummary {
   verdict: string;
   examinerName?: string;
   panel?: { openai: PanelOpinion | null; gemini: PanelOpinion | null; claude: PanelOpinion | null };
+  questionBreakdown?: QuestionBreakdownItem[];
 }
 
 export default function PracticalHub() {
@@ -592,6 +601,34 @@ function SectionSummaryView({ summary }: { summary: VivaSummary }) {
               <li key={i} className="flex items-start gap-2 text-sm"><AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />{s}</li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {summary.questionBreakdown && summary.questionBreakdown.length > 0 && (
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Question-by-Question Review</p>
+          <div className="space-y-2.5">
+            {summary.questionBreakdown.map((q, i) => (
+              <div key={i} className="rounded-lg border border-border/40 bg-background/40 p-3 space-y-1.5">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm font-semibold">Q{i + 1}. {q.question}</p>
+                  <span
+                    className={`shrink-0 text-xs font-bold rounded-full px-2 py-0.5 ${
+                      q.marks >= q.maxMarks * 0.7
+                        ? "bg-emerald-500/15 text-emerald-600"
+                        : q.marks > 0
+                        ? "bg-amber-500/15 text-amber-600"
+                        : "bg-red-500/15 text-red-600"
+                    }`}
+                  >
+                    {q.marks}/{q.maxMarks}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground/80">Your answer:</span> {q.studentAnswer || "—"}</p>
+                <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground/80">Ideal answer:</span> {q.idealAnswer}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

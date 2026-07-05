@@ -98,7 +98,8 @@ function buildExaminerPersona(
 - Start EASY: your very first 1-2 questions on any new topic should be basic recall/identification level, so the student can settle in.
 - Adapt difficulty live: if the student answers confidently and correctly, escalate — ask a noticeably tougher, more applied or clinically-correlated follow-up on the same topic before moving on. If the student struggles or answers wrong, do NOT pile on harder questions on that topic — give one simpler clarifying chance, then move to a fresh topic at basic level again.
 - Never let a single topic run more than 2-3 exchanges regardless of performance — keep the viva moving across topics.
-- Keep pacing realistic for a spoken exam: after asking a question, expect the student to answer within a short, focused window (roughly 45-60 seconds of real speaking) — do not expect long essays. If the student's answer is very short or trails off, treat that as their complete answer for that question rather than waiting or repeating yourself.`;
+- Keep pacing realistic for a spoken exam: after asking a question, expect the student to answer within a short, focused window (roughly 45-60 seconds of real speaking) — do not expect long essays. If the student's answer is very short or trails off, treat that as their complete answer for that question rather than waiting or repeating yourself.
+- If the student says anything like "sorry sir", "I don't know", "I'm not sure", "pass", or otherwise clearly gives up on a question, do NOT re-explain, re-ask, or give a clarifying hint on that same question — briefly acknowledge it in one short phrase ("That's alright, let's move on") and immediately ask a fresh question on the next topic at basic level. Never dwell on a question the student has given up on.`;
 
   return `You are ${examinerName}, a strict but fair MBBS practical/viva examiner conducting a real, spoken oral examination (viva voce / OSCE station). You are examining an Indian MBBS student on Subject: ${subject}${stationLabel}.
 
@@ -240,6 +241,51 @@ async function claudeScoreOpinion(subject: VivaSubject, transcript: string): Pro
   } catch (err) {
     console.error("Practical Hub: Claude score opinion failed", err);
     return null;
+  }
+}
+
+interface QuestionBreakdownItem {
+  question: string;
+  studentAnswer: string;
+  marks: number;
+  maxMarks: number;
+  idealAnswer: string;
+}
+
+// Produces a per-question breakdown of the whole viva: what was asked, what the student said,
+// marks out of 10 for that answer, and the more correct/ideal answer for review.
+async function generateQuestionBreakdown(subject: VivaSubject, transcript: string): Promise<QuestionBreakdownItem[]> {
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.3,
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert Indian MBBS ${subject} examiner reviewing a viva voce transcript question-by-question.\n\n${CBME_CONTEXT}\n\nGo through the transcript and identify every distinct question the examiner asked, in order. For each one, extract the student's answer (if the student said something like "sorry sir" or "I don't know" or gave up, record their answer as exactly that, and give it 0 marks). Score each question out of 10 marks based on accuracy and completeness, and provide the more correct / complete ideal answer a topper would give, grounded in standard textbooks.\n\nReturn ONLY valid JSON: { "questions": [ { "question": string, "studentAnswer": string, "marks": number (0-10), "idealAnswer": string (concise, 1-3 sentences) } ] }. Include every question asked during the viva, in the order asked.`,
+        },
+        { role: "user", content: transcript },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const raw = completion.choices[0]?.message?.content || "{}";
+    let parsed: any = {};
+    try { parsed = JSON.parse(raw); } catch { parsed = {}; }
+    const questions = Array.isArray(parsed.questions) ? parsed.questions : [];
+
+    return questions
+      .filter((q: any) => typeof q?.question === "string")
+      .map((q: any) => ({
+        question: q.question,
+        studentAnswer: typeof q.studentAnswer === "string" ? q.studentAnswer : "",
+        marks: typeof q.marks === "number" ? Math.max(0, Math.min(10, q.marks)) : 0,
+        maxMarks: 10,
+        idealAnswer: typeof q.idealAnswer === "string" ? q.idealAnswer : "",
+      }));
+  } catch (err) {
+    console.error("Practical Hub: question breakdown generation failed", err);
+    return [];
   }
 }
 
@@ -432,10 +478,11 @@ router.post("/viva/end", authMiddleware, voiceLimiter, async (req: Request, res:
 
     const transcript = historyToTranscript(history);
 
-    const [openaiOpinion, geminiOpinion, claudeOpinion] = await Promise.all([
+    const [openaiOpinion, geminiOpinion, claudeOpinion, questionBreakdown] = await Promise.all([
       openaiScoreOpinion(subject, transcript),
       geminiScoreOpinion(subject, transcript),
       claudeScoreOpinion(subject, transcript),
+      generateQuestionBreakdown(subject, transcript),
     ]);
 
     const allOpinions = [openaiOpinion, geminiOpinion, claudeOpinion].filter(
@@ -465,6 +512,7 @@ router.post("/viva/end", authMiddleware, voiceLimiter, async (req: Request, res:
         gemini: geminiOpinion ? { provider: "gemini", ...geminiOpinion } : null,
         claude: claudeOpinion ? { provider: "claude", ...claudeOpinion } : null,
       },
+      questionBreakdown,
     });
   } catch (err: any) {
     console.error("Practical Hub voice viva end error:", err);
