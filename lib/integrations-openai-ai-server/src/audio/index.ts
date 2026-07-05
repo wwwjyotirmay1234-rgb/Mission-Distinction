@@ -4,6 +4,7 @@ export {
   convertToWav,
   ensureCompatibleFormat,
   isSilentAudio,
+  isHallucinatedTranscript,
   type AudioFormat,
   voiceChat,
   voiceChatStream,

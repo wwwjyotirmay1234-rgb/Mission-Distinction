@@ -151,6 +151,46 @@ export async function isSilentAudio(audioBuffer: Buffer, format: string = "wav")
   }
 }
 
+/**
+ * Detect a hallucinated speech-to-text transcript that slipped past the pre-transcription
+ * silence check.
+ *
+ * `isSilentAudio` screens out clips with no real peak volume, but low-level room noise, mic
+ * hiss, or a faint tap can sit just above that threshold while still containing no actual
+ * speech. In that situation gpt-4o-mini-transcribe doesn't return empty text — it fabricates
+ * a short, repetitive "filler" transcript (e.g. "Non, non, non, non, non, non, non." or
+ * "Thank you. Thank you. Thank you.") that looks like a real (and scoreable) answer but
+ * isn't. Flag transcripts dominated by a single repeated word OR a single repeated short
+ * sentence/phrase so callers can treat them as "no answer" instead of grading them.
+ */
+export function isHallucinatedTranscript(text: string): boolean {
+  const words = text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length >= 4) {
+    const wordCounts = new Map<string, number>();
+    for (const word of words) wordCounts.set(word, (wordCounts.get(word) ?? 0) + 1);
+    const maxWordCount = Math.max(...wordCounts.values());
+    if (maxWordCount / words.length >= 0.7) return true;
+  }
+
+  const sentences = text
+    .toLowerCase()
+    .split(/[.!?]+/)
+    .map((s) => s.replace(/[^\p{L}\p{N}\s]/gu, "").trim())
+    .filter(Boolean);
+  if (sentences.length >= 3) {
+    const sentenceCounts = new Map<string, number>();
+    for (const sentence of sentences) sentenceCounts.set(sentence, (sentenceCounts.get(sentence) ?? 0) + 1);
+    const maxSentenceCount = Math.max(...sentenceCounts.values());
+    if (maxSentenceCount / sentences.length >= 0.7) return true;
+  }
+
+  return false;
+}
+
 /** Voice Chat: audio-in, audio-out using gpt-audio. */
 export async function voiceChat(
   audioBuffer: Buffer,
