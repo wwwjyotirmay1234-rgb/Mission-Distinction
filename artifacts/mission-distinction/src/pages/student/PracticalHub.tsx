@@ -246,12 +246,27 @@ export default function PracticalHub() {
     }
   }, [playback]);
 
-  const pickImageForVivaType = useCallback((type: PhysiologyVivaType | null): PhysiologyClinicalImage | null => {
+  const pickImageForVivaType = useCallback((type: PhysiologyVivaType | null, requestedTopic: string): PhysiologyClinicalImage | null => {
     const pool =
       type === "Human Experiments & Clinical Physiology" ? PHYSIOLOGY_CLINICAL_IMAGES :
       type === "Hematology Experiment" ? PHYSIOLOGY_HEMATOLOGY_IMAGES :
       null;
     if (!pool || pool.length === 0) return null;
+
+    const trimmedTopic = requestedTopic.trim().toLowerCase();
+    if (trimmedTopic) {
+      // The student asked for a specific topic — only show an image if one actually matches it,
+      // so we never force an unrelated image (e.g. ECG) on top of an unrelated requested topic.
+      const match = pool.find(
+        (img) =>
+          img.topic.toLowerCase().includes(trimmedTopic) ||
+          trimmedTopic.includes(img.topic.toLowerCase()) ||
+          img.caption.toLowerCase().includes(trimmedTopic)
+      );
+      return match ?? null;
+    }
+
+    // No specific topic requested — a random reference image is fine to keep vivas varied.
     return pool[Math.floor(Math.random() * pool.length)];
   }, []);
 
@@ -275,7 +290,7 @@ export default function PracticalHub() {
     setSubject(selectedSubject);
     const isPhysiology = selectedSubject === "Physiology";
     const chosenVivaType = isPhysiology ? selectedVivaType : null;
-    const chosenImage = isPhysiology ? pickImageForVivaType(chosenVivaType) : null;
+    const chosenImage = isPhysiology ? pickImageForVivaType(chosenVivaType, topic) : null;
     setVivaType(chosenVivaType);
     setClinicalImage(chosenImage);
     setState("connecting");
