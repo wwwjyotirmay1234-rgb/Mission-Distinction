@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Stethoscope, Mic, Square, PhoneOff, Loader2, Award, CheckCircle2, AlertTriangle, ArrowRight, Sparkles,
-  Search, Users, ChevronLeft, Volume2, TrendingUp,
+  Search, Users, ChevronLeft, Volume2, TrendingUp, Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
@@ -416,6 +416,7 @@ export default function PracticalHub() {
       title: string;
       description: string;
       badge?: string;
+      locked?: boolean;
       onClick: () => void;
     }[] = [
       {
@@ -424,6 +425,7 @@ export default function PracticalHub() {
         title: "AI Viva Simulator",
         description: "Spoken viva voce with an AI examiner across Anatomy, Physiology & Biochemistry.",
         badge: "Voice",
+        locked: true,
         onClick: () => { setVivaType(null); setClinicalImage(null); setState("setup"); },
       },
       {
@@ -456,25 +458,43 @@ export default function PracticalHub() {
           {tiles.map((tile) => (
             <Card
               key={tile.key}
-              className="bg-card/40 border-border/40 hover:bg-card/60 hover:border-primary/30 transition-colors cursor-pointer group"
-              onClick={tile.onClick}
+              className={`bg-card/40 border-border/40 transition-colors group ${
+                tile.locked
+                  ? "opacity-70 cursor-not-allowed"
+                  : "hover:bg-card/60 hover:border-primary/30 cursor-pointer"
+              }`}
+              onClick={() => {
+                if (tile.locked) {
+                  toast.info("AI Viva Simulator is temporarily locked while we improve answer grading. Please check back soon.");
+                  return;
+                }
+                tile.onClick();
+              }}
             >
               <CardContent className="p-5 flex items-start gap-3.5">
                 <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                  {tile.icon}
+                  {tile.locked ? <Lock size={20} className="text-muted-foreground" /> : tile.icon}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
                     <p className="font-semibold text-sm">{tile.title}</p>
-                    {tile.badge && (
+                    {tile.locked ? (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-amber-500/40 text-amber-400 bg-amber-500/10">
+                        Locked
+                      </span>
+                    ) : tile.badge ? (
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${tile.badge === "Live" ? "border-green-500/40 text-green-400 bg-green-500/10" : "border-primary/30 text-primary bg-primary/10"}`}>
                         {tile.badge}
                       </span>
-                    )}
+                    ) : null}
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{tile.description}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {tile.locked ? "Temporarily unavailable while we improve answer grading accuracy." : tile.description}
+                  </p>
                 </div>
-                <ArrowRight size={15} className="text-muted-foreground shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {!tile.locked && (
+                  <ArrowRight size={15} className="text-muted-foreground shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                )}
               </CardContent>
             </Card>
           ))}
