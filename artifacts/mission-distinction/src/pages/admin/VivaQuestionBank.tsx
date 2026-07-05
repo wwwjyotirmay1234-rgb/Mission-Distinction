@@ -122,28 +122,41 @@ export default function VivaQuestionBank() {
     }
   }
 
-  async function handleBookSelected(file: File) {
-    if (file.type !== "application/pdf") {
-      toast.error("Please select a PDF file.");
+  async function handleBooksSelected(files: File[]) {
+    const pdfFiles = files.filter((f) => f.type === "application/pdf");
+    if (pdfFiles.length === 0) {
+      toast.error("Please select at least one PDF file.");
       return;
+    }
+    if (pdfFiles.length < files.length) {
+      toast.error("Some selected files were skipped — only PDF files are allowed.");
     }
     setUploadingBook(true);
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      pdfFiles.forEach((file) => formData.append("files", file));
       const res = await apiFetch(`/api/admin/viva-sources/${activeSubject}/documents`, {
         method: "POST",
         body: formData,
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error ?? "Failed to upload book");
+        toast.error(data.error ?? "Failed to upload book(s)");
         return;
       }
-      toast.success(`"${file.name}" added to the ${activeSubject} book library.`);
+      const saved: Array<{ fileName: string }> = data.saved ?? [];
+      const failed: Array<{ fileName: string; error: string }> = data.failed ?? [];
+      if (saved.length > 0) {
+        toast.success(
+          saved.length === 1
+            ? `"${saved[0].fileName}" added to the ${activeSubject} book library.`
+            : `${saved.length} books added to the ${activeSubject} book library.`
+        );
+      }
+      failed.forEach((f) => toast.error(`"${f.fileName}": ${f.error}`));
       queryClient.invalidateQueries({ queryKey: ["viva-source-documents", activeSubject] });
     } catch {
-      toast.error("Failed to upload book");
+      toast.error("Failed to upload book(s)");
     } finally {
       setUploadingBook(false);
     }
@@ -301,10 +314,11 @@ export default function VivaQuestionBank() {
             ref={bookInputRef}
             type="file"
             accept="application/pdf"
+            multiple
             className="hidden"
             onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleBookSelected(file);
+              const files = Array.from(e.target.files ?? []);
+              if (files.length > 0) handleBooksSelected(files);
               e.target.value = "";
             }}
           />
@@ -322,12 +336,13 @@ export default function VivaQuestionBank() {
               </>
             ) : (
               <>
-                <Upload className="w-4 h-4" /> Upload full textbook (PDF)
+                <Upload className="w-4 h-4" /> Upload textbooks (PDF, up to 500MB each)
               </>
             )}
           </Button>
           <p className="text-xs text-muted-foreground">
-            Full books are stored completely (no truncation) and are added to the library immediately — no separate save step.
+            Select multiple PDFs to upload them all at once (up to 10 files, 500MB each). Full books are stored completely
+            (no truncation) and are added to the library immediately — no separate save step.
           </p>
         </CardContent>
       </Card>
