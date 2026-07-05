@@ -16,6 +16,18 @@ import {
   CheckCircle2, XCircle, Clock, ExternalLink, Loader2, User,
 } from "lucide-react";
 
+function getViewUrl(url: string): string {
+  // Internally-hosted PDF uploads (student "Upload PDF instead" option) require
+  // a bearer token — the pdf/serve route uses pdfAuthMiddleware, which accepts
+  // ?token= for plain-navigation links (this <a> tag can't set headers).
+  // Google Drive / other external links must be left untouched.
+  if (!url.includes("/api/upload/pdf/serve/")) return url;
+  const token = localStorage.getItem("mission_token");
+  if (!token) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}token=${encodeURIComponent(token)}`;
+}
+
 const TYPE_META = {
   note:  { label: "Note",  icon: FileText,      color: "text-blue-400",    bg: "bg-blue-500/10 border-blue-500/30" },
   book:  { label: "Book",  icon: BookOpen,      color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30" },
@@ -120,7 +132,7 @@ function SubmissionCard({
 
               <div className="flex items-center gap-2">
                 <a
-                  href={sub.url}
+                  href={getViewUrl(sub.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs text-primary hover:underline"

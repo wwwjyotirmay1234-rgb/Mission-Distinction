@@ -17,6 +17,17 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"];
 
+function getViewUrl(url: string): string {
+  // Internally-hosted PDF uploads require a bearer token — the pdf/serve route
+  // uses pdfAuthMiddleware, which accepts ?token= for plain-navigation links
+  // (an <a> tag can't set headers). External links are left untouched.
+  if (!url.includes("/api/upload/pdf/serve/")) return url;
+  const token = localStorage.getItem("mission_token");
+  if (!token) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}token=${encodeURIComponent(token)}`;
+}
+
 type NoteItem = {
   id: number;
   title: string;
@@ -159,7 +170,7 @@ function NoteForm({ mode, setMode, form, setForm, uploading, setUploading, fileR
                 <div className="shrink-0 text-primary">{fileTypeIcon(form.fileType)}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{form.fileType === "image" ? "Image uploaded" : "PDF uploaded"}</p>
-                  <a href={form.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View file ↗</a>
+                  <a href={getViewUrl(form.fileUrl)} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View file ↗</a>
                 </div>
                 <button
                   type="button"

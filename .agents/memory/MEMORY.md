@@ -24,3 +24,5 @@
 - [Stuck pointer-events:none on body (mobile Radix)](stuck-pointer-events-mobile.md) — "can't type, random field, mobile only" = leftover body-wide CSS lock from an interrupted Select/Dialog close, not a form bug
 - [Drizzle vs legacy raw-SQL migration drift](drizzle-legacy-migration-drift.md) — deploy migration diff proposes DROP on live tables/columns only tracked in migrate.ts; add matching Drizzle schema defs instead of approving
 - [Test/seed account credentials can drift](test-credentials-drift.md) — documented master test password may not match DB password_hash; verify via DB before assuming login code is broken
+- [GCS stream errors crash the server](gcs-stream-error-crash.md) — createReadStream().pipe(res) errors fire async on the stream, not sync — try/catch around it does nothing; missing .on("error") = uncaught exception kills the whole process
+- [Auth token in plain `<a href>` links](anchor-link-auth-token.md) — `<a>` navigation can't set Authorization headers; protected file-serve endpoints need `?token=` query-param support + the link must append it (only for internal serve URLs, not external links)

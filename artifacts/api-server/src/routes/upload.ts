@@ -160,12 +160,28 @@ router.get("/pdf/serve/:fileName", pdfAuthMiddleware, async (req: Request, res: 
     if (!bucketId) { res.status(500).end(); return; }
     const bucket = gcsClient.bucket(bucketId);
     const fileRef = bucket.file(`pdfs/${req.params.fileName}`);
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `inline; filename="${req.params.fileName}"`);
-    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-    fileRef.createReadStream().pipe(res);
-  } catch {
-    res.status(404).end();
+    const stream = fileRef.createReadStream();
+    // GCS stream errors (e.g. "No such object") surface asynchronously via the
+    // 'error' event, NOT as a synchronous throw — a try/catch around
+    // createReadStream() cannot catch them. Without this handler, an unhandled
+    // stream error becomes an uncaught exception that crashes the whole server.
+    stream.on("error", (err: any) => {
+      console.error("PDF serve stream error:", err?.message || err);
+      if (!res.headersSent) {
+        res.status(err?.code === 404 ? 404 : 500).end();
+      } else {
+        res.destroy();
+      }
+    });
+    stream.on("response", () => {
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `inline; filename="${req.params.fileName}"`);
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    });
+    stream.pipe(res);
+  } catch (err) {
+    console.error("PDF serve error:", err);
+    if (!res.headersSent) res.status(404).end();
   }
 });
 
@@ -236,7 +252,13 @@ router.get("/avatar/:fileName", async (req: Request, res: Response) => {
     const [meta] = await fileRef.getMetadata();
     res.setHeader("Content-Type", meta.contentType as string);
     res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-    fileRef.createReadStream().pipe(res);
+    const stream = fileRef.createReadStream();
+    stream.on("error", (err: any) => {
+      console.error("Avatar serve stream error:", err?.message || err);
+      if (!res.headersSent) res.status(err?.code === 404 ? 404 : 500).end();
+      else res.destroy();
+    });
+    stream.pipe(res);
   } catch {
     res.status(404).end();
   }
