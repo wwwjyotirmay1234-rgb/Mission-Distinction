@@ -118,7 +118,15 @@ export async function ensureCompatibleFormat(
  * *before* calling the transcription API, so callers can treat it as "no answer" up front.
  */
 export async function isSilentAudio(audioBuffer: Buffer, format: string = "wav"): Promise<boolean> {
-  const SILENCE_MEAN_VOLUME_DB = -50;
+  // Use PEAK volume (max_volume), not the clip-wide mean. A real spoken answer
+  // almost always has thinking pauses, mic-click lead-in/out, and gaps between
+  // sentences — those silent stretches drag the whole-clip mean_volume down a
+  // lot even when the person clearly spoke, causing real answers to be wrongly
+  // rejected as "no speech detected" (which looked like the examiner "asking
+  // the same question again" since the turn never advanced). max_volume only
+  // cares whether the mic ever picked up a real speech peak, so it isn't
+  // fooled by silence padding around the actual answer.
+  const SILENCE_MAX_VOLUME_DB = -40;
   const inputPath = join(tmpdir(), `silence-check-${randomUUID()}.${format}`);
   try {
     await writeFile(inputPath, audioBuffer);
@@ -131,10 +139,10 @@ export async function isSilentAudio(audioBuffer: Buffer, format: string = "wav")
       ffmpeg.on("close", () => resolve(out));
       ffmpeg.on("error", reject);
     });
-    const match = stderrOutput.match(/mean_volume:\s*(-?\d+(?:\.\d+)?)\s*dB/);
+    const match = stderrOutput.match(/max_volume:\s*(-?\d+(?:\.\d+)?)\s*dB/);
     if (!match) return false;
-    const meanVolumeDb = parseFloat(match[1]);
-    return meanVolumeDb < SILENCE_MEAN_VOLUME_DB;
+    const maxVolumeDb = parseFloat(match[1]);
+    return maxVolumeDb < SILENCE_MAX_VOLUME_DB;
   } catch (err) {
     console.error("Audio silence detection failed, allowing transcription to proceed", err);
     return false;
