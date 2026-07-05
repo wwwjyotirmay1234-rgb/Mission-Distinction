@@ -122,6 +122,48 @@ export default function VivaQuestionBank() {
     }
   }
 
+  // Books upload straight from the browser to object storage via a signed
+  // URL, bypassing the Replit proxy's request body-size limit — the old
+  // multipart path silently failed for anything much above ~100MB even
+  // though the server's multer config allowed up to 500MB. Files are
+  // processed one at a time (not in parallel) to keep this predictable and
+  // to surface a clear per-file error if one large upload fails.
+  async function uploadOneBook(file: File): Promise<{ fileName: string } | { fileName: string; error: string }> {
+    try {
+      const urlRes = await apiFetch(`/api/admin/viva-sources/${activeSubject}/documents/request-upload-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: file.name }),
+      });
+      const urlData = await urlRes.json();
+      if (!urlRes.ok) {
+        return { fileName: file.name, error: urlData.error ?? "Failed to prepare upload." };
+      }
+
+      const putRes = await fetch(urlData.signedUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "application/pdf" },
+        body: file,
+      });
+      if (!putRes.ok) {
+        return { fileName: file.name, error: "Upload to storage failed. Please try again." };
+      }
+
+      const processRes = await apiFetch(`/api/admin/viva-sources/${activeSubject}/documents/process-uploaded`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ objectName: urlData.objectName, fileName: file.name }),
+      });
+      const processData = await processRes.json();
+      if (!processRes.ok) {
+        return { fileName: file.name, error: processData.error ?? "Failed to process this file." };
+      }
+      return { fileName: processData.saved?.fileName ?? file.name };
+    } catch {
+      return { fileName: file.name, error: "Failed to upload this file. Please try again." };
+    }
+  }
+
   async function handleBooksSelected(files: File[]) {
     const pdfFiles = files.filter((f) => f.type === "application/pdf");
     if (pdfFiles.length === 0) {
@@ -133,30 +175,24 @@ export default function VivaQuestionBank() {
     }
     setUploadingBook(true);
     try {
-      const formData = new FormData();
-      pdfFiles.forEach((file) => formData.append("files", file));
-      const res = await apiFetch(`/api/admin/viva-sources/${activeSubject}/documents`, {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? "Failed to upload book(s)");
-        return;
+      const saved: string[] = [];
+      const failed: Array<{ fileName: string; error: string }> = [];
+      for (const file of pdfFiles) {
+        const result = await uploadOneBook(file);
+        if ("error" in result) failed.push(result);
+        else saved.push(result.fileName);
       }
-      const saved: Array<{ fileName: string }> = data.saved ?? [];
-      const failed: Array<{ fileName: string; error: string }> = data.failed ?? [];
       if (saved.length > 0) {
         toast.success(
           saved.length === 1
-            ? `"${saved[0].fileName}" added to the ${activeSubject} book library.`
+            ? `"${saved[0]}" added to the ${activeSubject} book library.`
             : `${saved.length} books added to the ${activeSubject} book library.`
         );
       }
       failed.forEach((f) => toast.error(`"${f.fileName}": ${f.error}`));
-      queryClient.invalidateQueries({ queryKey: ["viva-source-documents", activeSubject] });
-    } catch {
-      toast.error("Failed to upload book(s)");
+      if (saved.length > 0) {
+        queryClient.invalidateQueries({ queryKey: ["viva-source-documents", activeSubject] });
+      }
     } finally {
       setUploadingBook(false);
     }

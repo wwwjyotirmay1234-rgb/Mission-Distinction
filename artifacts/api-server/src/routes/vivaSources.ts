@@ -7,8 +7,37 @@ import { adminMiddleware } from "../middlewares/auth";
 import { stripHtml } from "../lib/sanitize";
 import { VIVA_SUBJECTS, invalidateBookChunkCache } from "./practicalHub";
 import { extractPdfBuffer } from "./aiDoubt";
+import { gcsClient } from "../lib/gcs";
 
 const router = Router();
+
+const REPLIT_SIDECAR = "http://127.0.0.1:1106";
+
+// Reference books can run to several hundred MB — far above the Replit
+// proxy's body-size limit for requests routed through the Node server (the
+// old multipart bookUpload path below silently failed for anything above
+// ~100MB even though multer itself allowed 500MB, because the request never
+// made it past the proxy). Large files must go browser → GCS directly via a
+// signed URL, bypassing the proxy entirely; the server then streams the
+// object back down from GCS for text extraction. See upload.ts's
+// signPdfUploadURL for the same pattern used elsewhere in this codebase.
+async function signBookUploadURL(bucketId: string, objectName: string): Promise<string> {
+  const body = {
+    bucket_name: bucketId,
+    object_name: objectName,
+    method: "PUT",
+    expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+  };
+  const resp = await fetch(`${REPLIT_SIDECAR}/object-storage/signed-object-url`, { // nosemgrep: react-insecure-request
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!resp.ok) throw new Error(`Sidecar returned ${resp.status}`);
+  const { signed_url } = (await resp.json()) as { signed_url: string };
+  return signed_url;
+}
 
 const pdfUpload = multer({
   storage: multer.memoryStorage(),
@@ -151,9 +180,109 @@ router.get("/:subject/documents", adminMiddleware, async (req: Request, res: Res
   }
 });
 
+// Admin: get a signed URL so the browser can upload a large book PDF
+// directly to GCS, bypassing the Replit proxy's request body-size limit
+// entirely (that limit — not multer's 500MB config — was the real reason
+// uploads over roughly 100MB were failing).
+router.post("/:subject/documents/request-upload-url", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const subject = String(req.params.subject);
+    if (!(VIVA_SUBJECTS as readonly string[]).includes(subject)) {
+      res.status(400).json({ error: `subject must be one of ${VIVA_SUBJECTS.join(", ")}` });
+      return;
+    }
+    const rawName = String(req.body?.fileName ?? "book.pdf");
+    const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+    if (!bucketId) {
+      res.status(500).json({ error: "Storage not configured" });
+      return;
+    }
+    const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const objectName = `viva-books-tmp/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`;
+    const signedUrl = await signBookUploadURL(bucketId, objectName);
+    res.json({ signedUrl, objectName, fileName: rawName });
+  } catch (err: any) {
+    console.error("Book upload-url error:", err);
+    res.status(500).json({ error: "Failed to prepare upload. Please try again." });
+  }
+});
+
+// Admin: extract + persist a book that was already uploaded directly to GCS
+// via the signed URL above. Downloads the object into memory, runs the same
+// extraction pipeline as the legacy multipart endpoint, then deletes the
+// temp GCS object — only the extracted text is kept long-term (see
+// vivaSourceDocumentsTable, which has no fileUrl column).
+router.post("/:subject/documents/process-uploaded", adminMiddleware, async (req: Request, res: Response) => {
+  const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+  const objectName = String(req.body?.objectName ?? "");
+  const fileName = String(req.body?.fileName ?? "book.pdf");
+  let fileRef: ReturnType<ReturnType<typeof gcsClient.bucket>["file"]> | null = null;
+  try {
+    const admin = (req as any).user;
+    const subject = String(req.params.subject);
+    if (!(VIVA_SUBJECTS as readonly string[]).includes(subject)) {
+      res.status(400).json({ error: `subject must be one of ${VIVA_SUBJECTS.join(", ")}` });
+      return;
+    }
+    if (!bucketId) {
+      res.status(500).json({ error: "Storage not configured" });
+      return;
+    }
+    if (!objectName || !objectName.startsWith("viva-books-tmp/")) {
+      res.status(400).json({ error: "Invalid upload reference." });
+      return;
+    }
+
+    const bucket = gcsClient.bucket(bucketId);
+    fileRef = bucket.file(objectName);
+    const [buffer] = await fileRef.download();
+
+    const { text, pages, warning } = await extractPdfBuffer(buffer, BOOK_MAX_TEXT_CHARS);
+    const cleaned = stripHtml(text).trim();
+    if (!cleaned) {
+      res.status(422).json({
+        error: warning || "No extractable text was found in this PDF (it may be scanned/image-only).",
+      });
+      return;
+    }
+
+    const [row] = await db
+      .insert(vivaSourceDocumentsTable)
+      .values({
+        subject,
+        fileName: fileName.slice(0, 255),
+        fullText: cleaned,
+        charCount: cleaned.length,
+        pages: pages || null,
+        createdBy: admin.id,
+      })
+      .returning({
+        id: vivaSourceDocumentsTable.id,
+        fileName: vivaSourceDocumentsTable.fileName,
+        charCount: vivaSourceDocumentsTable.charCount,
+        pages: vivaSourceDocumentsTable.pages,
+        createdAt: vivaSourceDocumentsTable.createdAt,
+      });
+
+    invalidateBookChunkCache(subject as (typeof VIVA_SUBJECTS)[number]);
+    res.json({ saved: row });
+  } catch (err: any) {
+    console.error("Book process-uploaded error:", err);
+    res.status(400).json({ error: err?.message || "Failed to process this file." });
+  } finally {
+    if (fileRef) {
+      fileRef.delete({ ignoreNotFound: true }).catch((err: any) => {
+        console.error("Failed to clean up temp book upload:", objectName, err?.message || err);
+      });
+    }
+  }
+});
+
 // Admin: upload one or more full reference book/textbook PDFs for a subject
 // in a single request (up to MAX_BOOK_FILES_PER_REQUEST at once, to cut down
-// on round-trips for bulk uploads). The FULL extracted text of each file is
+// on round-trips for bulk uploads). Kept for small files (well under the
+// proxy body-size limit) — the frontend now prefers the direct-to-GCS flow
+// above for anything large. The FULL extracted text of each file is
 // stored (no small truncation) so the AI examiner can draw on every part of
 // the book — see practicalHub.ts's excerpt-retrieval helper for how relevant
 // sections are pulled into each viva question's prompt without dumping the
