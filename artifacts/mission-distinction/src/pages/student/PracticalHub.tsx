@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Stethoscope, Mic, Square, PhoneOff, Loader2, Award, CheckCircle2, AlertTriangle, ArrowRight, Sparkles,
-  Search, Users, ChevronLeft, Volume2, Brain, TrendingUp,
+  Search, Users, ChevronLeft, Volume2, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
@@ -384,14 +384,6 @@ export default function PracticalHub() {
         description: "Spoken viva voce with an AI examiner across Anatomy, Physiology & Biochemistry.",
         badge: "Voice",
         onClick: () => { setVivaType(null); setClinicalImage(null); setState("setup"); },
-      },
-      {
-        key: "clinical-viva",
-        icon: <Brain size={22} className="text-primary" />,
-        title: "Clinical Case Viva",
-        description: "Physiology clinical & hematology case-based viva with image interpretation.",
-        badge: "Voice",
-        onClick: () => { setSelectedSubject("Physiology"); setState("setup"); },
       },
       {
         key: "viva-rooms",
