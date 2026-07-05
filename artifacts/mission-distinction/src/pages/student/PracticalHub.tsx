@@ -2,14 +2,20 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Stethoscope, Mic, Square, PhoneOff, Loader2, Award, CheckCircle2, AlertTriangle, ArrowRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 import { useVoiceRecorder, useAudioPlayback } from "@workspace/integrations-openai-ai-react";
 
-const SECTIONS = ["Anatomy", "Physiology", "Biochemistry"] as const;
-type Subject = (typeof SECTIONS)[number];
+const ALL_SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"] as const;
+type Subject = (typeof ALL_SUBJECTS)[number];
+
+const EXAMINER_BY_SUBJECT: Record<Subject, string> = {
+  Anatomy: "Dr. Aswini",
+  Physiology: "Dr. Rajiv",
+  Biochemistry: "Dr. Madhu",
+};
 
 type TurnRole = "user" | "assistant";
 interface Turn { role: TurnRole; content: string }
@@ -20,8 +26,7 @@ type SessionState =
   | "examiner_speaking"
   | "listening"
   | "processing"
-  | "section_ended"
-  | "session_ended";
+  | "section_ended";
 
 type VoiceEvent =
   | { type: "user_transcript"; data: string }
@@ -73,17 +78,15 @@ interface VivaSummary {
 
 export default function PracticalHub() {
   const [topic, setTopic] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState<Subject>(ALL_SUBJECTS[0]);
+  const [subject, setSubject] = useState<Subject>(ALL_SUBJECTS[0]);
   const [state, setState] = useState<SessionState>("setup");
-  const [sectionIndex, setSectionIndex] = useState(0);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [liveExaminerText, setLiveExaminerText] = useState("");
   const [liveUserText, setLiveUserText] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [sectionSummary, setSectionSummary] = useState<VivaSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
-  const [allSummaries, setAllSummaries] = useState<VivaSummary[]>([]);
-
-  const subject: Subject = SECTIONS[sectionIndex];
 
   const recorder = useVoiceRecorder();
   const playback = useAudioPlayback("/audio-playback-worklet.js");
@@ -94,7 +97,7 @@ export default function PracticalHub() {
   const currentRequestRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (state === "setup" || state === "section_ended" || state === "session_ended") {
+    if (state === "setup" || state === "section_ended") {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
@@ -186,8 +189,8 @@ export default function PracticalHub() {
     }
   }, [playback]);
 
-  const startSection = async (idx: number) => {
-    setSectionIndex(idx);
+  const startViva = async () => {
+    setSubject(selectedSubject);
     setState("connecting");
     setTurns([]);
     turnsRef.current = [];
@@ -195,12 +198,7 @@ export default function PracticalHub() {
     setLiveExaminerText("");
     setElapsed(0);
     setSectionSummary(null);
-    await streamTurn("/api/practical-hub/viva/start-voice", { subject: SECTIONS[idx], topic });
-  };
-
-  const startViva = async () => {
-    setAllSummaries([]);
-    await startSection(0);
+    await streamTurn("/api/practical-hub/viva/start-voice", { subject: selectedSubject, topic });
   };
 
   const handleMicClick = async () => {
@@ -243,20 +241,11 @@ export default function PracticalHub() {
         const data = await res.json();
         const summary: VivaSummary = { subject, ...data };
         setSectionSummary(summary);
-        setAllSummaries((prev) => [...prev.filter((s) => s.subject !== subject), summary]);
       }
     } catch {
       // silent — summary is a bonus, not required
     } finally {
       setSummaryLoading(false);
-    }
-  };
-
-  const continueToNextSection = () => {
-    if (sectionIndex < SECTIONS.length - 1) {
-      startSection(sectionIndex + 1);
-    } else {
-      setState("session_ended");
     }
   };
 
@@ -275,21 +264,26 @@ export default function PracticalHub() {
         <Card className="bg-card/40 border-border/40">
           <CardContent className="p-5 space-y-4">
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">This session covers all 3 subjects, back to back:</p>
-              <div className="flex flex-wrap gap-2">
-                {SECTIONS.map((s, i) => (
-                  <Badge key={s} variant="outline" className="text-xs px-2.5 py-1">{i + 1}. {s}</Badge>
-                ))}
-              </div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Choose Subject</label>
+              <Select value={selectedSubject} onValueChange={(v) => setSelectedSubject(v as Subject)}>
+                <SelectTrigger className="bg-background/50 border-border/50">
+                  <SelectValue placeholder="Select a subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_SUBJECTS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic Focus (Optional, applies to all sections)</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic Focus (Optional)</label>
               <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Cranial Nerves, Cardiac Cycle..." className="bg-background/50 border-border/50" />
             </div>
             <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground leading-relaxed flex gap-2">
               <Sparkles size={14} className="text-primary shrink-0 mt-0.5" />
               <span>
-                Each subject has its own examiner — Dr. Aswini (Anatomy), Dr. Rajiv (Physiology), and Dr. Madhu (Biochemistry) — who conducts the spoken exam live. Behind the scenes, a multi-AI panel quietly sharpens the tougher follow-up questions and cross-checks your final score, so your result reflects a full exam board's opinion.
+                {EXAMINER_BY_SUBJECT[selectedSubject]} conducts the spoken {selectedSubject} exam live. Behind the scenes, a multi-AI panel quietly sharpens the tougher follow-up questions and cross-checks your final score, so your result reflects a full exam board's opinion.
               </span>
             </div>
             <Button onClick={startViva} className="gap-2 w-full sm:w-auto">
@@ -302,79 +296,30 @@ export default function PracticalHub() {
   }
 
   if (state === "section_ended") {
-    const isLastSection = sectionIndex === SECTIONS.length - 1;
     return (
       <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto pb-20">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <Stethoscope size={20} className="text-primary" /> Practical Hub
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">{subject} section complete.</p>
+          <p className="text-muted-foreground text-sm mt-1">{subject} viva complete.</p>
         </div>
 
         <Card className="bg-card/40 border-border/40">
           <CardContent className="p-5 space-y-4">
             {summaryLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-6 justify-center">
-                <Loader2 size={16} className="animate-spin" /> The panel is scoring your {subject} section...
+                <Loader2 size={16} className="animate-spin" /> The panel is scoring your {subject} viva...
               </div>
             ) : sectionSummary ? (
               <SectionSummaryView summary={sectionSummary} />
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">Not enough of a conversation to score. Try answering a few questions next time.</p>
             )}
-            <Button onClick={continueToNextSection} className="w-full sm:w-auto gap-1.5">
-              {isLastSection ? "See Final Panel Result" : `Continue to ${SECTIONS[sectionIndex + 1]}`}
+            <Button onClick={() => setState("setup")} className="w-full sm:w-auto gap-1.5">
+              Start Another Practical Viva
               <ArrowRight size={15} />
             </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (state === "session_ended") {
-    const overallScore = allSummaries.length
-      ? Math.round(allSummaries.reduce((sum, s) => sum + s.score, 0) / allSummaries.length)
-      : 0;
-    return (
-      <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto pb-20">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Stethoscope size={20} className="text-primary" /> Practical Hub
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">Full practical viva complete — here's the panel's final verdict.</p>
-        </div>
-
-        <Card className="bg-card/40 border-border/40">
-          <CardContent className="p-5 space-y-5">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                <span className="text-xl font-bold text-primary">{overallScore}</span>
-              </div>
-              <div>
-                <p className="text-sm font-bold flex items-center gap-1.5"><Award size={14} className="text-primary" /> Overall Panel Score</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Average across Anatomy, Physiology & Biochemistry</p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {SECTIONS.map((s) => {
-                const summary = allSummaries.find((a) => a.subject === s);
-                return (
-                  <div key={s} className="rounded-lg border border-border/40 bg-background/40 p-3 flex items-center justify-between">
-                    <span className="text-sm font-medium">{s}</span>
-                    {summary ? (
-                      <Badge variant="outline" className="text-xs">{summary.score}/100</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs text-muted-foreground">Not attempted</Badge>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <Button onClick={() => setState("setup")} className="w-full sm:w-auto">Start Another Practical Viva</Button>
           </CardContent>
         </Card>
       </div>
@@ -392,19 +337,10 @@ export default function PracticalHub() {
             <Stethoscope size={20} className="text-primary" /> Practical Hub
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Section {sectionIndex + 1} of {SECTIONS.length}: {subject}{topic ? ` — ${topic}` : ""}
+            {subject} viva{topic ? ` — ${topic}` : ""}
           </p>
         </div>
         <div className="text-sm font-mono text-muted-foreground">{formatTime(elapsed)}</div>
-      </div>
-
-      <div className="flex gap-1.5">
-        {SECTIONS.map((s, i) => (
-          <div
-            key={s}
-            className={`h-1.5 flex-1 rounded-full ${i < sectionIndex ? "bg-primary" : i === sectionIndex ? "bg-primary/60" : "bg-border/50"}`}
-          />
-        ))}
       </div>
 
       <Card className="bg-gradient-to-b from-card/60 to-card/30 border-border/40 overflow-hidden">
@@ -450,7 +386,7 @@ export default function PracticalHub() {
           <div className="border-t border-border/40 px-4 py-3 flex justify-between items-center bg-card/40">
             <p className="text-[11px] text-muted-foreground">{turns.filter((t) => t.role === "user").length} answers given</p>
             <Button variant="ghost" size="sm" onClick={endSection} className="text-xs h-7 gap-1.5 text-destructive hover:text-destructive">
-              <PhoneOff size={13} /> End {subject} Section
+              <PhoneOff size={13} /> End {subject} Viva
             </Button>
           </div>
         </CardContent>

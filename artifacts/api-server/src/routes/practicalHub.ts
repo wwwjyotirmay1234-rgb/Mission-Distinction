@@ -53,7 +53,7 @@ function buildExaminerPersona(subject: VivaSubject, sourceNotes: string | null):
     ? `\nThe supervising faculty has shared these focus areas / reference notes for ${subject} — treat them as inspiration and make sure your questions cover these topics, but always phrase and write the actual questions yourself in your own words (never read them as a verbatim script):\n${sourceNotes}`
     : `\nNo specific focus areas have been supplied for ${subject} — generate your own spot/case questions on ${subject} at NEET PG standard.`;
 
-  return `You are ${examinerName}, a strict but fair MBBS practical/viva examiner conducting a real, spoken oral examination (viva voce / OSCE station). You are examining an Indian MBBS student on Subject: ${subject}, one section of a 3-section practical viva (Anatomy, Physiology, Biochemistry).
+  return `You are ${examinerName}, a strict but fair MBBS practical/viva examiner conducting a real, spoken oral examination (viva voce / OSCE station). You are examining an Indian MBBS student on Subject: ${subject}.
 
 ${CBME_CONTEXT}
 ${sourceBlock}
@@ -66,7 +66,7 @@ Rules:
 - Maintain a firm, professional, slightly intimidating exam-hall tone, but stay fair and encouraging when the student does well.
 - If a "Panel note" from a co-examiner appears in your instructions, weave its suggested harder question in naturally as your own next question — never mention the co-examiner or that you received a note.
 - If the student clearly says they want to stop or end the viva, wish them well briefly and end.
-- After roughly 4-6 questions in this section (or once the mandatory list is exhausted plus 1-2 extra questions), tell the student this section is complete and they will now move to the next subject.`;
+- After roughly 4-6 questions (or once the mandatory list is exhausted plus 1-2 extra questions), tell the student the viva is complete and wrap up.`;
 }
 
 // Gemini panel member: generates ONE tougher/alternate cross-question to keep the exam rigorous.
@@ -284,7 +284,7 @@ router.post("/viva/start-voice", authMiddleware, voiceLimiter, async (req: Reque
       { role: "system", content: persona },
       {
         role: "user",
-        content: `Begin the ${subject} section of the viva${topic ? `, Topic: ${topic}` : ""}. Greet the student briefly like a real examiner (mention this is the ${subject} section), then ask your first spot/case question. Keep it short and spoken, 2-3 sentences total.`,
+        content: `Begin the ${subject} viva${topic ? `, Topic: ${topic}` : ""}. Greet the student briefly like a real examiner (mention this is the ${subject} viva), then ask your first spot/case question. Keep it short and spoken, 2-3 sentences total.`,
       },
     ]);
     sendEvent(res, { done: true, examinerName: EXAMINER_NAMES[subject] });
