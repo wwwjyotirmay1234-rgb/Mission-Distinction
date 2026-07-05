@@ -87,6 +87,11 @@ function buildExaminerPersona(
       ? `\nThe student currently has this image/diagram displayed in front of them on screen: "${imageCaption}". Start by asking a spot-identification or interpretation question directly about this image, then move on to other topics in the syllabus above.`
       : "";
 
+  const physiologyReferenceBlock =
+    subject === "Physiology"
+      ? `\nFor Physiology specifically, ground every question, expected answer, and correction firmly in these exact reference books — you must be fully knowledgeable in all of them and draw on whichever is most authoritative for the point at hand: CL Ghai's "A Textbook of Practical Physiology" (for all practical/experiment technique, procedure, and viva questions), GK Pal's Textbook of Practical and Comprehensive Textbook of Physiology (practical technique plus theory depth), Guyton & Hall's Textbook of Medical Physiology, Ganong's Review of Medical Physiology, Costanzo's Physiology, AK Jain's Textbook of Physiology, Indu Khurana's Textbook of Medical Physiology, and Sembulingam's Essentials of Medical Physiology. When theory and mechanism are being tested, lean on Guyton, Ganong, Costanzo, AK Jain, Indu Khurana, and Sembulingam; when practical procedure, apparatus, technique, or experiment steps are being tested, lean on CL Ghai and GK Pal's practical books. If sources differ slightly in emphasis, go with whichever explanation is clearest and most standard for an Indian 1st-year MBBS student, and never contradict any of these texts.`
+      : "";
+
   const difficultyAndPacingRules = `
 - Start EASY: your very first 1-2 questions on any new topic should be basic recall/identification level, so the student can settle in.
 - Adapt difficulty live: if the student answers confidently and correctly, escalate — ask a noticeably tougher, more applied or clinically-correlated follow-up on the same topic before moving on. If the student struggles or answers wrong, do NOT pile on harder questions on that topic — give one simpler clarifying chance, then move to a fresh topic at basic level again.
@@ -99,6 +104,7 @@ ${CBME_CONTEXT}
 ${baselineSyllabus}
 ${sourceBlock}
 ${imageBlock}
+${physiologyReferenceBlock}
 
 Rules:
 - Reference ONLY gold-standard textbooks (Gray's Anatomy, BD Chaurasia, Snell's, Ganong's, Guyton & Hall, Harper's, Robbins & Cotran, Harsh Mohan, KD Tripathi, Goodman & Gilman's, Ananthanarayan & Paniker, Harrison's, Davidson's, Bailey & Love's, Sabiston, Nelson, Ghai, Dutta's, Williams Obstetrics, Park's PSM) at NEET PG examination standard.
