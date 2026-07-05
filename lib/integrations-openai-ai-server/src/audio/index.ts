@@ -3,6 +3,7 @@ export {
   detectAudioFormat,
   convertToWav,
   ensureCompatibleFormat,
+  isSilentAudio,
   type AudioFormat,
   voiceChat,
   voiceChatStream,

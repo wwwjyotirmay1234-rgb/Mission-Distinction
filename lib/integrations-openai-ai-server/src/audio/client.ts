@@ -108,6 +108,41 @@ export async function ensureCompatibleFormat(
   return { buffer: wavBuffer, format: "wav" };
 }
 
+/**
+ * Detect whether an audio clip is effectively silent (no real speech captured).
+ *
+ * Speech-to-text models (including gpt-4o-mini-transcribe) are known to "hallucinate" a
+ * plausible-sounding transcript when fed silent or near-silent audio, instead of returning
+ * an empty string. That hallucinated text would otherwise look like a real (and sometimes
+ * scoreable) student answer. Running ffmpeg's volumedetect filter lets us catch this case
+ * *before* calling the transcription API, so callers can treat it as "no answer" up front.
+ */
+export async function isSilentAudio(audioBuffer: Buffer, format: string = "wav"): Promise<boolean> {
+  const SILENCE_MEAN_VOLUME_DB = -50;
+  const inputPath = join(tmpdir(), `silence-check-${randomUUID()}.${format}`);
+  try {
+    await writeFile(inputPath, audioBuffer);
+    const stderrOutput = await new Promise<string>((resolve, reject) => {
+      let out = "";
+      const ffmpeg = spawn("ffmpeg", ["-i", inputPath, "-af", "volumedetect", "-f", "null", "-"]);
+      ffmpeg.stderr.on("data", (d) => {
+        out += d.toString();
+      });
+      ffmpeg.on("close", () => resolve(out));
+      ffmpeg.on("error", reject);
+    });
+    const match = stderrOutput.match(/mean_volume:\s*(-?\d+(?:\.\d+)?)\s*dB/);
+    if (!match) return false;
+    const meanVolumeDb = parseFloat(match[1]);
+    return meanVolumeDb < SILENCE_MEAN_VOLUME_DB;
+  } catch (err) {
+    console.error("Audio silence detection failed, allowing transcription to proceed", err);
+    return false;
+  } finally {
+    await unlink(inputPath).catch(() => {});
+  }
+}
+
 /** Voice Chat: audio-in, audio-out using gpt-audio. */
 export async function voiceChat(
   audioBuffer: Buffer,

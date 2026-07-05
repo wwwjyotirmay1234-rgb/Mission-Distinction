@@ -34,3 +34,4 @@
 - [Server-side Google Drive PDF fetch](drive-pdf-server-fetch.md) — any backend route that `fetch()`s a stored Google Drive share URL gets HTML not PDF bytes; must convert /file/d/ID/ links to drive.usercontent.google.com direct-download first
 - [Scanned multi-page PDF AI analysis pattern](scanned-pdf-batch-analysis.md) — never cap scanned/image-only PDFs at N pages; batch ALL pages through vision calls, synthesize once over the combined extract
 - [ffmpeg missing as system dependency](ffmpeg-missing-system-dep.md) — "spawn ffmpeg ENOENT" means ffmpeg isn't declared in replit.nix; shell `which ffmpeg` can lie, verify with a real Node spawn test
+- [STT silence hallucination](stt-silence-hallucination.md) — Whisper-family STT invents plausible text for silent audio instead of "" ; screen with ffmpeg volumedetect before transcribing, not just `if(!transcript)`

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middlewares/auth";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { ensureCompatibleFormat, speechToText } from "@workspace/integrations-openai-ai-server/audio";
+import { ensureCompatibleFormat, isSilentAudio, speechToText } from "@workspace/integrations-openai-ai-server/audio";
 import { ai as gemini } from "@workspace/integrations-gemini-ai";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { db } from "@workspace/db";
@@ -535,6 +535,17 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
     }
 
     const { buffer, format } = await ensureCompatibleFormat(rawBuffer);
+
+    // Speech-to-text models can hallucinate a plausible-sounding transcript from silent or
+    // near-silent audio instead of returning empty text. Screen for silence up front so a
+    // student who never actually answered can't get a fabricated transcript scored as a
+    // real response.
+    if (await isSilentAudio(buffer, format)) {
+      sendEvent(res, { type: "error", error: "No speech detected. Please try again." });
+      res.end();
+      return;
+    }
+
     const userTranscript = (await speechToText(buffer, format)).trim();
 
     if (!userTranscript) {
