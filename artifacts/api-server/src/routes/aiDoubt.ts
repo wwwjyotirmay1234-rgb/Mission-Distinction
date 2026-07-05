@@ -20,16 +20,22 @@ const MAX_SCANNED_PDF_PAGES = 20;
 // Large text-based PYQ compilations (40-60 pages) can easily exceed the old 80k-char cap.
 const MAX_DOCUMENT_TEXT_CHARS = 350_000;
 
-// Render an arbitrary [startPage, endPage] range (1-indexed, inclusive) to PNG images.
-// Used both by the capped single-call path below and by callers that need to walk
-// a large scanned document in batches to cover ALL pages (e.g. PYQ repeated-question
-// analysis over multi-year compilations).
-export async function renderPdfPageRange(buffer: Buffer, startPage: number, endPage: number): Promise<string[]> {
+// Parse the PDF ONCE and reuse the parsed document across page-range renders.
+// Re-parsing the whole PDF per batch (as a naive per-batch renderPdfPageRange
+// would) wastes CPU/memory and — since PDF parsing/rendering is CPU-bound and
+// Node is single-threaded — firing several of those re-parses "concurrently"
+// doesn't actually run in parallel, it just contends for the same thread and
+// can make a multi-batch scanned-PDF walk slower and prone to timing out.
+export async function loadPdfDocument(buffer: Buffer): Promise<any> {
   const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const { createCanvas } = await import("@napi-rs/canvas");
-
   const data = new Uint8Array(buffer);
-  const doc = await pdfjsLib.getDocument({ data }).promise;
+  return pdfjsLib.getDocument({ data }).promise;
+}
+
+// Render an arbitrary [startPage, endPage] range (1-indexed, inclusive) to PNG
+// images from an already-loaded document (see loadPdfDocument above).
+export async function renderPageRangeFromDoc(doc: any, startPage: number, endPage: number): Promise<string[]> {
+  const { createCanvas } = await import("@napi-rs/canvas");
   const last = Math.min(endPage, doc.numPages);
   const images: string[] = [];
 
@@ -45,10 +51,16 @@ export async function renderPdfPageRange(buffer: Buffer, startPage: number, endP
   return images;
 }
 
+// Convenience wrapper for one-off single-range renders (parses the PDF just for
+// this call) — kept for callers (e.g. /extract-file) that only ever need one range.
+export async function renderPdfPageRange(buffer: Buffer, startPage: number, endPage: number): Promise<string[]> {
+  const doc = await loadPdfDocument(buffer);
+  return renderPageRangeFromDoc(doc, startPage, endPage);
+}
+
 // Total page count without rendering — used to plan batches for full-document reads.
 export async function getPdfPageCount(buffer: Buffer): Promise<number> {
-  const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+  const doc = await loadPdfDocument(buffer);
   return doc.numPages;
 }
 

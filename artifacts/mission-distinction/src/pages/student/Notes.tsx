@@ -242,10 +242,13 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
   // AI Search Topic State
   const [topic, setTopic] = useState("");
   const [searching, setSearching] = useState(false);
+  const [searchProgress, setSearchProgress] = useState<{ completed: number; total: number } | null>(null);
   const [searchResults, setSearchResults] = useState<{ matches: { year: string | null; question: string }[]; note: string; warning?: string } | null>(null);
 
   // AI Repeated Questions State
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzingPhase, setAnalyzingPhase] = useState<"reading" | "synthesizing">("reading");
+  const [repeatedProgress, setRepeatedProgress] = useState<{ completed: number; total: number } | null>(null);
   const [repeatedData, setRepeatedData] = useState<{ chapters: { chapter: string; importance: "high" | "medium" | "low"; repeatedQuestions: { question: string; timesSeen: number; yearsSeen: string[] }[] }[]; summary: string; warning?: string } | null>(null);
 
   const open = () => {
@@ -253,38 +256,78 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
     setViewing(true);
   };
 
+  // Both AI routes stream Server-Sent Events so the connection stays open for as
+  // long as a large scanned PDF takes to walk (no fixed timeout window), and to
+  // surface live batch progress instead of a single opaque spinner.
+  async function streamPyqAi(path: string, body: unknown, onEvent: (evt: any) => void) {
+    const token = localStorage.getItem("mission_token");
+    const res = await fetch(path, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok || !res.body) {
+      throw new Error(`Request failed (${res.status})`);
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          onEvent(JSON.parse(line.slice(6)));
+        } catch {}
+      }
+    }
+  }
+
   const handleSearchTopic = async () => {
     if (!topic.trim()) return;
     setSearching(true);
+    setSearchProgress(null);
     setSearchResults(null);
     try {
-      const data = await customFetch<{ matches: any[]; note: string; warning?: string }>(`/api/pyqs/${pyq.id}/search-topic`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic }),
+      await streamPyqAi(`/api/pyqs/${pyq.id}/search-topic`, { topic }, (evt) => {
+        if (evt.type === "progress") setSearchProgress({ completed: evt.completed, total: evt.total });
+        else if (evt.type === "done") setSearchResults(evt);
+        else if (evt.type === "error") toast.error(evt.message || "Failed to search topic");
       });
-      setSearchResults(data);
     } catch (err: any) {
       toast.error(err?.message || "Failed to search topic");
     } finally {
       setSearching(false);
+      setSearchProgress(null);
     }
   };
 
   const handleRepeatedQuestions = async () => {
     setAnalyzing(true);
+    setAnalyzingPhase("reading");
+    setRepeatedProgress(null);
     setRepeatedData(null);
     try {
-      const data = await customFetch<{ chapters: any[]; summary: string; warning?: string }>(`/api/pyqs/${pyq.id}/repeated-questions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+      await streamPyqAi(`/api/pyqs/${pyq.id}/repeated-questions`, {}, (evt) => {
+        if (evt.type === "progress") setRepeatedProgress({ completed: evt.completed, total: evt.total });
+        else if (evt.type === "synthesizing") setAnalyzingPhase("synthesizing");
+        else if (evt.type === "done") setRepeatedData(evt);
+        else if (evt.type === "error") toast.error(evt.message || "Failed to analyze repeated questions");
       });
-      setRepeatedData(data);
     } catch (err: any) {
       toast.error(err?.message || "Failed to analyze repeated questions");
     } finally {
       setAnalyzing(false);
+      setAnalyzingPhase("reading");
+      setRepeatedProgress(null);
     }
   };
 
@@ -400,8 +443,16 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
                   <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-12">
                     <Spinner className="w-8 h-8 text-purple-500" />
                     <div className="space-y-1">
-                      <p className="font-medium">Analyzing PDF document...</p>
-                      <p className="text-xs text-muted-foreground">This can take up to 30 seconds as I read through the entire paper.</p>
+                      <p className="font-medium">
+                        {searchProgress && searchProgress.total > 0
+                          ? `Reading batch ${searchProgress.completed}/${searchProgress.total}...`
+                          : "Analyzing PDF document..."}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {searchProgress && searchProgress.total > 1
+                          ? "Long papers can take a few minutes — this stays open until it finishes."
+                          : "Reading through the entire paper, however long it takes."}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -475,8 +526,18 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
                   <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-12">
                     <Spinner className="w-8 h-8 text-amber-500" />
                     <div className="space-y-1">
-                      <p className="font-medium text-amber-500/90">Analyzing exam patterns...</p>
-                      <p className="text-xs text-muted-foreground">Identifying repeated questions and chapter importance. This takes ~30 seconds.</p>
+                      <p className="font-medium text-amber-500/90">
+                        {analyzingPhase === "synthesizing"
+                          ? "Grouping repeated questions by chapter..."
+                          : repeatedProgress && repeatedProgress.total > 0
+                            ? `Reading batch ${repeatedProgress.completed}/${repeatedProgress.total}...`
+                            : "Analyzing exam patterns..."}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {repeatedProgress && repeatedProgress.total > 1
+                          ? "Long papers can take a few minutes — this stays open until it finishes."
+                          : "Identifying repeated questions and chapter importance."}
+                      </p>
                     </div>
                   </div>
                 )}

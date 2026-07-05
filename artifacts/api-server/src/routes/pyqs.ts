@@ -8,7 +8,7 @@ import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
 import { awardXp, XP_VALUES } from "../lib/xp";
 import { xpTransactionsTable } from "@workspace/db";
-import { getPdfText, renderPdfPageRange } from "./aiDoubt";
+import { getPdfText, loadPdfDocument, renderPageRangeFromDoc } from "./aiDoubt";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { CBME_CONTEXT } from "../lib/cbmeContext";
 
@@ -21,6 +21,49 @@ const MAX_DOCUMENT_TEXT_CHARS = 350_000;
 // a batch reliably gets a real response back from the model, large enough to keep the
 // number of AI calls (and latency) reasonable for a multi-year, multi-dozen-page compilation.
 const SCANNED_BATCH_PAGES = 10;
+// PDF page rendering is CPU-bound and Node is single-threaded, and each batch also
+// fires a real OpenAI vision call — running every batch at once contends for CPU/
+// memory and risks provider rate-limits. A small, bounded concurrency keeps batches
+// moving in parallel without either problem.
+const SCANNED_BATCH_CONCURRENCY = 3;
+// Long scanned-PDF analyses (many batches) can run well past typical reverse-proxy
+// idle-connection timeouts. Streaming SSE progress/heartbeats keeps the connection
+// alive end-to-end regardless of total document size, instead of racing a single
+// request/response against a fixed timeout window.
+const SSE_HEARTBEAT_MS = 15_000;
+
+function startSse(res: Response) {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  (res as any).flushHeaders?.();
+  const send = (event: Record<string, unknown>) => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  };
+  const heartbeat = setInterval(() => res.write(": ping\n\n"), SSE_HEARTBEAT_MS);
+  const stop = () => clearInterval(heartbeat);
+  return { send, stop };
+}
+
+// Runs `items` through `worker` with at most `concurrency` in flight at once,
+// preserving each item's original index in the returned results array.
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function run() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await worker(items[i], i);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, run));
+  return results;
+}
 
 type PyqDoc =
   | { mode: "text"; text: string; pages: number }
@@ -183,26 +226,31 @@ router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// ── AI topic search across a PYQ PDF + model answers ─────────────────────────
+// ── AI topic search across a PYQ PDF ─────────────────────────────────────────
+// Streams progress over SSE so the connection stays alive for as long as the
+// document takes to walk, instead of racing a single request against a fixed
+// reverse-proxy timeout window (which is what caused HTTP 504s on long docs).
 router.post("/:id/search-topic", authMiddleware, pyqAiLimiter, async (req: Request, res: Response) => {
+  const { send, stop } = startSse(res);
   try {
     const id = parseId(req.params.id);
-    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+    if (!id) { send({ type: "error", message: "Invalid ID" }); return; }
     const topic = stripHtml(String(req.body?.topic || "")).slice(0, 200);
-    if (!topic) { res.status(400).json({ error: "topic is required" }); return; }
+    if (!topic) { send({ type: "error", message: "topic is required" }); return; }
 
     const [pyq] = await db.select().from(pyqsTable).where(eq(pyqsTable.id, id));
-    if (!pyq) { res.status(404).json({ error: "PYQ not found" }); return; }
+    if (!pyq) { send({ type: "error", message: "PYQ not found" }); return; }
 
     const doc = await loadPyqDocument(pyq.url);
+    const pyqInfo = { id: pyq.id, title: pyq.title, subject: pyq.subject };
 
     if (doc.mode === "text") {
       const prompt = `You are an expert Indian MBBS (${pyq.subject}) examiner analysing a previous-year-question (PYQ) paper titled "${pyq.title}".
-Find every question in this document related to the topic: "${topic}".
+Find every question in this document that is about the topic "${topic}" OR is closely related to it (same underlying concept, sub-topic, or theme), even if it does not use the exact same wording.
 Note the year/exam session for each question if it is identifiable from the document.
 Return ONLY valid JSON of the shape:
 { "matches": [ { "year": string|null, "question": string } ], "note": string }
-If nothing matches the topic, return an empty "matches" array and explain in "note".`;
+If nothing matches or relates to the topic, return an empty "matches" array and explain in "note".`;
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -217,13 +265,15 @@ ${CBME_CONTEXT}` },
       });
       const content = completion.choices[0]?.message?.content;
       const result = content ? JSON.parse(content) : { matches: [], note: "AI returned no content." };
-      res.json({ pyq: { id: pyq.id, title: pyq.title, subject: pyq.subject }, ...result });
+      send({ type: "done", pyq: pyqInfo, ...result });
       return;
     }
 
     // ── Scanned PDF — walk EVERY page in batches so the topic search covers the
-    // whole multi-year compilation, not just the first N pages. Batches are fired
-    // concurrently (not sequentially) so a 50-80 page doc doesn't feel painfully slow. ─
+    // whole multi-year compilation, not just the first N pages. The PDF is parsed
+    // once and batches run with bounded concurrency, streaming progress as each
+    // batch finishes (which also keeps the SSE connection alive). ─
+    const pdfDoc = await loadPdfDocument(doc.buffer);
     const numBatches = Math.ceil(doc.pages / SCANNED_BATCH_PAGES);
     const batchRanges = Array.from({ length: numBatches }, (_, b) => {
       const start = b * SCANNED_BATCH_PAGES + 1;
@@ -231,14 +281,17 @@ ${CBME_CONTEXT}` },
       return { start, end };
     });
 
-    const batchResults = await Promise.all(batchRanges.map(async ({ start, end }) => {
+    let completed = 0;
+    send({ type: "progress", completed, total: numBatches });
+
+    const batchResults = await mapWithConcurrency(batchRanges, SCANNED_BATCH_CONCURRENCY, async ({ start, end }) => {
       try {
-        const images = await renderPdfPageRange(doc.buffer, start, end);
+        const images = await renderPageRangeFromDoc(pdfDoc, start, end);
         const batchPrompt = `These are pages ${start}-${end} of a ${pyq.subject} previous-year-question (PYQ) paper titled "${pyq.title}".
-Find every question on THESE PAGES related to the topic: "${topic}".
+Find every question on THESE PAGES that is about the topic "${topic}" OR is closely related to it (same underlying concept, sub-topic, or theme), even if it does not use the exact same wording.
 For EACH matching question, note the year/exam session if it is identifiable on the page (else null). Do NOT provide an answer — only the question text.
 Return ONLY valid JSON: { "matches": [ { "year": string|null, "question": string } ] }
-If nothing on these pages matches the topic, return { "matches": [] }.`;
+If nothing on these pages matches or relates to the topic, return { "matches": [] }.`;
 
         const completion = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -257,14 +310,18 @@ ${CBME_CONTEXT}` },
         return { matches: (parsed.matches || []) as { year: string | null; question: string }[], warning: null };
       } catch (batchErr: any) {
         return { matches: [] as { year: string | null; question: string }[], warning: `pages ${start}-${end}: ${batchErr?.message || "request failed"}` };
+      } finally {
+        completed++;
+        send({ type: "progress", completed, total: numBatches });
       }
-    }));
+    });
 
     const allMatches = batchResults.flatMap((r) => r.matches);
     const batchWarnings = batchResults.map((r) => r.warning).filter((w): w is string => !!w);
 
-    res.json({
-      pyq: { id: pyq.id, title: pyq.title, subject: pyq.subject },
+    send({
+      type: "done",
+      pyq: pyqInfo,
       matches: allMatches,
       note: allMatches.length
         ? `Found ${allMatches.length} matching question(s) across all ${doc.pages} scanned pages.`
@@ -275,19 +332,27 @@ ${CBME_CONTEXT}` },
     });
   } catch (err: any) {
     console.error("[pyqs/search-topic]", err?.message);
-    res.status(500).json({ error: err?.message || "Failed to analyze PYQ document" });
+    send({ type: "error", message: err?.message || "Failed to analyze PYQ document" });
+  } finally {
+    stop();
+    res.end();
   }
 });
 
 // ── AI "most repeated / important questions per chapter" analysis ───────────
+// Same SSE streaming approach as /search-topic: keeps the connection alive for
+// the full walk over a scanned document regardless of how many pages/batches
+// it takes, instead of hitting a reverse-proxy timeout on long documents.
 router.post("/:id/repeated-questions", authMiddleware, pyqAiLimiter, async (req: Request, res: Response) => {
+  const { send, stop } = startSse(res);
   try {
     const id = parseId(req.params.id);
-    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+    if (!id) { send({ type: "error", message: "Invalid ID" }); return; }
     const [pyq] = await db.select().from(pyqsTable).where(eq(pyqsTable.id, id));
-    if (!pyq) { res.status(404).json({ error: "PYQ not found" }); return; }
+    if (!pyq) { send({ type: "error", message: "PYQ not found" }); return; }
 
     const doc = await loadPyqDocument(pyq.url);
+    const pyqInfo = { id: pyq.id, title: pyq.title, subject: pyq.subject };
 
     const synthesisSchema = `{
   "chapters": [
@@ -303,7 +368,7 @@ router.post("/:id/repeated-questions", authMiddleware, pyqAiLimiter, async (req:
     if (doc.mode === "text") {
       const prompt = `You are an expert Indian MBBS (${pyq.subject}) examiner analysing a previous-year-question (PYQ) compilation titled "${pyq.title}" that may span multiple years/exam sessions.
 1. Group the questions by chapter/topic within ${pyq.subject}.
-2. Within each chapter, identify questions that are repeated across years or are clear variations of the same core concept, and count how many times each appears.
+2. Within each chapter, treat questions as the SAME repeated entry whenever they are verbatim repeats, close paraphrases, OR ask about the same underlying topic/concept/sub-topic — even if the wording is quite different. Count how many times each such concept appears across the document.
 3. Rank chapters/questions by importance (repetition frequency + exam weightage) so a student knows what to prioritize before the exam.
 Return ONLY valid JSON of the shape:
 ${synthesisSchema}`;
@@ -321,7 +386,7 @@ ${CBME_CONTEXT}` },
       });
       const content = completion.choices[0]?.message?.content;
       const result = content ? JSON.parse(content) : { chapters: [], summary: "AI returned no content." };
-      res.json({ pyq: { id: pyq.id, title: pyq.title, subject: pyq.subject }, ...result });
+      send({ type: "done", pyq: pyqInfo, ...result });
       return;
     }
 
@@ -329,8 +394,9 @@ ${CBME_CONTEXT}` },
     // visible) per small page-batch so each vision call reliably returns content.
     // Phase 2: one cheap text-only synthesis call over ALL transcribed questions
     // does the chapter grouping / repetition ranking across the whole document. ─
-    // Batches are fired concurrently (not sequentially) so a 50-80 page doc
-    // doesn't feel painfully slow to transcribe.
+    // The PDF is parsed once and batches run with bounded concurrency, streaming
+    // progress as each batch finishes (which also keeps the SSE connection alive).
+    const pdfDoc = await loadPdfDocument(doc.buffer);
     const numBatches = Math.ceil(doc.pages / SCANNED_BATCH_PAGES);
     const batchRanges = Array.from({ length: numBatches }, (_, b) => {
       const start = b * SCANNED_BATCH_PAGES + 1;
@@ -338,9 +404,12 @@ ${CBME_CONTEXT}` },
       return { start, end };
     });
 
-    const batchResults = await Promise.all(batchRanges.map(async ({ start, end }) => {
+    let completed = 0;
+    send({ type: "progress", completed, total: numBatches });
+
+    const batchResults = await mapWithConcurrency(batchRanges, SCANNED_BATCH_CONCURRENCY, async ({ start, end }) => {
       try {
-        const images = await renderPdfPageRange(doc.buffer, start, end);
+        const images = await renderPageRangeFromDoc(pdfDoc, start, end);
         const batchPrompt = `These are pages ${start}-${end} of a ${pyq.subject} previous-year-question (PYQ) compilation titled "${pyq.title}" that may span multiple years/exam sessions.
 Transcribe EVERY distinct exam question visible on these pages (verbatim, or close paraphrase if scan quality is poor). For each, note the year/exam session if it is identifiable anywhere on the page (header, footer, watermark) — else null. Do NOT provide an answer — only the question text.
 Return ONLY valid JSON: { "questions": [ { "question": string, "year": string|null } ] }
@@ -362,15 +431,19 @@ If no questions are visible on these pages, return { "questions": [] }.`;
         return { lines, warning: null };
       } catch (batchErr: any) {
         return { lines: [] as string[], warning: `pages ${start}-${end}: ${batchErr?.message || "request failed"}` };
+      } finally {
+        completed++;
+        send({ type: "progress", completed, total: numBatches });
       }
-    }));
+    });
 
     const transcribed = batchResults.flatMap((r) => r.lines);
     const batchWarnings = batchResults.map((r) => r.warning).filter((w): w is string => !!w);
 
     if (transcribed.length === 0) {
-      res.json({
-        pyq: { id: pyq.id, title: pyq.title, subject: pyq.subject },
+      send({
+        type: "done",
+        pyq: pyqInfo,
         chapters: [],
         summary: "No questions could be transcribed from this scanned document.",
         warning: batchWarnings.length ? batchWarnings.join("; ") : undefined,
@@ -378,9 +451,11 @@ If no questions are visible on these pages, return { "questions": [] }.`;
       return;
     }
 
+    send({ type: "synthesizing" });
+
     const synthesisPrompt = `Below is a raw list of exam questions transcribed from every page (${doc.pages} pages total, read in batches) of a ${pyq.subject} PYQ compilation titled "${pyq.title}" spanning multiple years/exam sessions.
 1. Group them by chapter/topic within ${pyq.subject}.
-2. Within each chapter, identify questions repeated across years or clear variations of the same core concept, and count how many times each appears.
+2. Within each chapter, treat questions as the SAME repeated entry whenever they are verbatim repeats, close paraphrases, OR ask about the same underlying topic/concept/sub-topic — even if the wording is quite different. Count how many times each such concept appears across the document.
 3. Rank chapters/questions by importance (repetition frequency + exam weightage) so a student knows what to prioritize before the exam.
 
 Raw transcribed questions:
@@ -402,8 +477,9 @@ ${CBME_CONTEXT}` },
     });
     const synthContent = synthesis.choices[0]?.message?.content;
     const result = synthContent ? JSON.parse(synthContent) : { chapters: [], summary: "AI returned no content." };
-    res.json({
-      pyq: { id: pyq.id, title: pyq.title, subject: pyq.subject },
+    send({
+      type: "done",
+      pyq: pyqInfo,
       ...result,
       warning: batchWarnings.length
         ? `Read all ${doc.pages} pages across ${numBatches} batches. Some batches had issues: ${batchWarnings.join("; ")}.`
@@ -411,7 +487,10 @@ ${CBME_CONTEXT}` },
     });
   } catch (err: any) {
     console.error("[pyqs/repeated-questions]", err?.message);
-    res.status(500).json({ error: err?.message || "Failed to analyze PYQ document" });
+    send({ type: "error", message: err?.message || "Failed to analyze PYQ document" });
+  } finally {
+    stop();
+    res.end();
   }
 });
 
