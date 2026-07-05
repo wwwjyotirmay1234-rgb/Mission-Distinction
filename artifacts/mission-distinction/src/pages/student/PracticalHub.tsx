@@ -404,13 +404,6 @@ export default function PracticalHub() {
         onClick: () => setState("rooms"),
       },
       {
-        key: "spotter",
-        icon: <Search size={22} className="text-primary" />,
-        title: "Spotter Challenge",
-        description: "Rapid-fire identification challenges — same format as the Diagnosis Challenge.",
-        onClick: () => navigate("/student/games"),
-      },
-      {
         key: "exams",
         icon: <FileText size={22} className="text-primary" />,
         title: "Practical Exams",
