@@ -95,6 +95,51 @@ class GLBErrorBoundary extends React.Component<EBProps, EBState> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// WebGL availability — some devices/browsers (low-end phones, in-app
+// webviews, hardware-acceleration disabled, or too many contexts already
+// open on the page) cannot create a WebGL context at all. Three.js throws
+// synchronously from the WebGLRenderer constructor in that case, which
+// crashes the whole viewer unless caught. We feature-detect up front (cheap,
+// avoids the throw entirely) and also wrap <Canvas> in an error boundary as
+// a safety net for browsers that fail only on the "real" context creation.
+// ─────────────────────────────────────────────────────────────────────────────
+let cachedWebglSupport: boolean | null = null;
+
+function isWebGLAvailable(): boolean {
+  if (cachedWebglSupport !== null) return cachedWebglSupport;
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    cachedWebglSupport = !!gl;
+  } catch {
+    cachedWebglSupport = false;
+  }
+  return cachedWebglSupport;
+}
+
+class WebGLErrorBoundary extends React.Component<EBProps, EBState> {
+  constructor(props: EBProps) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError(): EBState { return { hasError: true }; }
+  componentDidCatch(err: Error) { console.warn("[ModelViewer3D] WebGL context error:", err.message); }
+  render() { return this.state.hasError ? this.props.fallback : this.props.children; }
+}
+
+function WebGLUnavailable({ systemName }: { systemName: string }) {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-3 px-6 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl">
+        ⚠️
+      </div>
+      <p className="text-sm font-semibold text-slate-200">3D view isn't available on this device</p>
+      <p className="text-xs text-slate-500 max-w-xs">
+        Your browser couldn't start 3D graphics for the {systemName} model. Try closing other tabs, switching to
+        Chrome or Safari, or restarting the app.
+      </p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GLBModel — loads any anatomy GLB, auto-classifies meshes, applies MRP
 // ─────────────────────────────────────────────────────────────────────────────
 function GLBModel({ glbPath, p, overrides, systemId }: {
@@ -773,21 +818,31 @@ export default function ModelViewer3D({
       {/* Main viewer */}
       {viewMode === "sketchfab" && system.sketchfabId ? (
         <SketchfabViewer modelId={system.sketchfabId} title={system.name} />
+      ) : !isWebGLAvailable() ? (
+        <WebGLUnavailable systemName={system.name} />
       ) : (
-        <Canvas
-          camera={{ position: [0, 0, 5.2], fov: 40 }}
-          gl={{ antialias: true, alpha: true }}
-          style={{ background: "transparent" }} dpr={[1, 1.2]}
-        >
-          <Suspense fallback={null}>
-            <Scene
-              system={system} selectedLabel={selectedLabel} onLabelSelect={onLabelSelect}
-              mrp={mrp} resetTrigger={resetTrigger} isInteracting={isInteracting}
-              onInteract={setIsInteracting} glbExists={glbExists}
-              structureGlbPath={structureGlbPath} showAllLabels={showAllLabels}
-            />
-          </Suspense>
-        </Canvas>
+        <WebGLErrorBoundary fallback={<WebGLUnavailable systemName={system.name} />}>
+          <Canvas
+            camera={{ position: [0, 0, 5.2], fov: 40 }}
+            gl={{ antialias: true, alpha: true, failIfMajorPerformanceCaveat: false }}
+            style={{ background: "transparent" }} dpr={[1, 1.2]}
+            onCreated={({ gl }) => {
+              gl.domElement.addEventListener("webglcontextlost", (e) => {
+                e.preventDefault();
+                console.warn("[ModelViewer3D] WebGL context lost");
+              });
+            }}
+          >
+            <Suspense fallback={null}>
+              <Scene
+                system={system} selectedLabel={selectedLabel} onLabelSelect={onLabelSelect}
+                mrp={mrp} resetTrigger={resetTrigger} isInteracting={isInteracting}
+                onInteract={setIsInteracting} glbExists={glbExists}
+                structureGlbPath={structureGlbPath} showAllLabels={showAllLabels}
+              />
+            </Suspense>
+          </Canvas>
+        </WebGLErrorBoundary>
       )}
 
       {/* Bottom control bar */}

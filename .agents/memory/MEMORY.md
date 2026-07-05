@@ -36,3 +36,4 @@
 - [Scanned multi-page PDF AI analysis pattern](scanned-pdf-batch-analysis.md) — never cap scanned/image-only PDFs at N pages; batch ALL pages through vision calls, synthesize once over the combined extract
 - [ffmpeg missing as system dependency](ffmpeg-missing-system-dep.md) — "spawn ffmpeg ENOENT" means ffmpeg isn't declared in replit.nix; shell `which ffmpeg` can lie, verify with a real Node spawn test
 - [STT silence hallucination](stt-silence-hallucination.md) — Whisper-family STT invents plausible text for silent audio instead of "" ; screen with ffmpeg volumedetect before transcribing, not just `if(!transcript)`
+- [WebGL context creation crash](webgl-context-crash.md) — R3F `<Canvas>` doesn't catch WebGLRenderer's synchronous throw when context creation fails; feature-detect + error boundary needed
