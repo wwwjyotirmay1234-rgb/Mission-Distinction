@@ -6,8 +6,9 @@ import { eq, and, asc } from "drizzle-orm";
 import { adminMiddleware } from "../middlewares/auth";
 import { stripHtml } from "../lib/sanitize";
 import { VIVA_SUBJECTS, invalidateBookChunkCache } from "./practicalHub";
-import { extractPdfBuffer } from "./aiDoubt";
+import { extractPdfBuffer, loadPdfDocument, renderPageRangeFromDoc } from "./aiDoubt";
 import { gcsClient } from "../lib/gcs";
+import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router = Router();
 
@@ -67,6 +68,91 @@ const bookUpload = multer({
 // cap (350k chars, tuned for ~140-page PYQ compilations) would silently chop
 // off most of a full textbook, so book-library uploads get a much larger cap.
 const BOOK_MAX_TEXT_CHARS = 3_000_000;
+
+// Scanned/image-only reference books (very common for older/photocopied
+// textbooks — this is also *why* those uploads are huge in the first place:
+// raster page images with no embedded text layer) used to be rejected
+// outright with a 422 here, even though aiDoubt.ts/pyqs.ts already have an
+// established vision-OCR fallback for exactly this case. Read up to this many
+// pages via vision so large-but-scanned books still produce usable RAG text
+// instead of failing every time. Higher than PYQ's 20-page cap (books are
+// much longer) but bounded to keep upload latency/cost reasonable.
+const BOOK_SCANNED_MAX_PAGES = 150;
+const BOOK_SCANNED_BATCH_PAGES = 6;
+const BOOK_SCANNED_BATCH_CONCURRENCY = 3;
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function run() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await worker(items[i], i);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, run));
+  return results;
+}
+
+// Transcribes a scanned/image-only book PDF page-by-page via vision calls
+// (small batches, bounded concurrency) and returns the concatenated text as
+// if it had been extracted normally, so it flows through the same
+// fullText/charCount persistence + RAG-lite chunking as text-based PDFs.
+async function ocrScannedBook(
+  buffer: Buffer,
+  totalPages: number,
+  subject: string,
+  fileName: string,
+): Promise<{ text: string; warning?: string }> {
+  const pagesToRead = Math.min(totalPages, BOOK_SCANNED_MAX_PAGES);
+  const pdfDoc = await loadPdfDocument(buffer);
+  const numBatches = Math.ceil(pagesToRead / BOOK_SCANNED_BATCH_PAGES);
+  const batchRanges = Array.from({ length: numBatches }, (_, b) => {
+    const start = b * BOOK_SCANNED_BATCH_PAGES + 1;
+    const end = Math.min(start + BOOK_SCANNED_BATCH_PAGES - 1, pagesToRead);
+    return { start, end };
+  });
+
+  const batchResults = await mapWithConcurrency(batchRanges, BOOK_SCANNED_BATCH_CONCURRENCY, async ({ start, end }) => {
+    try {
+      const images = await renderPageRangeFromDoc(pdfDoc, start, end);
+      const prompt = `These are pages ${start}-${end} of a scanned ${subject} reference textbook titled "${fileName}". Transcribe the readable text content of these pages as accurately as possible, preserving headings and paragraph structure. Skip pure decorative elements (page borders, publisher logos) but include all body text, tables (as plain text), and captions. Return ONLY the transcribed text — no commentary, no markdown code fences.`;
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        temperature: 0.1,
+        messages: [
+          { role: "system", content: "You are a meticulous medical-textbook transcriptionist. Output only the transcribed text." },
+          {
+            role: "user",
+            content: [
+              { type: "text" as const, text: prompt },
+              ...images.map((img) => ({ type: "image_url" as const, image_url: { url: img } })),
+            ] as any,
+          },
+        ],
+      });
+      const content = completion.choices[0]?.message?.content?.trim() ?? "";
+      return { text: content, warning: null as string | null };
+    } catch (batchErr: any) {
+      return { text: "", warning: `pages ${start}-${end}: ${batchErr?.message || "request failed"}` };
+    }
+  });
+
+  const text = batchResults.map((r) => r.text).filter(Boolean).join("\n\n");
+  const batchWarnings = batchResults.map((r) => r.warning).filter((w): w is string => !!w);
+  const warnings: string[] = [];
+  if (pagesToRead < totalPages) {
+    warnings.push(`This is a large scanned book (${totalPages} pages) — only the first ${pagesToRead} pages were read via OCR.`);
+  }
+  if (batchWarnings.length) {
+    warnings.push(`Some pages could not be read: ${batchWarnings.join("; ")}`);
+  }
+  return { text, warning: warnings.length ? warnings.join(" ") : undefined };
+}
 
 // Grounding notes are injected into every viva examiner prompt, so cap
 // extracted PDF text well below the raw 8000-char sourceText limit to leave
@@ -238,12 +324,26 @@ router.post("/:subject/documents/process-uploaded", adminMiddleware, async (req:
     const [buffer] = await fileRef.download();
 
     const { text, pages, warning } = await extractPdfBuffer(buffer, BOOK_MAX_TEXT_CHARS);
-    const cleaned = stripHtml(text).trim();
+    let cleaned = stripHtml(text).trim();
+    let ocrWarning: string | undefined;
+    if (!cleaned && pages) {
+      // Scanned/image-only PDF — extractPdfBuffer already detected this and
+      // gave up. Fall back to reading the pages via vision OCR instead of
+      // rejecting the upload outright (this is why "large book" uploads kept
+      // failing: scanned books are the ones most likely to be huge files).
+      const ocrResult = await ocrScannedBook(buffer, pages, subject, fileName);
+      cleaned = stripHtml(ocrResult.text).trim();
+      ocrWarning = ocrResult.warning;
+    }
     if (!cleaned) {
       res.status(422).json({
-        error: warning || "No extractable text was found in this PDF (it may be scanned/image-only).",
+        error: ocrWarning || warning || "No extractable text was found in this PDF (it may be scanned/image-only).",
       });
       return;
+    }
+    const truncated = cleaned.length > BOOK_MAX_TEXT_CHARS;
+    if (truncated) {
+      cleaned = cleaned.slice(0, BOOK_MAX_TEXT_CHARS) + `\n\n[Truncated at ${BOOK_MAX_TEXT_CHARS.toLocaleString()} characters]`;
     }
 
     const [row] = await db
@@ -265,7 +365,7 @@ router.post("/:subject/documents/process-uploaded", adminMiddleware, async (req:
       });
 
     invalidateBookChunkCache(subject as (typeof VIVA_SUBJECTS)[number]);
-    res.json({ saved: row });
+    res.json({ saved: row, warning: ocrWarning });
   } catch (err: any) {
     console.error("Book process-uploaded error:", err);
     res.status(400).json({ error: err?.message || "Failed to process this file." });
@@ -322,13 +422,20 @@ router.post("/:subject/documents", adminMiddleware, (req: Request, res: Response
     for (const file of files) {
       try {
         const { text, pages, warning } = await extractPdfBuffer(file.buffer, BOOK_MAX_TEXT_CHARS);
-        const cleaned = stripHtml(text).trim();
+        let cleaned = stripHtml(text).trim();
+        if (!cleaned && pages) {
+          const ocrResult = await ocrScannedBook(file.buffer, pages, subject, file.originalname);
+          cleaned = stripHtml(ocrResult.text).trim();
+        }
         if (!cleaned) {
           failed.push({
             fileName: file.originalname,
             error: warning || "No extractable text was found in this PDF (it may be scanned/image-only).",
           });
           continue;
+        }
+        if (cleaned.length > BOOK_MAX_TEXT_CHARS) {
+          cleaned = cleaned.slice(0, BOOK_MAX_TEXT_CHARS) + `\n\n[Truncated at ${BOOK_MAX_TEXT_CHARS.toLocaleString()} characters]`;
         }
         const [row] = await db
           .insert(vivaSourceDocumentsTable)
