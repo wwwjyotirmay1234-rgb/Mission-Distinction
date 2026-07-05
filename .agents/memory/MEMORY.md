@@ -32,3 +32,4 @@
 - [Viva examiner full-book grounding (RAG-lite)](viva-book-rag.md) — full textbooks stored unbounded in their own table; per-question keyword-chunk retrieval feeds relevant excerpts into the prompt instead of dumping the whole book
 - [Generic roomKey-based socket pattern](generic-roomkey-socket-pattern.md) — Study Rooms' heartbeat+call:* socket events are roomKey-generic; reuse verbatim for any new live-room feature, no socket-server.ts changes needed
 - [Server-side Google Drive PDF fetch](drive-pdf-server-fetch.md) — any backend route that `fetch()`s a stored Google Drive share URL gets HTML not PDF bytes; must convert /file/d/ID/ links to drive.usercontent.google.com direct-download first
+- [Scanned multi-page PDF AI analysis pattern](scanned-pdf-batch-analysis.md) — never cap scanned/image-only PDFs at N pages; batch ALL pages through vision calls, synthesize once over the combined extract

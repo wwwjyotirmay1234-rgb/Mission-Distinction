@@ -20,16 +20,20 @@ const MAX_SCANNED_PDF_PAGES = 20;
 // Large text-based PYQ compilations (40-60 pages) can easily exceed the old 80k-char cap.
 const MAX_DOCUMENT_TEXT_CHARS = 350_000;
 
-async function renderPdfPagesToImages(buffer: Buffer, maxPages = MAX_SCANNED_PDF_PAGES): Promise<string[]> {
+// Render an arbitrary [startPage, endPage] range (1-indexed, inclusive) to PNG images.
+// Used both by the capped single-call path below and by callers that need to walk
+// a large scanned document in batches to cover ALL pages (e.g. PYQ repeated-question
+// analysis over multi-year compilations).
+export async function renderPdfPageRange(buffer: Buffer, startPage: number, endPage: number): Promise<string[]> {
   const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const { createCanvas } = await import("@napi-rs/canvas");
 
   const data = new Uint8Array(buffer);
   const doc = await pdfjsLib.getDocument({ data }).promise;
-  const numPages = Math.min(doc.numPages, maxPages);
+  const last = Math.min(endPage, doc.numPages);
   const images: string[] = [];
 
-  for (let i = 1; i <= numPages; i++) {
+  for (let i = Math.max(1, startPage); i <= last; i++) {
     const page = await doc.getPage(i);
     const viewport = page.getViewport({ scale: 1.5 });
     const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
@@ -39,6 +43,25 @@ async function renderPdfPagesToImages(buffer: Buffer, maxPages = MAX_SCANNED_PDF
   }
 
   return images;
+}
+
+// Total page count without rendering — used to plan batches for full-document reads.
+export async function getPdfPageCount(buffer: Buffer): Promise<number> {
+  const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+  return doc.numPages;
+}
+
+// Plain text extraction only (no scanned-page fallback) — lets callers decide how to
+// handle image-only PDFs themselves (e.g. batched multi-page reads) instead of always
+// capping at MAX_SCANNED_PDF_PAGES.
+export async function getPdfText(buffer: Buffer): Promise<{ text: string; pages: number }> {
+  const parsed = await pdfParse(buffer);
+  return { text: (parsed.text as string).trim(), pages: parsed.numpages };
+}
+
+async function renderPdfPagesToImages(buffer: Buffer, maxPages = MAX_SCANNED_PDF_PAGES): Promise<string[]> {
+  return renderPdfPageRange(buffer, 1, maxPages);
 }
 
 // ── Rate limiters ─────────────────────────────────────────────────────────────
