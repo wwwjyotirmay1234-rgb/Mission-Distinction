@@ -21,3 +21,4 @@
 - [No dedicated login/register routes](landing-page-auth.md) — auth lives on "/" (LandingPage.tsx) as Login/Register tabs, not /login or /register; e2e tests must navigate to "/" first
 - [openai-ai-react lib build order](openai-ai-react-lib-build.md) — composite lib needs its own react/@types-react devDeps + `tsc -b` before consumer typecheck will pass; missing dist causes TS6305
 - [esbuild external + transitive deps](esbuild-external-transitive-deps.md) — new lib/* integration whose own dep is in api-server's esbuild `external` list needs that dep added directly to api-server's package.json too, or ERR_MODULE_NOT_FOUND at boot
+- [Stuck pointer-events:none on body (mobile Radix)](stuck-pointer-events-mobile.md) — "can't type, random field, mobile only" = leftover body-wide CSS lock from an interrupted Select/Dialog close, not a form bug

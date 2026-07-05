@@ -277,10 +277,56 @@ function HideLoadingSpinner() {
   return null;
 }
 
+/**
+ * StuckOverlayGuard — defends against a well-known Radix UI mobile bug:
+ * Select/Dialog/Popover primitives set `pointer-events: none` on <body>
+ * while open and restore it on close. On mobile browsers, if that
+ * close/unmount animation gets interrupted (app backgrounded, gesture
+ * navigation, quick tab switch, screen rotation mid-close), the cleanup
+ * never runs and `pointer-events: none` gets stuck on <body> — making the
+ * ENTIRE page (any input, any form, any tab) untappable/untypeable until
+ * a full reload. This matches "random field, phone only, both forms
+ * affected" reports because the lock is page-wide, not field-specific.
+ *
+ * Fix: periodically check if body has pointer-events locked while no
+ * Radix overlay is actually open/animating, and clear it.
+ */
+function StuckOverlayGuard() {
+  useEffect(() => {
+    const clearIfStuck = () => {
+      if (document.body.style.pointerEvents !== "none") return;
+      const openOverlay = document.querySelector(
+        '[data-radix-popper-content-wrapper], [role="dialog"][data-state="open"], [role="listbox"], [data-state="open"][data-radix-select-content], [data-state="open"][data-radix-popover-content]'
+      );
+      if (!openOverlay) {
+        document.body.style.pointerEvents = "";
+      }
+    };
+
+    const interval = setInterval(clearIfStuck, 500);
+
+    const observer = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.type === "attributes" && m.attributeName === "style") {
+          clearIfStuck();
+        }
+      }
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ["style"] });
+
+    return () => {
+      clearInterval(interval);
+      observer.disconnect();
+    };
+  }, []);
+  return null;
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <HideLoadingSpinner />
+      <StuckOverlayGuard />
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ThemeProvider>
