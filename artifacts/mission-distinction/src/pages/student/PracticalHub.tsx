@@ -1,14 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Stethoscope, Mic, Square, PhoneOff, Loader2, Award, CheckCircle2, AlertTriangle, ArrowRight, Sparkles } from "lucide-react";
+import {
+  Stethoscope, Mic, Square, PhoneOff, Loader2, Award, CheckCircle2, AlertTriangle, ArrowRight, Sparkles,
+  Search, Skull, ClipboardCheck, Users, FileText, Bone, ChevronLeft, Volume2, Brain, TrendingUp,
+} from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 import { useVoiceRecorder, useAudioPlayback } from "@workspace/integrations-openai-ai-react";
 import { PHYSIOLOGY_CLINICAL_IMAGES, type PhysiologyClinicalImage } from "@/data/physiologyClinicalImages";
 import { PHYSIOLOGY_HEMATOLOGY_IMAGES } from "@/data/physiologyHematologyImages";
+import VivaRooms from "@/pages/student/VivaRooms";
 
 const ALL_SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"] as const;
 type Subject = (typeof ALL_SUBJECTS)[number];
@@ -34,6 +39,8 @@ type TurnRole = "user" | "assistant";
 interface Turn { role: TurnRole; content: string }
 
 type SessionState =
+  | "home"
+  | "rooms"
   | "setup"
   | "connecting"
   | "examiner_speaking"
@@ -99,13 +106,14 @@ interface VivaSummary {
 }
 
 export default function PracticalHub() {
+  const [, navigate] = useLocation();
   const [topic, setTopic] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<Subject>(ALL_SUBJECTS[0]);
   const [subject, setSubject] = useState<Subject>(ALL_SUBJECTS[0]);
   const [selectedVivaType, setSelectedVivaType] = useState<PhysiologyVivaType>(PHYSIOLOGY_VIVA_TYPES[0]);
   const [vivaType, setVivaType] = useState<PhysiologyVivaType | null>(null);
   const [clinicalImage, setClinicalImage] = useState<PhysiologyClinicalImage | null>(null);
-  const [state, setState] = useState<SessionState>("setup");
+  const [state, setState] = useState<SessionState>("home");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [liveExaminerText, setLiveExaminerText] = useState("");
   const [liveUserText, setLiveUserText] = useState("");
@@ -362,12 +370,138 @@ export default function PracticalHub() {
     }
   };
 
+  if (state === "home") {
+    const tiles: {
+      key: string;
+      icon: React.ReactNode;
+      title: string;
+      description: string;
+      badge?: string;
+      onClick: () => void;
+    }[] = [
+      {
+        key: "ai-viva",
+        icon: <Mic size={22} className="text-primary" />,
+        title: "AI Viva Simulator",
+        description: "Spoken viva voce with an AI examiner across Anatomy, Physiology & Biochemistry.",
+        badge: "Voice",
+        onClick: () => { setVivaType(null); setClinicalImage(null); setState("setup"); },
+      },
+      {
+        key: "clinical-viva",
+        icon: <Brain size={22} className="text-primary" />,
+        title: "Clinical Case Viva",
+        description: "Physiology clinical & hematology case-based viva with image interpretation.",
+        badge: "Voice",
+        onClick: () => { setSelectedSubject("Physiology"); setState("setup"); },
+      },
+      {
+        key: "viva-rooms",
+        icon: <Users size={22} className="text-primary" />,
+        title: "Viva Rooms",
+        description: "Live multiplayer viva panels — practice with real batchmates over voice/video.",
+        badge: "Live",
+        onClick: () => setState("rooms"),
+      },
+      {
+        key: "spotter",
+        icon: <Search size={22} className="text-primary" />,
+        title: "Spotter Challenge",
+        description: "Rapid-fire identification challenges — same format as the Diagnosis Challenge.",
+        onClick: () => navigate("/student/games"),
+      },
+      {
+        key: "cadaver",
+        icon: <Bone size={22} className="text-primary" />,
+        title: "Cadaver Identification",
+        description: "Structure spotting & labeling using the 3D Anatomy Hub.",
+        onClick: () => navigate("/student/anatomy"),
+      },
+      {
+        key: "exams",
+        icon: <FileText size={22} className="text-primary" />,
+        title: "Practical Exams",
+        description: "Full-length practical exam simulations and past papers.",
+        onClick: () => navigate("/student/exams"),
+      },
+    ];
+
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto pb-24">
+        <div className="text-center sm:text-left">
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center justify-center sm:justify-start gap-2">
+            <Stethoscope size={24} className="text-primary" /> Practical Hub
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1.5 max-w-xl mx-auto sm:mx-0">
+            Everything you need for practicals — spoken vivas, live viva rooms, spotters, cadaver ID and exam simulations, all in one place.
+          </p>
+        </div>
+
+        <div className="relative">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="Search practical tools…" className="pl-10 bg-card/40 border-border/40" disabled />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {tiles.map((tile) => (
+            <Card
+              key={tile.key}
+              className="bg-card/40 border-border/40 hover:bg-card/60 hover:border-primary/30 transition-colors cursor-pointer group"
+              onClick={tile.onClick}
+            >
+              <CardContent className="p-5 flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+                  {tile.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    <p className="font-semibold text-sm">{tile.title}</p>
+                    {tile.badge && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${tile.badge === "Live" ? "border-green-500/40 text-green-400 bg-green-500/10" : "border-primary/30 text-primary bg-primary/10"}`}>
+                        {tile.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{tile.description}</p>
+                </div>
+                <ArrowRight size={15} className="text-muted-foreground shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+          {[
+            { icon: <Volume2 size={16} className="text-primary" />, label: "Voice-to-Voice" },
+            { icon: <Sparkles size={16} className="text-primary" />, label: "AI Examiner" },
+            { icon: <CheckCircle2 size={16} className="text-primary" />, label: "Instant Feedback" },
+            { icon: <TrendingUp size={16} className="text-primary" />, label: "Performance Tracking" },
+          ].map((f) => (
+            <div key={f.label} className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-card/20 border border-border/30 text-center">
+              {f.icon}
+              <span className="text-[11px] text-muted-foreground font-medium">{f.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "rooms") {
+    return <VivaRooms onBack={() => setState("home")} />;
+  }
+
   if (state === "setup") {
     return (
       <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto pb-20">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" className="gap-2 -ml-2" onClick={() => setState("home")}>
+            <ChevronLeft size={16} /> Practical Hub
+          </Button>
+        </div>
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Stethoscope size={20} className="text-primary" /> Practical Hub
+            <Stethoscope size={20} className="text-primary" /> AI Viva Simulator
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             A real, spoken viva voce with an AI examiner panel — talk, don't type.
@@ -457,19 +591,23 @@ export default function PracticalHub() {
 
   const isRecording = recorder.state === "recording";
   const isBusy = state === "connecting" || state === "processing" || state === "examiner_speaking";
+  const questionNumber = turns.filter((t) => t.role === "assistant").length || (state === "connecting" ? 0 : 1);
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto pb-20">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Stethoscope size={20} className="text-primary" /> Practical Hub
+          <p className="text-[11px] font-bold uppercase tracking-wider text-primary/80 flex items-center gap-1.5 mb-0.5">
+            <Stethoscope size={13} /> Practical Hub
+          </p>
+          <h1 className="text-xl sm:text-2xl font-bold">
+            {subject} Viva{vivaType ? ` — ${vivaType}` : ""}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {subject} viva{vivaType ? ` — ${vivaType}` : ""}{topic ? ` — ${topic}` : ""}
+            {EXAMINER_BY_SUBJECT[subject]}{topic ? ` · ${topic}` : ""} · Question {questionNumber}
           </p>
         </div>
-        <div className="text-sm font-mono text-muted-foreground">{formatTime(elapsed)}</div>
+        <div className="text-sm font-mono text-muted-foreground shrink-0">{formatTime(elapsed)}</div>
       </div>
 
       {clinicalImage && (state === "examiner_speaking" || state === "listening" || isRecording || state === "processing") && (
@@ -514,6 +652,22 @@ export default function PracticalHub() {
 
             {liveUserText && isRecording === false && state !== "examiner_speaking" && (
               <div className="text-xs text-muted-foreground/70 italic max-w-md">"You said: {liveUserText}"</div>
+            )}
+
+            {(isRecording || state === "examiner_speaking") && (
+              <div className="flex items-end gap-1 h-6">
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <span
+                    key={i}
+                    className={`w-1 rounded-full ${isRecording ? "bg-red-500/70" : "bg-primary/60"} animate-pulse`}
+                    style={{
+                      height: `${6 + ((i * 7) % 18)}px`,
+                      animationDuration: `${0.6 + (i % 4) * 0.15}s`,
+                      animationDelay: `${i * 0.07}s`,
+                    }}
+                  />
+                ))}
+              </div>
             )}
 
             {isRecording && answerSecondsLeft !== null && (

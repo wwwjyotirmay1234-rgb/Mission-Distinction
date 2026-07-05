@@ -30,3 +30,4 @@ export * from "./appUpdates";
 export * from "./studentSubmissions";
 export * from "./vivaSources";
 export * from "./vivaSourceDocuments";
+export * from "./vivaRooms";

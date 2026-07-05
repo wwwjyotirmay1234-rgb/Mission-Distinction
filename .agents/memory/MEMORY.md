@@ -30,3 +30,4 @@
 - [GCS stream errors crash the server](gcs-stream-error-crash.md) — createReadStream().pipe(res) errors fire async on the stream, not sync — try/catch around it does nothing; missing .on("error") = uncaught exception kills the whole process
 - [Auth token in plain `<a href>` links](anchor-link-auth-token.md) — `<a>` navigation can't set Authorization headers; protected file-serve endpoints need `?token=` query-param support + the link must append it (only for internal serve URLs, not external links)
 - [Viva examiner full-book grounding (RAG-lite)](viva-book-rag.md) — full textbooks stored unbounded in their own table; per-question keyword-chunk retrieval feeds relevant excerpts into the prompt instead of dumping the whole book
+- [Generic roomKey-based socket pattern](generic-roomkey-socket-pattern.md) — Study Rooms' heartbeat+call:* socket events are roomKey-generic; reuse verbatim for any new live-room feature, no socket-server.ts changes needed
