@@ -17,7 +17,21 @@ const router = Router();
 const pyqAiLimiter = rateLimit({ windowMs: 60_000, max: 8, standardHeaders: true, legacyHeaders: false });
 
 async function fetchPyqDocument(url: string) {
-  const resp = await fetch(url);
+  // Google Drive share links (https://drive.google.com/file/d/ID/view) serve an
+  // HTML viewer page, not raw PDF bytes — convert to the direct usercontent
+  // download URL so the response is the actual file (same fix as pdfs.ts proxy).
+  let fetchUrl = url;
+  const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (driveMatch) {
+    fetchUrl = `https://drive.usercontent.google.com/download?id=${driveMatch[1]}&export=download&authuser=0&confirm=t`;
+  }
+
+  const resp = await fetch(fetchUrl, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; Mission-Distinction/1.0)",
+      "Accept": "application/pdf,*/*",
+    },
+  });
   if (!resp.ok) throw new Error(`Could not download PDF (status ${resp.status})`);
   const arrayBuf = await resp.arrayBuffer();
   return extractPdfBuffer(Buffer.from(arrayBuf));
