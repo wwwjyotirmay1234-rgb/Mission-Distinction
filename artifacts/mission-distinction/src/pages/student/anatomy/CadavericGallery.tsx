@@ -7,7 +7,7 @@ type RegionFilter = "all" | "head" | "trunk" | "upper_limb" | "lower_limb";
 
 const REGION_SYSTEM_IDS: Record<Exclude<RegionFilter, "all">, string[]> = {
   head:       ["skeletal", "nervous", "lymphatic", "sensory"],
-  trunk:      ["skeletal", "cardiovascular", "nervous", "respiratory", "digestive", "urinary", "reproductive", "lymphatic", "endocrine"],
+  trunk:      ["skeletal", "cardiovascular", "nervous", "respiratory", "digestive", "digestive-viscera", "urinary", "reproductive", "lymphatic", "endocrine"],
   upper_limb: ["skeletal", "muscular"],
   lower_limb: ["skeletal", "muscular"],
 };

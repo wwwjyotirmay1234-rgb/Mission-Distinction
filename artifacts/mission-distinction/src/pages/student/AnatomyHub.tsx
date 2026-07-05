@@ -23,6 +23,7 @@ const SYSTEM_COLORS: Record<string, { bg: string; text: string; border: string; 
   respiratory:    { bg: "rgba(6,182,212,0.12)",  text: "#22d3ee", border: "rgba(6,182,212,0.3)",  glow: "rgba(6,182,212,0.4)" },
   muscular:       { bg: "rgba(249,115,22,0.12)", text: "#fb923c", border: "rgba(249,115,22,0.3)", glow: "rgba(249,115,22,0.4)" },
   digestive:      { bg: "rgba(34,197,94,0.12)",  text: "#4ade80", border: "rgba(34,197,94,0.3)",  glow: "rgba(34,197,94,0.4)" },
+  "digestive-viscera": { bg: "rgba(16,185,129,0.12)", text: "#34d399", border: "rgba(16,185,129,0.3)", glow: "rgba(16,185,129,0.4)" },
   endocrine:      { bg: "rgba(234,179,8,0.12)",  text: "#facc15", border: "rgba(234,179,8,0.3)",  glow: "rgba(234,179,8,0.4)" },
   urinary:        { bg: "rgba(59,130,246,0.12)", text: "#60a5fa", border: "rgba(59,130,246,0.3)", glow: "rgba(59,130,246,0.4)" },
   lymphatic:      { bg: "rgba(16,185,129,0.12)", text: "#34d399", border: "rgba(16,185,129,0.3)", glow: "rgba(16,185,129,0.4)" },
@@ -77,9 +78,9 @@ const REGION_ACCENT: Record<RegionId, string> = {
 
 const REGION_SYSTEM_IDS: Record<RegionId, string[]> = {
   head:       ["skeletal", "nervous", "lymphatic", "sensory"],
-  trunk:      ["skeletal", "cardiovascular", "nervous", "respiratory", "digestive", "urinary", "reproductive", "lymphatic"],
+  trunk:      ["skeletal", "cardiovascular", "nervous", "respiratory", "digestive", "digestive-viscera", "urinary", "reproductive", "lymphatic"],
   upper_limb: ["skeletal", "muscular"],
-  lower_limb: ["skeletal", "muscular", "digestive"],
+  lower_limb: ["skeletal", "muscular"],
 };
 
 // Section heading overrides when viewing the Head region — mirrors the reference app labels
@@ -97,6 +98,7 @@ const TRUNK_SECTION_LABELS: Partial<Record<string, string>> = {
   nervous:       "Nervous system",
   respiratory:   "Respiratory system",
   digestive:     "Digestive system",
+  "digestive-viscera": "Abdominal viscera",
   urinary:       "Urogenital system",
   reproductive:  "Urogenital system",
   lymphatic:     "Lymphatic system",
@@ -480,6 +482,62 @@ function HubLanding({ onSelectSystem, onSelectResult, globalSearch, setGlobalSea
             />
           ))
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// By-System picker — InnerBody.com-style system-first browsing.
+// Lists every body system as a single card, independent of body region,
+// and jumps straight into its 3D SystemView on tap.
+// ─────────────────────────────────────────────────────────────────────────────
+function SystemPickerCard({ system, onClick }: { system: AnatomySystem; onClick: () => void }) {
+  const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onPointerDown={() => setPressed(true)}
+      onPointerUp={() => setPressed(false)}
+      onPointerLeave={() => setPressed(false)}
+      className="flex flex-col items-start text-left gap-2 p-4 rounded-2xl transition-transform"
+      style={{
+        background: c.bg,
+        border: `1.5px solid ${c.border}`,
+        boxShadow: pressed ? "none" : `0 4px 18px rgba(0,0,0,0.35)`,
+        transform: pressed ? "scale(0.97)" : "scale(1)",
+      }}
+    >
+      <span
+        className="text-2xl"
+        style={{ filter: `drop-shadow(0 0 8px ${c.glow})` }}
+      >
+        {system.icon}
+      </span>
+      <span style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.94)", lineHeight: 1.25 }}>
+        {system.name}
+      </span>
+      <span
+        className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+        style={{ background: "rgba(0,0,0,0.25)", color: c.text, border: `1px solid ${c.border}` }}
+      >
+        {system.structures.length} structure{system.structures.length === 1 ? "" : "s"}
+      </span>
+    </button>
+  );
+}
+
+function SystemPicker({ onSelectSystem }: { onSelectSystem: (s: AnatomySystem) => void }) {
+  return (
+    <div className="flex-1 overflow-y-auto px-4 py-5">
+      <p className="text-[13px] text-slate-400 mb-4">
+        Explore anatomy one body system at a time — pick a system below to dive straight into its 3D model.
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {ANATOMY_SYSTEMS.map(sys => (
+          <SystemPickerCard key={sys.id} system={sys} onClick={() => onSelectSystem(sys)} />
+        ))}
       </div>
     </div>
   );
@@ -1253,7 +1311,7 @@ function SystemView({ system, onBack, initialStructure }: {
   );
 }
 
-type HubMode = "3d" | "cadaveric";
+type HubMode = "3d" | "system" | "cadaveric";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Root
@@ -1274,6 +1332,7 @@ export default function AnatomyHub() {
 
   const MODE_TABS: { id: HubMode; label: string; icon: string }[] = [
     { id: "3d",        label: "3D Models", icon: "⬡" },
+    { id: "system",    label: "By System", icon: "🧬" },
     { id: "cadaveric", label: "Cadaveric", icon: "🔬" },
   ];
 
@@ -1322,6 +1381,9 @@ export default function AnatomyHub() {
           globalSearch={globalSearch}
           setGlobalSearch={setGlobalSearch}
         />
+      )}
+      {page === "landing" && hubMode === "system" && (
+        <SystemPicker onSelectSystem={s => handleSelectSystem(s)} />
       )}
       {page === "landing" && hubMode === "cadaveric" && (
         <CadavericGallery />

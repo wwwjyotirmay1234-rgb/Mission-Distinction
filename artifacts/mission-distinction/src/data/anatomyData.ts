@@ -2920,8 +2920,8 @@ export const ANATOMY_SYSTEMS: AnatomySystem[] = [
   // 7. DIGESTIVE / VISCERAL
   // ══════════════════════════════════════════════════════════════════════════
   {
-    id: "digestive",
-    name: "Digestive System",
+    id: "digestive-viscera",
+    name: "Abdominal Viscera",
     color: "#10b981",
     darkColor: "#064e3b",
     modelCount: 58,
