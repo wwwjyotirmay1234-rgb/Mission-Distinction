@@ -81,6 +81,7 @@ const premiumNavItems = [
   { icon: ClipboardList, label: "Audit Log", href: "/admin/audit-log", color: "text-purple-400" },
   { icon: Pin, label: "Pinned Notices", href: "/admin/notices", color: "text-emerald-400" },
   { icon: Mic, label: "Viva Hub AI Setup", href: "/admin/viva-questions", color: "text-sky-400" },
+  { icon: BookOpen, label: "Anatomy Viva Images", href: "/admin/anatomy-viva-images", color: "text-teal-400" },
 ];
 
 function SidebarContent({ onNavigate, isCollapsed }: { onNavigate?: () => void; isCollapsed?: boolean }) {

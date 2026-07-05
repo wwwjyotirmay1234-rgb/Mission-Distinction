@@ -40,7 +40,19 @@ const BIOCHEMISTRY_VIVA_TYPE_DESCRIPTIONS: Record<BiochemistryVivaType, string> 
   "Serum and Urine Estimation": "Procedure, principle, normal ranges and related diseases for serum/urine estimations (glucose, urea, creatinine, protein, bilirubin, lipid profile, LFTs, calcium/phosphorus, qualitative urine tests) per CBME.",
 };
 
-type VivaType = PhysiologyVivaType | BiochemistryVivaType;
+const ANATOMY_VIVA_TYPES = ["Theory", "Histology", "Bone", "Visceral", "Section Anatomy", "Prosection"] as const;
+type AnatomyVivaType = (typeof ANATOMY_VIVA_TYPES)[number];
+
+const ANATOMY_VIVA_TYPE_DESCRIPTIONS: Record<AnatomyVivaType, string> = {
+  Theory: "The full 1st-year Anatomy theory syllabus (gross anatomy + embryology woven in) — basic to tough.",
+  Histology: "Identify the microscope slide shown on screen and answer follow-up questions on its structure and embryological origin.",
+  Bone: "Identify the bone specimen shown on screen — features, attachments, and clinical/embryological correlations.",
+  Visceral: "Identify the thoracic/abdominal organ specimen shown on screen — relations, structure, and development.",
+  "Section Anatomy": "Identify the sagittal/cross-sectional specimen shown on screen and its contents.",
+  Prosection: "Identify the dissected structure(s) shown in the cadaveric prosection photo — nerves, vessels, muscles.",
+};
+
+type VivaType = PhysiologyVivaType | BiochemistryVivaType | AnatomyVivaType;
 
 const ANSWER_WINDOW_SECONDS = 50;
 
@@ -61,6 +73,7 @@ type VoiceEvent =
   | { type: "user_transcript"; data: string }
   | { type: "transcript"; data: string }
   | { type: "audio"; data: string }
+  | { type: "station_image"; imageId: number; imageUrl: string }
   | { type: "error"; error: string }
   | { done: true };
 
@@ -120,8 +133,12 @@ export default function PracticalHub() {
   const [subject, setSubject] = useState<Subject>(ALL_SUBJECTS[0]);
   const [selectedPhysiologyVivaType, setSelectedPhysiologyVivaType] = useState<PhysiologyVivaType>(PHYSIOLOGY_VIVA_TYPES[0]);
   const [selectedBiochemistryVivaType, setSelectedBiochemistryVivaType] = useState<BiochemistryVivaType>(BIOCHEMISTRY_VIVA_TYPES[0]);
+  const [selectedAnatomyVivaType, setSelectedAnatomyVivaType] = useState<AnatomyVivaType>(ANATOMY_VIVA_TYPES[0]);
   const [vivaType, setVivaType] = useState<VivaType | null>(null);
   const [clinicalImage, setClinicalImage] = useState<PhysiologyClinicalImage | null>(null);
+  const [anatomyStationImage, setAnatomyStationImage] = useState<{ id: number; url: string } | null>(null);
+  const anatomyStationImageRef = useRef<{ id: number; url: string } | null>(null);
+  anatomyStationImageRef.current = anatomyStationImage;
   const [state, setState] = useState<SessionState>("home");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [liveExaminerText, setLiveExaminerText] = useState("");
@@ -236,6 +253,8 @@ export default function PracticalHub() {
               setLiveExaminerText(fullTranscript);
             } else if (event.type === "audio") {
               playback.pushAudio(event.data);
+            } else if (event.type === "station_image") {
+              setAnatomyStationImage({ id: event.imageId, url: event.imageUrl });
             } else if (event.type === "error") {
               gotError = event.error;
             }
@@ -299,6 +318,7 @@ export default function PracticalHub() {
       history: turnsRef.current,
       vivaType: vivaType ?? undefined,
       imageCaption: clinicalImage?.caption ?? undefined,
+      imageId: anatomyStationImageRef.current?.id,
       audio,
     });
   }, [recorder, streamTurn, subject, topic, vivaType, clinicalImage]);
@@ -307,14 +327,18 @@ export default function PracticalHub() {
     setSubject(selectedSubject);
     const isPhysiology = selectedSubject === "Physiology";
     const isBiochemistry = selectedSubject === "Biochemistry";
+    const isAnatomy = selectedSubject === "Anatomy";
     const chosenVivaType: VivaType | null = isPhysiology
       ? selectedPhysiologyVivaType
       : isBiochemistry
         ? selectedBiochemistryVivaType
-        : null;
+        : isAnatomy
+          ? selectedAnatomyVivaType
+          : null;
     const chosenImage = isPhysiology ? pickImageForVivaType(chosenVivaType as PhysiologyVivaType | null, topic) : null;
     setVivaType(chosenVivaType);
     setClinicalImage(chosenImage);
+    setAnatomyStationImage(null);
     setState("connecting");
     setTurns([]);
     turnsRef.current = [];
@@ -343,6 +367,7 @@ export default function PracticalHub() {
         history: turnsRef.current,
         vivaType: vivaType ?? undefined,
         imageCaption: clinicalImage?.caption ?? undefined,
+        imageId: anatomyStationImageRef.current?.id,
         audio,
       });
     } else {
@@ -540,6 +565,22 @@ export default function PracticalHub() {
                 <p className="text-[11px] text-muted-foreground mt-1.5">{BIOCHEMISTRY_VIVA_TYPE_DESCRIPTIONS[selectedBiochemistryVivaType]}</p>
               </div>
             )}
+            {selectedSubject === "Anatomy" && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Viva Type</label>
+                <Select value={selectedAnatomyVivaType} onValueChange={(v) => setSelectedAnatomyVivaType(v as AnatomyVivaType)}>
+                  <SelectTrigger className="bg-background/50 border-border/50">
+                    <SelectValue placeholder="Select a viva type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ANATOMY_VIVA_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground mt-1.5">{ANATOMY_VIVA_TYPE_DESCRIPTIONS[selectedAnatomyVivaType]}</p>
+              </div>
+            )}
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic Focus (Optional)</label>
               <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Cranial Nerves, Cardiac Cycle..." className="bg-background/50 border-border/50" />
@@ -622,6 +663,22 @@ export default function PracticalHub() {
             <div className="text-xs text-muted-foreground leading-relaxed text-center">
               <p className="font-bold uppercase tracking-wider text-[10px] text-primary mb-1">{clinicalImage.topic}</p>
               {clinicalImage.caption}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {anatomyStationImage && (state === "examiner_speaking" || state === "listening" || isRecording || state === "processing") && (
+        <Card className="bg-card/40 border-border/40 overflow-hidden">
+          <CardContent className="p-3 flex flex-col gap-3 items-center">
+            <img
+              src={`${anatomyStationImage.url}${anatomyStationImage.url.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("mission_token") ?? "")}`}
+              alt={`${vivaType ?? "Anatomy"} specimen`}
+              className="w-full max-w-md max-h-[70vh] object-contain rounded-lg bg-background/40 border border-border/30"
+            />
+            <div className="text-xs text-muted-foreground leading-relaxed text-center">
+              <p className="font-bold uppercase tracking-wider text-[10px] text-primary mb-1">{vivaType} Spotter</p>
+              Identify the structure shown and be ready for follow-up questions.
             </div>
           </CardContent>
         </Card>

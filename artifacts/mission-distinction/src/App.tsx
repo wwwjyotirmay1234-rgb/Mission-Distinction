@@ -119,6 +119,7 @@ const QuizSubmissions    = lazy(() => import("@/pages/admin/QuizSubmissions"));
 const ProctoringReport   = lazy(() => import("@/pages/admin/ProctoringReport"));
 const AdminScholarHub    = lazy(() => import("@/pages/admin/ScholarHub"));
 const VivaQuestionBank   = lazy(() => import("@/pages/admin/VivaQuestionBank"));
+const AnatomyVivaImages  = lazy(() => import("@/pages/admin/AnatomyVivaImages"));
 
 const queryClient = new QueryClient();
 
@@ -250,6 +251,7 @@ function Router() {
                 <Route path="/admin/quiz-submissions"       component={QuizSubmissions} />
                 <Route path="/admin/proctoring/:attemptId"  component={ProctoringReport} />
                 <Route path="/admin/scholar-hub"            component={AdminScholarHub} />
+                <Route path="/admin/anatomy-viva-images"    component={AnatomyVivaImages} />
                 <Route component={NotFound} />
               </Switch>
             </AdminLayout>

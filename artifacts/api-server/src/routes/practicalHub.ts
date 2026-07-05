@@ -14,6 +14,15 @@ import { PHYSIOLOGY_CLINICAL_SYLLABUS } from "../lib/physiologyClinicalSyllabus"
 import { PHYSIOLOGY_THEORY_SYLLABUS } from "../lib/physiologyTheorySyllabus";
 import { BIOCHEMISTRY_THEORY_SYLLABUS } from "../lib/biochemistryTheorySyllabus";
 import { BIOCHEMISTRY_SERUM_URINE_SYLLABUS } from "../lib/biochemistrySerumUrineSyllabus";
+import { ANATOMY_THEORY_SYLLABUS } from "../lib/anatomyTheorySyllabus";
+import {
+  ANATOMY_IMAGE_CATEGORIES,
+  isAnatomyImageCategory,
+  selectAnatomyImageForCategory,
+  getAnatomyImageById,
+  buildAnatomyImageGroundTruth,
+  type AnatomyImageCategory,
+} from "../lib/anatomyVivaImages";
 
 const router = Router();
 
@@ -67,18 +76,32 @@ const BIOCHEMISTRY_SYLLABUS_BY_TYPE: Record<BiochemistryVivaType, string> = {
   "Serum and Urine Estimation": BIOCHEMISTRY_SERUM_URINE_SYLLABUS,
 };
 
-type VivaType = PhysiologyVivaType | BiochemistryVivaType;
+// Anatomy has 6 selectable viva types: a Theory station plus the 5 image-based
+// spotter stations (Histology / Bone / Visceral / Section Anatomy /
+// Prosection), each backed by admin-extracted specimen images.
+// isAnatomyImageCategory() from anatomyVivaImages.ts identifies which of these
+// 5 need an image; "Theory" does not.
+const ANATOMY_VIVA_TYPES = ["Theory", ...ANATOMY_IMAGE_CATEGORIES] as const;
+type AnatomyVivaType = (typeof ANATOMY_VIVA_TYPES)[number];
+
+function isAnatomyVivaType(value: unknown): value is AnatomyVivaType {
+  return typeof value === "string" && (ANATOMY_VIVA_TYPES as readonly string[]).includes(value);
+}
+
+type VivaType = PhysiologyVivaType | BiochemistryVivaType | AnatomyVivaType;
 
 // Resolves a raw request-body vivaType value against the subject it's paired with,
 // so a Physiology-only type can never leak into a Biochemistry viva or vice versa.
 function parseVivaType(subject: VivaSubject, value: unknown): VivaType | null {
   if (subject === "Physiology" && isPhysiologyVivaType(value)) return value;
   if (subject === "Biochemistry" && isBiochemistryVivaType(value)) return value;
+  if (subject === "Anatomy" && isAnatomyVivaType(value)) return value;
   return null;
 }
 
 function vivaTypesRequiredMessage(subject: VivaSubject): string {
-  const types = subject === "Physiology" ? PHYSIOLOGY_VIVA_TYPES : BIOCHEMISTRY_VIVA_TYPES;
+  const types =
+    subject === "Physiology" ? PHYSIOLOGY_VIVA_TYPES : subject === "Biochemistry" ? BIOCHEMISTRY_VIVA_TYPES : ANATOMY_VIVA_TYPES;
   return `vivaType is required for ${subject} and must be one of ${types.join(", ")}`;
 }
 
@@ -220,18 +243,22 @@ function buildExaminerPersona(
   sourceNotes: string | null,
   vivaType: VivaType | null,
   imageCaption: string | null,
-  bookExcerpt: string | null = null
+  bookExcerpt: string | null = null,
+  anatomyImageGroundTruth: string | null = null
 ): string {
   const examinerName = EXAMINER_NAMES[subject];
   const physiologySyllabus =
     subject === "Physiology" && vivaType ? PHYSIOLOGY_SYLLABUS_BY_TYPE[vivaType as PhysiologyVivaType] : null;
   const biochemistrySyllabus =
     subject === "Biochemistry" && vivaType ? BIOCHEMISTRY_SYLLABUS_BY_TYPE[vivaType as BiochemistryVivaType] : null;
+  const anatomyTheorySyllabus = subject === "Anatomy" && vivaType === "Theory" ? ANATOMY_THEORY_SYLLABUS : null;
   const baselineSyllabus = physiologySyllabus
     ? `\n${physiologySyllabus}`
     : biochemistrySyllabus
       ? `\n${biochemistrySyllabus}`
-      : "";
+      : anatomyTheorySyllabus
+        ? `\n${anatomyTheorySyllabus}`
+        : "";
   const sourceBlock = sourceNotes
     ? `\nThe supervising faculty has shared these additional focus areas / reference notes for ${subject} — treat them as inspiration on top of the baseline syllabus above (if any) and make sure your questions cover these topics too, but always phrase and write the actual questions yourself in your own words (never read them as a verbatim script):\n${sourceNotes}`
     : baselineSyllabus
@@ -251,6 +278,26 @@ function buildExaminerPersona(
       ? `\nThe student currently has this image/diagram displayed in front of them on screen: "${imageCaption}". Start by asking a spot-identification or interpretation question directly about this image, then move on to other topics in the syllabus above.`
       : "";
 
+  const anatomyImageCategory = subject === "Anatomy" && isAnatomyImageCategory(vivaType) ? vivaType : null;
+  const anatomyImageBlock = anatomyImageCategory
+    ? anatomyImageGroundTruth
+      ? `\nThe student currently has a real ${anatomyImageCategory} specimen photograph displayed in front of them on screen. This is the CONFIDENTIAL ground truth about that exact specimen — never read it aloud verbatim, never reveal it directly, use it only to judge whether the student's identification/answers are correct and to ask specimen-grounded follow-ups: ${anatomyImageGroundTruth}\nYour FIRST question must always be a direct spot-identification question about this specimen (e.g. "Identify this bone/organ/section/slide/structure and its side, if any"). Only after the student attempts identification should you move to structural detail, relations, and clinical/applied points about this exact specimen. Do not ask about a different, unrelated specimen at this station.`
+      : `\nNo specimen image is currently available for this ${anatomyImageCategory} station. Do NOT pretend an image is displayed. Instead, conduct this as a spoken spotter-style viva purely by description: describe a well-known, classic ${anatomyImageCategory.toLowerCase()} specimen in words as your first question (e.g. "Consider a dried right femur placed in front of you...") and question the student on it as if they were physically examining it.`
+    : "";
+
+  const anatomyStationInstructions: Record<AnatomyImageCategory, string> = {
+    Histology: "This is a Histology spotter station. After identification of the slide/tissue, ask about its distinguishing microscopic features, the organ/system it belongs to, and its functional significance.",
+    Bone: "This is a Bone spotter station. After identification of the bone and side (right/left), ask about key markings/features, muscle attachments, articulations, and any nerve/vessel relations at those markings.",
+    Visceral: "This is a Visceral (thoracic/abdominal organ) spotter station. After identification of the organ, ask about its parts, relations, blood supply, and lymphatic/nerve supply.",
+    "Section Anatomy": "This is a Section Anatomy station (sagittal/cross-sectional cuts). After identification of the section level and region, ask the student to identify the structures visible at that cut level and their spatial relations to each other.",
+    Prosection: "This is a Prosection (cadaveric dissection) station. After identification of the region/structures dissected, ask about the course, relations, and branches/tributaries of the nerves/vessels/muscles shown, and any clinically relevant variations.",
+  };
+
+  const anatomyEmbryologyBlock =
+    subject === "Anatomy"
+      ? `\nEmbryology must be woven into every Anatomy station, including Theory and all 5 image-based stations — never treat it as a separate topic. Whenever a structure, organ, or region comes up (identified from an image or discussed in Theory), ask at least one embryological correlation question about it before moving on: its embryonic origin/germ layer, the developmental process that forms it, and any classic congenital anomaly linked to it (e.g. a kidney spotter → ask about metanephric development and PUJ obstruction; a heart/great vessel structure → ask about septation and a related congenital heart defect; a limb bone → ask about limb bud development). Ground embryology answers in Langman's Medical Embryology, Inderbir Singh's Human Embryology, and Datta's Essentials of Human Embryology.`
+      : "";
+
   const physiologyReferenceBlock =
     subject === "Physiology"
       ? `\nFor Physiology specifically, ground every question, expected answer, and correction firmly in these exact reference books — you must be fully knowledgeable in all of them and draw on whichever is most authoritative for the point at hand: CL Ghai's "A Textbook of Practical Physiology" (for all practical/experiment technique, procedure, and viva questions), GK Pal's Textbook of Practical and Comprehensive Textbook of Physiology (practical technique plus theory depth), Guyton & Hall's Textbook of Medical Physiology, Ganong's Review of Medical Physiology, Costanzo's Physiology, AK Jain's Textbook of Physiology, Indu Khurana's Textbook of Medical Physiology, and Sembulingam's Essentials of Medical Physiology. When theory and mechanism are being tested, lean on Guyton, Ganong, Costanzo, AK Jain, Indu Khurana, and Sembulingam; when practical procedure, apparatus, technique, or experiment steps are being tested, lean on CL Ghai and GK Pal's practical books. If sources differ slightly in emphasis, go with whichever explanation is clearest and most standard for an Indian 1st-year MBBS student, and never contradict any of these texts.`
@@ -261,6 +308,13 @@ function buildExaminerPersona(
       ? vivaType === "Serum and Urine Estimation"
         ? `\nFor this Serum and Urine Estimation station specifically, ground every question, expected answer, and correction firmly in the standard Indian clinical/practical biochemistry references — Godkar's Practical Clinical Biochemistry, Chawla's Practical Biochemistry, Harper's Illustrated Biochemistry, and DM Vasudevan's Textbook of Biochemistry. Focus on principle, stepwise procedure (as done with a colorimeter/semi-auto-analyzer per CBME), normal reference ranges, and — most importantly — the diseases/clinical conditions each estimation is used to diagnose or monitor. Do not test unrelated broad theory topics at this station.`
         : `\nFor Biochemistry Theory specifically, ground every question, expected answer, and correction firmly in these exact reference books — you must be fully knowledgeable in all of them and draw on whichever is most authoritative for the point at hand: Harper's Illustrated Biochemistry, Lippincott's Illustrated Reviews: Biochemistry, DM Vasudevan's Textbook of Biochemistry for Medical Students, and U Satyanarayana's Biochemistry. If sources differ slightly in emphasis, go with whichever explanation is clearest and most standard for an Indian 1st-year MBBS student, and never contradict any of these texts.`
+      : "";
+
+  const anatomyReferenceBlock =
+    subject === "Anatomy"
+      ? `\nFor Anatomy specifically, ground every question, expected answer, and correction firmly in these exact reference books — you must be fully knowledgeable in all of them and draw on whichever is most authoritative for the point at hand: Cunningham's Manual of Practical Anatomy (for all spotter/dissection/prosection viva questions), BD Chaurasia's Human Anatomy (all volumes), Gray's Anatomy for Students, Snell's Clinical Anatomy by Regions, Datta's Essentials of Human Embryology and Langman's Medical Embryology (for embryology), and Inderbir Singh's Human Embryology and Human Histology. When identifying specimens, structures, or dissections, lean on Cunningham's and BD Chaurasia; when embryological correlation is needed, lean on Datta's, Langman's, and Inderbir Singh's. If sources differ slightly in emphasis, go with whichever explanation is clearest and most standard for an Indian 1st-year MBBS student, and never contradict any of these texts.${
+          anatomyImageCategory ? `\n${anatomyStationInstructions[anatomyImageCategory]}` : ""
+        }`
       : "";
 
   const difficultyAndPacingRules = `
@@ -277,8 +331,11 @@ ${baselineSyllabus}
 ${sourceBlock}
 ${bookExcerptBlock}
 ${imageBlock}
+${anatomyImageBlock}
+${anatomyEmbryologyBlock}
 ${physiologyReferenceBlock}
 ${biochemistryReferenceBlock}
+${anatomyReferenceBlock}
 
 Rules:
 - Reference ONLY gold-standard textbooks (Gray's Anatomy, BD Chaurasia, Snell's, Ganong's, Guyton & Hall, Harper's, Robbins & Cotran, Harsh Mohan, KD Tripathi, Goodman & Gilman's, Ananthanarayan & Paniker, Harrison's, Davidson's, Bailey & Love's, Sabiston, Nelson, Ghai, Dutta's, Williams Obstetrics, Park's PSM) at NEET PG examination standard.
@@ -544,24 +601,45 @@ router.post("/viva/start-voice", authMiddleware, voiceLimiter, async (req: Reque
     return;
   }
   const vivaType = parseVivaType(subject, req.body.vivaType);
-  if ((subject === "Physiology" || subject === "Biochemistry") && !vivaType) {
+  if ((subject === "Physiology" || subject === "Biochemistry" || subject === "Anatomy") && !vivaType) {
     res.status(400).json({ error: vivaTypesRequiredMessage(subject) });
     return;
   }
 
+  // For the 5 image-based Anatomy stations, pick a fresh (least-recently-shown)
+  // specimen image up front — before any streaming starts — so the SSE
+  // station_image event can reach the frontend before the examiner's audio.
+  let anatomyImageId: number | null = null;
+  let anatomyImageGroundTruth: string | null = null;
+  if (subject === "Anatomy" && isAnatomyImageCategory(vivaType)) {
+    try {
+      const image = await selectAnatomyImageForCategory(vivaType);
+      if (image) {
+        anatomyImageId = image.id;
+        anatomyImageGroundTruth = buildAnatomyImageGroundTruth(image);
+      }
+    } catch (err) {
+      console.error("Practical Hub: failed to select anatomy viva image", err);
+    }
+  }
+
   sseHeaders(res);
   try {
+    if (anatomyImageId) {
+      sendEvent(res, { type: "station_image", imageId: anatomyImageId, imageUrl: `/api/anatomy-viva-images/serve/${anatomyImageId}` });
+    }
     const [sourceNotes, bookExcerpt] = await Promise.all([
       fetchSourceNotes(subject),
       fetchBookExcerpt(subject, topic || vivaType || ""),
     ]);
-    const persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt);
+    const persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth);
     const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
+    const hasVisual = !!imageCaption || !!anatomyImageId;
     await streamExaminerAudioTurn(res, [
       { role: "system", content: persona },
       {
         role: "user",
-        content: `Begin the ${stationName} viva${topic ? `, Topic: ${topic}` : ""}. Greet the student briefly like a real examiner (mention this is the ${stationName} viva), then ask your first spot/case question${imageCaption ? " about the image displayed to the student" : ""}. Start at a basic/easy level. Keep it short and spoken, 2-3 sentences total.`,
+        content: `Begin the ${stationName} viva${topic ? `, Topic: ${topic}` : ""}. Greet the student briefly like a real examiner (mention this is the ${stationName} viva), then ask your first spot/case question${hasVisual ? " about the image displayed to the student" : ""}. Start at a basic/easy level. Keep it short and spoken, 2-3 sentences total.`,
       },
     ]);
     sendEvent(res, { done: true, examinerName: EXAMINER_NAMES[subject] });
@@ -585,9 +663,23 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
     return;
   }
   const vivaType = parseVivaType(subject, req.body.vivaType);
-  if ((subject === "Physiology" || subject === "Biochemistry") && !vivaType) {
+  if ((subject === "Physiology" || subject === "Biochemistry" || subject === "Anatomy") && !vivaType) {
     res.status(400).json({ error: vivaTypesRequiredMessage(subject) });
     return;
+  }
+
+  // The frontend echoes back the imageId it received from start-voice so we
+  // re-fetch the SAME specimen's ground truth on every follow-up turn instead
+  // of re-randomizing mid-station.
+  let anatomyImageGroundTruth: string | null = null;
+  const anatomyImageIdRaw = req.body.imageId;
+  if (subject === "Anatomy" && isAnatomyImageCategory(vivaType) && typeof anatomyImageIdRaw === "number") {
+    try {
+      const image = await getAnatomyImageById(anatomyImageIdRaw);
+      if (image) anatomyImageGroundTruth = buildAnatomyImageGroundTruth(image);
+    } catch (err) {
+      console.error("Practical Hub: failed to fetch anatomy viva image for turn", err);
+    }
   }
 
   sseHeaders(res);
@@ -630,7 +722,7 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
       fetchBookExcerpt(subject, queryHint),
     ]);
     const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
-    let persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt) + `\nCurrent viva Subject: ${stationName}${topic ? `, Topic: ${topic}` : ""}.`;
+    let persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth) + `\nCurrent viva Subject: ${stationName}${topic ? `, Topic: ${topic}` : ""}.`;
 
     // Every 3rd student answer, bring in the Gemini panel member's tougher cross-question suggestion.
     const answerCount = history.filter((h) => h.role === "user").length + 1;
@@ -712,4 +804,4 @@ router.post("/viva/end", authMiddleware, voiceLimiter, async (req: Request, res:
   }
 });
 
-export { router as practicalHubRouter, VIVA_SUBJECTS, PHYSIOLOGY_VIVA_TYPES };
+export { router as practicalHubRouter, VIVA_SUBJECTS, PHYSIOLOGY_VIVA_TYPES, ANATOMY_VIVA_TYPES };
