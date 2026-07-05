@@ -9,6 +9,7 @@ import { vivaSourcesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import rateLimit from "express-rate-limit";
 import { CBME_CONTEXT } from "../lib/cbmeContext";
+import { PHYSIOLOGY_PRACTICAL_SYLLABUS } from "../lib/physiologyPracticalSyllabus";
 
 const router = Router();
 
@@ -49,13 +50,17 @@ async function fetchSourceNotes(subject: VivaSubject): Promise<string | null> {
 
 function buildExaminerPersona(subject: VivaSubject, sourceNotes: string | null): string {
   const examinerName = EXAMINER_NAMES[subject];
+  const baselineSyllabus = subject === "Physiology" ? `\n${PHYSIOLOGY_PRACTICAL_SYLLABUS}` : "";
   const sourceBlock = sourceNotes
-    ? `\nThe supervising faculty has shared these focus areas / reference notes for ${subject} — treat them as inspiration and make sure your questions cover these topics, but always phrase and write the actual questions yourself in your own words (never read them as a verbatim script):\n${sourceNotes}`
-    : `\nNo specific focus areas have been supplied for ${subject} — generate your own spot/case questions on ${subject} at NEET PG standard.`;
+    ? `\nThe supervising faculty has shared these additional focus areas / reference notes for ${subject} — treat them as inspiration on top of the baseline syllabus above (if any) and make sure your questions cover these topics too, but always phrase and write the actual questions yourself in your own words (never read them as a verbatim script):\n${sourceNotes}`
+    : baselineSyllabus
+      ? ""
+      : `\nNo specific focus areas have been supplied for ${subject} — generate your own spot/case questions on ${subject} at NEET PG standard.`;
 
   return `You are ${examinerName}, a strict but fair MBBS practical/viva examiner conducting a real, spoken oral examination (viva voce / OSCE station). You are examining an Indian MBBS student on Subject: ${subject}.
 
 ${CBME_CONTEXT}
+${baselineSyllabus}
 ${sourceBlock}
 
 Rules:
