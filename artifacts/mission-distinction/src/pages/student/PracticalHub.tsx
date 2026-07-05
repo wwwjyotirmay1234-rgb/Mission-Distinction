@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 import { useVoiceRecorder, useAudioPlayback } from "@workspace/integrations-openai-ai-react";
 import { PHYSIOLOGY_CLINICAL_IMAGES, type PhysiologyClinicalImage } from "@/data/physiologyClinicalImages";
+import { PHYSIOLOGY_HEMATOLOGY_IMAGES } from "@/data/physiologyHematologyImages";
 
 const ALL_SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"] as const;
 type Subject = (typeof ALL_SUBJECTS)[number];
@@ -236,9 +237,13 @@ export default function PracticalHub() {
     }
   }, [playback]);
 
-  const pickClinicalImage = useCallback((): PhysiologyClinicalImage | null => {
-    if (PHYSIOLOGY_CLINICAL_IMAGES.length === 0) return null;
-    return PHYSIOLOGY_CLINICAL_IMAGES[Math.floor(Math.random() * PHYSIOLOGY_CLINICAL_IMAGES.length)];
+  const pickImageForVivaType = useCallback((type: PhysiologyVivaType | null): PhysiologyClinicalImage | null => {
+    const pool =
+      type === "Human Experiments & Clinical Physiology" ? PHYSIOLOGY_CLINICAL_IMAGES :
+      type === "Hematology Experiment" ? PHYSIOLOGY_HEMATOLOGY_IMAGES :
+      null;
+    if (!pool || pool.length === 0) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
   }, []);
 
   const autoSubmitOnTimeout = useCallback(async () => {
@@ -261,7 +266,7 @@ export default function PracticalHub() {
     setSubject(selectedSubject);
     const isPhysiology = selectedSubject === "Physiology";
     const chosenVivaType = isPhysiology ? selectedVivaType : null;
-    const chosenImage = isPhysiology && chosenVivaType === "Human Experiments & Clinical Physiology" ? pickClinicalImage() : null;
+    const chosenImage = isPhysiology ? pickImageForVivaType(chosenVivaType) : null;
     setVivaType(chosenVivaType);
     setClinicalImage(chosenImage);
     setState("connecting");

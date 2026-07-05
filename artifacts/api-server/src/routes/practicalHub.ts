@@ -83,7 +83,9 @@ function buildExaminerPersona(
   const stationLabel = vivaType ? ` — Station: ${vivaType}` : "";
 
   const imageBlock =
-    subject === "Physiology" && vivaType === "Human Experiments & Clinical Physiology" && imageCaption
+    subject === "Physiology" &&
+    (vivaType === "Human Experiments & Clinical Physiology" || vivaType === "Hematology Experiment") &&
+    imageCaption
       ? `\nThe student currently has this image/diagram displayed in front of them on screen: "${imageCaption}". Start by asking a spot-identification or interpretation question directly about this image, then move on to other topics in the syllabus above.`
       : "";
 
