@@ -5,7 +5,7 @@ import { vivaSourcesTable, vivaSourceDocumentsTable } from "@workspace/db";
 import { eq, and, asc } from "drizzle-orm";
 import { adminMiddleware } from "../middlewares/auth";
 import { stripHtml } from "../lib/sanitize";
-import { VIVA_SUBJECTS } from "./practicalHub";
+import { VIVA_SUBJECTS, invalidateBookChunkCache } from "./practicalHub";
 import { extractPdfBuffer } from "./aiDoubt";
 
 const router = Router();
@@ -32,6 +32,12 @@ const bookUpload = multer({
     else cb(new Error("Only PDF files are allowed."));
   },
 });
+
+// A 1000-1500 page medical textbook runs ~1-1.5M extracted characters (based
+// on real uploads averaging ~850 chars/page). The default extractPdfBuffer
+// cap (350k chars, tuned for ~140-page PYQ compilations) would silently chop
+// off most of a full textbook, so book-library uploads get a much larger cap.
+const BOOK_MAX_TEXT_CHARS = 3_000_000;
 
 // Grounding notes are injected into every viva examiner prompt, so cap
 // extracted PDF text well below the raw 8000-char sourceText limit to leave
@@ -186,7 +192,7 @@ router.post("/:subject/documents", adminMiddleware, (req: Request, res: Response
 
     for (const file of files) {
       try {
-        const { text, pages, warning } = await extractPdfBuffer(file.buffer);
+        const { text, pages, warning } = await extractPdfBuffer(file.buffer, BOOK_MAX_TEXT_CHARS);
         const cleaned = stripHtml(text).trim();
         if (!cleaned) {
           failed.push({
@@ -222,6 +228,7 @@ router.post("/:subject/documents", adminMiddleware, (req: Request, res: Response
       res.status(422).json({ error: failed[0]?.error || "Failed to upload book(s).", failed });
       return;
     }
+    invalidateBookChunkCache(subject as (typeof VIVA_SUBJECTS)[number]);
     res.json({ saved, failed });
   } catch (err: any) {
     res.status(400).json({ error: err?.message || "Failed to upload book(s)." });
@@ -240,6 +247,7 @@ router.delete("/:subject/documents/:id", adminMiddleware, async (req: Request, r
     await db
       .delete(vivaSourceDocumentsTable)
       .where(and(eq(vivaSourceDocumentsTable.id, id), eq(vivaSourceDocumentsTable.subject, subject)));
+    invalidateBookChunkCache(subject as (typeof VIVA_SUBJECTS)[number]);
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: "Failed to delete book" });

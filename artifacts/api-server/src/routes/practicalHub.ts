@@ -111,6 +111,33 @@ interface BookChunk {
   text: string;
 }
 
+// In-memory cache of pre-chunked book text per subject. Chunking a 1000-1500
+// page book (1M+ chars) on every single viva turn (start + every student
+// answer) is the dominant cost of fetchBookExcerpt — this cache means each
+// subject's book library is only fetched from the DB and re-chunked once
+// (per process lifetime), then served instantly from memory on every
+// subsequent question across every student's session. Invalidated whenever
+// an admin uploads or deletes a book (see vivaSources.ts).
+const bookChunkCache = new Map<VivaSubject, BookChunk[]>();
+
+export function invalidateBookChunkCache(subject: VivaSubject): void {
+  bookChunkCache.delete(subject);
+}
+
+async function getBookChunks(subject: VivaSubject): Promise<BookChunk[]> {
+  const cached = bookChunkCache.get(subject);
+  if (cached) return cached;
+
+  const docs = await db
+    .select({ fileName: vivaSourceDocumentsTable.fileName, fullText: vivaSourceDocumentsTable.fullText })
+    .from(vivaSourceDocumentsTable)
+    .where(eq(vivaSourceDocumentsTable.subject, subject));
+
+  const chunks = docs.flatMap((doc) => chunkBookText(doc.fileName, doc.fullText));
+  bookChunkCache.set(subject, chunks);
+  return chunks;
+}
+
 function chunkBookText(fileName: string, fullText: string): BookChunk[] {
   const paragraphs = fullText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   const chunks: BookChunk[] = [];
@@ -153,13 +180,7 @@ function scoreChunk(chunk: BookChunk, queryWords: Set<string>): number {
 // so prompt size and AI cost never scale with book length.
 async function fetchBookExcerpt(subject: VivaSubject, queryHint: string): Promise<string | null> {
   try {
-    const docs = await db
-      .select({ fileName: vivaSourceDocumentsTable.fileName, fullText: vivaSourceDocumentsTable.fullText })
-      .from(vivaSourceDocumentsTable)
-      .where(eq(vivaSourceDocumentsTable.subject, subject));
-    if (docs.length === 0) return null;
-
-    const allChunks = docs.flatMap((doc) => chunkBookText(doc.fileName, doc.fullText));
+    const allChunks = await getBookChunks(subject);
     if (allChunks.length === 0) return null;
 
     const queryWords = new Set(tokenize(queryHint));

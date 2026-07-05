@@ -348,7 +348,10 @@ flowchart TD
 
 
 // ── Shared PDF extraction (buffer -> text/images) — reused by PYQ analysis ──
-export async function extractPdfBuffer(buffer: Buffer): Promise<{ text: string; images?: string[]; pages: number; warning?: string }> {
+export async function extractPdfBuffer(
+  buffer: Buffer,
+  maxChars: number = MAX_DOCUMENT_TEXT_CHARS
+): Promise<{ text: string; images?: string[]; pages: number; warning?: string }> {
   const magic = buffer.slice(0, 4).toString("ascii");
   if (!magic.startsWith("%PDF")) {
     throw new Error("File does not appear to be a valid PDF.");
@@ -370,8 +373,8 @@ export async function extractPdfBuffer(buffer: Buffer): Promise<{ text: string; 
       return { text: "", pages: parsed.numpages, warning: "This appears to be a scanned PDF — no text could be extracted." };
     }
   }
-  const text = rawText.length > MAX_DOCUMENT_TEXT_CHARS
-    ? rawText.slice(0, MAX_DOCUMENT_TEXT_CHARS) + `\n\n[Document truncated at ${MAX_DOCUMENT_TEXT_CHARS.toLocaleString()} characters]`
+  const text = rawText.length > maxChars
+    ? rawText.slice(0, maxChars) + `\n\n[Document truncated at ${maxChars.toLocaleString()} characters]`
     : rawText;
   return { text, pages: parsed.numpages };
 }
