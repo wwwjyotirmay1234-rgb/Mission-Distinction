@@ -31,7 +31,12 @@ function sseHeaders(res: Response) {
 }
 
 function sendEvent(res: Response, payload: Record<string, unknown>) {
-  res.write(`data: ${JSON.stringify(payload)}\n\n`);
+  if (res.writableEnded || res.destroyed) return;
+  try {
+    res.write(`data: ${JSON.stringify(payload)}\n\n`);
+  } catch (err: any) {
+    console.error("Anatomy viva extraction: SSE write failed (client likely disconnected)", err?.message || err);
+  }
 }
 
 async function mapWithConcurrency<T, R>(
@@ -217,6 +222,11 @@ router.post("/admin/extract", adminMiddleware, async (req: Request, res: Respons
     res.status(400).json({ error: "objectNames (array of GCS pdf object names) is required" });
     return;
   }
+  // Optional resumable chunking: lets a caller process a large book across
+  // several requests (e.g. page 1-40, then 41-80, ...) without re-processing
+  // and duplicating pages already inserted in an earlier chunk.
+  const startPage = Number.isInteger(req.body?.startPage) && req.body.startPage > 0 ? req.body.startPage : 1;
+  const requestedEndPage = Number.isInteger(req.body?.endPage) && req.body.endPage > 0 ? req.body.endPage : null;
   const admin = (req as any).user;
   const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
   if (!bucketId) { res.status(500).json({ error: "Storage not configured" }); return; }
@@ -225,26 +235,33 @@ router.post("/admin/extract", adminMiddleware, async (req: Request, res: Respons
   let totalInserted = 0;
   let totalSkipped = 0;
   const errors: string[] = [];
+  let aborted = false;
+  res.on("close", () => { aborted = true; });
 
   try {
     for (const objectName of objectNames) {
+      if (aborted) break;
       const sourceFileName = objectName.slice(PDF_PREFIX.length).replace(/^\d+_/, "");
       sendEvent(res, { type: "file_start", fileName: sourceFileName });
       try {
         const bucket = gcsClient.bucket(bucketId);
         const [buffer] = await bucket.file(objectName).download();
         const pdfDoc = await loadPdfDocument(buffer);
-        const pagesToRead = Math.min(pdfDoc.numPages, MAX_PAGES_PER_PDF);
+        const hardCapEndPage = Math.min(pdfDoc.numPages, MAX_PAGES_PER_PDF);
+        const rangeEndPage = requestedEndPage ? Math.min(requestedEndPage, hardCapEndPage) : hardCapEndPage;
+        const pagesToRead = Math.max(0, rangeEndPage - startPage + 1);
         const numBatches = Math.ceil(pagesToRead / CLASSIFY_BATCH_PAGES);
         const batchRanges = Array.from({ length: numBatches }, (_, b) => {
-          const start = b * CLASSIFY_BATCH_PAGES + 1;
-          const end = Math.min(start + CLASSIFY_BATCH_PAGES - 1, pagesToRead);
+          const start = startPage + b * CLASSIFY_BATCH_PAGES;
+          const end = Math.min(start + CLASSIFY_BATCH_PAGES - 1, rangeEndPage);
           return { start, end };
         });
 
         let processedPages = 0;
         await mapWithConcurrency(batchRanges, CLASSIFY_CONCURRENCY, async ({ start, end }) => {
+          if (aborted) return;
           const classified = await classifyBatch(pdfDoc, sourceFileName, start, end);
+          if (aborted) return;
           for (const page of classified) {
             if (!isAnatomyImageCategory(page.category) || !page.title) {
               totalSkipped++;
@@ -277,7 +294,14 @@ router.post("/admin/extract", adminMiddleware, async (req: Request, res: Respons
           sendEvent(res, { type: "progress", fileName: sourceFileName, processedPages, totalPages: pagesToRead });
         });
 
-        sendEvent(res, { type: "file_done", fileName: sourceFileName, pagesRead: pagesToRead, totalPagesInFile: pdfDoc.numPages });
+        sendEvent(res, {
+          type: "file_done",
+          fileName: sourceFileName,
+          pagesRead: pagesToRead,
+          totalPagesInFile: pdfDoc.numPages,
+          rangeEndPage,
+          nextStartPage: rangeEndPage < hardCapEndPage ? rangeEndPage + 1 : null,
+        });
       } catch (fileErr: any) {
         console.error("Anatomy viva extraction: file failed", objectName, fileErr?.message || fileErr);
         errors.push(`${sourceFileName}: ${fileErr?.message || "failed"}`);
