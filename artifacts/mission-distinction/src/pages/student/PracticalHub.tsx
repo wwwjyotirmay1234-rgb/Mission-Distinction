@@ -353,6 +353,19 @@ export default function PracticalHub() {
   }, [recorder, streamTurn, subject, topic, vivaType, clinicalImage]);
 
   const startViva = async () => {
+    // Create/unlock the AudioContext synchronously within this click handler,
+    // BEFORE any `await` breaks the user-gesture chain. Safari/iOS (and Chrome's
+    // stricter autoplay policies) only allow an AudioContext to start in the
+    // "running" state if it's created inside the same synchronous call stack as
+    // a user gesture (e.g. this button click). If we wait until streamTurn()
+    // calls playback.init() later — after the ~1.8s entrance-beat setTimeout —
+    // the context gets created several event-loop turns removed from the click,
+    // so browsers create it "suspended" and it silently never plays audio again,
+    // with no console error. Kicking off init() here (fire-and-forget is fine;
+    // streamTurn's own playback.init() call is a no-op once ready) keeps the
+    // AudioContext creation tied to the gesture.
+    playback.init().catch(() => {});
+
     setSubject(selectedSubject);
     const isPhysiology = selectedSubject === "Physiology";
     const isBiochemistry = selectedSubject === "Biochemistry";

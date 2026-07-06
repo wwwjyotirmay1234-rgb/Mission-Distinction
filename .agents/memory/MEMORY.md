@@ -46,3 +46,4 @@
 - [Viva image caption answer leak](viva-image-caption-leak.md) — physiology apparatus/specimen `caption` fields name the object directly; frontend needs a separate non-revealing `displayCaption`, backend keeps full `caption` for AI context
 - [Anatomy viva empty-image-bank fallback](anatomy-viva-empty-image-bank.md) — categories with 0 extracted specimen photos must NOT claim a specimen is "in front of you"; use honest oral clue-based framing instead
 - [Viva image answer-leak audit pattern](viva-image-leak-audit.md) — AI vision leak-checker at low res can miss tiny overlay labels/pointer-lines baked onto the specimen itself; always re-render the flagged source page at high res (scale 3-4x) before deciding fixable-by-crop vs. delete
+- [AudioContext gesture timing](audiocontext-gesture-timing.md) — creating AudioContext after an awaited delay post-click breaks the browser gesture chain; silent suspended playback with zero console errors, esp. Safari/iOS
