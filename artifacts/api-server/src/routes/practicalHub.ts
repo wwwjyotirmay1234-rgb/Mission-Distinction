@@ -723,7 +723,7 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
       return;
     }
 
-    const userTranscript = (await speechToText(buffer, format)).trim();
+    const userTranscript = (await speechToText(buffer, format, "en")).trim();
 
     if (!userTranscript || isHallucinatedTranscript(userTranscript)) {
       sendEvent(res, { type: "error", error: "Could not hear your answer clearly. Please try again." });

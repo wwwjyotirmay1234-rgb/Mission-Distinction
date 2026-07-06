@@ -299,15 +299,26 @@ export async function textToSpeechStream(
   })();
 }
 
-/** Speech-to-Text using gpt-4o-mini-transcribe. */
+/**
+ * Speech-to-Text using gpt-4o-mini-transcribe.
+ *
+ * `language` should be an ISO-639-1 code (e.g. "en"). Without it, the model
+ * auto-detects language from the audio and can misidentify short/noisy/faint
+ * clips as a non-English language, then transcribes plausible-sounding but
+ * wrong text in that language's script (e.g. Urdu) instead of the actual
+ * English speech or returning empty text. Pinning the expected language
+ * avoids this misdetection for apps where the spoken language is known.
+ */
 export async function speechToText(
   audioBuffer: Buffer,
-  format: "wav" | "mp3" | "webm" = "wav"
+  format: "wav" | "mp3" | "webm" = "wav",
+  language?: string
 ): Promise<string> {
   const file = await toFile(audioBuffer, `audio.${format}`);
   const response = await openai.audio.transcriptions.create({
     file,
     model: "gpt-4o-mini-transcribe",
+    ...(language ? { language } : {}),
   });
   return response.text;
 }
@@ -315,13 +326,15 @@ export async function speechToText(
 /** Streaming Speech-to-Text. */
 export async function speechToTextStream(
   audioBuffer: Buffer,
-  format: "wav" | "mp3" | "webm" = "wav"
+  format: "wav" | "mp3" | "webm" = "wav",
+  language?: string
 ): Promise<AsyncIterable<string>> {
   const file = await toFile(audioBuffer, `audio.${format}`);
   const stream = await openai.audio.transcriptions.create({
     file,
     model: "gpt-4o-mini-transcribe",
     stream: true,
+    ...(language ? { language } : {}),
   });
 
   return (async function* () {
