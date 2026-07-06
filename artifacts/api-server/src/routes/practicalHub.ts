@@ -238,7 +238,11 @@ function scoreChunk(chunk: BookChunk, queryWords: Set<string>): number {
 // excerpts most relevant to the current topic (or a rotating sample of the
 // book if no topic/station hint is available), capped to a fixed char budget
 // so prompt size and AI cost never scale with book length.
-async function fetchBookExcerpt(subject: VivaSubject, queryHint: string): Promise<string | null> {
+async function fetchBookExcerpt(
+  subject: VivaSubject,
+  queryHint: string,
+  pinFileNamePattern?: RegExp
+): Promise<string | null> {
   try {
     const allChunks = await getBookChunks(subject);
     if (allChunks.length === 0) return null;
@@ -251,6 +255,26 @@ async function fetchBookExcerpt(subject: VivaSubject, queryHint: string): Promis
         .sort((a, b) => b.score - a.score)
         .filter((entry, idx) => entry.score > 0 || idx === 0)
         .map((entry) => entry.chunk);
+
+      // Pure keyword-score ranking can let a heavily-repeated term (e.g. the bone
+      // name) monopolize all BOOK_MAX_CHUNKS slots with chunks from one source book,
+      // crowding out a differently-worded but still-relevant book entirely (e.g. the
+      // Radiology reference during a Bone station). When a pin pattern is given,
+      // guarantee the single best-scoring chunk from a matching file is present.
+      if (pinFileNamePattern) {
+        const alreadyIncluded = ranked
+          .slice(0, BOOK_MAX_CHUNKS)
+          .some((c) => pinFileNamePattern.test(c.fileName));
+        if (!alreadyIncluded) {
+          const bestPinned = [...allChunks]
+            .filter((c) => pinFileNamePattern.test(c.fileName))
+            .map((chunk) => ({ chunk, score: scoreChunk(chunk, queryWords) }))
+            .sort((a, b) => b.score - a.score)[0]?.chunk;
+          if (bestPinned) {
+            ranked = [bestPinned, ...ranked.filter((c) => c !== bestPinned)];
+          }
+        }
+      }
     } else {
       // No topic hint yet (e.g. very first question of the viva) — rotate
       // through the book by time bucket so different sessions surface
@@ -326,7 +350,7 @@ function buildExaminerPersona(
 
   const anatomyStationInstructions: Record<AnatomyImageCategory, string> = {
     Histology: "This is a Histology spotter station. After identification of the slide/tissue, ask about its distinguishing microscopic features, the organ/system it belongs to, and its functional significance.",
-    Bone: "This is a Bone spotter station. After identification of the bone and side (right/left), ask about key markings/features, muscle attachments, articulations, and any nerve/vessel relations at those markings.",
+    Bone: "This is a Bone spotter station. After identification of the bone and side (right/left), ask about key markings/features, muscle attachments, articulations, and any nerve/vessel relations at those markings. Then, before moving to the next bone, always ask at least one radiology-correlation question grounded in the uploaded Radiology reference material: e.g. ask the student to identify this bone/joint on a plain X-ray, describe its normal radiographic appearance and landmarks, or name a common fracture pattern or radiographic sign associated with it.",
     Visceral: "This is a Visceral (thoracic/abdominal organ) spotter station. After identification of the organ, ask about its parts, relations, blood supply, and lymphatic/nerve supply.",
     "Section Anatomy": "This is a Section Anatomy station (sagittal/cross-sectional cuts). After identification of the section level and region, ask the student to identify the structures visible at that cut level and their spatial relations to each other.",
     Prosection: "This is a Prosection (cadaveric dissection) station. After identification of the region/structures dissected, ask about the course, relations, and branches/tributaries of the nerves/vessels/muscles shown, and any clinically relevant variations.",
@@ -676,9 +700,13 @@ router.post("/viva/start-voice", authMiddleware, voiceLimiter, async (req: Reque
     if (anatomyImageId) {
       sendEvent(res, { type: "station_image", imageId: anatomyImageId, imageUrl: `/api/anatomy-viva-images/serve/${anatomyImageId}` });
     }
+    const isBoneStation = subject === "Anatomy" && vivaType === "Bone";
+    const startQueryHint = isBoneStation
+      ? [topic || vivaType, "X-ray radiograph radiological appearance fracture"].join(" ")
+      : topic || vivaType || "";
     const [sourceNotes, bookExcerpt] = await Promise.all([
       fetchSourceNotes(subject),
-      fetchBookExcerpt(subject, topic || vivaType || ""),
+      fetchBookExcerpt(subject, startQueryHint, isBoneStation ? /radiolog/i : undefined),
     ]);
     const studentName = (req as any).user?.fullName || null;
     const persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth, studentName);
@@ -774,7 +802,10 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
     const recentTranscript = [...history.slice(-4), { role: "user" as const, content: userTranscript }]
       .map((h) => h.content)
       .join(" ");
-    const queryHint = [topic, vivaType, recentTranscript].filter(Boolean).join(" ");
+    const isBoneStation = subject === "Anatomy" && vivaType === "Bone";
+    const queryHint = isBoneStation
+      ? [topic, vivaType, recentTranscript, "X-ray radiograph radiological appearance fracture"].filter(Boolean).join(" ")
+      : [topic, vivaType, recentTranscript].filter(Boolean).join(" ");
 
     // Dynamic follow-up pressure: bring in the Gemini panel member's tougher cross-question
     // suggestion immediately whenever the student's answer was weak/vague/a give-up, like a real
@@ -794,7 +825,7 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
     // route since geminiCrossQuestion is a full extra model round-trip.
     const [sourceNotes, bookExcerpt, crossQuestion] = await Promise.all([
       sourceNotesPromise,
-      fetchBookExcerpt(subject, queryHint),
+      fetchBookExcerpt(subject, queryHint, isBoneStation ? /radiolog/i : undefined),
       needsCrossQuestion
         ? geminiCrossQuestion(subject, historyToTranscript([...history, { role: "user", content: userTranscript }]), isPracticalMeasurementStation)
         : Promise.resolve(null),
