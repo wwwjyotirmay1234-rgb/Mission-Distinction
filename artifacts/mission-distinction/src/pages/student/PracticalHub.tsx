@@ -862,66 +862,66 @@ function SectionSummaryView({ summary }: { summary: VivaSummary }) {
   const totalMarks = summary.questionBreakdown?.reduce((sum, q) => sum + q.marks, 0) ?? summary.score;
 
   return (
-    <div className="rounded-md border-2 border-foreground/25 bg-[#faf8f2] dark:bg-card/60 p-4 sm:p-6 font-serif text-foreground/90 space-y-4">
-      <div className="text-center border-b-2 border-foreground/20 pb-3">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Internal Assessment — Practical Examination</p>
-        <p className="text-base sm:text-lg font-bold mt-1">MBBS Phase I — Viva Voce Mark Sheet</p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">AI Viva Simulator, Mission Distinction</p>
+    <div className="rounded-md border-2 border-slate-300 bg-[#faf8f2] p-4 sm:p-6 font-serif text-slate-800 space-y-4 shadow-sm">
+      <div className="text-center border-b-2 border-slate-300 pb-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Internal Assessment — Practical Examination</p>
+        <p className="text-base sm:text-lg font-bold mt-1 text-slate-900">MBBS Phase I — Viva Voce Mark Sheet</p>
+        <p className="text-[11px] text-slate-500 mt-0.5">AI Viva Simulator, Mission Distinction</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:text-sm border-b border-dashed border-foreground/25 pb-3">
-        <p><span className="text-muted-foreground">Student Name:</span> <span className="font-semibold">{user?.fullName ?? "—"}</span></p>
-        <p><span className="text-muted-foreground">Date:</span> <span className="font-semibold">{today}</span></p>
-        <p><span className="text-muted-foreground">Subject:</span> <span className="font-semibold">{summary.subject}</span></p>
-        <p><span className="text-muted-foreground">Examiner:</span> <span className="font-semibold">{summary.examinerName ?? "—"}</span></p>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:text-sm border-b border-dashed border-slate-300 pb-3">
+        <p><span className="text-slate-500">Student Name:</span> <span className="font-semibold text-slate-900">{user?.fullName ?? "—"}</span></p>
+        <p><span className="text-slate-500">Date:</span> <span className="font-semibold text-slate-900">{today}</span></p>
+        <p><span className="text-slate-500">Subject:</span> <span className="font-semibold text-slate-900">{summary.subject}</span></p>
+        <p><span className="text-slate-500">Examiner:</span> <span className="font-semibold text-slate-900">{summary.examinerName ?? "—"}</span></p>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-b border-dashed border-foreground/25 pb-3">
-        <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider">Marks Obtained</p>
-        <p className="text-2xl font-bold">
-          {totalMarks}<span className="text-sm font-normal text-muted-foreground"> / {maxTotal}</span>
+      <div className="flex items-center justify-between gap-3 border-b border-dashed border-slate-300 pb-3">
+        <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-900">Marks Obtained</p>
+        <p className="text-2xl font-bold text-slate-900">
+          {totalMarks}<span className="text-sm font-normal text-slate-500"> / {maxTotal}</span>
         </p>
       </div>
 
       {summary.panel && (summary.panel.gemini || summary.panel.claude) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 border-b border-dashed border-foreground/25 pb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 border-b border-dashed border-slate-300 pb-3">
           {summary.panel.gemini && (
-            <div className="rounded border border-foreground/15 bg-background/40 p-2.5">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Examiner Assessment</p>
-              <p className="text-base font-bold">{summary.panel.gemini.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
+            <div className="rounded border border-slate-300 bg-white/60 p-2.5">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Examiner Assessment</p>
+              <p className="text-base font-bold text-slate-900">{summary.panel.gemini.score}<span className="text-xs text-slate-500 font-normal">/100</span></p>
             </div>
           )}
           {summary.panel.claude && (
-            <div className="rounded border border-foreground/15 bg-background/40 p-2.5">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Co-Examiner Cross-Check</p>
-              <p className="text-base font-bold">{summary.panel.claude.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
+            <div className="rounded border border-slate-300 bg-white/60 p-2.5">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Co-Examiner Cross-Check</p>
+              <p className="text-base font-bold text-slate-900">{summary.panel.claude.score}<span className="text-xs text-slate-500 font-normal">/100</span></p>
             </div>
           )}
         </div>
       )}
 
       {summary.questionBreakdown && summary.questionBreakdown.length > 0 && (
-        <div className="border-b border-dashed border-foreground/25 pb-3">
-          <p className="text-xs font-bold uppercase tracking-wider mb-2">Question-wise Break-up</p>
+        <div className="border-b border-dashed border-slate-300 pb-3">
+          <p className="text-xs font-bold uppercase tracking-wider mb-2 text-slate-900">Question-wise Break-up</p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs sm:text-sm border-collapse">
               <thead>
-                <tr className="border-b border-foreground/30 text-left">
-                  <th className="py-1.5 pr-2 font-semibold w-8">#</th>
-                  <th className="py-1.5 pr-2 font-semibold">Question</th>
-                  <th className="py-1.5 pl-2 font-semibold text-right w-16">Marks</th>
+                <tr className="border-b border-slate-400 text-left">
+                  <th className="py-1.5 pr-2 font-semibold w-8 text-slate-900">#</th>
+                  <th className="py-1.5 pr-2 font-semibold text-slate-900">Question</th>
+                  <th className="py-1.5 pl-2 font-semibold text-right w-16 text-slate-900">Marks</th>
                 </tr>
               </thead>
               <tbody>
                 {summary.questionBreakdown.map((q, i) => (
-                  <tr key={i} className="border-b border-foreground/10 align-top">
-                    <td className="py-2 pr-2 text-muted-foreground">{i + 1}.</td>
+                  <tr key={i} className="border-b border-slate-200 align-top">
+                    <td className="py-2 pr-2 text-slate-500">{i + 1}.</td>
                     <td className="py-2 pr-2">
-                      <p className="font-medium">{q.question}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5"><span className="font-semibold text-foreground/70">Answered:</span> {q.studentAnswer || "—"}</p>
-                      <p className="text-[11px] text-muted-foreground"><span className="font-semibold text-foreground/70">Expected:</span> {q.idealAnswer}</p>
+                      <p className="font-medium text-slate-900">{q.question}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5"><span className="font-semibold text-slate-700">Answered:</span> {q.studentAnswer || "—"}</p>
+                      <p className="text-[11px] text-slate-500"><span className="font-semibold text-slate-700">Expected:</span> {q.idealAnswer}</p>
                     </td>
-                    <td className="py-2 pl-2 text-right font-bold whitespace-nowrap">{q.marks}/{q.maxMarks}</td>
+                    <td className="py-2 pl-2 text-right font-bold whitespace-nowrap text-slate-900">{q.marks}/{q.maxMarks}</td>
                   </tr>
                 ))}
               </tbody>
@@ -931,23 +931,23 @@ function SectionSummaryView({ summary }: { summary: VivaSummary }) {
       )}
 
       {(summary.strengths.length > 0 || summary.improvements.length > 0) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-b border-dashed border-foreground/25 pb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-b border-dashed border-slate-300 pb-3">
           {summary.strengths.length > 0 && (
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Strengths</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Strengths</p>
               <ul className="space-y-1">
                 {summary.strengths.map((s, i) => (
-                  <li key={i} className="flex items-start gap-1.5 text-xs sm:text-sm"><CheckCircle2 size={12} className="text-emerald-600 mt-0.5 shrink-0" />{s}</li>
+                  <li key={i} className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-800"><CheckCircle2 size={12} className="text-emerald-600 mt-0.5 shrink-0" />{s}</li>
                 ))}
               </ul>
             </div>
           )}
           {summary.improvements.length > 0 && (
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Areas to Improve</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Areas to Improve</p>
               <ul className="space-y-1">
                 {summary.improvements.map((s, i) => (
-                  <li key={i} className="flex items-start gap-1.5 text-xs sm:text-sm"><AlertTriangle size={12} className="text-amber-600 mt-0.5 shrink-0" />{s}</li>
+                  <li key={i} className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-800"><AlertTriangle size={12} className="text-amber-600 mt-0.5 shrink-0" />{s}</li>
                 ))}
               </ul>
             </div>
@@ -956,16 +956,16 @@ function SectionSummaryView({ summary }: { summary: VivaSummary }) {
       )}
 
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Examiner's Remarks</p>
-        <p className="text-xs sm:text-sm italic">"{summary.verdict}"</p>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Examiner's Remarks</p>
+        <p className="text-xs sm:text-sm italic text-slate-800">"{summary.verdict}"</p>
       </div>
 
       <div className="flex items-end justify-between pt-4 mt-2">
         <div className="text-center">
-          <p className="text-sm italic font-semibold" style={{ fontFamily: "cursive" }}>{summary.examinerName ?? "Examiner"}</p>
-          <p className="text-[10px] text-muted-foreground border-t border-foreground/30 pt-1 mt-1 px-4">Examiner's Signature</p>
+          <p className="text-sm italic font-semibold text-slate-900" style={{ fontFamily: "cursive" }}>{summary.examinerName ?? "Examiner"}</p>
+          <p className="text-[10px] text-slate-500 border-t border-slate-400 pt-1 mt-1 px-4">Examiner's Signature</p>
         </div>
-        <Award size={28} className="text-primary/60" />
+        <Award size={28} className="text-primary/70" />
       </div>
     </div>
   );
