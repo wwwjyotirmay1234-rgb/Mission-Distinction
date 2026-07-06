@@ -721,6 +721,11 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
 
   sseHeaders(res);
   try {
+    // Faculty source notes only depend on `subject`, which is known immediately — kick this
+    // fetch off now so it overlaps with the audio conversion/silence-check/transcription
+    // pipeline below instead of waiting until after the transcript is ready.
+    const sourceNotesPromise = fetchSourceNotes(subject);
+
     const rawBuffer = Buffer.from(audioBase64, "base64");
     if (rawBuffer.length < 100) {
       sendEvent(res, { type: "error", error: "No speech detected. Please try again." });
@@ -754,13 +759,6 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
       .map((h) => h.content)
       .join(" ");
     const queryHint = [topic, vivaType, recentTranscript].filter(Boolean).join(" ");
-    const [sourceNotes, bookExcerpt] = await Promise.all([
-      fetchSourceNotes(subject),
-      fetchBookExcerpt(subject, queryHint),
-    ]);
-    const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
-    const studentName = (req as any).user?.fullName || null;
-    let persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth, studentName) + `\nCurrent viva Subject: ${stationName}${topic ? `, Topic: ${topic}` : ""}.`;
 
     // Dynamic follow-up pressure: bring in the Gemini panel member's tougher cross-question
     // suggestion immediately whenever the student's answer was weak/vague/a give-up, like a real
@@ -769,14 +767,27 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
     // occasional escalation, matching a real exam board's tendency to test depth periodically.
     const answerCount = history.filter((h) => h.role === "user").length + 1;
     const weakAnswer = isWeakOrVagueAnswer(userTranscript);
-    if (weakAnswer || (answerCount >= 2 && answerCount % 3 === 0)) {
-      const transcriptSoFar = historyToTranscript([...history, { role: "user", content: userTranscript }]);
-      const crossQuestion = await geminiCrossQuestion(subject, transcriptSoFar);
-      if (crossQuestion) {
-        persona += weakAnswer
-          ? `\n\nThe student's last answer was weak, vague, or a give-up. Panel note from co-examiner: probe this immediately with a sharper follow-up on the SAME topic before moving anywhere else, phrased naturally in your own voice: "${crossQuestion}"`
-          : `\n\nPanel note from co-examiner: consider asking this harder question next, phrased naturally in your own voice: "${crossQuestion}"`;
-      }
+    const needsCrossQuestion = weakAnswer || (answerCount >= 2 && answerCount % 3 === 0);
+
+    // Run the book-excerpt RAG lookup and the (conditional) Gemini cross-question call
+    // concurrently with the already-in-flight source notes fetch, instead of awaiting the
+    // Gemini call only after the RAG fetches finish. This is the main latency win for this
+    // route since geminiCrossQuestion is a full extra model round-trip.
+    const [sourceNotes, bookExcerpt, crossQuestion] = await Promise.all([
+      sourceNotesPromise,
+      fetchBookExcerpt(subject, queryHint),
+      needsCrossQuestion
+        ? geminiCrossQuestion(subject, historyToTranscript([...history, { role: "user", content: userTranscript }]))
+        : Promise.resolve(null),
+    ]);
+    const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
+    const studentName = (req as any).user?.fullName || null;
+    let persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth, studentName) + `\nCurrent viva Subject: ${stationName}${topic ? `, Topic: ${topic}` : ""}.`;
+
+    if (crossQuestion) {
+      persona += weakAnswer
+        ? `\n\nThe student's last answer was weak, vague, or a give-up. Panel note from co-examiner: probe this immediately with a sharper follow-up on the SAME topic before moving anywhere else, phrased naturally in your own voice: "${crossQuestion}"`
+        : `\n\nPanel note from co-examiner: consider asking this harder question next, phrased naturally in your own voice: "${crossQuestion}"`;
     }
 
     const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
