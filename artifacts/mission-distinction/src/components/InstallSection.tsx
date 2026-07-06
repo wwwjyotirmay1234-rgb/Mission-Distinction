@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Download, Smartphone, Monitor, Share, MoreVertical, Plus, CheckCircle } from "lucide-react";
+import { Download, Smartphone, Monitor, Share, MoreVertical, Menu, Plus, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { isSamsungBrowser } from "@/lib/browserEnv";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -11,6 +12,7 @@ export function InstallSection() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [isSamsung, setIsSamsung] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [activeTab, setActiveTab] = useState<"android" | "ios" | "desktop">("android");
   const [justInstalled, setJustInstalled] = useState(false);
@@ -23,6 +25,7 @@ export function InstallSection() {
     const android = /android/i.test(ua);
     setIsIOS(ios);
     setIsAndroid(android);
+    setIsSamsung(isSamsungBrowser());
     if (ios) setActiveTab("ios");
     else if (android) setActiveTab("android");
     else setActiveTab("desktop");
@@ -102,6 +105,25 @@ export function InstallSection() {
               <Download size={16} />
               Install App
             </Button>
+          ) : isSamsung ? (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground font-medium">Follow these steps in Samsung Internet:</p>
+              {[
+                { icon: <Menu size={14} />, text: 'Tap the menu (☰) icon at the bottom-right' },
+                { icon: <Plus size={14} />, text: 'Tap "Add page to" then "Home screen"' },
+                { icon: <CheckCircle size={14} />, text: 'Tap "Add" to confirm' },
+              ].map((step, i) => (
+                <div key={i} className="flex items-center gap-2.5 text-xs text-foreground/80">
+                  <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 text-[10px] font-bold">
+                    {i + 1}
+                  </div>
+                  {step.text}
+                </div>
+              ))}
+              <p className="text-[11px] text-muted-foreground pt-1">
+                Samsung Internet doesn't always show an automatic install pop-up — this manual step works every time
+              </p>
+            </div>
           ) : (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground font-medium">Follow these steps in Chrome:</p>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Download, Smartphone, Share, Plus, CheckCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/apiFetch";
-import { isIOSDevice, isStandaloneDisplay, isInAppBrowser } from "@/lib/browserEnv";
+import { isIOSDevice, isStandaloneDisplay, isInAppBrowser, isSamsungBrowser } from "@/lib/browserEnv";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -29,6 +29,7 @@ export function InstallPrompt() {
   const [hidden, setHidden] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isInApp, setIsInApp] = useState(false);
+  const [isSamsung, setIsSamsung] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -43,6 +44,9 @@ export function InstallPrompt() {
     // PWA — no beforeinstallprompt, no Safari/Chrome share sheet. Students share
     // study links in WhatsApp groups constantly, so this is a common real path.
     setIsInApp(isInAppBrowser());
+    // Samsung Internet frequently never fires beforeinstallprompt at all, even
+    // though the page is fully installable — needs a manual fallback like iOS.
+    setIsSamsung(isSamsungBrowser());
 
     const isFirstVisit = !localStorage.getItem(FIRST_VISIT_KEY);
     if (isFirstVisit) {
@@ -92,8 +96,12 @@ export function InstallPrompt() {
     if (outcome === "accepted") dismiss();
   };
 
+  // Samsung Internet only gets manual instructions when no native prompt ever
+  // showed up — if it did fire (some versions do), use the normal deferred flow.
+  const needsSamsungManual = isSamsung && !deferredPrompt;
+
   const handleBannerInstall = async () => {
-    if (isIOS || isInApp) {
+    if (isIOS || isInApp || needsSamsungManual) {
       setShowModal(true);
     } else {
       await triggerInstall();
@@ -149,6 +157,22 @@ export function InstallPrompt() {
               </div>
             )}
 
+            {/* Samsung Internet instructions inline */}
+            {needsSamsungManual && !isInApp && !isIOS && (
+              <div className="mx-6 mb-4 p-3 bg-primary/10 rounded-xl text-xs text-foreground/80 space-y-1.5">
+                <p className="font-semibold text-foreground">How to install on Samsung Internet:</p>
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>Tap the <strong>menu (☰)</strong> icon at the bottom-right</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Plus className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>Tap <strong>"Add page to"</strong> then <strong>"Home screen"</strong></span>
+                </div>
+                <p className="text-muted-foreground text-[11px] pt-0.5">Samsung Internet doesn't always show an automatic install pop-up — this manual step works every time</p>
+              </div>
+            )}
+
             {/* iOS instructions inline */}
             {isIOS && !isInApp && (
               <div className="mx-6 mb-4 p-3 bg-primary/10 rounded-xl text-xs text-foreground/80 space-y-1.5">
@@ -167,7 +191,7 @@ export function InstallPrompt() {
 
             {/* Actions */}
             <div className="flex flex-col gap-2 px-6 pb-6">
-              {!isIOS && !isInApp && (
+              {!isIOS && !isInApp && !needsSamsungManual && (
                 <Button
                   className="w-full gap-2 h-11 text-sm font-semibold"
                   onClick={triggerInstall}
@@ -183,6 +207,11 @@ export function InstallPrompt() {
                 </Button>
               )}
               {isIOS && !isInApp && (
+                <Button className="w-full gap-2 h-11 text-sm font-semibold" onClick={dismiss}>
+                  <CheckCircle className="w-4 h-4" /> Done, I've Added It
+                </Button>
+              )}
+              {needsSamsungManual && !isInApp && !isIOS && (
                 <Button className="w-full gap-2 h-11 text-sm font-semibold" onClick={dismiss}>
                   <CheckCircle className="w-4 h-4" /> Done, I've Added It
                 </Button>
@@ -209,6 +238,8 @@ export function InstallPrompt() {
                   ? "Open in Chrome or Safari to install"
                   : isIOS
                   ? "Tap Share → Add to Home Screen in Safari"
+                  : needsSamsungManual
+                  ? "Tap menu (☰) → Add page to → Home screen"
                   : "Add to home screen for offline access"}
               </p>
             </div>
@@ -217,10 +248,10 @@ export function InstallPrompt() {
                 size="sm"
                 className="h-8 text-xs px-3 gap-1.5 font-semibold"
                 onClick={handleBannerInstall}
-                disabled={!isIOS && !isInApp && !deferredPrompt}
+                disabled={!isIOS && !isInApp && !needsSamsungManual && !deferredPrompt}
               >
                 <Download className="w-3 h-3" />
-                {isIOS || isInApp ? "How?" : "Install"}
+                {isIOS || isInApp || needsSamsungManual ? "How?" : "Install"}
               </Button>
               <button
                 onClick={dismiss}

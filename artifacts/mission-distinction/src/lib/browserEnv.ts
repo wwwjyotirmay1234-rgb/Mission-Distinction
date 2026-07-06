@@ -14,6 +14,13 @@ export function isStandaloneDisplay(): boolean {
   );
 }
 
+// Samsung Internet fires `beforeinstallprompt` unreliably across versions even when the
+// page is fully installable — cannot rely on deferredPrompt alone; needs a manual
+// "Add page to > Home screen" fallback like iOS.
+export function isSamsungBrowser(): boolean {
+  return /SamsungBrowser/i.test(navigator.userAgent);
+}
+
 // Detects Instagram / Facebook / WhatsApp / LinkedIn / Snapchat / WeChat / Android WebView
 // in-app browsers. These cannot install PWAs (no beforeinstallprompt, no Add to Home
 // Screen share-sheet access) — the only fix is "open in real browser".
