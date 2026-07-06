@@ -104,17 +104,19 @@ function DiceFace({ value }: { value: number | null }) {
     </div>
   );
   return (
-    <div className="relative w-16 h-16 rounded-2xl bg-white shadow-xl border-2 border-white/80 select-none">
+    <div className="relative w-16 h-16 rounded-2xl bg-white shadow-xl border-2 border-teal-100 select-none">
       <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full p-1">
+        <rect x={4} y={4} width={14} height={3} rx={1.5} fill="#f43f5e" opacity={0.55} />
+        <rect x={4} y={4} width={3} height={14} rx={1.5} fill="#f43f5e" opacity={0.55} />
         {(dots[value] || []).map(([cx, cy], i) => (
-          <circle key={i} cx={cx} cy={cy} r={9} fill="#1e3a8a" />
+          <circle key={i} cx={cx} cy={cy} r={9} fill="#0f766e" />
         ))}
       </svg>
     </div>
   );
 }
 
-// ─── Pawn Token ───────────────────────────────────────────────────────────────
+// ─── Pawn Token (medical "capsule" pawn) ───────────────────────────────────────
 function PawnSVG({ cx, cy, color, darkColor, label, pulse }: {
   cx: number; cy: number; color: string; darkColor: string; label: string; pulse: boolean;
 }) {
@@ -122,22 +124,30 @@ function PawnSVG({ cx, cy, color, darkColor, label, pulse }: {
   return (
     <g style={{ cursor: pulse ? "pointer" : "default" }}>
       {pulse && (
-        <circle cx={cx} cy={cy - r * 0.35} r={r * 1.4} fill="none" stroke="white"
+        <circle cx={cx} cy={cy - r * 0.25} r={r * 1.45} fill="none" stroke="white"
           strokeWidth={2} opacity={0.9} style={{ filter: "drop-shadow(0 0 5px white)" }} />
       )}
       {/* Shadow */}
-      <ellipse cx={cx} cy={cy + r * 1.1} rx={r * 0.85} ry={r * 0.32} fill="rgba(0,0,0,0.3)" />
-      {/* Base */}
-      <ellipse cx={cx} cy={cy + r * 0.6} rx={r * 0.85} ry={r * 0.42} fill={darkColor} />
-      {/* Stem */}
-      <rect x={cx - r * 0.28} y={cy - r * 0.1} width={r * 0.56} height={r * 0.72} rx={r * 0.18} fill={color} />
-      {/* Head */}
-      <circle cx={cx} cy={cy - r * 0.35} r={r * 0.65} fill={color} />
-      {/* Gloss */}
-      <ellipse cx={cx - r * 0.2} cy={cy - r * 0.6} rx={r * 0.25} ry={r * 0.18} fill="rgba(255,255,255,0.45)" />
-      {/* Label */}
-      <text x={cx} y={cy - r * 0.35 + 1} textAnchor="middle" dominantBaseline="middle"
-        fill="white" fontSize={r * 0.7} fontWeight="bold" style={{ pointerEvents: "none" }}>
+      <ellipse cx={cx} cy={cy + r * 1.05} rx={r * 0.9} ry={r * 0.3} fill="rgba(0,0,0,0.28)" />
+      {/* Capsule body: rounded pill standing upright, two-tone like a medicine capsule */}
+      <g transform={`translate(${cx}, ${cy - r * 0.25})`}>
+        <clipPath id={`capsule-clip-${cx}-${cy}`}>
+          <rect x={-r * 0.62} y={-r * 1.02} width={r * 1.24} height={r * 2.04} rx={r * 0.62} />
+        </clipPath>
+        <rect x={-r * 0.62} y={-r * 1.02} width={r * 1.24} height={r * 2.04} rx={r * 0.62}
+          fill="white" stroke={darkColor} strokeWidth={r * 0.1} />
+        <g clipPath={`url(#capsule-clip-${cx}-${cy})`}>
+          <rect x={-r * 0.62} y={-r * 1.02} width={r * 1.24} height={r * 1.02} fill={color} />
+          <rect x={-r * 0.62} y={0} width={r * 1.24} height={r * 1.02} fill="white" />
+          <rect x={-r * 0.62} y={-r * 0.08} width={r * 1.24} height={r * 0.16} fill={darkColor} opacity={0.5} />
+        </g>
+        {/* Gloss */}
+        <ellipse cx={-r * 0.22} cy={-r * 0.55} rx={r * 0.2} ry={r * 0.4} fill="rgba(255,255,255,0.55)" />
+      </g>
+      {/* Label badge */}
+      <circle cx={cx} cy={cy - r * 0.25} r={r * 0.34} fill={darkColor} opacity={0.92} />
+      <text x={cx} y={cy - r * 0.25 + 1} textAnchor="middle" dominantBaseline="middle"
+        fill="white" fontSize={r * 0.62} fontWeight="bold" style={{ pointerEvents: "none" }}>
         {label}
       </text>
     </g>
@@ -164,13 +174,19 @@ function LudoBoard({ state, myColorIdx, onTokenClick, validTokens }: {
   return (
     <div style={{
       padding: 6,
-      background: "linear-gradient(135deg, #1565C0 0%, #0D47A1 100%)",
+      background: "linear-gradient(135deg, #0f766e 0%, #134e4a 100%)",
       borderRadius: 20,
-      boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+      boxShadow: "0 12px 40px rgba(0,0,0,0.45)",
     }}>
       <svg width={BOARD} height={BOARD}
         style={{ display: "block", borderRadius: 14, overflow: "hidden" }}>
-        {/* Board white background */}
+        <defs>
+          <pattern id="clinical-grid" width={CELL} height={CELL} patternUnits="userSpaceOnUse">
+            <rect width={CELL} height={CELL} fill="#f8fafc" />
+            <path d={`M ${CELL} 0 L 0 0 0 ${CELL}`} fill="none" stroke="#e2e8f0" strokeWidth={0.8} />
+          </pattern>
+        </defs>
+        {/* Board background: soft clinical graph-paper texture */}
         <rect width={BOARD} height={BOARD} fill="white" />
 
         {/* Grid lines for path cells */}
@@ -183,7 +199,7 @@ function LudoBoard({ state, myColorIdx, onTokenClick, validTokens }: {
             return (
               <rect key={`cell-${r}-${c}`}
                 x={c * CELL} y={r * CELL} width={CELL} height={CELL}
-                fill="white" stroke="#d1d5db" strokeWidth={0.8}
+                fill="url(#clinical-grid)" stroke="#cbd5e1" strokeWidth={0.8}
               />
             );
           })
@@ -236,13 +252,17 @@ function LudoBoard({ state, myColorIdx, onTokenClick, validTokens }: {
           ))
         )}
 
-        {/* Safe square stars */}
+        {/* Safe square markers: medical cross */}
         {[...SAFE_CELLS].map(key => {
           const [r, c] = key.split(",").map(Number);
           const [sx, sy] = cellCenter(r, c);
+          const armW = CELL * 0.32;
+          const armT = CELL * 0.11;
           return (
-            <text key={`safe-${key}`} x={sx} y={sy} textAnchor="middle"
-              dominantBaseline="middle" fontSize={16} opacity={0.6}>⭐</text>
+            <g key={`safe-${key}`} opacity={0.55}>
+              <rect x={sx - armT / 2} y={sy - armW / 2} width={armT} height={armW} rx={1.5} fill="#dc2626" />
+              <rect x={sx - armW / 2} y={sy - armT / 2} width={armW} height={armT} rx={1.5} fill="#dc2626" />
+            </g>
           );
         })}
 
@@ -262,10 +282,15 @@ function LudoBoard({ state, myColorIdx, onTokenClick, validTokens }: {
         {CENTER_TRIANGLES.map(({ color, points }, i) => (
           <polygon key={`ct-${i}`} points={points} fill={COLOR_HEX[color]} />
         ))}
-        {/* Center circle */}
+        {/* Center emblem: medical cross roundel */}
         <circle cx={7.5 * CELL} cy={7.5 * CELL} r={CELL * 0.8} fill="white" />
         <circle cx={7.5 * CELL} cy={7.5 * CELL} r={CELL * 0.65} fill="none"
           stroke="rgba(0,0,0,0.1)" strokeWidth={2} />
+        <circle cx={7.5 * CELL} cy={7.5 * CELL} r={CELL * 0.5} fill="#dc2626" />
+        <rect x={7.5 * CELL - CELL * 0.11} y={7.5 * CELL - CELL * 0.32}
+          width={CELL * 0.22} height={CELL * 0.64} rx={2} fill="white" />
+        <rect x={7.5 * CELL - CELL * 0.32} y={7.5 * CELL - CELL * 0.11}
+          width={CELL * 0.64} height={CELL * 0.22} rx={2} fill="white" />
 
         {/* Tokens */}
         {state.players.map(player => {
@@ -309,15 +334,22 @@ function LudoPlayerCard({ name, colorIdx, idx, isCurrent, tokensDone }: {
         backgroundColor: COLOR_LIGHT[colorIdx],
         borderColor: COLOR_HEX[colorIdx],
       }}>
-      {/* Mini pawn icon */}
+      {/* Mini capsule icon */}
       <svg width={26} height={34} viewBox="0 0 26 34">
-        <ellipse cx={13} cy={32} rx={9} ry={3.5} fill="rgba(0,0,0,0.2)" />
-        <ellipse cx={13} cy={28} rx={9} ry={4.5} fill={COLOR_DARK[colorIdx]} />
-        <rect x={9} y={18} width={8} height={10} rx={2.5} fill={COLOR_HEX[colorIdx]} />
-        <circle cx={13} cy={13} r={9} fill={COLOR_HEX[colorIdx]} />
-        <ellipse cx={10} cy={9} rx={3} ry={2} fill="rgba(255,255,255,0.4)" />
-        {isCurrent && <circle cx={13} cy={13} r={11} fill="none" stroke="white" strokeWidth={2} />}
-        <text x={13} y={14} textAnchor="middle" dominantBaseline="middle"
+        <ellipse cx={13} cy={32} rx={9} ry={3} fill="rgba(0,0,0,0.2)" />
+        <clipPath id={`mini-capsule-${colorIdx}`}>
+          <rect x={5.5} y={4} width={15} height={24} rx={7.5} />
+        </clipPath>
+        <rect x={5.5} y={4} width={15} height={24} rx={7.5} fill="white" stroke={COLOR_DARK[colorIdx]} strokeWidth={1.6} />
+        <g clipPath={`url(#mini-capsule-${colorIdx})`}>
+          <rect x={5.5} y={4} width={15} height={12} fill={COLOR_HEX[colorIdx]} />
+          <rect x={5.5} y={16} width={15} height={12} fill="white" />
+          <rect x={5.5} y={15} width={15} height={2} fill={COLOR_DARK[colorIdx]} opacity={0.5} />
+        </g>
+        <ellipse cx={9.5} cy={9} rx={2} ry={3} fill="rgba(255,255,255,0.55)" />
+        {isCurrent && <rect x={4} y={2.5} width={18} height={27} rx={9} fill="none" stroke="white" strokeWidth={2} />}
+        <circle cx={13} cy={26} r={6} fill={COLOR_DARK[colorIdx]} />
+        <text x={13} y={27} textAnchor="middle" dominantBaseline="middle"
           fill="white" fontSize={8} fontWeight="bold">{idx + 1}</text>
       </svg>
       <div className="flex-1 min-w-0">
