@@ -84,6 +84,21 @@ const BOOK_SCANNED_MAX_PAGES = 150;
 const BOOK_SCANNED_BATCH_PAGES = 6;
 const BOOK_SCANNED_BATCH_CONCURRENCY = 3;
 
+// Some scanned/image-only PDFs still have a sliver of embedded text (page
+// numbers, running headers, a stray caption) that slips past the `!cleaned`
+// check below, so extractPdfBuffer "succeeds" with near-zero real content
+// (e.g. Osteology.pdf: 178 chars over 39 pages, Radiology.pdf: 795 chars
+// over 21 pages — both silently skipped OCR and produced useless grounding
+// text). Treat anything averaging under this many chars/page as effectively
+// scanned and route it through OCR too.
+const MIN_AVG_CHARS_PER_PAGE = 40;
+
+function isEffectivelyScanned(cleaned: string, pages: number | null | undefined): boolean {
+  if (!cleaned) return true;
+  if (!pages) return false;
+  return cleaned.length / pages < MIN_AVG_CHARS_PER_PAGE;
+}
+
 async function mapWithConcurrency<T, R>(
   items: T[],
   concurrency: number,
@@ -329,7 +344,7 @@ router.post("/:subject/documents/process-uploaded", adminMiddleware, async (req:
     const { text, pages, warning } = await extractPdfBuffer(buffer, BOOK_MAX_TEXT_CHARS);
     let cleaned = stripHtml(text).trim();
     let ocrWarning: string | undefined;
-    if (!cleaned && pages) {
+    if (isEffectivelyScanned(cleaned, pages) && pages) {
       // Scanned/image-only PDF — extractPdfBuffer already detected this and
       // gave up. Fall back to reading the pages via vision OCR instead of
       // rejecting the upload outright (this is why "large book" uploads kept
@@ -426,7 +441,7 @@ router.post("/:subject/documents", adminMiddleware, (req: Request, res: Response
       try {
         const { text, pages, warning } = await extractPdfBuffer(file.buffer, BOOK_MAX_TEXT_CHARS);
         let cleaned = stripHtml(text).trim();
-        if (!cleaned && pages) {
+        if (isEffectivelyScanned(cleaned, pages) && pages) {
           const ocrResult = await ocrScannedBook(file.buffer, pages, subject, file.originalname);
           cleaned = stripHtml(ocrResult.text).trim();
         }
