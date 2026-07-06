@@ -26,7 +26,7 @@ export const PHYSIOLOGY_CLINICAL_IMAGES: PhysiologyClinicalImage[] = [
   },
   {
     topic: "Arterial pulse sites",
-    src: "/images/physiology-clinical/pulse-sites.jpg",
+    src: "/images/physiology-clinical/pulse-sites.png",
     caption: "Common arterial pulse palpation sites on the body — name and locate each.",
     displayCaption: "Name and locate what is shown on the body.",
   },
@@ -38,7 +38,7 @@ export const PHYSIOLOGY_CLINICAL_IMAGES: PhysiologyClinicalImage[] = [
   },
   {
     topic: "Cardiac auscultation areas",
-    src: "/images/physiology-clinical/auscultation-points.jpg",
+    src: "/images/physiology-clinical/auscultation-points.png",
     caption: "Standard cardiac auscultation points on the chest — name each area and the valve it corresponds to.",
     displayCaption: "Name what is shown and the valve each point corresponds to.",
   },

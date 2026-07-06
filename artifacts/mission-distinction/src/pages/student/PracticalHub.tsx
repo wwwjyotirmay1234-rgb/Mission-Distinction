@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVoiceRecorder, useAudioPlayback } from "@workspace/integrations-openai-ai-react";
 import { PHYSIOLOGY_CLINICAL_IMAGES, type PhysiologyClinicalImage } from "@/data/physiologyClinicalImages";
 import { PHYSIOLOGY_HEMATOLOGY_IMAGES } from "@/data/physiologyHematologyImages";
+import { BIOCHEMISTRY_SERUM_URINE_IMAGES } from "@/data/biochemistryImages";
 import VivaRooms from "@/pages/student/VivaRooms";
 
 const ALL_SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"] as const;
@@ -312,10 +313,11 @@ export default function PracticalHub() {
     }
   }, [playback]);
 
-  const pickImageForVivaType = useCallback((type: PhysiologyVivaType | null, requestedTopic: string): PhysiologyClinicalImage | null => {
+  const pickImageForVivaType = useCallback((type: VivaType | null, requestedTopic: string): PhysiologyClinicalImage | null => {
     const pool =
       type === "Human Experiments & Clinical Physiology" ? PHYSIOLOGY_CLINICAL_IMAGES :
       type === "Hematology Experiment" ? PHYSIOLOGY_HEMATOLOGY_IMAGES :
+      type === "Serum and Urine Estimation" ? BIOCHEMISTRY_SERUM_URINE_IMAGES :
       null;
     if (!pool || pool.length === 0) return null;
 
@@ -365,7 +367,7 @@ export default function PracticalHub() {
         : isAnatomy
           ? selectedAnatomyVivaType
           : null;
-    const chosenImage = isPhysiology ? pickImageForVivaType(chosenVivaType as PhysiologyVivaType | null, topic) : null;
+    const chosenImage = isPhysiology || isBiochemistry ? pickImageForVivaType(chosenVivaType, topic) : null;
     setVivaType(chosenVivaType);
     setClinicalImage(chosenImage);
     setAnatomyStationImage(null);

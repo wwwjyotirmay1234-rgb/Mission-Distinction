@@ -8,7 +8,7 @@ export interface PhysiologyClinicalImage {
 export const PHYSIOLOGY_HEMATOLOGY_IMAGES: PhysiologyClinicalImage[] = [
   {
     topic: "Neubauer counting chamber (hemocytometer)",
-    src: "/images/physiology-hematology/hemocytometer.webp",
+    src: "/images/physiology-hematology/hemocytometer.png",
     caption: "Improved Neubauer counting chamber grid — identify which squares are used for RBC vs WBC counting and explain the counting procedure.",
     displayCaption: "Identify the apparatus shown, name which squares are used for RBC vs WBC counting, and explain the counting procedure.",
   },
