@@ -164,8 +164,11 @@ REJECT (category "none") the page if ANY of these apply, even if it otherwise lo
 - It is plain body text, a table of contents, an index, or a cover page.
 - It is a line-drawing textbook diagram with lots of labels/text overlaid.
 - It has ANY structure names, hand-written labels, arrows pointing to structures, captions, or annotations identifying what the structures are. This includes annotated "notes"/"notespaedia"-style study pages where labels have been added on top of an illustration or photo — if the name of the structure is visible anywhere on the page, a student could read the answer directly, so it is NOT usable for a spotter station regardless of image quality.
+- The actual specimen/photo/slide image occupies only a small fraction (roughly under half) of the page, with the rest being blank white space, margin, or background — even if that small image portion looks otherwise valid. The specimen must fill most of the page so it displays clearly at full size.
+- The page is mostly or entirely blank/plain-colored (white, or a solid/decorative border or frame) with no real photographic or microscopic content — e.g. a placeholder, divider, or design border page with little or no actual specimen visible.
+- A caption directly beneath or beside the image states what the structure is (e.g. "Fig 2.15: Microscopic structure of compact bone") — this reveals the answer just as much as an on-image label would, so it must be rejected too.
 
-Only accept a page if it shows the specimen/structure with NO identifying text or labels at all (or, at most, a neutral scale/orientation marker with no structure names).
+Only accept a page if it shows the specimen/structure filling most of the frame, with NO identifying text, labels, or captions anywhere on the page (or, at most, a neutral scale/orientation marker with no structure names).
 
 If it qualifies, classify it into exactly ONE of these categories:
 - "Histology": a microscope slide / histology section image.
