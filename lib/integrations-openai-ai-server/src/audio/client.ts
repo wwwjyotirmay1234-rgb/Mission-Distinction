@@ -109,6 +109,65 @@ export async function ensureCompatibleFormat(
 }
 
 /**
+ * Combined format-normalization + silence-detection in a SINGLE ffmpeg pass.
+ *
+ * `ensureCompatibleFormat` + `isSilentAudio` used to be two separate ffmpeg spawns run
+ * back-to-back (each with its own temp-file write/read) whenever the recorded clip wasn't
+ * already wav/mp3 — that doubled process-spawn + disk I/O latency on every voice turn for no
+ * benefit, since ffmpeg's `volumedetect` filter is a passthrough that can report loudness
+ * stats on stderr *while* it writes the normalized audio to disk in the same invocation.
+ * This always re-encodes to a canonical 16kHz mono PCM WAV (even if the input was already
+ * wav/mp3) so every turn does exactly one ffmpeg call instead of zero-or-two, and the
+ * smaller/normalized file also uploads faster to the transcription API.
+ */
+export async function convertAndCheckSilence(
+  audioBuffer: Buffer
+): Promise<{ buffer: Buffer; format: "wav"; isSilent: boolean }> {
+  const SILENCE_MAX_VOLUME_DB = -40;
+  const inputPath = join(tmpdir(), `input-${randomUUID()}`);
+  const outputPath = join(tmpdir(), `output-${randomUUID()}.wav`);
+
+  try {
+    await writeFile(inputPath, audioBuffer);
+
+    const stderrOutput = await new Promise<string>((resolve, reject) => {
+      let out = "";
+      const ffmpeg = spawn("ffmpeg", [
+        "-i", inputPath,
+        "-vn",
+        "-af", "volumedetect",
+        "-f", "wav",
+        "-ar", "16000",
+        "-ac", "1",
+        "-acodec", "pcm_s16le",
+        "-y",
+        outputPath,
+      ]);
+
+      ffmpeg.stderr.on("data", (d) => {
+        out += d.toString();
+      });
+      ffmpeg.on("close", (code) => {
+        if (code === 0) resolve(out);
+        else reject(new Error(`ffmpeg exited with code ${code}`));
+      });
+      ffmpeg.on("error", reject);
+    });
+
+    const buffer = await readFile(outputPath);
+
+    // See isSilentAudio() below for why PEAK volume (max_volume), not mean, is used.
+    const match = stderrOutput.match(/max_volume:\s*(-?\d+(?:\.\d+)?)\s*dB/);
+    const isSilent = match ? parseFloat(match[1]) < SILENCE_MAX_VOLUME_DB : false;
+
+    return { buffer, format: "wav", isSilent };
+  } finally {
+    await unlink(inputPath).catch(() => {});
+    await unlink(outputPath).catch(() => {});
+  }
+}
+
+/**
  * Detect whether an audio clip is effectively silent (no real speech captured).
  *
  * Speech-to-text models (including gpt-4o-mini-transcribe) are known to "hallucinate" a

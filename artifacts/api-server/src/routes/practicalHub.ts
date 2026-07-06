@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middlewares/auth";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { ensureCompatibleFormat, isSilentAudio, isHallucinatedTranscript, isUnexpectedScript, speechToText } from "@workspace/integrations-openai-ai-server/audio";
+import { convertAndCheckSilence, isHallucinatedTranscript, isUnexpectedScript, speechToText } from "@workspace/integrations-openai-ai-server/audio";
 import { ai as gemini } from "@workspace/integrations-gemini-ai";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { db } from "@workspace/db";
@@ -790,13 +790,15 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
       return;
     }
 
-    const { buffer, format } = await ensureCompatibleFormat(rawBuffer);
+    // Format normalization and silence detection are combined into a single ffmpeg pass
+    // (see convertAndCheckSilence) instead of two sequential ffmpeg spawns — this halves
+    // process-spawn + temp-file I/O latency on every voice turn. Speech-to-text models can
+    // hallucinate a plausible-sounding transcript from silent or near-silent audio instead of
+    // returning empty text, so we still screen for silence up front so a student who never
+    // actually answered can't get a fabricated transcript scored as a real response.
+    const { buffer, format, isSilent } = await convertAndCheckSilence(rawBuffer);
 
-    // Speech-to-text models can hallucinate a plausible-sounding transcript from silent or
-    // near-silent audio instead of returning empty text. Screen for silence up front so a
-    // student who never actually answered can't get a fabricated transcript scored as a
-    // real response.
-    if (await isSilentAudio(buffer, format)) {
+    if (isSilent) {
       sendEvent(res, { type: "error", error: "No speech detected. Please try again." });
       res.end();
       return;

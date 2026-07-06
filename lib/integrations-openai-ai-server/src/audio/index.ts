@@ -3,6 +3,7 @@ export {
   detectAudioFormat,
   convertToWav,
   ensureCompatibleFormat,
+  convertAndCheckSilence,
   isSilentAudio,
   isHallucinatedTranscript,
   isUnexpectedScript,
