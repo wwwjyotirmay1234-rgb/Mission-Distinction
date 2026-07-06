@@ -52,3 +52,4 @@
 - [Autoscale health-check cold-start false failure](health-check-cold-start.md) — promote can fail on a slow cold start even with no bug; verify old version still live + repro prod build locally before assuming a regression
 - [Bone viva image classifier scope](bone-viva-image-classifier-scope.md) — accept labeled illustrations/X-rays as viva spotter candidates, not just raw photos; erase labels separately, spot-check erasure quality
 - [Gemini rate-limit-safe batch cleanup](gemini-rate-limit-safe-batch-cleanup.md) — resumable AI-cleanup jobs must not write a "done" marker on a caught rate-limit exception, or retried rows get permanently hidden from future runs
+- [PNG C2PA chunk crashes @napi-rs/canvas](png-c2pa-chunk-canvas-crash.md) — strip non-standard ancillary chunks (e.g. caBX) before loadImage() or it throws "Unsupported image type" on valid PNGs
