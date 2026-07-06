@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
+import { useAuth } from "@/contexts/AuthContext";
 import { useVoiceRecorder, useAudioPlayback } from "@workspace/integrations-openai-ai-react";
 import { PHYSIOLOGY_CLINICAL_IMAGES, type PhysiologyClinicalImage } from "@/data/physiologyClinicalImages";
 import { PHYSIOLOGY_HEMATOLOGY_IMAGES } from "@/data/physiologyHematologyImages";
@@ -16,6 +17,8 @@ import VivaRooms from "@/pages/student/VivaRooms";
 
 const ALL_SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"] as const;
 type Subject = (typeof ALL_SUBJECTS)[number];
+
+const VIVA_UNLOCKED_EMAIL = "www.jyotirmay1234@gmail.com";
 
 const EXAMINER_BY_SUBJECT: Record<Subject, string> = {
   Anatomy: "Dr. Aswini",
@@ -128,6 +131,8 @@ interface VivaSummary {
 }
 
 export default function PracticalHub() {
+  const { user } = useAuth();
+  const vivaLocked = user?.email !== VIVA_UNLOCKED_EMAIL;
   const [topic, setTopic] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<Subject>(ALL_SUBJECTS[0]);
   const [subject, setSubject] = useState<Subject>(ALL_SUBJECTS[0]);
@@ -425,7 +430,7 @@ export default function PracticalHub() {
         title: "AI Viva Simulator",
         description: "Spoken viva voce with an AI examiner across Anatomy, Physiology & Biochemistry.",
         badge: "Voice",
-        locked: true,
+        locked: vivaLocked,
         onClick: () => { setVivaType(null); setClinicalImage(null); setState("setup"); },
       },
       {
