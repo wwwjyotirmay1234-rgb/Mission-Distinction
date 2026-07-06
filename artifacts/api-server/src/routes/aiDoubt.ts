@@ -465,7 +465,6 @@ router.post("/ai-chat", authMiddleware, aiChatLimiter, async (req: Request, res:
   res.flushHeaders();
 
   const history = rawHistory
-    .slice(-10)
     .filter(h => (h.role === "user" || h.role === "assistant") && h.content?.trim());
 
   // Build the effective user question — inject document as context if provided
