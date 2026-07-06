@@ -163,16 +163,30 @@ export default function AdminAnnouncements() {
                             <div className="font-medium text-foreground">{a.title}</div>
                             <div className="text-xs text-muted-foreground mt-1 line-clamp-2 max-w-lg">{a.content}</div>
                             {(a as any).attachmentUrl && (
-                              <a href={(a as any).attachmentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary mt-1.5 hover:underline">
-                                {(a as any).attachmentType === "image" ? (
-                                  <ImageIcon className="w-3 h-3" />
-                                ) : (a as any).attachmentType === "video" ? (
-                                  <VideoIcon className="w-3 h-3" />
-                                ) : (
-                                  <Paperclip className="w-3 h-3" />
-                                )}{" "}
-                                {(a as any).attachmentName || "Attachment"}
-                              </a>
+                              (a as any).attachmentType === "image" ? (
+                                <a href={(a as any).attachmentUrl} target="_blank" rel="noopener noreferrer" className="block mt-2">
+                                  <img
+                                    src={(a as any).attachmentUrl}
+                                    alt={(a as any).attachmentName || "Attachment"}
+                                    className="max-h-32 w-auto rounded-lg border border-border/40"
+                                  />
+                                </a>
+                              ) : (a as any).attachmentType === "video" ? (
+                                <video
+                                  src={(a as any).attachmentUrl}
+                                  controls
+                                  playsInline
+                                  preload="metadata"
+                                  className="max-h-32 w-auto rounded-lg border border-border/40 mt-2 bg-black"
+                                >
+                                  Your browser does not support video playback.
+                                </video>
+                              ) : (
+                                <a href={(a as any).attachmentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary mt-1.5 hover:underline">
+                                  <Paperclip className="w-3 h-3" />{" "}
+                                  {(a as any).attachmentName || "Attachment"}
+                                </a>
+                              )
                             )}
                           </div>
                         </div>

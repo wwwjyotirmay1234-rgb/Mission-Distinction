@@ -197,27 +197,46 @@ export default function AdminNews() {
                           <span className="text-xs text-muted-foreground/60">{timeAgo(item.createdAt)}</span>
                         </div>
                         {(item as any).attachmentUrl && (
-                          <a
-                            href={(item as any).attachmentUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-primary mt-2 hover:underline"
-                          >
-                            {(item as any).attachmentType === "image" ? (
-                              <ImageIcon className="w-3 h-3" />
-                            ) : (item as any).attachmentType === "video" ? (
-                              <VideoIcon className="w-3 h-3" />
-                            ) : (
-                              <Paperclip className="w-3 h-3" />
-                            )}{" "}
-                            {(item as any).attachmentName || "Attachment"}
-                          </a>
+                          (item as any).attachmentType === "image" ? (
+                            <a
+                              href={(item as any).attachmentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block mt-2.5"
+                            >
+                              <img
+                                src={(item as any).attachmentUrl}
+                                alt={(item as any).attachmentName || "Attachment"}
+                                className="max-h-48 w-auto rounded-lg border border-border/40"
+                              />
+                            </a>
+                          ) : (item as any).attachmentType === "video" ? (
+                            <video
+                              src={(item as any).attachmentUrl}
+                              controls
+                              playsInline
+                              preload="metadata"
+                              className="max-h-48 w-auto rounded-lg border border-border/40 mt-2.5 bg-black"
+                            >
+                              Your browser does not support video playback.
+                            </video>
+                          ) : (
+                            <a
+                              href={(item as any).attachmentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary mt-2 hover:underline"
+                            >
+                              <Paperclip className="w-3 h-3" />{" "}
+                              {(item as any).attachmentName || "Attachment"}
+                            </a>
+                          )
                         )}
                       </div>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <Button variant="ghost" className="h-8 w-8 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
