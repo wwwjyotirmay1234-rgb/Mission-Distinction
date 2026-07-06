@@ -126,7 +126,7 @@ interface VivaSummary {
   improvements: string[];
   verdict: string;
   examinerName?: string;
-  panel?: { openai: PanelOpinion | null; gemini: PanelOpinion | null; claude: PanelOpinion | null };
+  panel?: { gemini: PanelOpinion | null; claude: PanelOpinion | null };
   questionBreakdown?: QuestionBreakdownItem[];
 }
 
@@ -812,17 +812,11 @@ function SectionSummaryView({ summary }: { summary: VivaSummary }) {
         </div>
       </div>
 
-      {summary.panel && (summary.panel.openai || summary.panel.gemini || summary.panel.claude) && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {summary.panel.openai && (
-            <div className="rounded-lg border border-border/40 bg-background/40 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Examiner (GPT)</p>
-              <p className="text-lg font-bold text-primary">{summary.panel.openai.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
-            </div>
-          )}
+      {summary.panel && (summary.panel.gemini || summary.panel.claude) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {summary.panel.gemini && (
             <div className="rounded-lg border border-border/40 bg-background/40 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Cross-check (Gemini)</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Examiner (Gemini)</p>
               <p className="text-lg font-bold text-primary">{summary.panel.gemini.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
             </div>
           )}

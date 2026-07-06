@@ -381,35 +381,10 @@ interface ScoreOpinion {
   verdict: string;
 }
 
-async function openaiScoreOpinion(subject: VivaSubject, transcript: string): Promise<ScoreOpinion> {
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    temperature: 0.5,
-    messages: [
-      {
-        role: "system",
-        content: `You are an expert Indian medical educator scoring an MBBS viva voce transcript for Subject: ${subject}.\n\n${CBME_CONTEXT}\n\nReturn ONLY valid JSON: { "score": number (0-100), "strengths": string[] (2-4 short items), "improvements": string[] (2-4 short items), "verdict": string (one short encouraging sentence) }.`,
-      },
-      { role: "user", content: transcript },
-    ],
-    response_format: { type: "json_object" },
-  });
-
-  const raw = completion.choices[0]?.message?.content || "{}";
-  let parsed: any = {};
-  try { parsed = JSON.parse(raw); } catch { parsed = {}; }
-
-  return {
-    score: typeof parsed.score === "number" ? parsed.score : 0,
-    strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
-    improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
-    verdict: typeof parsed.verdict === "string" ? parsed.verdict : "",
-  };
-}
-
-// Gemini panel member: an independent second scoring opinion, cross-checking the primary examiner's score.
-// Soft-fails (returns null) on any error so scoring is never blocked by the second AI.
-async function geminiScoreOpinion(subject: VivaSubject, transcript: string): Promise<ScoreOpinion | null> {
+// Gemini is the primary teacher/examiner for scoring: it grades the transcript first and its
+// verdict is authoritative. GPT was removed from scoring after it was found to award inflated
+// marks on questions the student never actually answered.
+async function geminiScoreOpinion(subject: VivaSubject, transcript: string): Promise<ScoreOpinion> {
   try {
     const response = await gemini.models.generateContent({
       model: "gemini-2.5-flash",
@@ -418,7 +393,7 @@ async function geminiScoreOpinion(subject: VivaSubject, transcript: string): Pro
           role: "user",
           parts: [
             {
-              text: `You are an independent second examiner on an MBBS ${subject} viva panel, cross-checking the lead examiner's scoring. Score the student's performance yourself, independently, based on the transcript.\n\n${CBME_CONTEXT}\n\nReturn ONLY valid JSON (no markdown fences): { "score": number (0-100), "strengths": string[] (2-4 short items), "improvements": string[] (2-4 short items), "verdict": string (one short sentence) }.\n\nTranscript:\n${transcript}`,
+              text: `You are an expert Indian medical educator (the lead/primary examiner) scoring an MBBS viva voce transcript for Subject: ${subject}. Be strict and accurate: if the student did not actually answer a question (stayed silent, said "I don't know", or gave no substantive content), that question must score 0 and must NOT be treated as a correct or partially correct answer.\n\n${CBME_CONTEXT}\n\nReturn ONLY valid JSON (no markdown fences): { "score": number (0-100), "strengths": string[] (2-4 short items), "improvements": string[] (2-4 short items), "verdict": string (one short encouraging sentence) }.\n\nTranscript:\n${transcript}`,
             },
           ],
         },
@@ -428,16 +403,15 @@ async function geminiScoreOpinion(subject: VivaSubject, transcript: string): Pro
     const raw = (response.text ?? "{}").trim();
     let parsed: any = {};
     try { parsed = JSON.parse(raw); } catch { parsed = {}; }
-    if (typeof parsed.score !== "number") return null;
     return {
-      score: parsed.score,
+      score: typeof parsed.score === "number" ? parsed.score : 0,
       strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
       improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
       verdict: typeof parsed.verdict === "string" ? parsed.verdict : "",
     };
   } catch (err) {
     console.error("Practical Hub: Gemini score opinion failed", err);
-    return null;
+    return { score: 0, strengths: [], improvements: [], verdict: "" };
   }
 }
 
@@ -451,7 +425,7 @@ async function claudeScoreOpinion(subject: VivaSubject, transcript: string): Pro
       messages: [
         {
           role: "user",
-          content: `You are an independent third examiner on an MBBS ${subject} viva panel, cross-checking the lead examiner's scoring. Score the student's performance yourself, independently, based on the transcript.\n\n${CBME_CONTEXT}\n\nReturn ONLY valid JSON (no markdown fences): { "score": number (0-100), "strengths": string[] (2-4 short items), "improvements": string[] (2-4 short items), "verdict": string (one short sentence) }.\n\nTranscript:\n${transcript}`,
+          content: `You are an independent second examiner on an MBBS ${subject} viva panel, cross-checking the lead (Gemini) examiner's scoring. Score the student's performance yourself, independently, based on the transcript. Be strict and accurate: if the student did not actually answer a question, that question must score 0 — never treat silence or "I don't know" as a correct or partial answer.\n\n${CBME_CONTEXT}\n\nReturn ONLY valid JSON (no markdown fences): { "score": number (0-100), "strengths": string[] (2-4 short items), "improvements": string[] (2-4 short items), "verdict": string (one short sentence) }.\n\nTranscript:\n${transcript}`,
         },
       ],
     });
@@ -482,22 +456,26 @@ interface QuestionBreakdownItem {
 
 // Produces a per-question breakdown of the whole viva: what was asked, what the student said,
 // marks out of 10 for that answer, and the more correct/ideal answer for review.
+// Uses Gemini (the primary teacher/examiner) rather than GPT, which was found to award marks
+// on questions the student never actually answered.
 async function generateQuestionBreakdown(subject: VivaSubject, transcript: string): Promise<QuestionBreakdownItem[]> {
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.3,
-      messages: [
+    const response = await gemini.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
         {
-          role: "system",
-          content: `You are an expert Indian MBBS ${subject} examiner reviewing a viva voce transcript question-by-question.\n\n${CBME_CONTEXT}\n\nGo through the transcript and identify every distinct question the examiner asked, in order. For each one, extract the student's answer (if the student said something like "sorry sir" or "I don't know" or gave up, record their answer as exactly that, and give it 0 marks). Score each question out of 10 marks based on accuracy and completeness, and provide the more correct / complete ideal answer a topper would give, grounded in standard textbooks.\n\nReturn ONLY valid JSON: { "questions": [ { "question": string, "studentAnswer": string, "marks": number (0-10), "idealAnswer": string (concise, 1-3 sentences) } ] }. Include every question asked during the viva, in the order asked.`,
+          role: "user",
+          parts: [
+            {
+              text: `You are an expert Indian MBBS ${subject} examiner reviewing a viva voce transcript question-by-question.\n\n${CBME_CONTEXT}\n\nGo through the transcript and identify every distinct question the examiner asked, in order. For each one, extract the student's answer (if the student said something like "sorry sir" or "I don't know" or gave up, or never actually addressed the question, record their answer as exactly that, and give it 0 marks — never award marks for a question that was not substantively answered). Score each question out of 10 marks based on accuracy and completeness, and provide the more correct / complete ideal answer a topper would give, grounded in standard textbooks.\n\nReturn ONLY valid JSON (no markdown fences): { "questions": [ { "question": string, "studentAnswer": string, "marks": number (0-10), "idealAnswer": string (concise, 1-3 sentences) } ] }. Include every question asked during the viva, in the order asked.\n\nTranscript:\n${transcript}`,
+            },
+          ],
         },
-        { role: "user", content: transcript },
       ],
-      response_format: { type: "json_object" },
+      config: { responseMimeType: "application/json" },
     });
 
-    const raw = completion.choices[0]?.message?.content || "{}";
+    const raw = (response.text ?? "{}").trim();
     let parsed: any = {};
     try { parsed = JSON.parse(raw); } catch { parsed = {}; }
     const questions = Array.isArray(parsed.questions) ? parsed.questions : [];
@@ -762,20 +740,22 @@ router.post("/viva/end", authMiddleware, voiceLimiter, async (req: Request, res:
 
     const transcript = historyToTranscript(history);
 
-    const [openaiOpinion, geminiOpinion, claudeOpinion, questionBreakdown] = await Promise.all([
-      openaiScoreOpinion(subject, transcript),
+    // Gemini is the primary teacher/examiner for scoring; Claude is the sole cross-check.
+    // GPT has been removed from scoring entirely — it was found to award inflated marks on
+    // questions the student never actually answered.
+    const [geminiOpinion, claudeOpinion, questionBreakdown] = await Promise.all([
       geminiScoreOpinion(subject, transcript),
       claudeScoreOpinion(subject, transcript),
       generateQuestionBreakdown(subject, transcript),
     ]);
 
-    const allOpinions = [openaiOpinion, geminiOpinion, claudeOpinion].filter(
+    const allOpinions = [geminiOpinion, claudeOpinion].filter(
       (o): o is ScoreOpinion => !!o
     );
 
-    const finalScore = Math.round(
-      allOpinions.reduce((sum, o) => sum + o.score, 0) / allOpinions.length
-    );
+    const finalScore = allOpinions.length
+      ? Math.round(allOpinions.reduce((sum, o) => sum + o.score, 0) / allOpinions.length)
+      : 0;
 
     const mergedStrengths = Array.from(
       new Set(allOpinions.flatMap((o) => o.strengths))
@@ -790,10 +770,9 @@ router.post("/viva/end", authMiddleware, voiceLimiter, async (req: Request, res:
       score: finalScore,
       strengths: mergedStrengths,
       improvements: mergedImprovements,
-      verdict: openaiOpinion.verdict,
+      verdict: geminiOpinion.verdict,
       panel: {
-        openai: { provider: "openai", ...openaiOpinion },
-        gemini: geminiOpinion ? { provider: "gemini", ...geminiOpinion } : null,
+        gemini: { provider: "gemini", ...geminiOpinion },
         claude: claudeOpinion ? { provider: "claude", ...claudeOpinion } : null,
       },
       questionBreakdown,
