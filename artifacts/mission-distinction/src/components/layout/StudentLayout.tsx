@@ -26,6 +26,7 @@ import { OnboardingModal } from "@/components/OnboardingModal";
 import { Watermark } from "@/components/Watermark";
 import { CompleteProfileModal } from "@/components/CompleteProfileModal";
 import { MeddyAssistant } from "@/components/MeddyAssistant";
+import { AutoNotificationPrompt } from "@/components/AutoNotificationPrompt";
 import { useLocation } from "wouter";
 
 function EmailVerificationBanner() {
@@ -152,6 +153,7 @@ export function StudentLayout({ children }: { children: React.ReactNode }) {
         <MeddyOnDashboardOnly />
         <CompleteProfileModal />
         <OnboardingModal />
+        <AutoNotificationPrompt />
       </SidebarProvider>
     </MusicPlayerProvider>
   );
