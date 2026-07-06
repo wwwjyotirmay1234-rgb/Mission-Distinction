@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middlewares/auth";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { ensureCompatibleFormat, isSilentAudio, isHallucinatedTranscript, speechToText } from "@workspace/integrations-openai-ai-server/audio";
+import { ensureCompatibleFormat, isSilentAudio, isHallucinatedTranscript, isUnexpectedScript, speechToText } from "@workspace/integrations-openai-ai-server/audio";
 import { ai as gemini } from "@workspace/integrations-gemini-ai";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { db } from "@workspace/db";
@@ -739,8 +739,8 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
 
     const userTranscript = (await speechToText(buffer, format, "en")).trim();
 
-    if (!userTranscript || isHallucinatedTranscript(userTranscript)) {
-      sendEvent(res, { type: "error", error: "Could not hear your answer clearly. Please try again." });
+    if (!userTranscript || isHallucinatedTranscript(userTranscript) || isUnexpectedScript(userTranscript)) {
+      sendEvent(res, { type: "error", error: "Could not hear your answer clearly. Please try again in English." });
       res.end();
       return;
     }

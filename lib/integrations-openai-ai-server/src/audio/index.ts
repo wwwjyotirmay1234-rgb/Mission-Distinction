@@ -5,6 +5,7 @@ export {
   ensureCompatibleFormat,
   isSilentAudio,
   isHallucinatedTranscript,
+  isUnexpectedScript,
   type AudioFormat,
   voiceChat,
   voiceChatStream,

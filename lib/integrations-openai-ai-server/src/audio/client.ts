@@ -191,6 +191,24 @@ export function isHallucinatedTranscript(text: string): boolean {
   return false;
 }
 
+/**
+ * Speech-to-text language identification can misfire on faint/ambiguous audio even when a
+ * `language` hint is passed to the transcription call — that hint only "improves accuracy"
+ * per OpenAI's own docs, it does not hard-force the output script. The model can still
+ * fabricate a fluent-sounding transcript in a completely different language/script (e.g.
+ * Devanagari, Odia, Arabic) for audio that was actually spoken in English. Such a transcript
+ * is not silent and not repetitive, so neither `isSilentAudio` nor `isHallucinatedTranscript`
+ * catch it. This flags any transcript that is dominated by non-Latin-script characters so
+ * callers can treat it as a failed transcription (ask the student to try again) instead of
+ * scoring nonsense text as their exam answer.
+ */
+export function isUnexpectedScript(text: string): boolean {
+  const letters = text.match(/\p{L}/gu) ?? [];
+  if (letters.length < 3) return false;
+  const nonLatinLetters = letters.filter((ch) => !/[A-Za-z\u00C0-\u024F]/.test(ch));
+  return nonLatinLetters.length / letters.length >= 0.3;
+}
+
 /** Voice Chat: audio-in, audio-out using gpt-audio. */
 export async function voiceChat(
   audioBuffer: Buffer,
