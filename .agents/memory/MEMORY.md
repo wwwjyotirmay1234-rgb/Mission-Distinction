@@ -50,3 +50,4 @@
 - [PWA install prompt blocked in iframe](pwa-install-iframe-block.md) — beforeinstallprompt never fires inside an embedded/canvas iframe preview; check top-level tab before debugging "Install not showing"
 - [Samsung Internet blocks beforeinstallprompt](pwa-samsung-internet-install.md) — never fires the event even when installable; detect UA and show manual "menu ☰ → Add page to → Home screen" fallback like iOS
 - [Autoscale health-check cold-start false failure](health-check-cold-start.md) — promote can fail on a slow cold start even with no bug; verify old version still live + repro prod build locally before assuming a regression
+- [Bone viva image classifier scope](bone-viva-image-classifier-scope.md) — accept labeled illustrations/X-rays as viva spotter candidates, not just raw photos; erase labels separately, spot-check erasure quality
