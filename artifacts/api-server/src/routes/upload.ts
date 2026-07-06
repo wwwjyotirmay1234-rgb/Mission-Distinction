@@ -104,7 +104,11 @@ async function signPdfUploadURL(bucketId: string, fileName: string): Promise<str
     bucket_name: bucketId,
     object_name: `pdfs/${fileName}`,
     method: "PUT",
-    expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    // 15 minutes was too tight for large textbook PDFs (200MB+) on anything but a
+    // fast connection — the signed URL expired mid-upload and GCS rejected the PUT,
+    // which surfaced to admins as "can't upload files bigger than ~200MB". Matched
+    // to (and slightly above) the 30-minute window vivaSources.ts uses for book uploads.
+    expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
   };
   const resp = await fetch(`${REPLIT_SIDECAR}/object-storage/signed-object-url`, { // nosemgrep: react-insecure-request
     method: "POST",

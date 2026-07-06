@@ -27,7 +27,10 @@ async function signBookUploadURL(bucketId: string, objectName: string): Promise<
     bucket_name: bucketId,
     object_name: objectName,
     method: "PUT",
-    expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+    // Matched to upload.ts's signPdfUploadURL window — 15-30min was too tight for
+    // large textbook PDFs on slower connections, causing the signed URL to expire
+    // mid-upload once files got much past ~200MB.
+    expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
   };
   const resp = await fetch(`${REPLIT_SIDECAR}/object-storage/signed-object-url`, { // nosemgrep: react-insecure-request
     method: "POST",
