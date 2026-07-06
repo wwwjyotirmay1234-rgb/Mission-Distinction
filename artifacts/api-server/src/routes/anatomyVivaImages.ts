@@ -158,7 +158,14 @@ interface ClassifiedPage {
 async function classifyBatch(pdfDoc: any, fileName: string, start: number, end: number): Promise<ClassifiedPage[]> {
   const images = await renderPageRangeFromDoc(pdfDoc, start, end);
   const pageNumbers = Array.from({ length: images.length }, (_, i) => start + i);
-  const prompt = `These are pages ${start}-${end} (in order) of an MBBS Anatomy reference book/atlas titled "${fileName}". For EACH page image, decide if it is a genuine specimen/plate/photograph suitable for a practical viva spotter station — NOT a page of plain body text, a table of contents, an index, or a line-drawing textbook diagram with lots of labels/text overlaid.
+  const prompt = `These are pages ${start}-${end} (in order) of an MBBS Anatomy reference book/atlas titled "${fileName}". For EACH page image, decide if it is a genuine, UNLABELED specimen/plate/photograph suitable for a practical viva spotter station, where a student must identify the structure themselves.
+
+REJECT (category "none") the page if ANY of these apply, even if it otherwise looks like a real photograph or illustration:
+- It is plain body text, a table of contents, an index, or a cover page.
+- It is a line-drawing textbook diagram with lots of labels/text overlaid.
+- It has ANY structure names, hand-written labels, arrows pointing to structures, captions, or annotations identifying what the structures are. This includes annotated "notes"/"notespaedia"-style study pages where labels have been added on top of an illustration or photo — if the name of the structure is visible anywhere on the page, a student could read the answer directly, so it is NOT usable for a spotter station regardless of image quality.
+
+Only accept a page if it shows the specimen/structure with NO identifying text or labels at all (or, at most, a neutral scale/orientation marker with no structure names).
 
 If it qualifies, classify it into exactly ONE of these categories:
 - "Histology": a microscope slide / histology section image.
