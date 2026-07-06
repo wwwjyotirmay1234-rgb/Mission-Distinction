@@ -59,6 +59,7 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
   const navItems: NavItem[] = [
     { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy", comingSoon: !canSeeAnatomy },
     { icon: LayoutDashboard, label: "Dashboard", href: "/student/dashboard" },
+    { icon: Stethoscope, label: "Practical Hub", href: "/student/practical-hub" },
     { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
     { icon: BarChart2, label: "Quiz Analysis", href: "/student/quiz-analysis" },
     { icon: FileText, label: "Notes & Books", href: "/student/notes" },
@@ -75,7 +76,6 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
     { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
     { icon: Users, label: "Study Rooms", href: "/student/study-rooms" },
     { icon: Bot, label: "AI Tools", href: "/student/ai-tools" },
-    { icon: Stethoscope, label: "Practical Hub", href: "/student/practical-hub" },
     { icon: Gamepad2, label: "Medical Games", href: "/student/games" },
     { icon: Music, label: "Music", href: "/student/music" },
     { icon: Settings, label: "Settings", href: "/student/settings" },
