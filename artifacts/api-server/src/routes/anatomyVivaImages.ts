@@ -328,4 +328,45 @@ router.post("/admin/extract", adminMiddleware, async (req: Request, res: Respons
   }
 });
 
+// Admin: manual insert for a single pre-processed image (e.g. a page that has
+// been cropped down to just the raw unlabeled specimen photo, discarding a
+// labeled comparison diagram / title box / notes text on the same PDF page).
+// Used by one-off curation scripts that need per-image bounding-box control
+// beyond what the automatic /admin/extract classifier can safely infer.
+router.post("/admin/manual", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { category, title, side, region, notes, sourceFileName, sourcePage, imageBase64 } = req.body || {};
+    if (!isAnatomyImageCategory(category)) { res.status(400).json({ error: "Invalid category" }); return; }
+    if (typeof title !== "string" || !title.trim()) { res.status(400).json({ error: "title is required" }); return; }
+    if (typeof imageBase64 !== "string" || !imageBase64) { res.status(400).json({ error: "imageBase64 is required" }); return; }
+    const admin = (req as any).user;
+    const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+    if (!bucketId) { res.status(500).json({ error: "Storage not configured" }); return; }
+
+    const base64 = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
+    const imgBuffer = Buffer.from(base64, "base64");
+    const safeSource = typeof sourceFileName === "string" ? sourceFileName.replace(/[^a-zA-Z0-9._-]/g, "_") : "manual";
+    const imgObjectName = `${IMAGE_PREFIX}${Date.now()}_manual_${safeSource}.png`;
+    const bucket = gcsClient.bucket(bucketId);
+    await bucket.file(imgObjectName).save(imgBuffer, { metadata: { contentType: "image/png" } });
+
+    const [row] = await db.insert(anatomyVivaImagesTable).values({
+      category,
+      title: title.trim(),
+      side: typeof side === "string" && side ? side : null,
+      region: typeof region === "string" && region ? region : null,
+      notes: typeof notes === "string" && notes ? notes : null,
+      objectName: imgObjectName,
+      sourceFileName: typeof sourceFileName === "string" ? sourceFileName : "manual",
+      sourcePage: Number.isInteger(sourcePage) ? sourcePage : null,
+      createdBy: admin?.id ?? null,
+    }).returning();
+
+    res.json({ success: true, image: row });
+  } catch (err: any) {
+    console.error("Anatomy viva images: manual insert error", err);
+    res.status(500).json({ error: err?.message || "Failed to insert image" });
+  }
+});
+
 export { router as anatomyVivaImagesRouter, ANATOMY_IMAGE_CATEGORIES };
