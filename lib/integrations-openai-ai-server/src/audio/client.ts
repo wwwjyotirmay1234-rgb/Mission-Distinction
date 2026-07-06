@@ -318,7 +318,7 @@ export async function textToSpeechStream(
 }
 
 /**
- * Speech-to-Text using gpt-4o-mini-transcribe.
+ * Speech-to-Text using gpt-4o-transcribe.
  *
  * `language` should be an ISO-639-1 code (e.g. "en"). Without it, the model
  * auto-detects language from the audio and can misidentify short/noisy/faint
@@ -326,17 +326,29 @@ export async function textToSpeechStream(
  * wrong text in that language's script (e.g. Urdu) instead of the actual
  * English speech or returning empty text. Pinning the expected language
  * avoids this misdetection for apps where the spoken language is known.
+ *
+ * Uses the full gpt-4o-transcribe model rather than the mini variant — it is
+ * meaningfully more accurate on accented/non-native English speech, which
+ * matters for apps where most speakers are not native English speakers.
+ *
+ * `vocabularyHint` is an optional short string of domain-specific terms/names
+ * the model is likely to hear (e.g. subject terminology). The Whisper/GPT-4o
+ * transcription `prompt` param biases recognition toward these words/spellings
+ * without being sent as an instruction the model would try to "obey" — it only
+ * nudges transcription, it cannot make the model answer questions or refuse.
  */
 export async function speechToText(
   audioBuffer: Buffer,
   format: "wav" | "mp3" | "webm" = "wav",
-  language?: string
+  language?: string,
+  vocabularyHint?: string
 ): Promise<string> {
   const file = await toFile(audioBuffer, `audio.${format}`);
   const response = await openai.audio.transcriptions.create({
     file,
-    model: "gpt-4o-mini-transcribe",
+    model: "gpt-4o-transcribe",
     ...(language ? { language } : {}),
+    ...(vocabularyHint ? { prompt: vocabularyHint } : {}),
   });
   return response.text;
 }

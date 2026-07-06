@@ -46,6 +46,19 @@ const EXAMINER_NAMES: Record<VivaSubject, string> = {
   Biochemistry: "Dr. Madhu",
 };
 
+// Passed as the STT `prompt` param to bias transcription toward each subject's
+// jargon/spellings (e.g. "foramen" vs "for a men") — MBBS students speak with a
+// wide range of Indian English accents, and generic transcription models most
+// often mis-hear domain-specific medical terms, not everyday words.
+const STT_VOCABULARY_HINT: Record<VivaSubject, string> = {
+  Anatomy:
+    "Medical anatomy viva. Terms: foramen, tuberosity, epicondyle, articulation, cadaveric, prosection, osteology, histology, embryology, radiograph, humerus, scapula, sacrum, vertebra, fossa, sulcus, ligament, innervation.",
+  Physiology:
+    "Medical physiology viva. Terms: hemoglobin, hematocrit, sphygmomanometer, auscultation, reflex arc, action potential, cardiac cycle, spirometry, osmolarity, homeostasis, baroreceptor.",
+  Biochemistry:
+    "Medical biochemistry viva. Terms: proteinuria, albumin, urine dipstick, Bence Jones, ketone bodies, enzyme, metabolite, estimation, reagent, titration, benedict's test, biuret test.",
+};
+
 // Each named examiner has a fixed, gender-appropriate spoken voice for the audio viva.
 // Dr. Rajiv is male; Dr. Mamata and Dr. Madhu are female.
 const EXAMINER_VOICE: Record<VivaSubject, "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer"> = {
@@ -789,7 +802,7 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
       return;
     }
 
-    const userTranscript = (await speechToText(buffer, format, "en")).trim();
+    const userTranscript = (await speechToText(buffer, format, "en", STT_VOCABULARY_HINT[subject])).trim();
 
     if (!userTranscript || isHallucinatedTranscript(userTranscript) || isUnexpectedScript(userTranscript)) {
       sendEvent(res, { type: "error", error: "Could not hear your answer clearly. Please try again in English." });
