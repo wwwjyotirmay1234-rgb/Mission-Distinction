@@ -41,3 +41,4 @@
 - [Viva Simulator access gate](viva-simulator-access-gate.md) — tile is hard-gated to one email; mic-silence screening blocks full e2e; verify mark-sheet via direct /viva/end call with synthetic history instead
 - [STT language misdetection](stt-language-misdetection.md) — gpt-4o-mini-transcribe auto-detects language; faint/noisy real speech can be misidentified and transcribed in the wrong script (e.g. Urdu); always pass `language: "en"` when the spoken language is known
 - [Viva examiner voices are gender-locked](viva-examiner-voices.md) — EXAMINER_VOICE map in practicalHub.ts pins gpt-audio voice per named examiner (male/female); don't let it silently default to one voice for all subjects
+- [Examiner Hinglish/Odinglish speech](viva-examiner-hinglish.md) — persona allows Hindi/Odia filler words in Roman script for small-talk only; actual question/technical content must stay in English (STT is still pinned to "en" for the student side)
