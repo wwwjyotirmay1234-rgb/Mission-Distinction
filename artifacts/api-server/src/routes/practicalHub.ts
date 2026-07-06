@@ -45,6 +45,14 @@ const EXAMINER_NAMES: Record<VivaSubject, string> = {
   Biochemistry: "Dr. Madhu",
 };
 
+// Each named examiner has a fixed, gender-appropriate spoken voice for the audio viva.
+// Dr. Aswini and Dr. Rajiv are male; Dr. Madhu is female with a warm/sweet voice.
+const EXAMINER_VOICE: Record<VivaSubject, "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer"> = {
+  Anatomy: "onyx",
+  Physiology: "echo",
+  Biochemistry: "nova",
+};
+
 // Each named examiner has a distinct personality/style so repeat sessions (and different subjects)
 // don't all sound like the same voice with a different name swapped in.
 const EXAMINER_TONE: Record<VivaSubject, string> = {
@@ -572,12 +580,13 @@ function historyToTranscript(history: ChatHistoryItem[]): string {
 
 async function streamExaminerAudioTurn(
   res: Response,
-  messages: { role: "system" | "user" | "assistant"; content: string }[]
+  messages: { role: "system" | "user" | "assistant"; content: string }[],
+  voice: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer"
 ): Promise<void> {
   const stream = await openai.chat.completions.create({
     model: "gpt-audio",
     modalities: ["text", "audio"],
-    audio: { voice: "onyx", format: "pcm16" },
+    audio: { voice, format: "pcm16" },
     messages: messages as any,
     stream: true,
   });
@@ -655,13 +664,17 @@ router.post("/viva/start-voice", authMiddleware, voiceLimiter, async (req: Reque
     const persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth, studentName);
     const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
     const hasVisual = !!imageCaption || !!anatomyImageId;
-    await streamExaminerAudioTurn(res, [
-      { role: "system", content: persona },
-      {
-        role: "user",
-        content: `Begin the ${stationName} viva${topic ? `, Topic: ${topic}` : ""}. Greet the student briefly like a real examiner would when a student walks in and sits down — mention this is the ${stationName} viva. Since this is the very start of the session, follow the small-talk opener instruction in your persona before asking your first spot/case question${hasVisual ? " about the image displayed to the student" : ""}. Start at a basic/easy level. Keep it short and spoken, 3-4 sentences total including the icebreaker.`,
-      },
-    ]);
+    await streamExaminerAudioTurn(
+      res,
+      [
+        { role: "system", content: persona },
+        {
+          role: "user",
+          content: `Begin the ${stationName} viva${topic ? `, Topic: ${topic}` : ""}. Greet the student briefly like a real examiner would when a student walks in and sits down — mention this is the ${stationName} viva. Since this is the very start of the session, follow the small-talk opener instruction in your persona before asking your first spot/case question${hasVisual ? " about the image displayed to the student" : ""}. Start at a basic/easy level. Keep it short and spoken, 3-4 sentences total including the icebreaker.`,
+        },
+      ],
+      EXAMINER_VOICE[subject]
+    );
     sendEvent(res, { done: true, examinerName: EXAMINER_NAMES[subject] });
   } catch (err: any) {
     console.error("Practical Hub voice viva start error:", err);
@@ -768,7 +781,7 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
       { role: "user", content: userTranscript },
     ];
 
-    await streamExaminerAudioTurn(res, messages);
+    await streamExaminerAudioTurn(res, messages, EXAMINER_VOICE[subject]);
     sendEvent(res, { done: true });
   } catch (err: any) {
     console.error("Practical Hub voice viva turn error:", err);
