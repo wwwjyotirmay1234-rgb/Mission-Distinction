@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { anatomyVivaImagesTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { adminMiddleware, pdfAuthMiddleware } from "../middlewares/auth";
 import { gcsClient } from "../lib/gcs";
 import { loadPdfDocument, renderPageRangeFromDoc } from "./aiDoubt";
@@ -368,5 +368,6 @@ router.post("/admin/manual", adminMiddleware, async (req: Request, res: Response
     res.status(500).json({ error: err?.message || "Failed to insert image" });
   }
 });
+
 
 export { router as anatomyVivaImagesRouter, ANATOMY_IMAGE_CATEGORIES };
