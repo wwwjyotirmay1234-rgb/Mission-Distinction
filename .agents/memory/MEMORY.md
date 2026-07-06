@@ -47,3 +47,4 @@
 - [Anatomy viva empty-image-bank fallback](anatomy-viva-empty-image-bank.md) — categories with 0 extracted specimen photos must NOT claim a specimen is "in front of you"; use honest oral clue-based framing instead
 - [Viva image answer-leak audit pattern](viva-image-leak-audit.md) — AI vision leak-checker at low res can miss tiny overlay labels/pointer-lines baked onto the specimen itself; always re-render the flagged source page at high res (scale 3-4x) before deciding fixable-by-crop vs. delete
 - [AudioContext gesture timing](audiocontext-gesture-timing.md) — creating AudioContext after an awaited delay post-click breaks the browser gesture chain; silent suspended playback with zero console errors, esp. Safari/iOS
+- [PWA install prompt blocked in iframe](pwa-install-iframe-block.md) — beforeinstallprompt never fires inside an embedded/canvas iframe preview; check top-level tab before debugging "Install not showing"
