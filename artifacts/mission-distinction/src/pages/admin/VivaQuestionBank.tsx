@@ -13,7 +13,7 @@ const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"] as const;
 type Subject = (typeof SUBJECTS)[number];
 
 const EXAMINER_NAMES: Record<Subject, string> = {
-  Anatomy: "Dr. Aswini",
+  Anatomy: "Dr. Mamata",
   Physiology: "Dr. Rajiv",
   Biochemistry: "Dr. Madhu",
 };

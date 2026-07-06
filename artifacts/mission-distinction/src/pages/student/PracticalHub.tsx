@@ -21,7 +21,7 @@ type Subject = (typeof ALL_SUBJECTS)[number];
 const VIVA_UNLOCKED_EMAIL = "www.jyotirmay1234@gmail.com";
 
 const EXAMINER_BY_SUBJECT: Record<Subject, string> = {
-  Anatomy: "Dr. Aswini",
+  Anatomy: "Dr. Mamata",
   Physiology: "Dr. Rajiv",
   Biochemistry: "Dr. Madhu",
 };
@@ -66,7 +66,7 @@ const STATION_TARGET_SECONDS = 10 * 60;
 
 const ENTRANCE_BEAT_MS = 1800;
 const ENTRANCE_LINES: Record<string, string[]> = {
-  "Dr. Aswini": ["Come in. Sit down.", "Let's see your roll number... right, ready?", "No wasting time, let's begin."],
+  "Dr. Mamata": ["Come in, beta. Sit down.", "Let's see your roll number... right, ready?", "No wasting time, let's begin."],
   "Dr. Rajiv": ["Come in, come in. Have a seat.", "Don't be nervous, just answer what you know.", "Alright, settling in?"],
   "Dr. Madhu": ["Yes, come. Sit.", "Let me just check your name here...", "Alright, let's get started."],
 };
