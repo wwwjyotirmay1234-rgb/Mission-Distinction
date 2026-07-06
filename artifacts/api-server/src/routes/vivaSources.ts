@@ -70,7 +70,13 @@ const bookUpload = multer({
 // on real uploads averaging ~850 chars/page). The default extractPdfBuffer
 // cap (350k chars, tuned for ~140-page PYQ compilations) would silently chop
 // off most of a full textbook, so book-library uploads get a much larger cap.
-const BOOK_MAX_TEXT_CHARS = 3_000_000;
+// Gold-standard references like Gray's Anatomy run 2000+ dense pages and can
+// exceed even several million characters — per the schema's design intent
+// (viva_source_documents.full_text is meant to be unbounded; only the
+// per-question RAG excerpt in practicalHub.ts is cost/latency-bounded, not
+// storage), this cap is set high enough to act only as a sanity ceiling
+// against corrupt/pathological PDFs, never as a real-world truncation limit.
+const BOOK_MAX_TEXT_CHARS = 20_000_000;
 
 // Scanned/image-only reference books (very common for older/photocopied
 // textbooks — this is also *why* those uploads are huge in the first place:
