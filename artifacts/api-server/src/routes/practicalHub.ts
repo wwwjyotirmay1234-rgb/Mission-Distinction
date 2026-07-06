@@ -298,13 +298,13 @@ function buildExaminerPersona(
         ? `\n${anatomyTheorySyllabus}`
         : "";
   const sourceBlock = sourceNotes
-    ? `\nThe supervising faculty has shared these additional focus areas / reference notes for ${subject} — treat them as inspiration on top of the baseline syllabus above (if any) and make sure your questions cover these topics too, but always phrase and write the actual questions yourself in your own words (never read them as a verbatim script):\n${sourceNotes}`
+    ? `\nThe supervising faculty has shared these focus areas / reference notes for ${subject} — every question you ask MUST stay within the topics covered by the baseline syllabus above (if any) and these notes; do not wander into unrelated topics that aren't covered here or in the uploaded textbook excerpts below. Always phrase and write the actual questions yourself in your own words (never read them as a verbatim script):\n${sourceNotes}`
     : baselineSyllabus
       ? ""
-      : `\nNo specific focus areas have been supplied for ${subject} — generate your own spot/case questions on ${subject} at NEET PG standard.`;
+      : `\nNo specific focus areas have been supplied for ${subject} — generate your own spot/case questions on ${subject} at NEET PG standard, staying strictly within the standard reference textbooks listed below.`;
 
   const bookExcerptBlock = bookExcerpt
-    ? `\nThe supervising faculty has uploaded full reference textbook(s) for ${subject}. Below are excerpts from those book(s) most relevant to the current topic — use them as your primary source of truth for facts, terminology, and depth on this topic (they take priority over your own general knowledge if there's any conflict), but always phrase and ask questions in your own natural spoken words, never read excerpt text verbatim:\n${bookExcerpt}`
+    ? `\nThe supervising faculty has uploaded full reference textbook(s) for ${subject}. Below are excerpts from those book(s) most relevant to the current topic — these are your PRIMARY source of truth: every fact, number, procedure step, and question you ask on this topic must be something actually covered in these excerpts (they take priority over your own general knowledge if there's any conflict, and you must never invent a fact, figure, or procedural detail that isn't grounded in them or the standard reference books listed below). Always phrase and ask questions in your own natural spoken words, never read excerpt text verbatim:\n${bookExcerpt}`
     : "";
 
   const stationLabel = vivaType ? ` — Station: ${vivaType}` : "";
@@ -355,6 +355,16 @@ function buildExaminerPersona(
         }`
       : "";
 
+  // Practical/measurement stations (physiology experiments, biochemistry estimations) must always
+  // be examined on the actual hands-on procedure, not just the theory behind it — a real practical
+  // examiner grills the student on every step they'd have to physically perform at the bench.
+  const isPracticalMeasurementStation =
+    (subject === "Physiology" && (vivaType === "Hematology Experiment" || vivaType === "Human Experiments & Clinical Physiology")) ||
+    (subject === "Biochemistry" && vivaType === "Serum and Urine Estimation");
+  const practicalProcedureBlock = isPracticalMeasurementStation
+    ? `\nThis is a hands-on PRACTICAL/measurement station, not a theory station. For every experiment or estimation topic you raise, you must actually examine the student on the real bench procedure, not just the underlying theory. Build your questions on that topic as a graduated small-to-big sequence, moving one sub-step at a time as natural follow-ups (never dump all of this as one giant question) — roughly in this order: (1) principle behind the test/experiment, (2) apparatus, reagents, or equipment required, (3) the exact step-by-step procedure the student would physically perform, in correct order, (4) precautions to take during the procedure and common technical errors that ruin the reading, (5) how the reading/result is recorded, its unit, and the normal reference range, (6) the clinical significance and interpretation of an abnormal result. Do not skip straight to clinical significance without first checking the student actually knows the procedure itself — a student who knows the disease but not the steps to get the reading has failed this station. Keep the small-talk/spot question at the very start of the topic (e.g. naming the experiment/apparatus) genuinely basic, then escalate through the procedure steps as per the difficulty rules below.`
+    : "";
+
   const difficultyAndPacingRules = `
 - Start EASY: your very first 1-2 questions on any new topic should be basic recall/identification level, so the student can settle in.
 - Adapt difficulty live: if the student answers confidently and correctly, escalate — ask a noticeably tougher, more applied or clinically-correlated follow-up on the same topic before moving on. If the student struggles or answers wrong, do NOT pile on harder questions on that topic — give one simpler clarifying chance, then move to a fresh topic at basic level again.
@@ -384,9 +394,11 @@ ${anatomyEmbryologyBlock}
 ${physiologyReferenceBlock}
 ${biochemistryReferenceBlock}
 ${anatomyReferenceBlock}
+${practicalProcedureBlock}
 
 Rules:
 - Reference ONLY gold-standard textbooks (Gray's Anatomy, BD Chaurasia, Snell's, Ganong's, Guyton & Hall, Harper's, Robbins & Cotran, Harsh Mohan, KD Tripathi, Goodman & Gilman's, Ananthanarayan & Paniker, Harrison's, Davidson's, Bailey & Love's, Sabiston, Nelson, Ghai, Dutta's, Williams Obstetrics, Park's PSM) at NEET PG examination standard.
+- GROUND EVERY QUESTION: every question, fact, number, or procedural detail you ask about or state must be something a student could actually find in the reference textbooks and any uploaded notes/book excerpts referenced above — never ask about obscure trivia, invented numbers, or non-standard details that aren't genuinely covered in these sources.
 - Speak naturally, the way a real examiner speaks out loud in an exam hall — short, direct sentences. Do NOT use markdown, bullet points, asterisks, or headings; this is spoken audio, not text.
 - THINK LIKE A HUMAN, NOT A SCRIPT: you are not reading a fixed question bank. Actually listen to what the student just said and let it steer your very next question — pick up on a specific word, structure, or claim they made and probe that exact thing, the way a real examiner's mind works mid-conversation, rather than jumping to an unrelated pre-planned question. Occasionally think out loud for half a second before asking — a brief natural filler like "Hmm, okay..." or "Right, so..." or "Let's see..." — but keep it rare and short, not on every turn, or it gets robotic in its own way.
 - VARY YOUR PHRASING: never reuse the same reaction or question template twice in a row (e.g. don't say "Good, correct" every single time, don't always structure questions the same way). Real examiners are unpredictable in wording even when the underlying rigor is consistent. Occasionally rephrase a question if the student seems confused by the wording, exactly like a human would when they sense they weren't clear the first time.
@@ -404,8 +416,11 @@ ${icebreakerNote}
 // Gemini panel member: generates ONE tougher/alternate cross-question to keep the exam rigorous.
 // This is an unnamed, silent co-examiner AI — the student only ever hears the one named examiner voice.
 // Soft-fails (returns null) on any error so the exam is never blocked by the second AI.
-async function geminiCrossQuestion(subject: VivaSubject, transcript: string): Promise<string | null> {
+async function geminiCrossQuestion(subject: VivaSubject, transcript: string, isPracticalMeasurementStation = false): Promise<string | null> {
   try {
+    const practicalNote = isPracticalMeasurementStation
+      ? " This is a hands-on PRACTICAL/measurement station — your cross-question must test the actual bench procedure (principle, apparatus/reagents, step-by-step technique, precautions/sources of error, or reading the result), not just theory."
+      : "";
     const response = await gemini.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
@@ -413,7 +428,7 @@ async function geminiCrossQuestion(subject: VivaSubject, transcript: string): Pr
           role: "user",
           parts: [
             {
-              text: `${CBME_CONTEXT}\n\nYou are a tough, silent co-examiner on an MBBS ${subject} viva panel, sitting alongside the lead examiner. Based on the exam transcript so far, suggest ONE noticeably tougher or more clinically-applied follow-up/cross-question on ${subject} that would test deeper understanding than what has been asked. Return ONLY the question text, no preamble, no quotes.\n\nTranscript so far:\n${transcript.slice(-4000)}`,
+              text: `${CBME_CONTEXT}\n\nYou are a tough, silent co-examiner on an MBBS ${subject} viva panel, sitting alongside the lead examiner. Based on the exam transcript so far, suggest ONE noticeably tougher or more clinically-applied follow-up/cross-question on ${subject} that would test deeper understanding than what has been asked.${practicalNote} The question must be grounded strictly in standard MBBS reference textbooks for ${subject} at NEET PG standard — never invent obscure trivia or non-standard facts. Return ONLY the question text, no preamble, no quotes.\n\nTranscript so far:\n${transcript.slice(-4000)}`,
             },
           ],
         },
@@ -768,6 +783,9 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
     const answerCount = history.filter((h) => h.role === "user").length + 1;
     const weakAnswer = isWeakOrVagueAnswer(userTranscript);
     const needsCrossQuestion = weakAnswer || (answerCount >= 2 && answerCount % 3 === 0);
+    const isPracticalMeasurementStation =
+      (subject === "Physiology" && (vivaType === "Hematology Experiment" || vivaType === "Human Experiments & Clinical Physiology")) ||
+      (subject === "Biochemistry" && vivaType === "Serum and Urine Estimation");
 
     // Run the book-excerpt RAG lookup and the (conditional) Gemini cross-question call
     // concurrently with the already-in-flight source notes fetch, instead of awaiting the
@@ -777,7 +795,7 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
       sourceNotesPromise,
       fetchBookExcerpt(subject, queryHint),
       needsCrossQuestion
-        ? geminiCrossQuestion(subject, historyToTranscript([...history, { role: "user", content: userTranscript }]))
+        ? geminiCrossQuestion(subject, historyToTranscript([...history, { role: "user", content: userTranscript }]), isPracticalMeasurementStation)
         : Promise.resolve(null),
     ]);
     const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
