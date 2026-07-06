@@ -8,6 +8,7 @@ import { db } from "@workspace/db";
 import { vivaSourcesTable, vivaSourceDocumentsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import rateLimit from "express-rate-limit";
+import { awardXp, XP_VALUES } from "../lib/xp";
 import { CBME_CONTEXT } from "../lib/cbmeContext";
 import { PHYSIOLOGY_HEMATOLOGY_SYLLABUS } from "../lib/physiologyHematologySyllabus";
 import { PHYSIOLOGY_CLINICAL_SYLLABUS } from "../lib/physiologyClinicalSyllabus";
@@ -859,6 +860,13 @@ router.post("/viva/end", authMiddleware, voiceLimiter, async (req: Request, res:
     const mergedImprovements = Array.from(
       new Set(allOpinions.flatMap((o) => o.improvements))
     ).slice(0, 5);
+
+    const userId = (req as any).user?.id;
+    if (userId) {
+      awardXp(userId, XP_VALUES.VIVA_COMPLETE, "viva_complete", `Completed ${subject} viva`).catch((err) => {
+        console.error("Practical Hub: failed to award viva completion XP", err);
+      });
+    }
 
     res.json({
       subject,

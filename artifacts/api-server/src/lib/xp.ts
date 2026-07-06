@@ -33,6 +33,7 @@ export const XP_VALUES = {
   CONFESSION_POSTED: 5,
   STUDY_ROOM_JOINED: 5,
   MNEMONIC_UPVOTED: 5,
+  VIVA_COMPLETE: 20,
   // Approved content contributions (notes/books/PYQs) — random 10-20
   CONTRIBUTION_MIN: 10,
   CONTRIBUTION_MAX: 20,
