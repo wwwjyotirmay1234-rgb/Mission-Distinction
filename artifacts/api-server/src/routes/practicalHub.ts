@@ -45,8 +45,36 @@ const EXAMINER_NAMES: Record<VivaSubject, string> = {
   Biochemistry: "Dr. Madhu",
 };
 
+// Each named examiner has a distinct personality/style so repeat sessions (and different subjects)
+// don't all sound like the same voice with a different name swapped in.
+const EXAMINER_TONE: Record<VivaSubject, string> = {
+  Anatomy:
+    "Your personal style: strict, precise, and slightly old-school — you have zero patience for vague or waffly answers and you say so directly (\"Don't guess, be precise\", \"Exact term, please\"). You expect exact anatomical terminology (sides, planes, precise names) and will pull the student up immediately if they are loose with language. You rarely praise, and when you do it's brief and clipped (\"Correct. Next.\").",
+  Physiology:
+    "Your personal style: encouraging but firm — you want the student to reason out loud and will nudge them toward the answer with a guiding follow-up rather than just marking it wrong (\"Think about what happens to preload here...\"), but you are still firm about wrong physiology and won't let a mistake slide uncorrected. You praise good reasoning warmly when you see it.",
+  Biochemistry:
+    "Your personal style: detail-obsessed and exacting — you care intensely about exact enzyme names, pathway steps, cofactors, and precise numbers (pH, ranges, units), and you will immediately probe a student who gets the broad idea right but fumbles a specific detail (\"Yes, but which enzyme, exactly? Name it.\"). You treat sloppy terminology as almost as bad as a wrong answer.",
+};
+
 function isVivaSubject(value: unknown): value is VivaSubject {
   return typeof value === "string" && (VIVA_SUBJECTS as readonly string[]).includes(value);
+}
+
+// Cheap, fast heuristic for "this answer was weak/vague/a give-up" — used to trigger dynamic
+// follow-up pressure immediately instead of waiting for a fixed every-3rd-turn cadence. This is
+// intentionally not another LLM call (that would add real latency to every spoken turn); it just
+// looks at length and a short list of hedging/give-up phrases real students actually say.
+const WEAK_ANSWER_PHRASES = [
+  "i don't know", "i dont know", "not sure", "i'm not sure", "im not sure", "sorry sir", "sorry ma'am",
+  "pass", "no idea", "i forgot", "i can't remember", "i cant remember", "maybe", "i think so", "not really sure",
+];
+function isWeakOrVagueAnswer(transcript: string): boolean {
+  const t = transcript.trim().toLowerCase();
+  if (!t) return true;
+  const wordCount = t.split(/\s+/).filter(Boolean).length;
+  if (wordCount <= 4) return true;
+  if (WEAK_ANSWER_PHRASES.some((p) => t.includes(p))) return true;
+  return false;
 }
 
 // Physiology is split into 3 selectable viva types, each with its own baseline syllabus.
@@ -244,9 +272,11 @@ function buildExaminerPersona(
   vivaType: VivaType | null,
   imageCaption: string | null,
   bookExcerpt: string | null = null,
-  anatomyImageGroundTruth: string | null = null
+  anatomyImageGroundTruth: string | null = null,
+  studentName: string | null = null
 ): string {
   const examinerName = EXAMINER_NAMES[subject];
+  const examinerTone = EXAMINER_TONE[subject];
   const physiologySyllabus =
     subject === "Physiology" && vivaType ? PHYSIOLOGY_SYLLABUS_BY_TYPE[vivaType as PhysiologyVivaType] : null;
   const biochemistrySyllabus =
@@ -322,9 +352,19 @@ function buildExaminerPersona(
 - Adapt difficulty live: if the student answers confidently and correctly, escalate — ask a noticeably tougher, more applied or clinically-correlated follow-up on the same topic before moving on. If the student struggles or answers wrong, do NOT pile on harder questions on that topic — give one simpler clarifying chance, then move to a fresh topic at basic level again.
 - Never let a single topic run more than 2-3 exchanges regardless of performance — keep the viva moving across topics.
 - Keep pacing realistic for a spoken exam: after asking a question, expect the student to answer within a short, focused window (roughly 45-60 seconds of real speaking) — do not expect long essays. If the student's answer is very short or trails off, treat that as their complete answer for that question rather than waiting or repeating yourself.
-- If the student says anything like "sorry sir", "I don't know", "I'm not sure", "pass", or otherwise clearly gives up on a question, do NOT re-explain, re-ask, or give a clarifying hint on that same question — briefly acknowledge it in one short phrase ("That's alright, let's move on") and immediately ask a fresh question on the next topic at basic level. Never dwell on a question the student has given up on.`;
+- WRONG-BUT-ATTEMPTED ANSWER RULE: if the student clearly attempted the question but got it wrong or confused two things, do NOT just mark it wrong and move on. React like a real examiner catching a mistake — say something like "No, think again" or "Not quite, take another look" — and give them exactly ONE immediate retry chance on the SAME question, optionally with a tiny nudge (e.g. repeating the key word). If their second attempt is still wrong, briefly give the correct answer in one sentence and move on to a fresh topic. Never give more than one retry on the same question.
+- GIVE-UP RULE (different from the retry rule above): if the student says anything like "sorry sir", "I don't know", "I'm not sure", "pass", or otherwise clearly gives up without attempting, do NOT re-explain, re-ask, or offer a retry on that same question — briefly acknowledge it in one short phrase ("That's alright, let's move on") and immediately ask a fresh question on the next topic at basic level. Never dwell on a question the student has given up on.
+- HURRY-UP / INTERRUPTION RULE: if the student's answer transcript sounds like it rambled on with a lot of filler or repeated itself without adding new information, briefly and naturally interrupt-acknowledge like a real impatient examiner would — a short phrase such as "Yes yes, come to the point" or "Alright, next point quickly" — before moving on. Keep this rare (only when the answer actually rambled), not on every turn.`;
+
+  const icebreakerNote = `\nSmall-talk opener (use only when this is the very FIRST question of the whole session, i.e. no prior turns exist): before your first real subject question, spend one short natural sentence on a quick icebreaker a real examiner would actually ask — e.g. "Which college are you from?" or "Which year are you in?" or "All ready for the viva?" — then move straight into your first spot/case question in the same turn. Do not repeat this icebreaker on any later turn.`;
+
+  const studentNameNote = studentName
+    ? `\nThe student's name is ${studentName}. You may address them by name once or twice during the viva the way a real examiner glances at the mark sheet and uses a student's name occasionally — do not overuse it.`
+    : "";
 
   return `You are ${examinerName}, a strict but fair MBBS practical/viva examiner conducting a real, spoken oral examination (viva voce / OSCE station). You are examining an Indian MBBS student on Subject: ${subject}${stationLabel}.
+${examinerTone}
+${studentNameNote}
 
 ${CBME_CONTEXT}
 ${baselineSyllabus}
@@ -342,7 +382,8 @@ Rules:
 - Speak naturally, the way a real examiner speaks out loud in an exam hall — short, direct sentences. Do NOT use markdown, bullet points, asterisks, or headings; this is spoken audio, not text.
 - Ask ONE question at a time. Never answer your own question. Never break character.
 - When the student answers, briefly react like a real examiner would ("Hmm, not quite", "Good, correct", "Partially right, but...") in 1 sentence, then either probe deeper with a natural follow-up on the same topic, or move on to the next question. Keep total spoken response to 2-4 short sentences — real examiners don't lecture.
-- Maintain a firm, professional, slightly intimidating exam-hall tone, but stay fair and encouraging when the student does well.${difficultyAndPacingRules}
+- Maintain a firm, professional, slightly intimidating exam-hall tone, but stay fair and encouraging when the student does well. Your personal tone/style above always takes priority in HOW you deliver reactions, on top of these shared rules.${difficultyAndPacingRules}
+${icebreakerNote}
 - If a "Panel note" from a co-examiner appears in your instructions, weave its suggested harder question in naturally as your own next question — never mention the co-examiner or that you received a note.
 - If the student clearly says they want to stop or end the viva, wish them well briefly and end.
 - After roughly 4-6 questions (or once the mandatory list is exhausted plus 1-2 extra questions), tell the student the viva is complete and wrap up.`;
@@ -610,14 +651,15 @@ router.post("/viva/start-voice", authMiddleware, voiceLimiter, async (req: Reque
       fetchSourceNotes(subject),
       fetchBookExcerpt(subject, topic || vivaType || ""),
     ]);
-    const persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth);
+    const studentName = (req as any).user?.fullName || null;
+    const persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth, studentName);
     const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
     const hasVisual = !!imageCaption || !!anatomyImageId;
     await streamExaminerAudioTurn(res, [
       { role: "system", content: persona },
       {
         role: "user",
-        content: `Begin the ${stationName} viva${topic ? `, Topic: ${topic}` : ""}. Greet the student briefly like a real examiner (mention this is the ${stationName} viva), then ask your first spot/case question${hasVisual ? " about the image displayed to the student" : ""}. Start at a basic/easy level. Keep it short and spoken, 2-3 sentences total.`,
+        content: `Begin the ${stationName} viva${topic ? `, Topic: ${topic}` : ""}. Greet the student briefly like a real examiner would when a student walks in and sits down — mention this is the ${stationName} viva. Since this is the very start of the session, follow the small-talk opener instruction in your persona before asking your first spot/case question${hasVisual ? " about the image displayed to the student" : ""}. Start at a basic/easy level. Keep it short and spoken, 3-4 sentences total including the icebreaker.`,
       },
     ]);
     sendEvent(res, { done: true, examinerName: EXAMINER_NAMES[subject] });
@@ -700,15 +742,23 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
       fetchBookExcerpt(subject, queryHint),
     ]);
     const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
-    let persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth) + `\nCurrent viva Subject: ${stationName}${topic ? `, Topic: ${topic}` : ""}.`;
+    const studentName = (req as any).user?.fullName || null;
+    let persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth, studentName) + `\nCurrent viva Subject: ${stationName}${topic ? `, Topic: ${topic}` : ""}.`;
 
-    // Every 3rd student answer, bring in the Gemini panel member's tougher cross-question suggestion.
+    // Dynamic follow-up pressure: bring in the Gemini panel member's tougher cross-question
+    // suggestion immediately whenever the student's answer was weak/vague/a give-up, like a real
+    // examiner probing a shaky answer right away — not just on a fixed every-3rd-turn cadence.
+    // The fixed cadence is kept as a fallback so a student who is doing fine also still gets
+    // occasional escalation, matching a real exam board's tendency to test depth periodically.
     const answerCount = history.filter((h) => h.role === "user").length + 1;
-    if (answerCount >= 2 && answerCount % 3 === 0) {
+    const weakAnswer = isWeakOrVagueAnswer(userTranscript);
+    if (weakAnswer || (answerCount >= 2 && answerCount % 3 === 0)) {
       const transcriptSoFar = historyToTranscript([...history, { role: "user", content: userTranscript }]);
       const crossQuestion = await geminiCrossQuestion(subject, transcriptSoFar);
       if (crossQuestion) {
-        persona += `\n\nPanel note from co-examiner: consider asking this harder question next, phrased naturally in your own voice: "${crossQuestion}"`;
+        persona += weakAnswer
+          ? `\n\nThe student's last answer was weak, vague, or a give-up. Panel note from co-examiner: probe this immediately with a sharper follow-up on the SAME topic before moving anywhere else, phrased naturally in your own voice: "${crossQuestion}"`
+          : `\n\nPanel note from co-examiner: consider asking this harder question next, phrased naturally in your own voice: "${crossQuestion}"`;
       }
     }
 

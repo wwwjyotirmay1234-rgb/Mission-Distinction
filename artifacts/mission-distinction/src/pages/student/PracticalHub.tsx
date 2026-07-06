@@ -58,6 +58,18 @@ const ANATOMY_VIVA_TYPE_DESCRIPTIONS: Record<AnatomyVivaType, string> = {
 type VivaType = PhysiologyVivaType | BiochemistryVivaType | AnatomyVivaType;
 
 const ANSWER_WINDOW_SECONDS = 50;
+const ANSWER_HURRY_UP_SECONDS = 15;
+
+// Target time budget for a single-subject viva station, mirroring a real practical rotation
+// where each station has a fixed slot before the batch moves to the next one.
+const STATION_TARGET_SECONDS = 10 * 60;
+
+const ENTRANCE_BEAT_MS = 1800;
+const ENTRANCE_LINES: Record<string, string[]> = {
+  "Dr. Aswini": ["Come in. Sit down.", "Let's see your roll number... right, ready?", "No wasting time, let's begin."],
+  "Dr. Rajiv": ["Come in, come in. Have a seat.", "Don't be nervous, just answer what you know.", "Alright, settling in?"],
+  "Dr. Madhu": ["Yes, come. Sit.", "Let me just check your name here...", "Alright, let's get started."],
+};
 
 type TurnRole = "user" | "assistant";
 interface Turn { role: TurnRole; content: string }
@@ -66,6 +78,7 @@ type SessionState =
   | "home"
   | "rooms"
   | "setup"
+  | "entrance"
   | "connecting"
   | "examiner_speaking"
   | "listening"
@@ -150,6 +163,9 @@ export default function PracticalHub() {
   const [liveUserText, setLiveUserText] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [answerSecondsLeft, setAnswerSecondsLeft] = useState<number | null>(null);
+  const [hurryUpNudge, setHurryUpNudge] = useState(false);
+  const hurryUpShownRef = useRef(false);
+  const [entranceLine, setEntranceLine] = useState("");
   const [sectionSummary, setSectionSummary] = useState<VivaSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
 
@@ -186,11 +202,14 @@ export default function PracticalHub() {
       answerTimerRef.current = null;
     }
     setAnswerSecondsLeft(null);
+    setHurryUpNudge(false);
   }, []);
 
   const startAnswerTimer = useCallback((onExpire: () => void) => {
     if (answerTimerRef.current) clearInterval(answerTimerRef.current);
     setAnswerSecondsLeft(ANSWER_WINDOW_SECONDS);
+    setHurryUpNudge(false);
+    hurryUpShownRef.current = false;
     answerTimerRef.current = setInterval(() => {
       setAnswerSecondsLeft((s) => {
         if (s === null) return null;
@@ -199,6 +218,12 @@ export default function PracticalHub() {
           answerTimerRef.current = null;
           onExpire();
           return null;
+        }
+        // Interruption/hurry-up: once the answer window is running low, nudge the student
+        // like a real examiner cutting in on a rambling or stalled answer.
+        if (s - 1 <= ANSWER_HURRY_UP_SECONDS && !hurryUpShownRef.current) {
+          hurryUpShownRef.current = true;
+          setHurryUpNudge(true);
         }
         return s - 1;
       });
@@ -344,7 +369,6 @@ export default function PracticalHub() {
     setVivaType(chosenVivaType);
     setClinicalImage(chosenImage);
     setAnatomyStationImage(null);
-    setState("connecting");
     setTurns([]);
     turnsRef.current = [];
     setLiveUserText("");
@@ -352,6 +376,16 @@ export default function PracticalHub() {
     setElapsed(0);
     clearAnswerTimer();
     setSectionSummary(null);
+
+    // Visible "waiting to be called" entrance beat before the first question — a brief moment
+    // where the examiner is shown greeting/settling in, rather than jumping straight to Q1.
+    const examinerName = EXAMINER_BY_SUBJECT[selectedSubject];
+    const lines = ENTRANCE_LINES[examinerName] ?? ["Come in, take a seat."];
+    setEntranceLine(lines[Math.floor(Math.random() * lines.length)]);
+    setState("entrance");
+    await new Promise((resolve) => setTimeout(resolve, ENTRANCE_BEAT_MS));
+
+    setState("connecting");
     await streamTurn("/api/practical-hub/viva/start-voice", {
       subject: selectedSubject,
       topic,
@@ -656,9 +690,38 @@ export default function PracticalHub() {
     );
   }
 
+  if (state === "entrance") {
+    return (
+      <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto pb-20">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Stethoscope size={20} className="text-primary" /> {subject} Viva{vivaType ? ` — ${vivaType}` : ""}
+          </h1>
+        </div>
+        <Card className="bg-gradient-to-b from-card/60 to-card/30 border-border/40 overflow-hidden">
+          <CardContent className="p-0">
+            <div className="flex flex-col items-center justify-center py-14 px-6 text-center gap-4">
+              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+                <Stethoscope size={36} className="text-primary/70" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                  Waiting to be called in — {EXAMINER_BY_SUBJECT[subject]}
+                </p>
+                <p className="text-sm font-medium max-w-md">"{entranceLine}"</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const isRecording = recorder.state === "recording";
   const isBusy = state === "connecting" || state === "processing" || state === "examiner_speaking";
   const questionNumber = turns.filter((t) => t.role === "assistant").length || (state === "connecting" ? 0 : 1);
+  const stationSecondsLeft = Math.max(0, STATION_TARGET_SECONDS - elapsed);
+  const stationTimeCritical = stationSecondsLeft <= 120;
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto pb-20">
@@ -674,7 +737,16 @@ export default function PracticalHub() {
             {EXAMINER_BY_SUBJECT[subject]}{topic ? ` · ${topic}` : ""} · Question {questionNumber}
           </p>
         </div>
-        <div className="text-sm font-mono text-muted-foreground shrink-0">{formatTime(elapsed)}</div>
+        <div className="text-right shrink-0">
+          <div className="text-sm font-mono text-muted-foreground">{formatTime(elapsed)}</div>
+          <div className={`text-[10px] font-medium mt-0.5 ${stationTimeCritical ? "text-red-500" : "text-muted-foreground/70"}`}>
+            {stationTimeCritical
+              ? stationSecondsLeft > 0
+                ? `Next station in ${formatTime(stationSecondsLeft)}`
+                : "Wrap up — time's up for this station"
+              : `Next station in ~${Math.ceil(stationSecondsLeft / 60)} min`}
+          </div>
+        </div>
       </div>
 
       {clinicalImage && (state === "examiner_speaking" || state === "listening" || isRecording || state === "processing") && (
@@ -759,6 +831,12 @@ export default function PracticalHub() {
               </div>
             )}
 
+            {isRecording && hurryUpNudge && (
+              <div className="text-xs font-semibold text-amber-500 flex items-center gap-1.5 animate-pulse">
+                <AlertTriangle size={13} /> {EXAMINER_BY_SUBJECT[subject]}: "Yes yes, come on, quickly now."
+              </div>
+            )}
+
             <div className="flex items-center gap-3 mt-2">
               <Button
                 size="icon"
@@ -797,86 +875,117 @@ export default function PracticalHub() {
 }
 
 function SectionSummaryView({ summary }: { summary: VivaSummary }) {
+  const { user } = useAuth();
+  const today = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const maxTotal = summary.questionBreakdown?.reduce((sum, q) => sum + q.maxMarks, 0) ?? 100;
+  const totalMarks = summary.questionBreakdown?.reduce((sum, q) => sum + q.marks, 0) ?? summary.score;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-          <span className="text-xl font-bold text-primary">{summary.score}</span>
-        </div>
-        <div>
-          <p className="text-sm font-bold flex items-center gap-1.5">
-            <Award size={14} className="text-primary" /> {summary.subject} Panel Score
-            {summary.examinerName ? ` — ${summary.examinerName}` : ""}
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">{summary.verdict}</p>
-        </div>
+    <div className="rounded-md border-2 border-foreground/25 bg-[#faf8f2] dark:bg-card/60 p-4 sm:p-6 font-serif text-foreground/90 space-y-4">
+      <div className="text-center border-b-2 border-foreground/20 pb-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Internal Assessment — Practical Examination</p>
+        <p className="text-base sm:text-lg font-bold mt-1">MBBS Phase I — Viva Voce Mark Sheet</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">AI Viva Simulator, Mission Distinction</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:text-sm border-b border-dashed border-foreground/25 pb-3">
+        <p><span className="text-muted-foreground">Student Name:</span> <span className="font-semibold">{user?.fullName ?? "—"}</span></p>
+        <p><span className="text-muted-foreground">Date:</span> <span className="font-semibold">{today}</span></p>
+        <p><span className="text-muted-foreground">Subject:</span> <span className="font-semibold">{summary.subject}</span></p>
+        <p><span className="text-muted-foreground">Examiner:</span> <span className="font-semibold">{summary.examinerName ?? "—"}</span></p>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 border-b border-dashed border-foreground/25 pb-3">
+        <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider">Marks Obtained</p>
+        <p className="text-2xl font-bold">
+          {totalMarks}<span className="text-sm font-normal text-muted-foreground"> / {maxTotal}</span>
+        </p>
       </div>
 
       {summary.panel && (summary.panel.gemini || summary.panel.claude) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 border-b border-dashed border-foreground/25 pb-3">
           {summary.panel.gemini && (
-            <div className="rounded-lg border border-border/40 bg-background/40 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Examiner (Gemini)</p>
-              <p className="text-lg font-bold text-primary">{summary.panel.gemini.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
+            <div className="rounded border border-foreground/15 bg-background/40 p-2.5">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Examiner Assessment</p>
+              <p className="text-base font-bold">{summary.panel.gemini.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
             </div>
           )}
           {summary.panel.claude && (
-            <div className="rounded-lg border border-border/40 bg-background/40 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Cross-check (Claude)</p>
-              <p className="text-lg font-bold text-primary">{summary.panel.claude.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
+            <div className="rounded border border-foreground/15 bg-background/40 p-2.5">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Co-Examiner Cross-Check</p>
+              <p className="text-base font-bold">{summary.panel.claude.score}<span className="text-xs text-muted-foreground font-normal">/100</span></p>
             </div>
           )}
-        </div>
-      )}
-
-      {summary.strengths.length > 0 && (
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Strengths</p>
-          <ul className="space-y-1.5">
-            {summary.strengths.map((s, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm"><CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" />{s}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {summary.improvements.length > 0 && (
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">To Improve</p>
-          <ul className="space-y-1.5">
-            {summary.improvements.map((s, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm"><AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />{s}</li>
-            ))}
-          </ul>
         </div>
       )}
 
       {summary.questionBreakdown && summary.questionBreakdown.length > 0 && (
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Question-by-Question Review</p>
-          <div className="space-y-2.5">
-            {summary.questionBreakdown.map((q, i) => (
-              <div key={i} className="rounded-lg border border-border/40 bg-background/40 p-3 space-y-1.5">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-semibold">Q{i + 1}. {q.question}</p>
-                  <span
-                    className={`shrink-0 text-xs font-bold rounded-full px-2 py-0.5 ${
-                      q.marks >= q.maxMarks * 0.7
-                        ? "bg-emerald-500/15 text-emerald-600"
-                        : q.marks > 0
-                        ? "bg-amber-500/15 text-amber-600"
-                        : "bg-red-500/15 text-red-600"
-                    }`}
-                  >
-                    {q.marks}/{q.maxMarks}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground/80">Your answer:</span> {q.studentAnswer || "—"}</p>
-                <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground/80">Ideal answer:</span> {q.idealAnswer}</p>
-              </div>
-            ))}
+        <div className="border-b border-dashed border-foreground/25 pb-3">
+          <p className="text-xs font-bold uppercase tracking-wider mb-2">Question-wise Break-up</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs sm:text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-foreground/30 text-left">
+                  <th className="py-1.5 pr-2 font-semibold w-8">#</th>
+                  <th className="py-1.5 pr-2 font-semibold">Question</th>
+                  <th className="py-1.5 pl-2 font-semibold text-right w-16">Marks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.questionBreakdown.map((q, i) => (
+                  <tr key={i} className="border-b border-foreground/10 align-top">
+                    <td className="py-2 pr-2 text-muted-foreground">{i + 1}.</td>
+                    <td className="py-2 pr-2">
+                      <p className="font-medium">{q.question}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5"><span className="font-semibold text-foreground/70">Answered:</span> {q.studentAnswer || "—"}</p>
+                      <p className="text-[11px] text-muted-foreground"><span className="font-semibold text-foreground/70">Expected:</span> {q.idealAnswer}</p>
+                    </td>
+                    <td className="py-2 pl-2 text-right font-bold whitespace-nowrap">{q.marks}/{q.maxMarks}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
+
+      {(summary.strengths.length > 0 || summary.improvements.length > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-b border-dashed border-foreground/25 pb-3">
+          {summary.strengths.length > 0 && (
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Strengths</p>
+              <ul className="space-y-1">
+                {summary.strengths.map((s, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-xs sm:text-sm"><CheckCircle2 size={12} className="text-emerald-600 mt-0.5 shrink-0" />{s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {summary.improvements.length > 0 && (
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Areas to Improve</p>
+              <ul className="space-y-1">
+                {summary.improvements.map((s, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-xs sm:text-sm"><AlertTriangle size={12} className="text-amber-600 mt-0.5 shrink-0" />{s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Examiner's Remarks</p>
+        <p className="text-xs sm:text-sm italic">"{summary.verdict}"</p>
+      </div>
+
+      <div className="flex items-end justify-between pt-4 mt-2">
+        <div className="text-center">
+          <p className="text-sm italic font-semibold" style={{ fontFamily: "cursive" }}>{summary.examinerName ?? "Examiner"}</p>
+          <p className="text-[10px] text-muted-foreground border-t border-foreground/30 pt-1 mt-1 px-4">Examiner's Signature</p>
+        </div>
+        <Award size={28} className="text-primary/60" />
+      </div>
     </div>
   );
 }

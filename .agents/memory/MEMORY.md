@@ -38,3 +38,4 @@
 - [ffmpeg missing as system dependency](ffmpeg-missing-system-dep.md) — "spawn ffmpeg ENOENT" means ffmpeg isn't declared in replit.nix; shell `which ffmpeg` can lie, verify with a real Node spawn test
 - [STT silence hallucination](stt-silence-hallucination.md) — Whisper-family STT invents plausible text for silent audio instead of "" ; screen with ffmpeg volumedetect before transcribing, not just `if(!transcript)`
 - [WebGL context creation crash](webgl-context-crash.md) — R3F `<Canvas>` doesn't catch WebGLRenderer's synchronous throw when context creation fails; feature-detect + error boundary needed
+- [Viva Simulator access gate](viva-simulator-access-gate.md) — tile is hard-gated to one email; mic-silence screening blocks full e2e; verify mark-sheet via direct /viva/end call with synthetic history instead
