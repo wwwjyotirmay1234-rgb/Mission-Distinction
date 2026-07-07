@@ -8,6 +8,7 @@ import { loadPdfDocument, renderPageRangeFromDoc } from "./aiDoubt";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { ANATOMY_IMAGE_CATEGORIES, isAnatomyImageCategory } from "../lib/anatomyVivaImages";
 import seedRows from "../data/anatomy-viva-images-seed.json" assert { type: "json" };
+import deletedObjectNames from "../data/anatomy-viva-images-deleted.json" assert { type: "json" };
 
 const router = Router();
 
@@ -370,6 +371,25 @@ router.post("/admin/manual", adminMiddleware, async (req: Request, res: Response
   }
 });
 
+
+// Admin: delete rows whose objectNames are in the bundled deleted-list.
+// Removes only the DB row (GCS file is already gone). Idempotent.
+router.post("/admin/apply-cleanup", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const names = Array.isArray(deletedObjectNames) ? deletedObjectNames as string[] : [];
+    if (names.length === 0) { res.json({ success: true, deleted: 0, message: "Nothing to clean up" }); return; }
+    let deleted = 0;
+    for (const objectName of names) {
+      const result = await db.delete(anatomyVivaImagesTable)
+        .where(eq(anatomyVivaImagesTable.objectName, objectName));
+      if ((result as any).rowCount > 0) deleted++;
+    }
+    res.json({ success: true, deleted, total: names.length });
+  } catch (err: any) {
+    console.error("Anatomy viva images: apply-cleanup error", err);
+    res.status(500).json({ error: err?.message || "Cleanup failed" });
+  }
+});
 
 // Admin: apply the bundled seed data (anatomy-viva-images-seed.json compiled into
 // the dist). Idempotent — skips objectNames already present in the DB.
