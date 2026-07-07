@@ -89,6 +89,7 @@ type VoiceEvent =
   | { type: "transcript"; data: string }
   | { type: "audio"; data: string }
   | { type: "station_image"; imageId: number; imageUrl: string }
+  | { type: "station_image_arrow"; arrowTarget: { label: string; x: number; y: number } }
   | { type: "error"; error: string }
   | { done: true };
 
@@ -152,8 +153,8 @@ export default function PracticalHub() {
   const [selectedAnatomyVivaType, setSelectedAnatomyVivaType] = useState<AnatomyVivaType>(ANATOMY_VIVA_TYPES[0]);
   const [vivaType, setVivaType] = useState<VivaType | null>(null);
   const [clinicalImage, setClinicalImage] = useState<PhysiologyClinicalImage | null>(null);
-  const [anatomyStationImage, setAnatomyStationImage] = useState<{ id: number; url: string } | null>(null);
-  const anatomyStationImageRef = useRef<{ id: number; url: string } | null>(null);
+  const [anatomyStationImage, setAnatomyStationImage] = useState<{ id: number; url: string; arrowTarget?: { label: string; x: number; y: number } } | null>(null);
+  const anatomyStationImageRef = useRef<{ id: number; url: string; arrowTarget?: { label: string; x: number; y: number } } | null>(null);
   anatomyStationImageRef.current = anatomyStationImage;
   const [state, setState] = useState<SessionState>("home");
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -299,6 +300,8 @@ export default function PracticalHub() {
               playback.pushAudio(event.data);
             } else if (event.type === "station_image") {
               setAnatomyStationImage({ id: event.imageId, url: event.imageUrl });
+            } else if (event.type === "station_image_arrow") {
+              setAnatomyStationImage((prev) => prev ? { ...prev, arrowTarget: event.arrowTarget } : prev);
             } else if (event.type === "error") {
               gotError = event.error;
             }
@@ -364,6 +367,7 @@ export default function PracticalHub() {
       vivaType: vivaType ?? undefined,
       imageCaption: clinicalImage?.caption ?? undefined,
       imageId: anatomyStationImageRef.current?.id,
+      arrowLabel: anatomyStationImageRef.current?.arrowTarget?.label,
       audio,
     });
   }, [recorder, streamTurn, subject, topic, vivaType, clinicalImage]);
@@ -435,6 +439,7 @@ export default function PracticalHub() {
         vivaType: vivaType ?? undefined,
         imageCaption: clinicalImage?.caption ?? undefined,
         imageId: anatomyStationImageRef.current?.id,
+        arrowLabel: anatomyStationImageRef.current?.arrowTarget?.label,
         audio,
       });
     } else {
@@ -778,14 +783,56 @@ export default function PracticalHub() {
       {anatomyStationImage && (state === "examiner_speaking" || state === "listening" || isRecording || state === "processing") && (
         <Card className="bg-card/40 border-border/40 overflow-hidden">
           <CardContent className="p-3 flex flex-col gap-3 items-center">
-            <img
-              src={`${anatomyStationImage.url}${anatomyStationImage.url.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("mission_token") ?? "")}`}
-              alt={`${vivaType ?? "Anatomy"} specimen`}
-              className="w-full max-w-md object-contain rounded-lg bg-background/40 border border-border/30"
-            />
+            <div className="relative w-full max-w-md">
+              <img
+                src={`${anatomyStationImage.url}${anatomyStationImage.url.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("mission_token") ?? "")}`}
+                alt={`${vivaType ?? "Anatomy"} specimen`}
+                className="w-full object-contain rounded-lg bg-background/40 border border-border/30"
+              />
+              {anatomyStationImage.arrowTarget && (
+                <svg
+                  className="absolute inset-0 w-full h-full pointer-events-none"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                  overflow="visible"
+                >
+                  <defs>
+                    <marker
+                      id="red-tip"
+                      markerWidth="6"
+                      markerHeight="6"
+                      refX="3"
+                      refY="6"
+                      orient="auto"
+                      markerUnits="userSpaceOnUse"
+                    >
+                      <polygon points="0,0 6,0 3,6" fill="#ef4444" />
+                    </marker>
+                  </defs>
+                  <line
+                    x1={anatomyStationImage.arrowTarget.x}
+                    y1={Math.max(2, anatomyStationImage.arrowTarget.y - 16)}
+                    x2={anatomyStationImage.arrowTarget.x}
+                    y2={anatomyStationImage.arrowTarget.y - 2}
+                    stroke="#ef4444"
+                    strokeWidth="1.8"
+                    markerEnd="url(#red-tip)"
+                  />
+                  <circle
+                    cx={anatomyStationImage.arrowTarget.x}
+                    cy={anatomyStationImage.arrowTarget.y}
+                    r="1.8"
+                    fill="#ef4444"
+                    opacity="0.85"
+                  />
+                </svg>
+              )}
+            </div>
             <div className="text-xs text-muted-foreground leading-relaxed text-center">
               <p className="font-bold uppercase tracking-wider text-[10px] text-primary mb-1">{vivaType} Spotter</p>
-              Identify the structure shown and be ready for follow-up questions.
+              {anatomyStationImage.arrowTarget
+                ? "Identify the structure indicated by the red arrow."
+                : "Identify the structure shown and be ready for follow-up questions."}
             </div>
           </CardContent>
         </Card>

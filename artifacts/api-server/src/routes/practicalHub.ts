@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware } from "../middlewares/auth";
+import { gcsClient } from "../lib/gcs";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { convertAndCheckSilence, isHallucinatedTranscript, isUnexpectedScript, speechToText } from "@workspace/integrations-openai-ai-server/audio";
 import { ai as gemini } from "@workspace/integrations-gemini-ai";
@@ -26,6 +27,67 @@ import {
 } from "../lib/anatomyVivaImages";
 
 const router = Router();
+
+// Visceral and Prosection stations get an arrow overlay pointing to a specific structure.
+const ARROW_TARGET_CATEGORIES = new Set<string>(["Visceral", "Prosection"]);
+
+// Uses GPT-4o-mini vision to pick one structure in an anatomy image and return
+// its approximate (x%, y%) coordinate from the top-left corner of the image.
+// Returns null on any failure so the viva degrades gracefully.
+async function detectArrowTarget(imageId: number): Promise<{ label: string; x: number; y: number } | null> {
+  try {
+    const row = await getAnatomyImageById(imageId);
+    if (!row) return null;
+    const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+    if (!bucketId) return null;
+    const [buffer] = await gcsClient.bucket(bucketId).file(row.objectName).download();
+    const base64 = buffer.toString("base64");
+    const mimeType = /\.jpe?g$/i.test(row.objectName) ? "image/jpeg" : "image/png";
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `This is an anatomical specimen photograph used in a 1st-year MBBS practical exam. Identify 3 distinct, named anatomical structures clearly visible in it. For each give its name and the approximate center position as a percentage of image width (x, 0=left edge) and image height (y, 0=top edge).
+
+Return ONLY a valid JSON array, no markdown, no explanation:
+[{"label":"Structure Name","x":45,"y":30},{"label":"Another Structure","x":60,"y":55},{"label":"Third Structure","x":30,"y":70}]`,
+            },
+            {
+              type: "image_url",
+              image_url: { url: `data:${mimeType};base64,${base64}`, detail: "low" },
+            },
+          ],
+        },
+      ],
+      max_tokens: 200,
+    });
+    const text = (response.choices[0]?.message?.content ?? "").trim();
+    const match = text.match(/\[[\s\S]*\]/);
+    if (!match) return null;
+    const arr = JSON.parse(match[0]) as unknown[];
+    if (!Array.isArray(arr) || arr.length === 0) return null;
+    const valid = arr.filter(
+      (s): s is { label: string; x: number; y: number } =>
+        typeof (s as any).label === "string" &&
+        typeof (s as any).x === "number" &&
+        typeof (s as any).y === "number",
+    );
+    if (valid.length === 0) return null;
+    const picked = valid[Math.floor(Math.random() * valid.length)];
+    return {
+      label: picked.label,
+      x: Math.max(5, Math.min(93, Math.round(picked.x))),
+      y: Math.max(5, Math.min(93, Math.round(picked.y))),
+    };
+  } catch (err) {
+    console.error("detectArrowTarget failed:", err);
+    return null;
+  }
+}
 
 const voiceLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -715,13 +777,20 @@ router.post("/viva/start-voice", authMiddleware, voiceLimiter, async (req: Reque
       sendEvent(res, { type: "station_image", imageId: anatomyImageId, imageUrl: `/api/anatomy-viva-images/serve/${anatomyImageId}` });
     }
     const isBoneStation = subject === "Anatomy" && vivaType === "Bone";
+    const isArrowStation = subject === "Anatomy" && vivaType != null && ARROW_TARGET_CATEGORIES.has(vivaType) && anatomyImageId != null;
     const startQueryHint = isBoneStation
       ? [topic || vivaType, "X-ray radiograph radiological appearance fracture"].join(" ")
       : topic || vivaType || "";
-    const [sourceNotes, bookExcerpt] = await Promise.all([
+    const [sourceNotes, bookExcerpt, arrowTarget] = await Promise.all([
       fetchSourceNotes(subject),
       fetchBookExcerpt(subject, startQueryHint, isBoneStation ? /radiolog/i : undefined),
+      isArrowStation ? detectArrowTarget(anatomyImageId!) : Promise.resolve(null),
     ]);
+    if (arrowTarget) {
+      sendEvent(res, { type: "station_image_arrow", arrowTarget });
+      const arrowNote = `A red arrow in the image is pointing to the "${arrowTarget.label}". Your VERY FIRST question MUST be "What structure does the red arrow indicate?" — wait for the student to attempt identification before moving to parts/relations.`;
+      anatomyImageGroundTruth = anatomyImageGroundTruth ? `${anatomyImageGroundTruth} | ${arrowNote}` : arrowNote;
+    }
     const studentName = (req as any).user?.fullName || null;
     const persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth, studentName);
     const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
@@ -763,15 +832,21 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
     return;
   }
 
-  // The frontend echoes back the imageId it received from start-voice so we
-  // re-fetch the SAME specimen's ground truth on every follow-up turn instead
-  // of re-randomizing mid-station.
+  // The frontend echoes back the imageId (and arrowLabel for Visceral/Prosection) it
+  // received from start-voice so we re-fetch the SAME specimen's ground truth on every
+  // follow-up turn instead of re-randomizing mid-station.
   let anatomyImageGroundTruth: string | null = null;
   const anatomyImageIdRaw = req.body.imageId;
+  const arrowLabelRaw = typeof req.body.arrowLabel === "string" ? req.body.arrowLabel.trim().slice(0, 120) : null;
   if (subject === "Anatomy" && isAnatomyImageCategory(vivaType) && typeof anatomyImageIdRaw === "number") {
     try {
       const image = await getAnatomyImageById(anatomyImageIdRaw);
-      if (image) anatomyImageGroundTruth = buildAnatomyImageGroundTruth(image);
+      if (image) {
+        anatomyImageGroundTruth = buildAnatomyImageGroundTruth(image);
+        if (arrowLabelRaw) {
+          anatomyImageGroundTruth += ` | The red arrow in the image points to the "${arrowLabelRaw}" — keep this as the focal structure for follow-up questions.`;
+        }
+      }
     } catch (err) {
       console.error("Practical Hub: failed to fetch anatomy viva image for turn", err);
     }
