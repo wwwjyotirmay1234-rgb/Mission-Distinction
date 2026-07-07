@@ -17,6 +17,7 @@ import { PHYSIOLOGY_THEORY_SYLLABUS } from "../lib/physiologyTheorySyllabus";
 import { BIOCHEMISTRY_THEORY_SYLLABUS } from "../lib/biochemistryTheorySyllabus";
 import { BIOCHEMISTRY_SERUM_URINE_SYLLABUS } from "../lib/biochemistrySerumUrineSyllabus";
 import { ANATOMY_THEORY_SYLLABUS } from "../lib/anatomyTheorySyllabus";
+import { ANATOMY_CBME_STATION_SCOPE, ANATOMY_CBME_SCOPE_REMINDER } from "../lib/anatomyVivaCbmeSyllabus";
 import {
   ANATOMY_IMAGE_CATEGORIES,
   isAnatomyImageCategory,
@@ -389,7 +390,12 @@ function buildExaminerPersona(
     subject === "Physiology" && vivaType ? PHYSIOLOGY_SYLLABUS_BY_TYPE[vivaType as PhysiologyVivaType] : null;
   const biochemistrySyllabus =
     subject === "Biochemistry" && vivaType ? BIOCHEMISTRY_SYLLABUS_BY_TYPE[vivaType as BiochemistryVivaType] : null;
-  const anatomyTheorySyllabus = subject === "Anatomy" && vivaType === "Theory" ? ANATOMY_THEORY_SYLLABUS : null;
+  const anatomyTheorySyllabus =
+    subject === "Anatomy" && vivaType === "Theory"
+      ? ANATOMY_THEORY_SYLLABUS
+      : subject === "Anatomy" && isAnatomyImageCategory(vivaType)
+        ? ANATOMY_CBME_STATION_SCOPE[vivaType as string] ?? null
+        : null;
   const baselineSyllabus = physiologySyllabus
     ? `\n${physiologySyllabus}`
     : biochemistrySyllabus
@@ -451,7 +457,7 @@ function buildExaminerPersona(
   const anatomyReferenceBlock =
     subject === "Anatomy"
       ? `\nFor Anatomy specifically, ground every question, expected answer, and correction firmly in these exact reference books — you must be fully knowledgeable in all of them and draw on whichever is most authoritative for the point at hand: Cunningham's Manual of Practical Anatomy (for all spotter/dissection/prosection viva questions), BD Chaurasia's Human Anatomy (all volumes), Gray's Anatomy for Students, Snell's Clinical Anatomy by Regions, Datta's Essentials of Human Embryology and Langman's Medical Embryology (for embryology), and Inderbir Singh's Human Embryology and Human Histology. When identifying specimens, structures, or dissections, lean on Cunningham's and BD Chaurasia; when embryological correlation is needed, lean on Datta's, Langman's, and Inderbir Singh's. If sources differ slightly in emphasis, go with whichever explanation is clearest and most standard for an Indian 1st-year MBBS student, and never contradict any of these texts.${
-          anatomyImageCategory ? `\n${anatomyStationInstructions[anatomyImageCategory]}` : ""
+          anatomyImageCategory ? `\n${anatomyStationInstructions[anatomyImageCategory]}${ANATOMY_CBME_SCOPE_REMINDER}` : ""
         }`
       : "";
 
@@ -517,10 +523,18 @@ ${icebreakerNote}
 // Gemini panel member: generates ONE tougher/alternate cross-question to keep the exam rigorous.
 // This is an unnamed, silent co-examiner AI — the student only ever hears the one named examiner voice.
 // Soft-fails (returns null) on any error so the exam is never blocked by the second AI.
-async function geminiCrossQuestion(subject: VivaSubject, transcript: string, isPracticalMeasurementStation = false): Promise<string | null> {
+async function geminiCrossQuestion(
+  subject: VivaSubject,
+  transcript: string,
+  isPracticalMeasurementStation = false,
+  anatomyStationScope: string | null = null,
+): Promise<string | null> {
   try {
     const practicalNote = isPracticalMeasurementStation
       ? " This is a hands-on PRACTICAL/measurement station — your cross-question must test the actual bench procedure (principle, apparatus/reagents, step-by-step technique, precautions/sources of error, or reading the result), not just theory."
+      : "";
+    const cbmeScopeNote = anatomyStationScope
+      ? `\n\nIMPORTANT — CBME 1st-year scope constraint: your cross-question MUST stay within the following permitted topics for this Anatomy station. Do NOT suggest questions from Phase II (Pathology, Pharmacology, Microbiology) or Phase III clinical management.\n${anatomyStationScope}${ANATOMY_CBME_SCOPE_REMINDER}`
       : "";
     const response = await gemini.models.generateContent({
       model: "gemini-2.5-flash",
@@ -529,7 +543,7 @@ async function geminiCrossQuestion(subject: VivaSubject, transcript: string, isP
           role: "user",
           parts: [
             {
-              text: `${CBME_CONTEXT}\n\nYou are a tough, silent co-examiner on an MBBS ${subject} viva panel, sitting alongside the lead examiner. Based on the exam transcript so far, suggest ONE noticeably tougher or more clinically-applied follow-up/cross-question on ${subject} that would test deeper understanding than what has been asked.${practicalNote} The question must be grounded strictly in standard MBBS reference textbooks for ${subject} at NEET PG standard — never invent obscure trivia or non-standard facts. Return ONLY the question text, no preamble, no quotes.\n\nTranscript so far:\n${transcript.slice(-4000)}`,
+              text: `${CBME_CONTEXT}\n\nYou are a tough, silent co-examiner on an MBBS ${subject} viva panel, sitting alongside the lead examiner. Based on the exam transcript so far, suggest ONE noticeably tougher or more clinically-applied follow-up/cross-question on ${subject} that would test deeper understanding than what has been asked.${practicalNote} The question must be grounded strictly in standard MBBS reference textbooks for ${subject} at NEET PG standard — never invent obscure trivia or non-standard facts. Return ONLY the question text, no preamble, no quotes.${cbmeScopeNote}\n\nTranscript so far:\n${transcript.slice(-4000)}`,
             },
           ],
         },
@@ -918,7 +932,14 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
       sourceNotesPromise,
       fetchBookExcerpt(subject, queryHint, isBoneStation ? /radiolog/i : undefined),
       needsCrossQuestion
-        ? geminiCrossQuestion(subject, historyToTranscript([...history, { role: "user", content: userTranscript }]), isPracticalMeasurementStation)
+        ? geminiCrossQuestion(
+            subject,
+            historyToTranscript([...history, { role: "user", content: userTranscript }]),
+            isPracticalMeasurementStation,
+            subject === "Anatomy" && isAnatomyImageCategory(vivaType)
+              ? (ANATOMY_CBME_STATION_SCOPE[vivaType as string] ?? null)
+              : null,
+          )
         : Promise.resolve(null),
     ]);
     const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
