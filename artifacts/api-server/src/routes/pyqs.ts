@@ -494,4 +494,27 @@ ${CBME_CONTEXT}` },
   }
 });
 
+// ── Admin: update topic tags ────────────────────────────────────────────────
+router.patch("/:id/tags", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+    const { tags } = req.body;
+    if (!Array.isArray(tags) || tags.some((t: unknown) => typeof t !== "string")) {
+      res.status(400).json({ error: "tags must be an array of strings" }); return;
+    }
+    const cleaned = (tags as string[]).map(t => t.trim().toLowerCase()).filter(Boolean);
+    const [updated] = await db
+      .update(pyqsTable)
+      .set({ topicTags: cleaned })
+      .where(eq(pyqsTable.id, id))
+      .returning();
+    if (!updated) { res.status(404).json({ error: "PYQ not found" }); return; }
+    res.json(updated);
+  } catch (err) {
+    console.error("pyqs/tags error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

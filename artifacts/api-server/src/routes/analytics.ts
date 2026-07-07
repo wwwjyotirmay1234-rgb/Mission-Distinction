@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
-import { quizAnswersTable, questionsTable, quizzesTable, examsTable, studyPlansTable, dailyQuestionsTable, usersTable } from "@workspace/db";
+import { quizAnswersTable, questionsTable, quizzesTable, examsTable, studyPlansTable, dailyQuestionsTable, usersTable, vivaHistoryTable, pyqsTable, pyqInsightsCacheTable } from "@workspace/db";
 import { sendPushToUser } from "./push";
 import { adminMiddleware } from "../middlewares/auth";
 import { eq, and, gte, sql, desc } from "drizzle-orm";
@@ -116,25 +116,36 @@ router.get("/mistakes", authMiddleware, async (req: Request, res: Response) => {
 router.get("/exam-readiness", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const rows = await db
-      .select({
+
+    const [rows, recentAnswers, subjectCoverage, vivaRows, upcomingExams] = await Promise.all([
+      db.select({
         total: sql<number>`count(*)::int`,
         correctCount: sql<number>`sum(case when ${quizAnswersTable.correct} then 1 else 0 end)::int`,
-      })
-      .from(quizAnswersTable)
-      .where(eq(quizAnswersTable.userId, user.id));
+      }).from(quizAnswersTable).where(eq(quizAnswersTable.userId, user.id)),
+      db.select({ correct: quizAnswersTable.correct, createdAt: quizAnswersTable.createdAt })
+        .from(quizAnswersTable)
+        .where(eq(quizAnswersTable.userId, user.id))
+        .orderBy(desc(quizAnswersTable.createdAt))
+        .limit(40),
+      db.select({ subject: quizAnswersTable.subject, total: sql<number>`count(*)::int` })
+        .from(quizAnswersTable)
+        .where(eq(quizAnswersTable.userId, user.id))
+        .groupBy(quizAnswersTable.subject),
+      db.select({ score: vivaHistoryTable.score })
+        .from(vivaHistoryTable)
+        .where(eq(vivaHistoryTable.userId, user.id))
+        .orderBy(desc(vivaHistoryTable.createdAt))
+        .limit(20),
+      db.select({ examDate: examsTable.examDate })
+        .from(examsTable)
+        .where(and(eq(examsTable.isGlobal, true), gte(examsTable.examDate, new Date())))
+        .orderBy(examsTable.examDate)
+        .limit(1),
+    ]);
 
     const total = rows[0]?.total ?? 0;
     const correctCount = rows[0]?.correctCount ?? 0;
     const accuracy = total > 0 ? Math.round((correctCount / total) * 100) : 0;
-
-    // Recent trend: last 20 vs previous 20
-    const recentAnswers = await db
-      .select({ correct: quizAnswersTable.correct, createdAt: quizAnswersTable.createdAt })
-      .from(quizAnswersTable)
-      .where(eq(quizAnswersTable.userId, user.id))
-      .orderBy(desc(quizAnswersTable.createdAt))
-      .limit(40);
 
     const last20 = recentAnswers.slice(0, 20);
     const prev20 = recentAnswers.slice(20, 40);
@@ -142,21 +153,24 @@ router.get("/exam-readiness", authMiddleware, async (req: Request, res: Response
     const prev20Acc = prev20.length ? Math.round((prev20.filter(a => a.correct).length / prev20.length) * 100) : last20Acc;
     const trend = last20Acc - prev20Acc;
 
-    // Coverage: how many distinct subjects practiced with >=3 attempts vs total known subjects attempted
-    const subjectCoverage = await db
-      .select({ subject: quizAnswersTable.subject, total: sql<number>`count(*)::int` })
-      .from(quizAnswersTable)
-      .where(eq(quizAnswersTable.userId, user.id))
-      .groupBy(quizAnswersTable.subject);
     const coveredSubjects = subjectCoverage.filter(s => s.total >= 3).length;
     const attemptedSubjects = subjectCoverage.length || 1;
     const coverageRatio = coveredSubjects / attemptedSubjects;
-
-    // Volume factor: more attempted questions -> more confident score (caps at 150 questions)
     const volumeFactor = Math.min(total / 150, 1);
 
-    const rawScore = accuracy * 0.55 + last20Acc * 0.25 + coverageRatio * 100 * 0.1 + volumeFactor * 100 * 0.1;
+    // Viva factor (0-100): average viva score if any sessions exist
+    const vivaAvgScore = vivaRows.length > 0
+      ? Math.round(vivaRows.reduce((sum, r) => sum + r.score, 0) / vivaRows.length)
+      : null;
+    const vivaBonus = vivaAvgScore !== null ? (vivaAvgScore / 100) * 5 : 0;
+
+    const rawScore = accuracy * 0.50 + last20Acc * 0.25 + coverageRatio * 100 * 0.10 + volumeFactor * 100 * 0.10 + vivaBonus * 0.05;
     const score = total >= 5 ? Math.round(Math.max(0, Math.min(100, rawScore))) : null;
+
+    // Projected score: where will you be at exam time given current trend?
+    const projectedScore = score !== null
+      ? Math.round(Math.max(0, Math.min(100, score + Math.sign(trend) * Math.min(Math.abs(trend) * 1.5, 12))))
+      : null;
 
     let band = "Not enough data yet";
     if (score !== null) {
@@ -166,6 +180,21 @@ router.get("/exam-readiness", authMiddleware, async (req: Request, res: Response
       else band = "High Risk";
     }
 
+    // Weeks to nearest upcoming global exam
+    let weeksToExam: number | null = null;
+    if (upcomingExams[0]) {
+      const msToExam = upcomingExams[0].examDate.getTime() - Date.now();
+      weeksToExam = Math.max(0, Math.round(msToExam / (7 * 24 * 60 * 60 * 1000)));
+    }
+
+    // How many extra quiz sessions are needed this week to reach 75%?
+    const TARGET = 75;
+    let sessionsNeededThisWeek = 0;
+    if (projectedScore !== null && projectedScore < TARGET) {
+      const gap = TARGET - projectedScore;
+      sessionsNeededThisWeek = Math.min(Math.ceil(gap / 2), 7);
+    }
+
     res.json({
       score,
       band,
@@ -173,6 +202,11 @@ router.get("/exam-readiness", authMiddleware, async (req: Request, res: Response
       totalQuestionsAttempted: total,
       trend,
       recentAccuracy: last20Acc,
+      projectedScore,
+      vivaAvgScore,
+      vivaCount: vivaRows.length,
+      weeksToExam,
+      sessionsNeededThisWeek,
     });
   } catch (err) {
     console.error("exam-readiness error:", err);
@@ -409,6 +443,150 @@ router.get("/per-quiz-breakdown", authMiddleware, async (req: Request, res: Resp
   } catch (err) {
     console.error("per-quiz-breakdown error:", err);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── PYQ Pattern Analyzer ─────────────────────────────────────────────────────
+router.get("/pyq-patterns", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+
+    const [allPyqs, subjectAccuracy] = await Promise.all([
+      db.select({ id: pyqsTable.id, subject: pyqsTable.subject, year: pyqsTable.year, topicTags: pyqsTable.topicTags }).from(pyqsTable),
+      db.select({
+        subject: quizAnswersTable.subject,
+        total: sql<number>`count(*)::int`,
+        correctCount: sql<number>`sum(case when ${quizAnswersTable.correct} then 1 else 0 end)::int`,
+      }).from(quizAnswersTable).where(eq(quizAnswersTable.userId, user.id)).groupBy(quizAnswersTable.subject),
+    ]);
+
+    // Build tag → { subject, years set } map
+    const tagMap = new Map<string, { subject: string; years: Set<string>; pyqCount: number }>();
+    for (const pyq of allPyqs) {
+      const tags = (pyq.topicTags as string[]) ?? [];
+      for (const tag of tags) {
+        if (!tagMap.has(tag)) tagMap.set(tag, { subject: pyq.subject, years: new Set(), pyqCount: 0 });
+        const entry = tagMap.get(tag)!;
+        entry.years.add(pyq.year);
+        entry.pyqCount++;
+      }
+    }
+
+    // Build subject → accuracy map
+    const subjectAccMap = new Map<string, number>();
+    for (const row of subjectAccuracy) {
+      subjectAccMap.set(row.subject, row.total > 0 ? Math.round((row.correctCount / row.total) * 100) : 0);
+    }
+
+    // Total distinct years in DB for context
+    const allYears = new Set(allPyqs.map(p => p.year));
+    const totalYears = allYears.size || 1;
+
+    const patterns = Array.from(tagMap.entries())
+      .map(([tag, { subject, years, pyqCount }]) => ({
+        tag,
+        subject,
+        pyqFrequency: pyqCount,
+        distinctYears: years.size,
+        totalYears,
+        studentSubjectAccuracy: subjectAccMap.get(subject) ?? null,
+      }))
+      .sort((a, b) => b.distinctYears - a.distinctYears || b.pyqFrequency - a.pyqFrequency);
+
+    res.json({ patterns, totalYears, hasTags: patterns.length > 0 });
+  } catch (err) {
+    console.error("pyq-patterns error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── PYQ AI Insights (cached 24h) ─────────────────────────────────────────────
+router.get("/pyq-insights", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+    // Serve cache if fresh
+    const [cached] = await db.select().from(pyqInsightsCacheTable).where(eq(pyqInsightsCacheTable.userId, user.id));
+    if (cached && Date.now() - cached.generatedAt.getTime() < CACHE_TTL_MS) {
+      res.json({ insights: cached.insightsJson as string[], cached: true, generatedAt: cached.generatedAt });
+      return;
+    }
+
+    // Fetch patterns to build AI prompt
+    const [allPyqs, subjectAccuracy] = await Promise.all([
+      db.select({ subject: pyqsTable.subject, year: pyqsTable.year, topicTags: pyqsTable.topicTags }).from(pyqsTable),
+      db.select({
+        subject: quizAnswersTable.subject,
+        total: sql<number>`count(*)::int`,
+        correctCount: sql<number>`sum(case when ${quizAnswersTable.correct} then 1 else 0 end)::int`,
+      }).from(quizAnswersTable).where(eq(quizAnswersTable.userId, user.id)).groupBy(quizAnswersTable.subject),
+    ]);
+
+    const tagMap = new Map<string, { subject: string; years: Set<string> }>();
+    for (const pyq of allPyqs) {
+      for (const tag of ((pyq.topicTags as string[]) ?? [])) {
+        if (!tagMap.has(tag)) tagMap.set(tag, { subject: pyq.subject, years: new Set() });
+        tagMap.get(tag)!.years.add(pyq.year);
+      }
+    }
+
+    const subjectAccMap = new Map<string, number>();
+    for (const row of subjectAccuracy) {
+      subjectAccMap.set(row.subject, row.total > 0 ? Math.round((row.correctCount / row.total) * 100) : 0);
+    }
+
+    const totalYears = new Set(allPyqs.map(p => p.year)).size || 1;
+    const topPatterns = Array.from(tagMap.entries())
+      .map(([tag, { subject, years }]) => ({
+        tag, subject, years: years.size,
+        acc: subjectAccMap.get(subject) ?? null,
+      }))
+      .sort((a, b) => b.years - a.years)
+      .slice(0, 12);
+
+    let insights: string[] = [
+      "Complete more quizzes to unlock personalised PYQ insights. Each quiz session helps the AI calibrate your strengths and gaps.",
+    ];
+
+    if (topPatterns.length > 0) {
+      const patternSummary = topPatterns
+        .map(p => `"${p.tag}" (${p.subject}): appeared in ${p.years}/${totalYears} exam years${p.acc !== null ? `, your ${p.subject} accuracy: ${p.acc}%` : ""}`)
+        .join("\n");
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.4,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert MBBS academic advisor for 1st Year Indian medical students. Analyse PYQ frequency data and the student's quiz accuracy to generate honest, specific, actionable study insights.",
+          },
+          {
+            role: "user",
+            content: `Here is the PYQ frequency data and this student's quiz accuracy:\n${patternSummary}\n\nGenerate 3-5 concise, specific, actionable insight bullets. Each bullet should mention the topic name, its exam frequency, and what the student should do. Be direct and honest about weaknesses. Return ONLY valid JSON: { "insights": string[] }`,
+          },
+        ],
+      });
+      const content = completion.choices[0]?.message?.content;
+      if (content) {
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed.insights) && parsed.insights.length > 0) {
+          insights = parsed.insights;
+        }
+      }
+    }
+
+    // Upsert cache
+    await db.insert(pyqInsightsCacheTable)
+      .values({ userId: user.id, insightsJson: insights, generatedAt: new Date() })
+      .onConflictDoUpdate({ target: pyqInsightsCacheTable.userId, set: { insightsJson: insights, generatedAt: new Date() } });
+
+    res.json({ insights, cached: false, generatedAt: new Date() });
+  } catch (err: any) {
+    console.error("pyq-insights error:", err);
+    res.status(500).json({ error: err?.message || "Internal server error" });
   }
 });
 

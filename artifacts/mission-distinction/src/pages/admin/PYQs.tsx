@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { customFetch } from "@workspace/api-client-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Plus, Trash2, ClipboardList, Pencil, X, Upload, CheckCircle2, ExternalLink } from "lucide-react";
+import { Search, Plus, Trash2, ClipboardList, Pencil, X, Upload, CheckCircle2, ExternalLink, Tag } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreVertical } from "lucide-react";
@@ -32,6 +32,7 @@ type PYQ = {
   year: string;
   url: string;
   downloadCount?: number;
+  topicTags?: string[];
   createdAt: string | Date;
 };
 
@@ -88,6 +89,9 @@ export default function AdminPYQs() {
   const [editUploading, setEditUploading] = useState(false);
   const [editProgress, setEditProgress] = useState(0);
   const [editPending, setEditPending] = useState(false);
+  const [tagTarget, setTagTarget] = useState<PYQ | null>(null);
+  const [tagInput, setTagInput] = useState("");
+  const [savingTags, setSavingTags] = useState(false);
   const pdfRef = useRef<HTMLInputElement>(null);
   const editPdfRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
@@ -258,6 +262,9 @@ export default function AdminPYQs() {
                           <DropdownMenuItem onClick={() => openEdit(p)}>
                             <Pencil className="mr-2 h-4 w-4" /> Edit
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setTagTarget(p); setTagInput((p.topicTags ?? []).join(", ")); }}>
+                            <Tag className="mr-2 h-4 w-4" /> Tag Topics
+                          </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => deleteMutation.mutate(p.id)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
@@ -334,6 +341,64 @@ export default function AdminPYQs() {
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button onClick={handleAdd} disabled={createMutation.isPending || uploading}>
               {createMutation.isPending ? "Adding..." : "Add PYQ"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Topic Tags Dialog */}
+      <Dialog open={!!tagTarget} onOpenChange={v => { if (!v) { setTagTarget(null); setTagInput(""); } }}>
+        <DialogContent className="bg-card border-border/50 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Tag size={16} className="text-primary" /> Tag Topics</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <p className="text-sm font-medium text-foreground mb-1">{tagTarget?.title}</p>
+              <p className="text-xs text-muted-foreground">
+                Enter topic keywords separated by commas. These are used by the PYQ Pattern Analyzer to cross-match with student quiz performance.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Topic Tags</Label>
+              <Input
+                className="bg-background/50"
+                placeholder="e.g. brachial plexus, axilla, nerve injuries"
+                value={tagInput}
+                onChange={e => setTagInput(e.target.value)}
+              />
+              <p className="text-[11px] text-muted-foreground">Comma-separated. All tags are lowercased automatically.</p>
+            </div>
+            {tagInput.trim() && (
+              <div className="flex flex-wrap gap-1.5">
+                {tagInput.split(",").map(t => t.trim()).filter(Boolean).map((tag, i) => (
+                  <span key={i} className="px-2 py-0.5 text-xs rounded-full bg-primary/15 border border-primary/30 text-primary">{tag}</span>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setTagTarget(null); setTagInput(""); }}>Cancel</Button>
+            <Button
+              disabled={savingTags}
+              onClick={async () => {
+                if (!tagTarget) return;
+                setSavingTags(true);
+                try {
+                  const tags = tagInput.split(",").map(t => t.trim()).filter(Boolean);
+                  await customFetch(`/api/pyqs/${tagTarget.id}/tags`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ tags }),
+                  });
+                  toast.success(`Saved ${tags.length} tag${tags.length !== 1 ? "s" : ""} ✓`);
+                  qc.invalidateQueries({ queryKey: PYQS_KEY });
+                  setTagTarget(null);
+                  setTagInput("");
+                } catch { toast.error("Failed to save tags"); }
+                finally { setSavingTags(false); }
+              }}
+            >
+              {savingTags ? "Saving..." : "Save Tags"}
             </Button>
           </DialogFooter>
         </DialogContent>

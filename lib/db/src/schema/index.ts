@@ -34,3 +34,4 @@ export * from "./anatomyVivaImages";
 export * from "./vivaRooms";
 export * from "./vivaHistory";
 export * from "./clinicalCases";
+export * from "./pyqInsightsCache";

@@ -22,6 +22,10 @@ import {
   Brain,
   Trophy,
   BarChart2,
+  FileQuestion,
+  Zap,
+  TrendingDown,
+  Star,
 } from "lucide-react";
 
 interface WeakTopic {
@@ -58,6 +62,20 @@ interface ExamReadiness {
   totalQuestionsAttempted: number;
   trend: number;
   recentAccuracy: number;
+  projectedScore: number | null;
+  vivaAvgScore: number | null;
+  vivaCount: number;
+  weeksToExam: number | null;
+  sessionsNeededThisWeek: number;
+}
+
+interface PyqPattern {
+  tag: string;
+  subject: string;
+  pyqFrequency: number;
+  distinctYears: number;
+  totalYears: number;
+  studentSubjectAccuracy: number | null;
 }
 
 interface StudyPlan {
@@ -192,16 +210,21 @@ export default function MyProgress() {
   const [loading, setLoading] = useState(true);
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [reQuizMistakes, setReQuizMistakes] = useState<Mistake[] | null>(null);
+  const [pyqPatterns, setPyqPatterns] = useState<PyqPattern[]>([]);
+  const [pyqInsights, setPyqInsights] = useState<string[]>([]);
+  const [loadingPyq, setLoadingPyq] = useState(false);
+  const [pyqInsightsLoaded, setPyqInsightsLoaded] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [wtRes, mRes, erRes, spRes, pqRes] = await Promise.all([
+      const [wtRes, mRes, erRes, spRes, pqRes, patternsRes] = await Promise.all([
         apiFetch("/api/analytics/weak-topics"),
         apiFetch("/api/analytics/mistakes"),
         apiFetch("/api/analytics/exam-readiness"),
         apiFetch("/api/analytics/study-plan/latest"),
         apiFetch("/api/analytics/per-quiz-breakdown"),
+        apiFetch("/api/analytics/pyq-patterns"),
       ]);
 
       if (wtRes.ok) {
@@ -224,11 +247,32 @@ export default function MyProgress() {
         const data = await pqRes.json();
         setPerQuizBreakdown(data.breakdown || []);
       }
+      if (patternsRes.ok) {
+        const data = await patternsRes.json();
+        setPyqPatterns(data.patterns || []);
+      }
     } catch (error) {
       console.error("Error fetching progress data:", error);
       toast.error("Failed to load progress data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPyqInsights = async () => {
+    if (pyqInsightsLoaded) return;
+    setLoadingPyq(true);
+    try {
+      const res = await apiFetch("/api/analytics/pyq-insights");
+      if (res.ok) {
+        const data = await res.json();
+        setPyqInsights(data.insights || []);
+        setPyqInsightsLoaded(true);
+      }
+    } catch {
+      toast.error("Failed to load PYQ insights");
+    } finally {
+      setLoadingPyq(false);
     }
   };
 
@@ -281,10 +325,11 @@ export default function MyProgress() {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-card/50 border border-border/50 p-1">
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); if (v === "pyq") loadPyqInsights(); }} className="space-y-6">
+        <TabsList className="bg-card/50 border border-border/50 p-1 flex-wrap h-auto gap-1">
           <TabsTrigger value="overview">Exam Readiness</TabsTrigger>
           <TabsTrigger value="weak-topics">Weak Topics</TabsTrigger>
+          <TabsTrigger value="pyq" className="gap-1.5"><FileQuestion size={13} />PYQ Insights</TabsTrigger>
           <TabsTrigger value="mistakes">Mistake Notebook</TabsTrigger>
           <TabsTrigger value="study-plan">Study Plan</TabsTrigger>
         </TabsList>
@@ -301,60 +346,83 @@ export default function MyProgress() {
                 {loading ? (
                   <Skeleton className="h-32 w-full" />
                 ) : readiness && readiness.score !== null ? (
-                  <div className="flex flex-col lg:flex-row items-center justify-around py-4 gap-8">
-                    <div className="flex flex-col items-center">
-                      <div className="relative w-40 h-40 flex items-center justify-center">
-                        <svg className="w-full h-full transform -rotate-90">
-                          <circle
-                            cx="80"
-                            cy="80"
-                            r="70"
-                            fill="transparent"
-                            stroke="currentColor"
-                            strokeWidth="8"
-                            className="text-muted/20"
-                          />
-                          <circle
-                            cx="80"
-                            cy="80"
-                            r="70"
-                            fill="transparent"
-                            stroke="currentColor"
-                            strokeWidth="8"
-                            strokeDasharray={440}
-                            strokeDashoffset={440 - (440 * readiness.score) / 100}
-                            strokeLinecap="round"
-                            className="text-primary transition-all duration-1000 ease-out"
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-4xl font-bold">{readiness.score}</span>
-                          <span className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">Score</span>
+                  <div className="space-y-6">
+                    <div className="flex flex-col lg:flex-row items-center justify-around py-2 gap-8">
+                      {/* Dial */}
+                      <div className="flex flex-col items-center shrink-0">
+                        <div className="relative w-40 h-40 flex items-center justify-center">
+                          <svg className="w-full h-full transform -rotate-90">
+                            <circle cx="80" cy="80" r="70" fill="transparent" stroke="currentColor" strokeWidth="8" className="text-muted/20" />
+                            <circle cx="80" cy="80" r="70" fill="transparent" stroke="currentColor" strokeWidth="8" strokeDasharray={440} strokeDashoffset={440 - (440 * readiness.score) / 100} strokeLinecap="round" className="text-primary transition-all duration-1000 ease-out" />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-4xl font-bold">{readiness.score}</span>
+                            <span className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">Now</span>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="mt-3 text-sm px-4 py-1 border-primary/30 bg-primary/10 text-primary">{readiness.band}</Badge>
+                        {readiness.projectedScore !== null && (
+                          <div className={`mt-2 flex items-center gap-1.5 text-xs font-medium ${readiness.projectedScore >= readiness.score ? "text-green-400" : "text-red-400"}`}>
+                            {readiness.projectedScore >= readiness.score ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+                            Projected: <span className="font-bold">{readiness.projectedScore}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Subject breakdown */}
+                      <div className="flex-1 w-full max-w-xs space-y-4">
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Subject Breakdown</h4>
+                        <div className="space-y-3">
+                          {weakTopics.slice(0, 5).map((topic, i) => (
+                            <div key={i} className="space-y-1">
+                              <div className="flex justify-between text-[10px] font-medium">
+                                <span>{topic.subject}</span>
+                                <span>{topic.accuracy}%</span>
+                              </div>
+                              <div className="h-1 w-full rounded-full bg-muted/30 overflow-hidden">
+                                <div className={`h-full rounded-full ${topic.accuracy < 60 ? 'bg-red-500/60' : topic.accuracy < 80 ? 'bg-amber-500/60' : 'bg-green-500/60'}`} style={{ width: `${Math.max(0, Math.min(100, topic.accuracy))}%` }} />
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <Badge variant="outline" className={`mt-4 text-sm px-4 py-1 border-primary/30 bg-primary/10 text-primary`}>
-                        {readiness.band}
-                      </Badge>
                     </div>
 
-                    <div className="flex-1 w-full max-w-xs space-y-4">
-                      <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Subject Breakdown</h4>
-                      <div className="space-y-3">
-                        {weakTopics.slice(0, 5).map((topic, i) => (
-                          <div key={i} className="space-y-1">
-                            <div className="flex justify-between text-[10px] font-medium">
-                              <span>{topic.subject}</span>
-                              <span>{topic.accuracy}%</span>
-                            </div>
-                            <div className="h-1 w-full rounded-full bg-muted/30 overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${topic.accuracy < 60 ? 'bg-red-500/60' : topic.accuracy < 80 ? 'bg-amber-500/60' : 'bg-green-500/60'}`}
-                                style={{ width: `${Math.max(0, Math.min(100, topic.accuracy))}%` }}
-                              />
-                            </div>
+                    {/* CTA / action row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {readiness.sessionsNeededThisWeek > 0 && (
+                        <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-500/8 border border-amber-500/20">
+                          <Zap size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-semibold text-amber-300">Boost to 75%</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              Do <span className="font-bold text-foreground">{readiness.sessionsNeededThisWeek} more quiz session{readiness.sessionsNeededThisWeek > 1 ? "s" : ""}</span> this week to reach the target score.
+                            </p>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      )}
+                      {readiness.vivaCount > 0 && readiness.vivaAvgScore !== null && (
+                        <div className="flex items-start gap-3 p-3 rounded-xl bg-primary/8 border border-primary/20">
+                          <Brain size={16} className="text-primary shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-semibold text-primary">Viva Performance</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              Avg score <span className="font-bold text-foreground">{readiness.vivaAvgScore}%</span> across {readiness.vivaCount} session{readiness.vivaCount > 1 ? "s" : ""}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {readiness.weeksToExam !== null && (
+                        <div className="flex items-start gap-3 p-3 rounded-xl bg-card/60 border border-border/40">
+                          <Calendar size={16} className="text-muted-foreground shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-semibold">Exam Countdown</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              <span className="font-bold text-foreground">{readiness.weeksToExam} week{readiness.weeksToExam !== 1 ? "s" : ""}</span> until next university exam
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -485,6 +553,90 @@ export default function MyProgress() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* ── PYQ Insights Tab ── */}
+        <TabsContent value="pyq" className="space-y-6 outline-none">
+          <div>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <FileQuestion className="text-primary" size={20} /> PYQ Pattern Analyzer
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              High-frequency topics from university PYQs cross-matched with your quiz performance.
+            </p>
+          </div>
+
+          {/* Topic pattern cards */}
+          {loading ? (
+            <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full" />)}</div>
+          ) : pyqPatterns.length > 0 ? (
+            <div className="space-y-3">
+              {pyqPatterns.slice(0, 15).map((p, i) => {
+                const freqPct = Math.round((p.distinctYears / p.totalYears) * 100);
+                const accColor = p.studentSubjectAccuracy === null ? "text-muted-foreground"
+                  : p.studentSubjectAccuracy < 50 ? "text-red-400"
+                  : p.studentSubjectAccuracy < 70 ? "text-amber-400"
+                  : "text-green-400";
+                return (
+                  <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-card/40 border border-border/40 hover:border-primary/20 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-sm capitalize">{p.tag}</span>
+                        <Badge variant="outline" className="text-[10px] border-primary/20 text-primary bg-primary/8 px-1.5">{p.subject}</Badge>
+                      </div>
+                      <div className="mt-1.5 h-1.5 w-full rounded-full bg-muted/30 overflow-hidden">
+                        <div className="h-full rounded-full bg-primary/60 transition-all duration-500" style={{ width: `${freqPct}%` }} />
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 space-y-0.5">
+                      <p className="text-sm font-bold text-primary">{p.distinctYears}/{p.totalYears} yrs</p>
+                      <p className={`text-[11px] font-medium ${accColor}`}>
+                        {p.studentSubjectAccuracy !== null ? `You: ${p.studentSubjectAccuracy}%` : "No quiz data"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <Card className="bg-card/40 border-border/40 border-dashed">
+              <CardContent className="py-12 text-center">
+                <FileQuestion className="mx-auto text-muted-foreground/40 mb-3" size={40} />
+                <p className="font-medium">No topic tags yet</p>
+                <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto">
+                  An admin needs to tag PYQs with topic keywords. Once tagged, you'll see frequency data here.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* AI Insights */}
+          <Card className="bg-card/40 border-border/40">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles size={16} className="text-primary" /> AI Study Insights
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">Personalised bullets based on PYQ frequency + your performance. Refreshes daily.</p>
+            </CardHeader>
+            <CardContent>
+              {loadingPyq ? (
+                <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-5 w-full" />)}</div>
+              ) : pyqInsights.length > 0 ? (
+                <ul className="space-y-3">
+                  {pyqInsights.map((insight, i) => (
+                    <li key={i} className="flex gap-3 text-sm leading-relaxed">
+                      <Star size={14} className="text-primary shrink-0 mt-0.5" />
+                      <span className="text-foreground/90">{insight}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Switch to this tab to generate AI-powered insights based on your data.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="mistakes" className="space-y-4 outline-none">

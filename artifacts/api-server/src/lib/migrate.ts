@@ -553,6 +553,16 @@ export async function runStartupMigrations() {
         )
       ) AS v(scenario, subject, model_answer, explanation)
       WHERE NOT EXISTS (SELECT 1 FROM clinical_cases LIMIT 1);
+
+      ALTER TABLE pyqs
+        ADD COLUMN IF NOT EXISTS topic_tags TEXT[] NOT NULL DEFAULT '{}';
+
+      CREATE TABLE IF NOT EXISTS pyq_insights_cache (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL UNIQUE,
+        insights_json JSONB NOT NULL DEFAULT '[]',
+        generated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
     `);
   } finally {
     client.release();
