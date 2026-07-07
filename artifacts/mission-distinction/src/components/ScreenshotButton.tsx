@@ -7,29 +7,46 @@ async function loadHtml2Canvas() {
   return mod.default ?? mod;
 }
 
+/** Yield the main thread so the spinner renders before heavy work starts */
+function yieldToMain() {
+  return new Promise<void>(resolve => setTimeout(resolve, 50));
+}
+
 export function ScreenshotButton() {
   const [capturing, setCapturing] = useState(false);
   const flashRef = useRef<HTMLDivElement>(null);
 
   const capture = async () => {
     if (capturing) return;
+
+    const target = document.getElementById("md-capture-area");
+    if (!target) {
+      toast.error("Nothing to capture here.");
+      return;
+    }
+
     setCapturing(true);
 
     const flash = flashRef.current;
     if (flash) {
-      flash.style.opacity = "0.35";
-      setTimeout(() => { flash.style.opacity = "0"; }, 180);
+      flash.style.opacity = "0.3";
+      setTimeout(() => { flash.style.opacity = "0"; }, 150);
     }
+
+    // Yield so the spinner becomes visible before the heavy work
+    await yieldToMain();
 
     try {
       const html2canvas = await loadHtml2Canvas();
-      const target = document.getElementById("md-capture-area") || document.body;
 
-      const canvas = await html2canvas(target as HTMLElement, {
+      // scale=1 prevents mobile 3× DPR from tripling render time/memory
+      const scale = Math.min(window.devicePixelRatio ?? 1, 1.5);
+
+      const canvas = await html2canvas(target, {
         backgroundColor: "#09090b",
         useCORS: true,
         allowTaint: false,
-        scale: Math.min(window.devicePixelRatio, 2),
+        scale,
         logging: false,
         removeContainer: true,
         ignoreElements: (el: Element) =>
@@ -45,21 +62,23 @@ export function ScreenshotButton() {
         },
       } as Parameters<typeof html2canvas>[1]);
 
+      // Watermark
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        const scale = canvas.width / target.offsetWidth;
-        const pad = 12 * scale;
-        const fontSize = 13 * scale;
+        const pad = 10 * scale;
+        const fontSize = 12 * scale;
         ctx.font = `bold ${fontSize}px Inter, sans-serif`;
-        ctx.fillStyle = "rgba(124,58,237,0.75)";
+        ctx.fillStyle = "rgba(124,58,237,0.7)";
         const text = "Mission Distinction";
         const tw = ctx.measureText(text).width;
         ctx.fillText(text, canvas.width - tw - pad, canvas.height - pad);
       }
 
+      await yieldToMain();
+
       await new Promise<void>((resolve, reject) => {
         canvas.toBlob(async (blob) => {
-          if (!blob) { reject(new Error("Blob creation failed")); return; }
+          if (!blob) { reject(new Error("Blob failed")); return; }
 
           const filename = `mission-distinction-${Date.now()}.png`;
           const file = new File([blob], filename, { type: "image/png" });
@@ -81,14 +100,14 @@ export function ScreenshotButton() {
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          setTimeout(() => URL.revokeObjectURL(url), 2000);
           toast.success("Screenshot saved!");
           resolve();
         }, "image/png");
       });
     } catch (err) {
       console.error("[Screenshot]", err);
-      toast.error("Couldn't capture. Try sharing from your phone's screenshot instead.");
+      toast.error("Couldn't capture — try your phone's built-in screenshot instead.");
     } finally {
       setCapturing(false);
     }
@@ -104,7 +123,7 @@ export function ScreenshotButton() {
       <button
         onClick={capture}
         disabled={capturing}
-        title="Take screenshot to share your progress"
+        title="Screenshot your progress to share"
         aria-label="Take screenshot"
         className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-muted disabled:opacity-50"
       >
