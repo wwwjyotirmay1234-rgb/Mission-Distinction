@@ -357,6 +357,25 @@ router.patch("/:id/questions/:qid", adminMiddleware, async (req: Request, res: R
   }
 });
 
+router.patch("/:id/questions/:qid/tags", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const quizId = parseId(req.params.id);
+    const qid = parseId(req.params.qid);
+    if (!quizId || !qid) { res.status(400).json({ error: "Invalid ID" }); return; }
+    const { tags } = req.body;
+    if (!Array.isArray(tags)) { res.status(400).json({ error: "tags must be an array" }); return; }
+    const cleanTags = tags.map((t: any) => String(t).trim().toLowerCase()).filter(Boolean).slice(0, 20);
+    const [question] = await db.update(questionsTable)
+      .set({ topicTags: cleanTags })
+      .where(eq(questionsTable.id, qid))
+      .returning({ id: questionsTable.id, topicTags: questionsTable.topicTags });
+    if (!question) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(question);
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.delete("/:id/questions/:qid", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const quizId = parseId(req.params.id);

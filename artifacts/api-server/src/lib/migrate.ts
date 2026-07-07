@@ -557,6 +557,9 @@ export async function runStartupMigrations() {
       ALTER TABLE pyqs
         ADD COLUMN IF NOT EXISTS topic_tags TEXT[] NOT NULL DEFAULT '{}';
 
+      ALTER TABLE questions
+        ADD COLUMN IF NOT EXISTS topic_tags TEXT[];
+
       CREATE TABLE IF NOT EXISTS pyq_insights_cache (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL UNIQUE,

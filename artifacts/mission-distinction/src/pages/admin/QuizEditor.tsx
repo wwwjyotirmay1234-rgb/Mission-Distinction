@@ -21,7 +21,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft, Plus, Pencil, Trash2, CheckCircle2, Brain,
-  Clock, BookOpen, Sparkles, AlertCircle, Upload, HelpCircle, Wand2, Loader2,
+  Clock, BookOpen, Sparkles, AlertCircle, Upload, HelpCircle, Wand2, Loader2, Tag,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -49,6 +49,7 @@ type Question = {
   correctOption?: number | null;
   correctAnswer?: string | null;
   explanation?: string | null;
+  topicTags?: string[] | null;
 };
 
 type QuizDetail = {
@@ -94,6 +95,10 @@ export default function QuizEditor() {
   const [bulkError, setBulkError] = useState("");
   const [bulkMode, setBulkMode] = useState<"ai" | "manual">("ai");
   const [aiParsing, setAiParsing] = useState(false);
+
+  const [tagQTarget, setTagQTarget] = useState<Question | null>(null);
+  const [tagQInput, setTagQInput] = useState("");
+  const [savingQTags, setSavingQTags] = useState(false);
 
   const { data: quiz, isLoading, refetch } = useQuery<QuizDetail>({
     queryKey: ["quiz-detail", quizId],
@@ -413,6 +418,9 @@ export default function QuizEditor() {
                   <p className="text-sm font-medium leading-snug">{q.text}</p>
                 </div>
                 <div className="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-primary/60 hover:text-primary hover:bg-primary/10" title="Tag Topics" onClick={() => { setTagQTarget(q); setTagQInput((q.topicTags ?? []).join(", ")); }}>
+                    <Tag className="h-3.5 w-3.5" />
+                  </Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditQuestion(q)}>
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
@@ -460,6 +468,59 @@ export default function QuizEditor() {
           ))}
         </div>
       )}
+
+      {/* ── Question Topic Tags Dialog ── */}
+      <Dialog open={!!tagQTarget} onOpenChange={v => { if (!v) { setTagQTarget(null); setTagQInput(""); } }}>
+        <DialogContent className="bg-card border-border/50 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Tag size={15} className="text-primary" /> Tag Question Topics</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground line-clamp-2">{tagQTarget?.text}</p>
+            <div className="space-y-1.5">
+              <Label>Topic Tags</Label>
+              <Input
+                className="bg-background/50"
+                placeholder="e.g. brachial plexus, axilla, nerve injuries"
+                value={tagQInput}
+                onChange={e => setTagQInput(e.target.value)}
+              />
+              <p className="text-[11px] text-muted-foreground">Comma-separated. Tags matching PYQ tags unlock question-level accuracy in PYQ Analyzer.</p>
+            </div>
+            {tagQInput.trim() && (
+              <div className="flex flex-wrap gap-1.5">
+                {tagQInput.split(",").map(t => t.trim()).filter(Boolean).map((tag, i) => (
+                  <span key={i} className="px-2 py-0.5 text-xs rounded-full bg-primary/15 border border-primary/30 text-primary">{tag}</span>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setTagQTarget(null); setTagQInput(""); }}>Cancel</Button>
+            <Button
+              disabled={savingQTags}
+              onClick={async () => {
+                if (!tagQTarget || !quizId) return;
+                setSavingQTags(true);
+                try {
+                  const tags = tagQInput.split(",").map(t => t.trim()).filter(Boolean);
+                  await customFetch(`/api/quizzes/${quizId}/questions/${tagQTarget.id}/tags`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ tags }),
+                  });
+                  toast.success(`Saved ${tags.length} tag${tags.length !== 1 ? "s" : ""} ✓`);
+                  refetch();
+                  setTagQTarget(null);
+                  setTagQInput("");
+                } catch { toast.error("Failed to save tags"); }
+                finally { setSavingQTags(false); }
+              }}
+            >
+              {savingQTags ? "Saving..." : "Save Tags"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={qOpen} onOpenChange={setQOpen}>
         <DialogContent className="bg-card border-border/50 max-w-2xl max-h-[90vh] overflow-y-auto">

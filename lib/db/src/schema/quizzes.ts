@@ -26,6 +26,7 @@ export const questionsTable = pgTable("questions", {
   explanation: text("explanation"),
   maxMarks: integer("max_marks").default(5),
   modelAnswer: text("model_answer"),
+  topicTags: text("topic_tags").array(),
 });
 
 export const quizAttemptsTable = pgTable("quiz_attempts", {

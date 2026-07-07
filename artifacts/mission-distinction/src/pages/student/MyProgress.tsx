@@ -75,7 +75,8 @@ interface PyqPattern {
   pyqFrequency: number;
   distinctYears: number;
   totalYears: number;
-  studentSubjectAccuracy: number | null;
+  studentQuestionAccuracy: number | null;
+  studentQuestionCount: number;
 }
 
 interface StudyPlan {
@@ -573,9 +574,9 @@ export default function MyProgress() {
             <div className="space-y-3">
               {pyqPatterns.slice(0, 15).map((p, i) => {
                 const freqPct = Math.round((p.distinctYears / p.totalYears) * 100);
-                const accColor = p.studentSubjectAccuracy === null ? "text-muted-foreground"
-                  : p.studentSubjectAccuracy < 50 ? "text-red-400"
-                  : p.studentSubjectAccuracy < 70 ? "text-amber-400"
+                const accColor = p.studentQuestionAccuracy === null ? "text-muted-foreground"
+                  : p.studentQuestionAccuracy < 50 ? "text-red-400"
+                  : p.studentQuestionAccuracy < 70 ? "text-amber-400"
                   : "text-green-400";
                 return (
                   <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-card/40 border border-border/40 hover:border-primary/20 transition-colors">
@@ -591,7 +592,9 @@ export default function MyProgress() {
                     <div className="text-right shrink-0 space-y-0.5">
                       <p className="text-sm font-bold text-primary">{p.distinctYears}/{p.totalYears} yrs</p>
                       <p className={`text-[11px] font-medium ${accColor}`}>
-                        {p.studentSubjectAccuracy !== null ? `You: ${p.studentSubjectAccuracy}%` : "No quiz data"}
+                        {p.studentQuestionAccuracy !== null
+                          ? `You: ${p.studentQuestionAccuracy}% (${p.studentQuestionCount}q)`
+                          : "No tagged questions"}
                       </p>
                     </div>
                   </div>

@@ -451,46 +451,74 @@ router.get("/pyq-patterns", authMiddleware, async (req: Request, res: Response) 
   try {
     const user = (req as any).user;
 
-    const [allPyqs, subjectAccuracy] = await Promise.all([
-      db.select({ id: pyqsTable.id, subject: pyqsTable.subject, year: pyqsTable.year, topicTags: pyqsTable.topicTags }).from(pyqsTable),
-      db.select({
-        subject: quizAnswersTable.subject,
-        total: sql<number>`count(*)::int`,
-        correctCount: sql<number>`sum(case when ${quizAnswersTable.correct} then 1 else 0 end)::int`,
-      }).from(quizAnswersTable).where(eq(quizAnswersTable.userId, user.id)).groupBy(quizAnswersTable.subject),
-    ]);
+    // 1. All PYQs with their topic tags
+    const allPyqs = await db.select({ subject: pyqsTable.subject, year: pyqsTable.year, topicTags: pyqsTable.topicTags }).from(pyqsTable);
 
-    // Build tag → { subject, years set } map
-    const tagMap = new Map<string, { subject: string; years: Set<string>; pyqCount: number }>();
+    // 2. Build PYQ tag → { subject, years } frequency map
+    const tagPyqMap = new Map<string, { subject: string; years: Set<string>; pyqCount: number }>();
     for (const pyq of allPyqs) {
-      const tags = (pyq.topicTags as string[]) ?? [];
-      for (const tag of tags) {
-        if (!tagMap.has(tag)) tagMap.set(tag, { subject: pyq.subject, years: new Set(), pyqCount: 0 });
-        const entry = tagMap.get(tag)!;
-        entry.years.add(pyq.year);
-        entry.pyqCount++;
+      for (const tag of ((pyq.topicTags as string[]) ?? [])) {
+        if (!tagPyqMap.has(tag)) tagPyqMap.set(tag, { subject: pyq.subject, years: new Set(), pyqCount: 0 });
+        const e = tagPyqMap.get(tag)!;
+        e.years.add(pyq.year);
+        e.pyqCount++;
       }
     }
 
-    // Build subject → accuracy map
-    const subjectAccMap = new Map<string, number>();
-    for (const row of subjectAccuracy) {
-      subjectAccMap.set(row.subject, row.total > 0 ? Math.round((row.correctCount / row.total) * 100) : 0);
+    // If no tags exist yet, return early
+    if (tagPyqMap.size === 0) {
+      res.json({ patterns: [], totalYears: 0, hasTags: false });
+      return;
     }
 
-    // Total distinct years in DB for context
-    const allYears = new Set(allPyqs.map(p => p.year));
-    const totalYears = allYears.size || 1;
+    // 3. Get quiz questions that carry any PYQ tag
+    const taggedQuestions = await db
+      .select({ id: questionsTable.id, topicTags: questionsTable.topicTags })
+      .from(questionsTable)
+      .where(sql`${questionsTable.topicTags} IS NOT NULL AND array_length(${questionsTable.topicTags}, 1) > 0`);
 
-    const patterns = Array.from(tagMap.entries())
-      .map(([tag, { subject, years, pyqCount }]) => ({
-        tag,
-        subject,
-        pyqFrequency: pyqCount,
-        distinctYears: years.size,
-        totalYears,
-        studentSubjectAccuracy: subjectAccMap.get(subject) ?? null,
-      }))
+    // 4. Build questionId → tags lookup
+    const questionTagMap = new Map<number, string[]>();
+    for (const q of taggedQuestions) {
+      questionTagMap.set(q.id, (q.topicTags as string[]) ?? []);
+    }
+
+    // 5. Get this student's quiz answers for those questions
+    const taggedQIds = taggedQuestions.map(q => q.id);
+    let tagAccMap = new Map<string, { correct: number; total: number }>();
+
+    if (taggedQIds.length > 0) {
+      const studentAnswers = await db
+        .select({ questionId: quizAnswersTable.questionId, correct: quizAnswersTable.correct })
+        .from(quizAnswersTable)
+        .where(and(eq(quizAnswersTable.userId, user.id), sql`${quizAnswersTable.questionId} = ANY(${taggedQIds})`));
+
+      for (const ans of studentAnswers) {
+        const tags = questionTagMap.get(ans.questionId) ?? [];
+        for (const tag of tags) {
+          if (!tagAccMap.has(tag)) tagAccMap.set(tag, { correct: 0, total: 0 });
+          const acc = tagAccMap.get(tag)!;
+          acc.total++;
+          if (ans.correct) acc.correct++;
+        }
+      }
+    }
+
+    const totalYears = new Set(allPyqs.map(p => p.year)).size || 1;
+
+    const patterns = Array.from(tagPyqMap.entries())
+      .map(([tag, { subject, years, pyqCount }]) => {
+        const acc = tagAccMap.get(tag);
+        return {
+          tag,
+          subject,
+          pyqFrequency: pyqCount,
+          distinctYears: years.size,
+          totalYears,
+          studentQuestionAccuracy: acc && acc.total >= 1 ? Math.round((acc.correct / acc.total) * 100) : null,
+          studentQuestionCount: acc?.total ?? 0,
+        };
+      })
       .sort((a, b) => b.distinctYears - a.distinctYears || b.pyqFrequency - a.pyqFrequency);
 
     res.json({ patterns, totalYears, hasTags: patterns.length > 0 });
@@ -513,35 +541,56 @@ router.get("/pyq-insights", authMiddleware, aiLimiter, async (req: Request, res:
       return;
     }
 
-    // Fetch patterns to build AI prompt
-    const [allPyqs, subjectAccuracy] = await Promise.all([
-      db.select({ subject: pyqsTable.subject, year: pyqsTable.year, topicTags: pyqsTable.topicTags }).from(pyqsTable),
-      db.select({
-        subject: quizAnswersTable.subject,
-        total: sql<number>`count(*)::int`,
-        correctCount: sql<number>`sum(case when ${quizAnswersTable.correct} then 1 else 0 end)::int`,
-      }).from(quizAnswersTable).where(eq(quizAnswersTable.userId, user.id)).groupBy(quizAnswersTable.subject),
-    ]);
+    // Fetch patterns to build AI prompt — question-level accuracy
+    const allPyqs = await db.select({ subject: pyqsTable.subject, year: pyqsTable.year, topicTags: pyqsTable.topicTags }).from(pyqsTable);
 
-    const tagMap = new Map<string, { subject: string; years: Set<string> }>();
+    const tagPyqMap = new Map<string, { subject: string; years: Set<string> }>();
     for (const pyq of allPyqs) {
       for (const tag of ((pyq.topicTags as string[]) ?? [])) {
-        if (!tagMap.has(tag)) tagMap.set(tag, { subject: pyq.subject, years: new Set() });
-        tagMap.get(tag)!.years.add(pyq.year);
+        if (!tagPyqMap.has(tag)) tagPyqMap.set(tag, { subject: pyq.subject, years: new Set() });
+        tagPyqMap.get(tag)!.years.add(pyq.year);
       }
     }
 
-    const subjectAccMap = new Map<string, number>();
-    for (const row of subjectAccuracy) {
-      subjectAccMap.set(row.subject, row.total > 0 ? Math.round((row.correctCount / row.total) * 100) : 0);
+    // Question-level tag accuracy
+    const tagAccMap = new Map<string, { correct: number; total: number }>();
+    if (tagPyqMap.size > 0) {
+      const taggedQuestions = await db
+        .select({ id: questionsTable.id, topicTags: questionsTable.topicTags })
+        .from(questionsTable)
+        .where(sql`${questionsTable.topicTags} IS NOT NULL AND array_length(${questionsTable.topicTags}, 1) > 0`);
+
+      const questionTagMap = new Map<number, string[]>();
+      for (const q of taggedQuestions) questionTagMap.set(q.id, (q.topicTags as string[]) ?? []);
+
+      const taggedQIds = taggedQuestions.map(q => q.id);
+      if (taggedQIds.length > 0) {
+        const studentAnswers = await db
+          .select({ questionId: quizAnswersTable.questionId, correct: quizAnswersTable.correct })
+          .from(quizAnswersTable)
+          .where(and(eq(quizAnswersTable.userId, user.id), sql`${quizAnswersTable.questionId} = ANY(${taggedQIds})`));
+
+        for (const ans of studentAnswers) {
+          for (const tag of (questionTagMap.get(ans.questionId) ?? [])) {
+            if (!tagAccMap.has(tag)) tagAccMap.set(tag, { correct: 0, total: 0 });
+            const a = tagAccMap.get(tag)!;
+            a.total++;
+            if (ans.correct) a.correct++;
+          }
+        }
+      }
     }
 
     const totalYears = new Set(allPyqs.map(p => p.year)).size || 1;
-    const topPatterns = Array.from(tagMap.entries())
-      .map(([tag, { subject, years }]) => ({
-        tag, subject, years: years.size,
-        acc: subjectAccMap.get(subject) ?? null,
-      }))
+    const topPatterns = Array.from(tagPyqMap.entries())
+      .map(([tag, { subject, years }]) => {
+        const acc = tagAccMap.get(tag);
+        return {
+          tag, subject, years: years.size,
+          acc: acc && acc.total >= 1 ? Math.round((acc.correct / acc.total) * 100) : null,
+          questionCount: acc?.total ?? 0,
+        };
+      })
       .sort((a, b) => b.years - a.years)
       .slice(0, 12);
 
@@ -551,7 +600,7 @@ router.get("/pyq-insights", authMiddleware, aiLimiter, async (req: Request, res:
 
     if (topPatterns.length > 0) {
       const patternSummary = topPatterns
-        .map(p => `"${p.tag}" (${p.subject}): appeared in ${p.years}/${totalYears} exam years${p.acc !== null ? `, your ${p.subject} accuracy: ${p.acc}%` : ""}`)
+        .map(p => `"${p.tag}" (${p.subject}): appeared in ${p.years}/${totalYears} exam years${p.acc !== null ? `, your accuracy on tagged questions: ${p.acc}% (${p.questionCount} questions)` : ", no tagged questions attempted yet"}`)
         .join("\n");
 
       const completion = await openai.chat.completions.create({
