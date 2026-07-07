@@ -424,6 +424,127 @@ export async function runStartupMigrations() {
       );
 
       CREATE UNIQUE INDEX IF NOT EXISTS daily_questions_user_date_unique ON daily_questions(user_id, date_key);
+
+      CREATE TABLE IF NOT EXISTS clinical_cases (
+        id SERIAL PRIMARY KEY,
+        scenario TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        model_answer TEXT NOT NULL,
+        explanation TEXT NOT NULL,
+        date_assigned TEXT,
+        created_by INTEGER,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS clinical_case_attempts (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        case_id INTEGER NOT NULL,
+        answer_text TEXT NOT NULL,
+        ai_feedback JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS clinical_case_attempts_user_case
+        ON clinical_case_attempts(user_id, case_id);
+
+      ALTER TABLE doubt_answers
+        ADD COLUMN IF NOT EXISTS is_ai_generated BOOLEAN NOT NULL DEFAULT FALSE;
+
+      INSERT INTO clinical_cases (scenario, subject, model_answer, explanation)
+      SELECT * FROM (VALUES
+        (
+          'A 45-year-old man presents with sudden onset of right-sided weakness and slurred speech lasting 2 hours, which resolved completely. He has a history of hypertension and atrial fibrillation. Examination is now normal. What is the most likely diagnosis and your immediate management?',
+          'Medicine',
+          'TIA (Transient Ischaemic Attack) due to cardioembolic source. Immediate hospital admission, ABCD2 score assessment, CT head (to exclude haemorrhage), ECG/Holter, start anticoagulation (LMWH/warfarin for AF), aspirin 300mg stat, statin therapy, blood pressure control.',
+          'TIA is a neurological emergency — 10% risk of stroke within 48 hours. ABCD2 score guides urgency. AF is the most common cardioembolic source. Early intervention reduces stroke risk by 80%.'
+        ),
+        (
+          'A 60-year-old woman with known diabetes presents with painless loss of vision in her right eye over 6 weeks. She describes it like "a curtain coming down." Fundoscopy shows flame-shaped haemorrhages and disc oedema. What is the diagnosis and pathophysiology?',
+          'Ophthalmology',
+          'Central Retinal Vein Occlusion (CRVO). The central retinal vein is compressed at the lamina cribrosa, causing raised venous pressure, ischaemia, haemorrhages in all 4 quadrants (flame-shaped), disc oedema, and macular oedema. Risk factors: diabetes, hypertension, hyperlipidaemia.',
+          'CRVO classic presentation: sudden painless vision loss, "blood and thunder" fundus. Management: Anti-VEGF injections for macular oedema, treat systemic risk factors, screen for glaucoma (neovascular).'
+        ),
+        (
+          'A 3-year-old child presents with fever for 5 days, maculopapular rash starting from behind the ears, koplik spots on buccal mucosa, and conjunctivitis. What is the causative agent, complications you must watch for, and vaccination schedule in India?',
+          'Paediatrics',
+          'Measles (Rubeola virus — Paramyxovirus). Complications: otitis media (most common), pneumonia (most dangerous), encephalitis (SSPE — late fatal complication), vitamin A deficiency. Indian vaccination: MR at 9-12 months and 16-24 months under NIS.',
+          'The 3 Cs of measles: Cough, Coryza, Conjunctivitis. Koplik spots are pathognomonic and appear 1-2 days before rash. Vitamin A supplementation reduces mortality. Notifiable disease.'
+        ),
+        (
+          'A 25-year-old woman presents with amenorrhoea for 3 months, galactorrhoea, and bitemporal hemianopia. Her serum prolactin is 450 ng/mL. MRI pituitary shows a 12 mm lesion. What is the diagnosis and treatment?',
+          'Medicine',
+          'Prolactinoma (pituitary macroadenoma) causing hyperprolactinaemia. Treatment: Dopamine agonist — Cabergoline (first line) or Bromocriptine. Surgery (transsphenoidal) reserved for resistance/intolerance. Visual field monitoring. Prolactin normalises and tumour shrinks in most cases.',
+          'Prolactin inhibits GnRH → amenorrhoea, infertility. Bitemporal hemianopia due to optic chiasm compression. Macro = >10mm, Micro = <10mm. Cabergoline preferred over bromocriptine (better tolerability, once weekly dosing).'
+        ),
+        (
+          'A 55-year-old smoker presents with haemoptysis, weight loss, and a cavitating lesion in the right upper lobe on X-ray. Sputum AFB smear is negative. What is your differential diagnosis and next investigation?',
+          'Medicine',
+          'Differential: (1) Carcinoma of lung (squamous cell — most common to cavitate), (2) Pulmonary tuberculosis (smear-negative does not exclude TB), (3) Lung abscess, (4) Aspergilloma. Next: CT chest with contrast + sputum for culture, CBNAAT, bronchoscopy with BAL and biopsy, PET-CT if malignancy suspected.',
+          'Cavitating lung lesion + smoker → carcinoma until proven otherwise. Squamous cell carcinoma is most likely to cavitate. CBNAAT is more sensitive than smear for TB. Bronchoscopy allows histological diagnosis and culture.'
+        ),
+        (
+          'A 30-year-old woman develops facial rash in a butterfly distribution, joint pain, oral ulcers, and is found to have proteinuria 3+. ANA is positive with anti-dsDNA antibody titre elevated. What is the diagnosis, and how do you classify severity?',
+          'Medicine',
+          'Systemic Lupus Erythematosus (SLE). SLICC criteria (≥4 of 11). Renal involvement (lupus nephritis) indicates severe disease. WHO Class III/IV nephritis requires cyclophosphamide or mycophenolate + hydroxychloroquine + prednisolone. Monitor with urine protein:creatinine ratio, C3/C4 complement levels.',
+          'Anti-dsDNA is highly specific for SLE and correlates with disease activity. Hydroxychloroquine is the backbone of all SLE treatment. Lupus nephritis is the major cause of morbidity — biopsy guides immunosuppression choice.'
+        ),
+        (
+          'A 70-year-old man presents with progressive lower limb weakness, hyperreflexia, extensor plantar response, and sensory level at T10. MRI shows posterior disc herniation at T9-T10 compressing the cord. What is the diagnosis and urgency of management?',
+          'Surgery',
+          'Thoracic disc herniation causing Anterior Cord Syndrome / Compressive Myelopathy. Surgical emergency — urgent decompressive laminectomy/discectomy. Pre-operative IV methylprednisolone (controversial but widely used in India). Complete vs incomplete injury assessed by ASIA scale.',
+          'Spinal cord injury: upper motor neurone signs below the level. Sensory level at T10 localises the lesion. Golden period for surgery is within 6-8 hours. Long-term: physiotherapy, bladder/bowel rehabilitation, prevention of pressure sores.'
+        ),
+        (
+          'A 2-day-old neonate presents with jaundice noticed at birth. Baby is blood group A positive, mother is O positive. The baby appears lethargic with poor feeding. Direct Coombs test is positive. What is the diagnosis and your management?',
+          'Paediatrics',
+          'ABO Haemolytic Disease of Newborn (HDN). IgG anti-A/anti-B maternal antibodies cross placenta and haemolyse fetal RBCs. Management: Serum bilirubin levels, phototherapy if above treatment threshold (Bhutani nomogram), exchange transfusion if rising rapidly or approaching kernicterus range, IV immunoglobulin to reduce haemolysis.',
+          'Jaundice in first 24 hours is always pathological. ABO incompatibility is most common cause of HDN. Distinguish from physiological jaundice (day 2-3). Kernicterus risk: unconjugated bilirubin crosses BBB in neonates. Direct Coombs+ confirms immune-mediated haemolysis.'
+        ),
+        (
+          'A 40-year-old woman presents with dysphagia to solids and liquids equally, regurgitation of undigested food, and weight loss. Barium swallow shows rat-tail narrowing at the lower oesophagus with proximal dilatation. Manometry shows failure of LOS relaxation. What is the diagnosis and treatment?',
+          'Medicine',
+          'Achalasia Cardia. Failure of LOS relaxation + absence of oesophageal peristalsis due to loss of myenteric plexus ganglionic cells (Auerbach plexus). Treatment options: Pneumatic balloon dilatation (most effective non-surgical), Heller myotomy (laparoscopic), Botulinum toxin injection (elderly/poor surgical risk), Nifedipine/nitrates (medical — least effective).',
+          'Key differentiator: dysphagia to both solids AND liquids from onset = motility disorder (vs solids only early → mechanical obstruction). Bird-beak/rat-tail sign on barium. Manometry is gold standard. Risk of oesophageal carcinoma long-term — surveillance needed.'
+        ),
+        (
+          'A 28-year-old pregnant woman at 34 weeks gestation presents with sudden onset severe headache, blurred vision, and BP of 170/110 mmHg. Urine shows proteinuria 3+. She has a generalized tonic-clonic seizure in the ED. What is the diagnosis and immediate management?',
+          'Obstetrics',
+          'Eclampsia (Pre-eclampsia + seizure). Immediate: MgSO4 (Pritchard regime or Zuspan regime) to prevent further seizures, control BP (IV labetalol or hydralazine — target <160/110), left lateral position, O2, IV access, monitor fetal heart rate. Definitive treatment is DELIVERY after stabilisation.',
+          'Pre-eclampsia triad: hypertension + proteinuria + oedema after 20 weeks. Eclampsia = seizure added. MgSO4 is the drug of choice for seizure prophylaxis and treatment in eclampsia. Peripartum cardiomyopathy, HELLP syndrome, and renal failure are life-threatening complications.'
+        ),
+        (
+          'A 65-year-old man with poorly controlled diabetes presents with fever, severe right ear pain, and pus discharge. On examination there is granulation tissue at the bony-cartilaginous junction of the external auditory canal. CT shows bone erosion. What is the diagnosis?',
+          'ENT',
+          'Malignant (Necrotising) Otitis Externa. Pseudomonas aeruginosa is the causative organism in >95% of cases. The infection spreads from EAC to surrounding structures — skull base osteomyelitis (dangerous). Treatment: IV antipseudomonal antibiotics (piperacillin-tazobactam or ciprofloxacin), debridement, glycaemic control, long course (6-8 weeks). CT/MRI for staging.',
+          'Keyword: Diabetic + granulation tissue at bony-cartilaginous junction of EAC = Malignant OE. Can cause cranial nerve palsies (VII most common). Differentiate from benign OE by absence of bone erosion and diabetes association. High mortality if untreated.'
+        ),
+        (
+          'A 50-year-old man presents with episodic hypertension, sweating, palpitations and headache. 24-hour urinary VMA and metanephrines are elevated. CT abdomen shows a 4 cm right adrenal mass. What is the diagnosis and pre-operative preparation?',
+          'Surgery',
+          'Phaeochromocytoma (PPGL — paraganglioma if extra-adrenal). Pre-operative preparation: Alpha-blockade FIRST (phenoxybenzamine 2-4 weeks) to block the effects of catecholamines, then beta-blockade (never start beta-blocker first — causes unopposed alpha vasoconstriction and hypertensive crisis). Adequate hydration. Laparoscopic adrenalectomy.',
+          'Rule of 10s: 10% malignant, 10% bilateral, 10% extra-adrenal, 10% in children. Alpha-BEFORE-Beta rule is critical — exam favourite. Screen for MEN2 (RET mutation), VHL, NF-1. Post-op: monitor glucose (insulin from tumour released on handling). Check 24h urinary catecholamines 6 weeks post-op.'
+        ),
+        (
+          'A 22-year-old student presents with fever, severe sore throat, and cervical lymphadenopathy. Paul-Bunnell test (Monospot) is positive. On examination there is tonsillar exudate and tender hepatosplenomegaly. What is the diagnosis, and what drugs should be avoided?',
+          'Medicine',
+          'Infectious Mononucleosis (Glandular Fever) caused by EBV (Epstein-Barr Virus). AVOID AMPICILLIN/AMOXICILLIN — causes maculopapular rash in ~90% of IM patients (ampicillin rash). Also avoid contact sports (splenomegaly → splenic rupture risk). Treatment: supportive — fluids, analgesics, antipyretics. Corticosteroids for airway obstruction or severe thrombocytopaenia.',
+          'Atypical lymphocytes (Downey cells) on blood smear. Paul-Bunnell/Monospot detects heterophile antibodies. EBV associated with Burkitt lymphoma (in Africa) and nasopharyngeal carcinoma. Splenic rupture is the most dangerous complication. Ampicillin rash is a classic exam scenario.'
+        ),
+        (
+          'A 35-year-old woman presents with heat intolerance, weight loss despite good appetite, palpitations, tremors, and lid lag. TSH is undetectable with elevated free T4 and T3. A diffuse goitre and exophthalmos are present. What is the diagnosis and treatment options?',
+          'Medicine',
+          'Graves Disease (autoimmune hyperthyroidism) — TSH receptor stimulating antibodies (TRAb). Treatment options: (1) Antithyroid drugs — Carbimazole (preferred in India) or PTU (pregnancy) — titrate and wean 12-18 months; (2) Radioiodine (¹³¹I) — not in pregnancy, preferred in relapse; (3) Thyroidectomy — in large goitre, compression, or choice. Beta-blockers for symptom control.',
+          'Lid lag = Dalrymple sign. Exophthalmos (proptosis) is specific to Graves (not seen in other causes of hyperthyroidism). PTU crosses placenta less than carbimazole — preferred in first trimester. Thyroid storm: life-threatening emergency — cool, PTU, Lugol iodine, propranolol, steroids.'
+        ),
+        (
+          'A 12-year-old boy presents to the casualty after a road traffic accident with BP 80/50, HR 130, GCS 13. On examination there is bruising over the left flank and left lower rib fractures. FAST ultrasound shows free fluid in the abdomen. What is the immediate management?',
+          'Surgery',
+          'Haemorrhagic shock secondary to solid organ (likely splenic) injury. Follow ATLS protocol: A (airway), B (breathing — two large IV cannulas), C (circulation — 2 large bore IV access, crystalloid/blood transfusion, massive transfusion protocol), D (disability — GCS), E (exposure). CT abdomen if haemodynamically stable. Exploratory laparotomy if unstable.',
+          'In paediatric trauma, spleen is most commonly injured organ. Damage control surgery: laparotomy for haemorrhage control — do minimum to save life. In stable patients, non-operative management with CT grading of injury is preferred for splenic injuries in children. ATLS sequence is a high-yield topic.'
+        )
+      ) AS v(scenario, subject, model_answer, explanation)
+      WHERE NOT EXISTS (SELECT 1 FROM clinical_cases LIMIT 1);
     `);
   } finally {
     client.release();

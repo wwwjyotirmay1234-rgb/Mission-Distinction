@@ -49,6 +49,7 @@ import { submissionsRouter } from "./submissions";
 import { deviceAnalyticsRouter } from "./deviceAnalytics";
 import { appUpdatesRouter } from "./appUpdates";
 import { analyticsRouter } from "./analytics";
+import { clinicalCasesRouter } from "./clinicalCases";
 
 const router: IRouter = Router();
 
@@ -108,5 +109,7 @@ router.use("/admin/submissions", submissionsRouter);
 router.use(deviceAnalyticsRouter);
 router.use("/app-updates", appUpdatesRouter);
 router.use("/analytics", analyticsRouter);
+router.use("/clinical-cases", clinicalCasesRouter);
+router.use("/admin/clinical-cases", clinicalCasesRouter);
 
 export default router;

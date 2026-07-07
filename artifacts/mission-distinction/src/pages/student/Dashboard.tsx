@@ -22,7 +22,8 @@ import {
 import { 
   FileText, File, CheckCircle, Flame, Play, BookOpen, Bookmark, 
   Calendar, ArrowRight, MessageSquare, Bell, GraduationCap, 
-  ChevronDown, Brain, CheckCircle2, XCircle, RotateCcw, Sparkles 
+  ChevronDown, Brain, CheckCircle2, XCircle, RotateCcw, Sparkles,
+  Stethoscope,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -190,6 +191,60 @@ function QuestionOfDayWidget() {
             <p className="text-[11px] text-muted-foreground leading-relaxed italic">{q.explanation}</p>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ClinicalCaseWidget() {
+  const [loading, setLoading] = useState(true);
+  const [clinicalCase, setClinicalCase] = useState<{ id: number; scenario: string; subject: string; attempted: boolean } | null>(null);
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    apiFetch("/api/clinical-cases/today")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setClinicalCase(data); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton className="h-36 w-full rounded-2xl" />;
+  if (!clinicalCase) return null;
+
+  return (
+    <Card
+      className="bg-card/40 border-border/50 overflow-hidden relative group cursor-pointer hover:border-primary/30 transition-colors"
+      onClick={() => setLocation("/student/clinical-case")}
+    >
+      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+        <Stethoscope size={56} className="text-primary" />
+      </div>
+      <CardHeader className="p-4 pb-2 border-b border-border/40 bg-primary/5">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <Stethoscope size={15} className="text-primary" /> Clinical Case of the Day
+          </CardTitle>
+          <div className="flex items-center gap-1.5">
+            <Badge variant="outline" className="text-[10px] uppercase border-primary/20 text-primary bg-primary/5">
+              {clinicalCase.subject}
+            </Badge>
+            {clinicalCase.attempted && (
+              <Badge variant="outline" className="text-[10px] text-green-400 border-green-500/25 bg-green-500/5">
+                ✓ Done
+              </Badge>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4">
+        <p className="text-xs leading-relaxed text-muted-foreground line-clamp-3">{clinicalCase.scenario}</p>
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-[10px] text-muted-foreground">
+            {clinicalCase.attempted ? "View your feedback →" : "+15 XP · AI evaluation"}
+          </span>
+          <ArrowRight size={13} className="text-primary" />
+        </div>
       </CardContent>
     </Card>
   );
@@ -471,6 +526,9 @@ export default function StudentDashboard() {
 
         {/* Right Panel */}
         <div className="space-y-6">
+          {/* Clinical Case of the Day */}
+          <ClinicalCaseWidget />
+
           {/* Question of the Day */}
           <QuestionOfDayWidget />
 

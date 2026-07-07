@@ -80,6 +80,7 @@ interface DoubtAnswer {
   isAccepted: boolean;
   helpfulCount: number;
   myVote: boolean;
+  isAiGenerated: boolean;
   createdAt: string;
 }
 
@@ -1158,33 +1159,48 @@ function CommunityTab() {
             )}
 
             {doubtDetail.answers.map((ans) => (
-              <Card key={ans.id} className={`border ${ans.isAccepted ? "border-green-500/40 bg-green-500/5" : "border-border/40 bg-card/30"}`}>
+              <Card key={ans.id} className={`border ${
+                ans.isAiGenerated
+                  ? "border-purple-500/30 bg-purple-500/5"
+                  : ans.isAccepted
+                  ? "border-green-500/40 bg-green-500/5"
+                  : "border-border/40 bg-card/30"
+              }`}>
                 <CardContent className="p-4">
-                  {ans.isAccepted && (
+                  {ans.isAiGenerated && (
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/25">
+                        <Sparkles size={9} /> AI — verify with your batch
+                      </span>
+                    </div>
+                  )}
+                  {ans.isAccepted && !ans.isAiGenerated && (
                     <div className="flex items-center gap-1.5 text-green-500 text-xs font-semibold mb-2">
                       <CheckCircle2 size={14} /> Accepted Answer
                     </div>
                   )}
-                  <p className="text-sm leading-relaxed">{ans.answer}</p>
+                  <div className="text-sm leading-relaxed whitespace-pre-line">{ans.answer}</div>
                   <div className="flex items-center justify-between mt-3 gap-3 flex-wrap">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => helpfulMutation.mutate({ doubtId: doubtDetail.id, answerId: ans.id })}
-                        disabled={helpfulMutation.isPending}
-                        className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                          ans.myVote
-                            ? "border-blue-500/40 bg-blue-500/10 text-blue-400"
-                            : "border-border/50 text-muted-foreground hover:border-blue-500/30 hover:text-blue-400"
-                        }`}
-                      >
-                        <ThumbsUp size={11} />
-                        {(ans.helpfulCount ?? 0) > 0 ? ans.helpfulCount : "Helpful"}
-                      </button>
+                      {!ans.isAiGenerated && (
+                        <button
+                          onClick={() => helpfulMutation.mutate({ doubtId: doubtDetail.id, answerId: ans.id })}
+                          disabled={helpfulMutation.isPending}
+                          className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                            ans.myVote
+                              ? "border-blue-500/40 bg-blue-500/10 text-blue-400"
+                              : "border-border/50 text-muted-foreground hover:border-blue-500/30 hover:text-blue-400"
+                          }`}
+                        >
+                          <ThumbsUp size={11} />
+                          {(ans.helpfulCount ?? 0) > 0 ? ans.helpfulCount : "Helpful"}
+                        </button>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         <strong>{ans.authorName}</strong> · {timeAgo(ans.createdAt)}
                       </p>
                     </div>
-                    {!ans.isAccepted && doubtDetail.userId === user?.id && !doubtDetail.resolved && (
+                    {!ans.isAccepted && !ans.isAiGenerated && doubtDetail.userId === user?.id && !doubtDetail.resolved && (
                       <Button
                         size="sm"
                         variant="outline"

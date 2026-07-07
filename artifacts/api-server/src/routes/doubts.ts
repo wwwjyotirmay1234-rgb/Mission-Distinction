@@ -7,6 +7,7 @@ import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
 import rateLimit from "express-rate-limit";
 import { awardXp, XP_VALUES } from "../lib/xp";
+import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router = Router();
 
@@ -74,11 +75,52 @@ router.post("/", authMiddleware, doubtPostLimiter, async (req: Request, res: Res
       question: safeQuestion,
     }).returning();
     awardXp(user.id, XP_VALUES.DOUBT_ASKED, "doubt_asked", `Asked a doubt: ${safeTitle.slice(0, 60)}`).catch(() => {});
+
+    // Fire-and-forget AI auto-answer — clearly labelled, never blocks the response
+    generateAiAnswer(doubt.id, safeTitle, safeQuestion, stripHtml(String(subject))).catch(() => {});
+
     res.status(201).json(doubt);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// ─── AI auto-answer helper (fire-and-forget) ──────────────────────────────────
+async function generateAiAnswer(doubtId: number, title: string, question: string, subject: string) {
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.4,
+      max_tokens: 800,
+      messages: [
+        {
+          role: "system",
+          content: `You are a knowledgeable MBBS medical tutor helping 1st-year to final-year students in India. Provide a clear, accurate, and concise answer to the student's medical question. Use standard Indian medical textbook knowledge (Gray's, Guyton, Harper's, Robbins, etc.). Format with markdown where helpful (bold key terms, bullet lists for steps/mechanisms). End with a note: "Always cross-verify with your textbook and batch seniors."`,
+        },
+        {
+          role: "user",
+          content: `Subject: ${subject}\nQuestion: ${title}\n\n${question}`,
+        },
+      ],
+    });
+    const aiText = completion.choices[0]?.message?.content;
+    if (!aiText) return;
+
+    await db.insert(doubtAnswersTable).values({
+      doubtId,
+      userId: 0,
+      authorName: "Mission AI",
+      answer: aiText.slice(0, 10000),
+      isAiGenerated: true,
+    });
+
+    await db.update(doubtsTable)
+      .set({ answerCount: sql`${doubtsTable.answerCount} + 1` })
+      .where(eq(doubtsTable.id, doubtId));
+  } catch (err) {
+    console.error("[AI auto-answer] error:", err);
+  }
+}
 
 // ─── Get doubt with answers ───────────────────────────────────────────────────
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {

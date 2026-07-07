@@ -89,6 +89,7 @@ const StudentPracticalHub  = lazy(() => import("@/pages/student/PracticalHub"));
 const StudentGames         = lazy(() => import("@/pages/student/Games"));
 const StudentQuizAnalysis  = lazy(() => import("@/pages/student/QuizAnalysis"));
 const StudentScholarHub    = lazy(() => import("@/pages/student/ScholarHub"));
+const StudentClinicalCase  = lazy(() => import("@/pages/student/ClinicalCase"));
 
 // Admin pages
 const AdminDashboard     = lazy(() => import("@/pages/admin/Dashboard"));
@@ -120,6 +121,7 @@ const ProctoringReport   = lazy(() => import("@/pages/admin/ProctoringReport"));
 const AdminScholarHub    = lazy(() => import("@/pages/admin/ScholarHub"));
 const VivaQuestionBank   = lazy(() => import("@/pages/admin/VivaQuestionBank"));
 const AnatomyVivaImages  = lazy(() => import("@/pages/admin/AnatomyVivaImages"));
+const AdminClinicalCases = lazy(() => import("@/pages/admin/ClinicalCases"));
 
 const queryClient = new QueryClient();
 
@@ -212,6 +214,7 @@ function Router() {
                 <Route path="/student/practical-hub" component={StudentPracticalHub} />
                 <Route path="/student/games"        component={StudentGames} />
                 <Route path="/student/scholar-hub" component={StudentScholarHub} />
+                <Route path="/student/clinical-case" component={StudentClinicalCase} />
                 <Route component={NotFound} />
               </Switch>
             </StudentLayout>
@@ -252,6 +255,7 @@ function Router() {
                 <Route path="/admin/proctoring/:attemptId"  component={ProctoringReport} />
                 <Route path="/admin/scholar-hub"            component={AdminScholarHub} />
                 <Route path="/admin/anatomy-viva-images"    component={AnatomyVivaImages} />
+                <Route path="/admin/clinical-cases"         component={AdminClinicalCases} />
                 <Route component={NotFound} />
               </Switch>
             </AdminLayout>

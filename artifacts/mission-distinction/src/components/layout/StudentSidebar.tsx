@@ -75,6 +75,7 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
     { icon: Zap, label: "Cheat Codes", href: "/student/cheat-codes" },
     { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
     { icon: Users, label: "Study Rooms", href: "/student/study-rooms" },
+    { icon: Stethoscope, label: "Clinical Cases", href: "/student/clinical-case" },
     { icon: Bot, label: "AI Tools", href: "/student/ai-tools" },
     { icon: Gamepad2, label: "Medical Games", href: "/student/games" },
     { icon: Music, label: "Music", href: "/student/music" },

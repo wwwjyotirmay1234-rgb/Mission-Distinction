@@ -20,6 +20,7 @@ export const doubtAnswersTable = pgTable("doubt_answers", {
   answer: text("answer").notNull(),
   isAccepted: boolean("is_accepted").default(false).notNull(),
   helpfulCount: integer("helpful_count").default(0).notNull(),
+  isAiGenerated: boolean("is_ai_generated").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
