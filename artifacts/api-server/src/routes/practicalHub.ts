@@ -1259,6 +1259,10 @@ Return ONLY valid JSON (no markdown fences):
       feedbackJson,
     });
 
+    // Award XP: 15 base + up to 10 bonus for high scores (score is 0-10)
+    const bonusXp = score >= 8 ? 10 : score >= 5 ? 5 : 0;
+    awardXp(userId, XP_VALUES.TEACH_BACK_SESSION + bonusXp, "TEACH_BACK_SESSION", `Teach-Back: ${topic} (${subject})`).catch(() => {});
+
     res.json({ transcript, score, coveredPoints, missedPoints, clinicalCorrelatesMissed, feedbackText });
   } catch (err: any) {
     console.error("Teach-back error:", err);

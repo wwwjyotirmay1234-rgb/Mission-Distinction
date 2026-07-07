@@ -1165,50 +1165,89 @@ export default function PracticalHub() {
               No teach-back sessions yet. Try explaining a topic to get structured feedback.
             </CardContent>
           </Card>
-        ) : (
-          <div className="space-y-3">
-            {tbHistory.map((row) => {
-              const sc = row.score ?? 0;
-              const scoreColor = sc >= 8 ? "text-emerald-500" : sc >= 5 ? "text-amber-500" : "text-red-500";
-              return (
-                <Card key={row.id} className="bg-card/40 border-border/40">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{row.topic}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {row.subject} · {new Date(row.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" })}
-                        </p>
-                        {row.feedbackJson?.feedbackText && (
-                          <p className="text-xs text-muted-foreground mt-1.5 italic line-clamp-2">"{row.feedbackJson.feedbackText}"</p>
-                        )}
-                      </div>
-                      <span className={`text-xl font-bold shrink-0 ${scoreColor}`}>
-                        {sc}<span className="text-xs font-normal text-muted-foreground">/10</span>
-                      </span>
-                    </div>
-                    {row.feedbackJson?.missedPoints?.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-border/30">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-red-500/70 mb-1">Missed</p>
-                        <ul className="space-y-0.5">
-                          {row.feedbackJson.missedPoints.slice(0, 2).map((pt, i) => (
-                            <li key={i} className="text-[11px] text-muted-foreground flex items-start gap-1.5">
-                              <AlertTriangle size={10} className="text-red-400 mt-0.5 shrink-0" />
-                              {pt}
-                            </li>
-                          ))}
-                          {row.feedbackJson.missedPoints.length > 2 && (
-                            <li className="text-[11px] text-muted-foreground">+{row.feedbackJson.missedPoints.length - 2} more…</li>
+        ) : (() => {
+          const chartData = [...tbHistory].reverse().map((row, i) => ({
+            n: i + 1,
+            score: row.score ?? 0,
+            label: new Date(row.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
+            topic: row.topic,
+          }));
+          const bySubject: Record<string, { sessions: number; total: number }> = {};
+          for (const row of tbHistory) {
+            if (!bySubject[row.subject]) bySubject[row.subject] = { sessions: 0, total: 0 };
+            bySubject[row.subject].sessions += 1;
+            bySubject[row.subject].total += row.score ?? 0;
+          }
+          return (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {Object.entries(bySubject).map(([subj, stats]) => {
+                  const avg = Math.round(stats.total / stats.sessions * 10) / 10;
+                  const avgColor = avg >= 8 ? "text-emerald-500" : avg >= 5 ? "text-amber-500" : "text-red-500";
+                  return (
+                    <Card key={subj} className="bg-card/40 border-border/40">
+                      <CardContent className="p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">{subj}</p>
+                        <p className={`text-2xl font-bold ${avgColor}`}>{avg}<span className="text-sm font-normal text-muted-foreground">/10</span></p>
+                        <p className="text-xs text-muted-foreground">{stats.sessions} session{stats.sessions !== 1 ? "s" : ""}</p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              <Card className="bg-card/40 border-border/40">
+                <CardContent className="p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Score Trend</p>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                      <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                      <YAxis domain={[0, 10]} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                      <Tooltip
+                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                        formatter={(value: number, _name: string, props: any) => [`${value}/10 — ${props.payload.topic}`, "Score"]}
+                      />
+                      <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card/40 border-border/40">
+                <CardContent className="p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Recent Sessions</p>
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {tbHistory.map((row) => {
+                      const sc = row.score ?? 0;
+                      const scoreColor = sc >= 8 ? "text-emerald-500" : sc >= 5 ? "text-amber-500" : "text-red-500";
+                      return (
+                        <div key={row.id} className="space-y-1 py-2 border-b border-border/20 last:border-0">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-xs truncate">{row.topic}</p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {row.subject} · {new Date(row.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" })}
+                              </p>
+                            </div>
+                            <span className={`text-base font-bold shrink-0 ${scoreColor}`}>
+                              {sc}<span className="text-[10px] font-normal text-muted-foreground">/10</span>
+                            </span>
+                          </div>
+                          {row.feedbackJson?.missedPoints?.length > 0 && (
+                            <p className="text-[10px] text-red-400/80 truncate">
+                              Missed: {row.feedbackJson.missedPoints.slice(0, 2).join("; ")}{row.feedbackJson.missedPoints.length > 2 ? "…" : ""}
+                            </p>
                           )}
-                        </ul>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          );
+        })()}
 
         <Button onClick={() => setState("teach_back_setup")} className="gap-2">
           <Brain size={14} /> New Teach-Back Session
