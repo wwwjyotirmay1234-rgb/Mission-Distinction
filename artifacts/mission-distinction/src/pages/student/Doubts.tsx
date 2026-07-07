@@ -9,7 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Paperclip, Globe, Copy, Check, Loader2, FileText, ThumbsUp } from "lucide-react";
+import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Paperclip, Globe, Copy, Check, Loader2, FileText, ThumbsUp, Share2 } from "lucide-react";
+
+function shareDoubtToWhatsApp(title: string, subject: string) {
+  const appUrl = window.location.origin;
+  const text = `📚 *MBBS Doubt (${subject})*\n\n${title}\n\nCan anyone help? Discuss on Mission Distinction 🎓\n→ ${appUrl}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+}
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -1133,15 +1139,24 @@ function CommunityTab() {
                 )}
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/30">
                   <p className="text-xs text-muted-foreground">Asked by <strong>{doubtDetail.authorName}</strong></p>
-                  <Button
-                    size="sm"
-                    variant={showAiPanel ? "default" : "outline"}
-                    className={`h-8 gap-1.5 text-xs ${showAiPanel ? "bg-primary" : "border-primary/40 text-primary hover:bg-primary/10"}`}
-                    onClick={() => setShowAiPanel(v => !v)}
-                  >
-                    <Sparkles size={13} />
-                    {showAiPanel ? "Hide AI" : "Ask AI"}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => shareDoubtToWhatsApp(doubtDetail.title, doubtDetail.subject)}
+                      title="Share on WhatsApp"
+                      className="flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-[#25D366]/35 text-[#25D366] text-xs font-medium hover:bg-[#25D366]/10 transition-colors"
+                    >
+                      <Share2 size={12} /> Share
+                    </button>
+                    <Button
+                      size="sm"
+                      variant={showAiPanel ? "default" : "outline"}
+                      className={`h-8 gap-1.5 text-xs ${showAiPanel ? "bg-primary" : "border-primary/40 text-primary hover:bg-primary/10"}`}
+                      onClick={() => setShowAiPanel(v => !v)}
+                    >
+                      <Sparkles size={13} />
+                      {showAiPanel ? "Hide AI" : "Ask AI"}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

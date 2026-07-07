@@ -9,8 +9,13 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   Stethoscope, Sparkles, CheckCircle2, AlertTriangle, Star,
-  Target, ChevronRight, RefreshCw, Lightbulb,
+  Target, ChevronRight, RefreshCw, Lightbulb, Share2,
 } from "lucide-react";
+
+function shareToWhatsApp(text: string) {
+  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
@@ -307,6 +312,17 @@ export default function ClinicalCase() {
             </p>
             <FeedbackCard feedback={feedback} explanation={clinicalCase.explanation} />
           </div>
+          <button
+            onClick={() => {
+              const appUrl = window.location.origin;
+              const text = `🩺 *Clinical Case of the Day — Mission Distinction*\n\nI scored *${feedback.score}/10* on today's ${clinicalCase.subject} case!\n\n"${feedback.verdict}"\n\nJoin me & test yourself → ${appUrl}`;
+              shareToWhatsApp(text);
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-[#25D366]/30 bg-[#25D366]/8 hover:bg-[#25D366]/15 text-[#25D366] text-sm font-semibold transition-colors"
+          >
+            <Share2 size={15} />
+            Share my score on WhatsApp
+          </button>
         </div>
       )}
 

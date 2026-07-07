@@ -23,7 +23,7 @@ import {
   FileText, File, CheckCircle, Flame, Play, BookOpen, Bookmark, 
   Calendar, ArrowRight, MessageSquare, Bell, GraduationCap, 
   ChevronDown, Brain, CheckCircle2, XCircle, RotateCcw, Sparkles,
-  Stethoscope,
+  Stethoscope, Share2,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -617,6 +617,25 @@ export default function StudentDashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Invite Batchmates */}
+      <button
+        onClick={() => {
+          const appUrl = window.location.origin;
+          const text = `🎓 *Mission Distinction — MBBS Study App*\n\nHey! Come study with me on Mission Distinction 📚\n\n✅ AI Viva Examiner\n✅ Clinical Cases of the Day\n✅ Instant Doubt Solver\n✅ PYQ Quizzes & Flashcards\n\nFree to use → ${appUrl}`;
+          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+        }}
+        className="w-full flex items-center gap-3 p-4 rounded-2xl border border-[#25D366]/25 bg-[#25D366]/5 hover:bg-[#25D366]/10 transition-colors text-left group"
+      >
+        <div className="w-9 h-9 rounded-full bg-[#25D366]/15 flex items-center justify-center shrink-0 group-hover:bg-[#25D366]/25 transition-colors">
+          <Share2 size={16} className="text-[#25D366]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-[#25D366]">Invite Batchmates</p>
+          <p className="text-xs text-muted-foreground">Share Mission Distinction with your batch on WhatsApp</p>
+        </div>
+        <ArrowRight size={14} className="text-[#25D366]/60 shrink-0" />
+      </button>
     </div>
   );
 }
