@@ -177,6 +177,12 @@ export default function PracticalHub() {
   const answerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recorderStateRef = useRef(recorder.state);
   recorderStateRef.current = recorder.state;
+  // Live refs so the unmount cleanup can call the latest versions without
+  // adding them to the dependency array (which would re-register the effect).
+  const playbackRef = useRef(playback);
+  playbackRef.current = playback;
+  const recorderRef = useRef(recorder);
+  recorderRef.current = recorder;
 
   useEffect(() => {
     if (state === "setup" || state === "section_ended") {
@@ -189,8 +195,18 @@ export default function PracticalHub() {
 
   useEffect(() => {
     return () => {
+      // Abort any in-flight SSE request so the stream handler stops.
       currentRequestRef.current?.abort();
+      // Clear all timers.
+      if (timerRef.current) clearInterval(timerRef.current);
       if (answerTimerRef.current) clearInterval(answerTimerRef.current);
+      // Stop audio playback so the examiner's voice doesn't keep playing
+      // after the user navigates away from this page.
+      playbackRef.current.clear();
+      // Stop the microphone if it is still recording.
+      if (recorderRef.current.state === "recording") {
+        recorderRef.current.stopRecording().catch(() => {});
+      }
     };
   }, []);
 
