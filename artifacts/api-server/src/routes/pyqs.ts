@@ -339,7 +339,7 @@ ${CBME_CONTEXT}` },
   }
 });
 
-// ── AI "most repeated / important questions per chapter" analysis ───────────
+// ── AI chapter-wise question analysis (all questions, frequency-ranked) ─────
 // Same SSE streaming approach as /search-topic: keeps the connection alive for
 // the full walk over a scanned document regardless of how many pages/batches
 // it takes, instead of hitting a reverse-proxy timeout on long documents.
@@ -366,10 +366,20 @@ router.post("/:id/repeated-questions", authMiddleware, pyqAiLimiter, async (req:
 }`;
 
     if (doc.mode === "text") {
-      const prompt = `You are an expert Indian MBBS (${pyq.subject}) examiner analysing a previous-year-question (PYQ) compilation titled "${pyq.title}" that may span multiple years/exam sessions.
-1. Group the questions by chapter/topic within ${pyq.subject}.
-2. Within each chapter, treat questions as the SAME repeated entry whenever they are verbatim repeats, close paraphrases, OR ask about the same underlying topic/concept/sub-topic — even if the wording is quite different. Count how many times each such concept appears across the document.
-3. Rank chapters/questions by importance (repetition frequency + exam weightage) so a student knows what to prioritize before the exam.
+      const prompt = `You are an expert Indian MBBS (${pyq.subject}) examiner analysing a previous-year-question (PYQ) compilation titled "${pyq.title}" spanning multiple years/exam sessions.
+
+Your task: produce a COMPLETE chapter-wise analysis covering EVERY question in this document.
+
+Rules:
+1. Identify every chapter/topic of the ${pyq.subject} MBBS syllabus that has at least one question in this compilation. Do NOT skip any chapter.
+2. For each chapter, list EVERY question asked — even if it appeared only once (timesSeen=1). Do NOT omit single-occurrence questions.
+3. Within each chapter, merge questions that are verbatim repeats, close paraphrases, OR ask about the same underlying concept/sub-topic into ONE entry with timesSeen = how many times that concept appeared, and yearsSeen = all the years/sessions it appeared.
+4. Within each chapter, sort questions by timesSeen descending (most repeated first).
+5. Mark chapter importance: "high" if any question appeared 3+ times OR the chapter has 5+ distinct question entries; "medium" if 2 times or 3-4 entries; "low" if all questions appeared once and fewer than 3 entries.
+6. The summary field should briefly highlight the top 3-4 chapters to prioritize.
+
+IMPORTANT: The student needs to see the FULL picture — every chapter, every topic, every question from all years. Do not truncate or omit anything.
+
 Return ONLY valid JSON of the shape:
 ${synthesisSchema}`;
 
@@ -453,12 +463,21 @@ If no questions are visible on these pages, return { "questions": [] }.`;
 
     send({ type: "synthesizing" });
 
-    const synthesisPrompt = `Below is a raw list of exam questions transcribed from every page (${doc.pages} pages total, read in batches) of a ${pyq.subject} PYQ compilation titled "${pyq.title}" spanning multiple years/exam sessions.
-1. Group them by chapter/topic within ${pyq.subject}.
-2. Within each chapter, treat questions as the SAME repeated entry whenever they are verbatim repeats, close paraphrases, OR ask about the same underlying topic/concept/sub-topic — even if the wording is quite different. Count how many times each such concept appears across the document.
-3. Rank chapters/questions by importance (repetition frequency + exam weightage) so a student knows what to prioritize before the exam.
+    const synthesisPrompt = `Below is a COMPLETE list of every exam question transcribed from all ${doc.pages} pages of a ${pyq.subject} PYQ compilation titled "${pyq.title}" spanning multiple years/exam sessions.
 
-Raw transcribed questions:
+Your task: produce a COMPLETE chapter-wise analysis covering EVERY question below.
+
+Rules:
+1. Identify every chapter/topic of the ${pyq.subject} MBBS syllabus that has at least one question in the list. Do NOT skip any chapter.
+2. For each chapter, list EVERY question — even if it appeared only once (timesSeen=1). Do NOT omit single-occurrence questions.
+3. Within each chapter, merge questions that are verbatim repeats, close paraphrases, OR ask about the same underlying concept/sub-topic into ONE entry with timesSeen = how many times that concept appeared, and yearsSeen = all years/sessions it appeared (extract from the [year] prefix if present).
+4. Within each chapter, sort questions by timesSeen descending (most repeated first).
+5. Mark chapter importance: "high" if any question appeared 3+ times OR the chapter has 5+ distinct entries; "medium" if 2 times or 3-4 entries; "low" otherwise.
+6. The summary field should briefly highlight the top 3-4 chapters to prioritize.
+
+IMPORTANT: The student needs the FULL picture — every chapter, every topic, every question from all years. Do not truncate or omit anything.
+
+Raw transcribed questions (format: [year] question text):
 ${transcribed.join("\n")}
 
 Return ONLY valid JSON of the shape:

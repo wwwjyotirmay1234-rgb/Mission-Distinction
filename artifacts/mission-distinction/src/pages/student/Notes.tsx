@@ -386,7 +386,7 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
                     <Sparkles size={14} className="mr-2 text-purple-400" /> Search Topic
                   </TabsTrigger>
                   <TabsTrigger value="repeated" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs">
-                    <History size={14} className="mr-2 text-amber-400" /> Repeated Questions
+                    <History size={14} className="mr-2 text-amber-400" /> Chapter Analysis
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -511,12 +511,12 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
                       <History size={40} className="text-amber-400" />
                     </div>
                     <div className="max-w-sm space-y-3">
-                      <h3 className="text-lg font-bold">Exam Weightage Analysis</h3>
+                      <h3 className="text-lg font-bold">Full Chapter Analysis</h3>
                       <p className="text-sm text-muted-foreground">
-                        I can analyze this PDF to group questions by chapter and identify which topics are most repeated across the years.
+                        AI reads every page and groups ALL questions chapter-wise — including single-occurrence questions — so you see the complete exam picture across all years.
                       </p>
                       <Button onClick={handleRepeatedQuestions} className="bg-amber-600 hover:bg-amber-700 w-full sm:w-auto">
-                        Analyze Repeated Questions
+                        Analyse All Questions
                       </Button>
                     </div>
                   </div>
@@ -528,15 +528,15 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
                     <div className="space-y-1">
                       <p className="font-medium text-amber-500/90">
                         {analyzingPhase === "synthesizing"
-                          ? "Grouping repeated questions by chapter..."
+                          ? "Grouping all questions by chapter..."
                           : repeatedProgress && repeatedProgress.total > 0
                             ? `Reading batch ${repeatedProgress.completed}/${repeatedProgress.total}...`
-                            : "Analyzing exam patterns..."}
+                            : "Analysing all pages..."}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {repeatedProgress && repeatedProgress.total > 1
                           ? "Long papers can take a few minutes — this stays open until it finishes."
-                          : "Identifying repeated questions and chapter importance."}
+                          : "Reading every question across all years."}
                       </p>
                     </div>
                   </div>
