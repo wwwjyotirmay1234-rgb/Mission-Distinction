@@ -78,25 +78,25 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
     };
   }, []);
 
-  const handleDownloadPdf = async () => {
-    setDownloading(true);
-    try {
-      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-      if (isMobile) {
-        // On mobile, programmatic <a>.click() in async context is blocked by browsers.
-        // window.open is the only reliable way — browser handles the download natively.
-        window.open(getDownloadUrl(pdf.url), "_blank", "noopener,noreferrer");
-        trackDownload(pdf.id);
-      } else {
-        // Desktop: fetch via proxy → blob → <a download>
-        await downloadPdfViaProxy(pdf);
-      }
-    } catch {
-      // Proxy failed — fall back to native browser download
+  const handleDownloadPdf = () => {
+    // iPadOS 13+ spoof as Macintosh — detect via touch points to avoid blob proxy freeze
+    const isTouchDevice =
+      /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ||
+      (navigator.maxTouchPoints > 1 && /Mac/i.test(navigator.userAgent));
+
+    if (isTouchDevice) {
+      // Open synchronously while still inside the user-gesture context.
+      // Async wrapper would break iOS Safari's popup whitelist.
       window.open(getDownloadUrl(pdf.url), "_blank", "noopener,noreferrer");
-    } finally {
-      setDownloading(false);
+      trackDownload(pdf.id);
+      return;
     }
+
+    // Desktop only: fetch via proxy → blob → <a download>
+    setDownloading(true);
+    downloadPdfViaProxy(pdf)
+      .catch(() => window.open(getDownloadUrl(pdf.url), "_blank", "noopener,noreferrer"))
+      .finally(() => setDownloading(false));
   };
 
   const embedUrl = getEmbedUrl(pdf.url);
@@ -335,8 +335,10 @@ export default function StudentPDFs() {
                       variant="secondary"
                       className="flex-1 h-8 text-xs gap-1.5"
                       onClick={() => {
-                        const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-                        if (isMobile) {
+                        const isTouchDevice =
+                          /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ||
+                          (navigator.maxTouchPoints > 1 && /Mac/i.test(navigator.userAgent));
+                        if (isTouchDevice) {
                           window.open(getDownloadUrl((pdf as Pdf).url), "_blank", "noopener,noreferrer");
                           trackDownload(pdf.id);
                         } else {
