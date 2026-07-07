@@ -445,8 +445,13 @@ export async function runStartupMigrations() {
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
 
-      CREATE UNIQUE INDEX IF NOT EXISTS clinical_case_attempts_user_case
-        ON clinical_case_attempts(user_id, case_id);
+      ALTER TABLE clinical_case_attempts
+        ADD COLUMN IF NOT EXISTS date_key TEXT NOT NULL DEFAULT '';
+
+      DROP INDEX IF EXISTS clinical_case_attempts_user_case;
+
+      CREATE UNIQUE INDEX IF NOT EXISTS clinical_case_attempts_user_case_date
+        ON clinical_case_attempts(user_id, case_id, date_key);
 
       ALTER TABLE doubt_answers
         ADD COLUMN IF NOT EXISTS is_ai_generated BOOLEAN NOT NULL DEFAULT FALSE;

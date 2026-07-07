@@ -15,6 +15,7 @@ export const clinicalCaseAttemptsTable = pgTable("clinical_case_attempts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   caseId: integer("case_id").notNull(),
+  dateKey: text("date_key").notNull().default(""),
   answerText: text("answer_text").notNull(),
   aiFeedback: jsonb("ai_feedback"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

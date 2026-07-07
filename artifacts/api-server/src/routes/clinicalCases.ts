@@ -20,40 +20,23 @@ const attemptLimiter = rateLimit({
 // ─── Today's case ─────────────────────────────────────────────────────────────
 router.get("/today", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const dateKey = new Date().toISOString().slice(0, 10);
     const user = (req as any).user;
-
-    // First try a case explicitly assigned to today
-    let [todayCase] = await db
-      .select()
-      .from(clinicalCasesTable)
-      .where(eq(clinicalCasesTable.dateAssigned, dateKey))
-      .limit(1);
-
-    // Fall back: pick deterministically by day-of-year index cycling through all cases
-    if (!todayCase) {
-      const allCases = await db
-        .select()
-        .from(clinicalCasesTable)
-        .orderBy(clinicalCasesTable.id);
-      if (allCases.length === 0) {
-        res.status(404).json({ error: "No clinical cases available yet." });
-        return;
-      }
-      const dayOfYear = Math.floor(
-        (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000
-      );
-      todayCase = allCases[dayOfYear % allCases.length];
+    const todayData = await getTodaysCase();
+    if (!todayData) {
+      res.status(404).json({ error: "No clinical cases available yet." });
+      return;
     }
+    const { todayCase, dateKey } = todayData;
 
-    // Check if this user already attempted today's case
+    // Check if this user already attempted today's case (scoped to today's date_key)
     const [attempt] = await db
       .select()
       .from(clinicalCaseAttemptsTable)
       .where(
         and(
           eq(clinicalCaseAttemptsTable.userId, user.id),
-          eq(clinicalCaseAttemptsTable.caseId, todayCase.id)
+          eq(clinicalCaseAttemptsTable.caseId, todayCase.id),
+          eq(clinicalCaseAttemptsTable.dateKey, dateKey)
         )
       )
       .orderBy(desc(clinicalCaseAttemptsTable.createdAt))
@@ -70,6 +53,28 @@ router.get("/today", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// ─── Helper: compute today's case (shared logic) ─────────────────────────────
+async function getTodaysCase() {
+  const dateKey = new Date().toISOString().slice(0, 10);
+
+  let [todayCase] = await db
+    .select()
+    .from(clinicalCasesTable)
+    .where(eq(clinicalCasesTable.dateAssigned, dateKey))
+    .limit(1);
+
+  if (!todayCase) {
+    const allCases = await db.select().from(clinicalCasesTable).orderBy(clinicalCasesTable.id);
+    if (allCases.length === 0) return null;
+    const dayOfYear = Math.floor(
+      (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000
+    );
+    todayCase = allCases[dayOfYear % allCases.length];
+  }
+
+  return { todayCase, dateKey };
+}
+
 // ─── Submit attempt + get AI feedback ────────────────────────────────────────
 router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request, res: Response) => {
   try {
@@ -81,17 +86,25 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
     if (!answerText?.trim()) { res.status(400).json({ error: "answerText is required" }); return; }
     if (String(answerText).length > 5000) { res.status(400).json({ error: "Answer too long (max 5000 chars)" }); return; }
 
-    const [clinicalCase] = await db
-      .select()
-      .from(clinicalCasesTable)
-      .where(eq(clinicalCasesTable.id, caseId));
-    if (!clinicalCase) { res.status(404).json({ error: "Case not found" }); return; }
+    // Validate the submitted case ID is actually today's case (prevents XP farming on arbitrary IDs)
+    const todayData = await getTodaysCase();
+    if (!todayData) { res.status(404).json({ error: "No clinical case available today" }); return; }
+    const { todayCase, dateKey } = todayData;
+    if (todayCase.id !== caseId) {
+      res.status(403).json({ error: "You can only submit an attempt for today's clinical case" });
+      return;
+    }
+    const clinicalCase = todayCase;
 
-    // Check for duplicate attempt on same case
+    // Check for duplicate attempt: same user + same case + same calendar day
     const [existing] = await db
       .select()
       .from(clinicalCaseAttemptsTable)
-      .where(and(eq(clinicalCaseAttemptsTable.userId, user.id), eq(clinicalCaseAttemptsTable.caseId, caseId)))
+      .where(and(
+        eq(clinicalCaseAttemptsTable.userId, user.id),
+        eq(clinicalCaseAttemptsTable.caseId, caseId),
+        eq(clinicalCaseAttemptsTable.dateKey, dateKey)
+      ))
       .limit(1);
     if (existing) {
       res.json({ feedback: existing.aiFeedback, alreadyAttempted: true });
@@ -137,6 +150,7 @@ Evaluate the student's answer and return ONLY valid JSON:
     const [saved] = await db.insert(clinicalCaseAttemptsTable).values({
       userId: user.id,
       caseId,
+      dateKey,
       answerText: String(answerText).slice(0, 5000),
       aiFeedback: feedback,
     }).returning();

@@ -134,7 +134,12 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
       .select()
       .from(doubtAnswersTable)
       .where(eq(doubtAnswersTable.doubtId, id))
-      .orderBy(desc(doubtAnswersTable.isAccepted), desc(doubtAnswersTable.helpfulCount), desc(doubtAnswersTable.createdAt))
+      .orderBy(
+        desc(doubtAnswersTable.isAiGenerated),
+        desc(doubtAnswersTable.isAccepted),
+        desc(doubtAnswersTable.helpfulCount),
+        desc(doubtAnswersTable.createdAt)
+      )
       .limit(100);
 
     // Check which answers current user has voted helpful on
