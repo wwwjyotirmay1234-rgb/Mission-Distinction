@@ -109,7 +109,7 @@ function cropCanvas(width, height, bbox, shrinkPct) {
 // Radiology X-ray plates (already single-view per title) are excluded — a
 // full-catalog test run showed the vision model hallucinating spurious
 // duplicate "views" on those single genuine radiographs.
-const TARGET_IDS = new Set([107, 108, 109, 111, 112, 115, 116, 117, 118, 119, 120, 121, 122, 124, 126, 129, 132, 135, 143]);
+const TARGET_IDS = new Set([107, 108, 109, 111, 112, 113, 115, 116, 117, 118, 119, 120, 121, 122, 124, 126, 129, 132, 135, 139, 143]);
 
 async function main() {
   const listResp = await fetch(`${API_BASE}/api/anatomy-viva-images/admin/list?category=Bone`, {
