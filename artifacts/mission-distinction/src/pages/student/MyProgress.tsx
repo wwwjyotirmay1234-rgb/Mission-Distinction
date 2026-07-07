@@ -22,7 +22,6 @@ import {
   Brain,
   Trophy,
   BarChart2,
-  FileQuestion,
   Zap,
   TrendingDown,
   Star,
@@ -69,15 +68,6 @@ interface ExamReadiness {
   sessionsNeededThisWeek: number;
 }
 
-interface PyqPattern {
-  tag: string;
-  subject: string;
-  pyqFrequency: number;
-  distinctYears: number;
-  totalYears: number;
-  studentQuestionAccuracy: number | null;
-  studentQuestionCount: number;
-}
 
 interface StudyPlan {
   id: number;
@@ -211,21 +201,16 @@ export default function MyProgress() {
   const [loading, setLoading] = useState(true);
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [reQuizMistakes, setReQuizMistakes] = useState<Mistake[] | null>(null);
-  const [pyqPatterns, setPyqPatterns] = useState<PyqPattern[]>([]);
-  const [pyqInsights, setPyqInsights] = useState<string[]>([]);
-  const [loadingPyq, setLoadingPyq] = useState(false);
-  const [pyqInsightsLoaded, setPyqInsightsLoaded] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [wtRes, mRes, erRes, spRes, pqRes, patternsRes] = await Promise.all([
+      const [wtRes, mRes, erRes, spRes, pqRes] = await Promise.all([
         apiFetch("/api/analytics/weak-topics"),
         apiFetch("/api/analytics/mistakes"),
         apiFetch("/api/analytics/exam-readiness"),
         apiFetch("/api/analytics/study-plan/latest"),
         apiFetch("/api/analytics/per-quiz-breakdown"),
-        apiFetch("/api/analytics/pyq-patterns"),
       ]);
 
       if (wtRes.ok) {
@@ -248,10 +233,6 @@ export default function MyProgress() {
         const data = await pqRes.json();
         setPerQuizBreakdown(data.breakdown || []);
       }
-      if (patternsRes.ok) {
-        const data = await patternsRes.json();
-        setPyqPatterns(data.patterns || []);
-      }
     } catch (error) {
       console.error("Error fetching progress data:", error);
       toast.error("Failed to load progress data");
@@ -260,22 +241,6 @@ export default function MyProgress() {
     }
   };
 
-  const loadPyqInsights = async () => {
-    if (pyqInsightsLoaded) return;
-    setLoadingPyq(true);
-    try {
-      const res = await apiFetch("/api/analytics/pyq-insights");
-      if (res.ok) {
-        const data = await res.json();
-        setPyqInsights(data.insights || []);
-        setPyqInsightsLoaded(true);
-      }
-    } catch {
-      toast.error("Failed to load PYQ insights");
-    } finally {
-      setLoadingPyq(false);
-    }
-  };
 
   useEffect(() => {
     fetchData();
@@ -326,11 +291,10 @@ export default function MyProgress() {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); if (v === "pyq") loadPyqInsights(); }} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-card/50 border border-border/50 p-1 flex-wrap h-auto gap-1">
           <TabsTrigger value="overview">Exam Readiness</TabsTrigger>
           <TabsTrigger value="weak-topics">Weak Topics</TabsTrigger>
-          <TabsTrigger value="pyq" className="gap-1.5"><FileQuestion size={13} />PYQ Insights</TabsTrigger>
           <TabsTrigger value="mistakes">Mistake Notebook</TabsTrigger>
           <TabsTrigger value="study-plan">Study Plan</TabsTrigger>
         </TabsList>
@@ -554,92 +518,6 @@ export default function MyProgress() {
               </CardContent>
             </Card>
           )}
-        </TabsContent>
-
-        {/* ── PYQ Insights Tab ── */}
-        <TabsContent value="pyq" className="space-y-6 outline-none">
-          <div>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <FileQuestion className="text-primary" size={20} /> PYQ Pattern Analyzer
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              High-frequency topics from university PYQs cross-matched with your quiz performance.
-            </p>
-          </div>
-
-          {/* Topic pattern cards */}
-          {loading ? (
-            <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full" />)}</div>
-          ) : pyqPatterns.length > 0 ? (
-            <div className="space-y-3">
-              {pyqPatterns.slice(0, 15).map((p, i) => {
-                const freqPct = Math.round((p.distinctYears / p.totalYears) * 100);
-                const accColor = p.studentQuestionAccuracy === null ? "text-muted-foreground"
-                  : p.studentQuestionAccuracy < 50 ? "text-red-400"
-                  : p.studentQuestionAccuracy < 70 ? "text-amber-400"
-                  : "text-green-400";
-                return (
-                  <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-card/40 border border-border/40 hover:border-primary/20 transition-colors">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm capitalize">{p.tag}</span>
-                        <Badge variant="outline" className="text-[10px] border-primary/20 text-primary bg-primary/8 px-1.5">{p.subject}</Badge>
-                      </div>
-                      <div className="mt-1.5 h-1.5 w-full rounded-full bg-muted/30 overflow-hidden">
-                        <div className="h-full rounded-full bg-primary/60 transition-all duration-500" style={{ width: `${freqPct}%` }} />
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 space-y-0.5">
-                      <p className="text-sm font-bold text-primary">{p.distinctYears}/{p.totalYears} yrs</p>
-                      <p className={`text-[11px] font-medium ${accColor}`}>
-                        {p.studentQuestionAccuracy !== null
-                          ? `You: ${p.studentQuestionAccuracy}% (${p.studentQuestionCount}q)`
-                          : "No tagged questions"}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <Card className="bg-card/40 border-border/40 border-dashed">
-              <CardContent className="py-12 text-center">
-                <FileQuestion className="mx-auto text-muted-foreground/40 mb-3" size={40} />
-                <p className="font-medium">No topic tags yet</p>
-                <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto">
-                  An admin needs to tag PYQs with topic keywords. Once tagged, you'll see frequency data here.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* AI Insights */}
-          <Card className="bg-card/40 border-border/40">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles size={16} className="text-primary" /> AI Study Insights
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">Personalised bullets based on PYQ frequency + your performance. Refreshes daily.</p>
-            </CardHeader>
-            <CardContent>
-              {loadingPyq ? (
-                <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-5 w-full" />)}</div>
-              ) : pyqInsights.length > 0 ? (
-                <ul className="space-y-3">
-                  {pyqInsights.map((insight, i) => (
-                    <li key={i} className="flex gap-3 text-sm leading-relaxed">
-                      <Star size={14} className="text-primary shrink-0 mt-0.5" />
-                      <span className="text-foreground/90">{insight}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Switch to this tab to generate AI-powered insights based on your data.
-                </p>
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="mistakes" className="space-y-4 outline-none">
