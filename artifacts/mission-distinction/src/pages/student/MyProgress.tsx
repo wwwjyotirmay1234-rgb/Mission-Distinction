@@ -18,7 +18,10 @@ import {
   RotateCcw,
   Calendar,
   ChevronRight,
-  Brain
+  ChevronLeft,
+  Brain,
+  Trophy,
+  BarChart2,
 } from "lucide-react";
 
 interface WeakTopic {
@@ -38,6 +41,14 @@ interface Mistake {
   subject: string;
   quizTitle: string;
   createdAt: string;
+}
+
+interface PerQuizBreakdown {
+  quizId: number;
+  quizTitle: string;
+  subject: string;
+  total: number;
+  accuracy: number;
 }
 
 interface ExamReadiness {
@@ -63,23 +74,134 @@ interface StudyPlan {
   weakSubjects: string[];
 }
 
+function ReQuizSession({ mistakes, onDone }: { mistakes: Mistake[]; onDone: () => void }) {
+  const mcq = mistakes.filter(m => Array.isArray(m.options) && m.options.length >= 2 && m.correctOption != null);
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [score, setScore] = useState(0);
+  const [done, setDone] = useState(false);
+
+  if (mcq.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 py-16">
+        <AlertCircle className="text-muted-foreground" size={40} />
+        <p className="text-muted-foreground text-center">No MCQ mistakes available to re-quiz.</p>
+        <Button onClick={onDone} variant="outline" className="gap-2"><ChevronLeft size={16} /> Back</Button>
+      </div>
+    );
+  }
+
+  if (done) {
+    const pct = Math.round((score / mcq.length) * 100);
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 py-16">
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+          <Trophy size={32} className="text-primary" />
+        </div>
+        <div className="text-center">
+          <p className="text-3xl font-bold">{pct}%</p>
+          <p className="text-muted-foreground mt-1">{score} / {mcq.length} correct this time</p>
+          {pct >= 70
+            ? <Badge className="mt-3 bg-green-500/20 text-green-400 border-green-500/30">Great improvement!</Badge>
+            : <Badge className="mt-3 bg-amber-500/20 text-amber-400 border-amber-500/30">Keep practicing!</Badge>}
+        </div>
+        <Button onClick={onDone} className="gap-2"><ChevronLeft size={16} /> Back to Mistakes</Button>
+      </div>
+    );
+  }
+
+  const m = mcq[idx];
+
+  function handleSelect(i: number) {
+    if (revealed) return;
+    setSelected(i);
+    setRevealed(true);
+  }
+
+  function next() {
+    if (selected === m.correctOption) setScore(s => s + 1);
+    if (idx + 1 >= mcq.length) { setDone(true); }
+    else { setIdx(i => i + 1); setSelected(null); setRevealed(false); }
+  }
+
+  return (
+    <div className="space-y-5 max-w-2xl mx-auto">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" className="gap-2 -ml-2" onClick={onDone}>
+            <ChevronLeft size={16} /> Exit Re-quiz
+          </Button>
+          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+            {idx + 1} / {mcq.length}
+          </Badge>
+        </div>
+        <span className="text-xs text-muted-foreground">{score} correct so far</span>
+      </div>
+      <Progress value={((idx) / mcq.length) * 100} className="h-1.5" />
+      <Card className="bg-card/40 border-border/40">
+        <CardContent className="p-6">
+          <Badge variant="outline" className="text-[10px] mb-3 border-primary/20 text-primary">{m.subject}</Badge>
+          <p className="text-sm font-semibold leading-relaxed mb-5">{m.questionText}</p>
+          <div className="space-y-2">
+            {m.options.map((opt, i) => {
+              const isSelected = selected === i;
+              const isCorrectOpt = revealed && i === m.correctOption;
+              const isWrong = revealed && isSelected && i !== m.correctOption;
+              return (
+                <button
+                  key={i}
+                  onClick={() => handleSelect(i)}
+                  className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-colors ${
+                    isCorrectOpt ? "border-green-500/50 bg-green-500/10 text-green-400 font-medium"
+                    : isWrong ? "border-red-500/50 bg-red-500/10 text-red-400"
+                    : isSelected ? "border-primary/40 bg-primary/10"
+                    : "border-border/40 hover:border-border hover:bg-card/60"
+                  }`}
+                >
+                  <span className="font-mono text-xs mr-2">{String.fromCharCode(65 + i)}.</span>{opt}
+                  {isCorrectOpt && <span className="ml-2 text-green-400 text-xs">✓ Correct</span>}
+                  {isWrong && <span className="ml-2 text-red-400 text-xs">✗ Wrong</span>}
+                </button>
+              );
+            })}
+          </div>
+          {revealed && m.explanation && (
+            <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-300 leading-relaxed">
+              <strong>Explanation: </strong>{m.explanation}
+            </div>
+          )}
+          {revealed && (
+            <Button onClick={next} className="mt-4 w-full gap-2">
+              {idx + 1 >= mcq.length ? "See Results" : "Next Question"} <ChevronRight size={16} />
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function MyProgress() {
   const [activeTab, setActiveTab] = useState("overview");
   const [weakTopics, setWeakTopics] = useState<WeakTopic[]>([]);
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
+  const [perQuizBreakdown, setPerQuizBreakdown] = useState<PerQuizBreakdown[]>([]);
   const [readiness, setReadiness] = useState<ExamReadiness | null>(null);
   const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [generatingPlan, setGeneratingPlan] = useState(false);
+  const [reQuizMistakes, setReQuizMistakes] = useState<Mistake[] | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [wtRes, mRes, erRes, spRes] = await Promise.all([
+      const [wtRes, mRes, erRes, spRes, pqRes] = await Promise.all([
         apiFetch("/api/analytics/weak-topics"),
         apiFetch("/api/analytics/mistakes"),
         apiFetch("/api/analytics/exam-readiness"),
-        apiFetch("/api/analytics/study-plan/latest")
+        apiFetch("/api/analytics/study-plan/latest"),
+        apiFetch("/api/analytics/per-quiz-breakdown"),
       ]);
 
       if (wtRes.ok) {
@@ -97,6 +219,10 @@ export default function MyProgress() {
       if (spRes.ok) {
         const data = await spRes.json();
         setStudyPlan(data.plan);
+      }
+      if (pqRes.ok) {
+        const data = await pqRes.json();
+        setPerQuizBreakdown(data.breakdown || []);
       }
     } catch (error) {
       console.error("Error fetching progress data:", error);
@@ -135,6 +261,14 @@ export default function MyProgress() {
       setGeneratingPlan(false);
     }
   };
+
+  if (reQuizMistakes !== null) {
+    return (
+      <div className="space-y-6 pb-12">
+        <ReQuizSession mistakes={reQuizMistakes} onDone={() => setReQuizMistakes(null)} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-12">
@@ -315,14 +449,62 @@ export default function MyProgress() {
               )}
             </CardContent>
           </Card>
+
+          {/* Per-quiz breakdown */}
+          {!loading && perQuizBreakdown.length > 0 && (
+            <Card className="bg-card/40 border-border/50">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BarChart2 size={18} className="text-primary" /> Per-Quiz Accuracy
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {perQuizBreakdown.map((q, i) => (
+                    <div key={i} className="space-y-1.5">
+                      <div className="flex justify-between items-start gap-2 text-sm">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{q.quizTitle}</p>
+                          <p className="text-[10px] text-muted-foreground">{q.subject} · {q.total} questions</p>
+                        </div>
+                        <span className={`text-sm font-semibold shrink-0 ${q.accuracy < 60 ? 'text-red-400' : q.accuracy < 80 ? 'text-amber-400' : 'text-green-400'}`}>
+                          {q.accuracy}%
+                        </span>
+                      </div>
+                      <div className="relative h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                        <div
+                          className={`absolute inset-y-0 left-0 transition-all duration-500 rounded-full ${
+                            q.accuracy < 60 ? 'bg-red-500/60' : q.accuracy < 80 ? 'bg-amber-500/60' : 'bg-green-500/60'
+                          }`}
+                          style={{ width: `${q.accuracy}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="mistakes" className="space-y-4 outline-none">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Mistake Notebook</h3>
-            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-              {mistakes.length} mistakes recorded
-            </Badge>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg font-semibold">Mistake Notebook</h3>
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                {mistakes.length} recorded
+              </Badge>
+            </div>
+            {mistakes.filter(m => Array.isArray(m.options) && m.options.length >= 2).length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
+                onClick={() => setReQuizMistakes(mistakes)}
+              >
+                <RotateCcw size={14} /> Re-quiz My Mistakes
+              </Button>
+            )}
           </div>
           
           {loading ? (

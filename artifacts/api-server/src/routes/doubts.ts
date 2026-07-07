@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { db } from "@workspace/db";
+import { db, pool } from "@workspace/db";
 import { doubtsTable, doubtAnswersTable } from "@workspace/db";
 import { eq, sql, desc, and } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
@@ -83,6 +83,7 @@ router.post("/", authMiddleware, doubtPostLimiter, async (req: Request, res: Res
 // ─── Get doubt with answers ───────────────────────────────────────────────────
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
     const id = parseId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid doubt ID" }); return; }
     const [doubt] = await db.select().from(doubtsTable).where(eq(doubtsTable.id, id));
@@ -91,9 +92,22 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
       .select()
       .from(doubtAnswersTable)
       .where(eq(doubtAnswersTable.doubtId, id))
-      .orderBy(desc(doubtAnswersTable.isAccepted), desc(doubtAnswersTable.createdAt))
+      .orderBy(desc(doubtAnswersTable.isAccepted), desc(doubtAnswersTable.helpfulCount), desc(doubtAnswersTable.createdAt))
       .limit(100);
-    res.json({ ...doubt, answers });
+
+    // Check which answers current user has voted helpful on
+    const answerIds = answers.map(a => a.id);
+    let myVotedIds = new Set<number>();
+    if (answerIds.length > 0) {
+      const { rows: voteRows } = await pool.query(
+        `SELECT answer_id FROM doubt_answer_votes WHERE user_id = $1 AND answer_id = ANY($2)`,
+        [user.id, answerIds]
+      );
+      myVotedIds = new Set(voteRows.map((r: any) => r.answer_id));
+    }
+
+    const answersWithVotes = answers.map(a => ({ ...a, myVote: myVotedIds.has(a.id) }));
+    res.json({ ...doubt, answers: answersWithVotes });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -160,6 +174,34 @@ router.patch("/:id/answers/:aid/accept", authMiddleware, async (req: Request, re
   } catch (err: any) {
     if (err.status === 403) { res.status(403).json({ error: err.message }); return; }
     if (err.status === 404) { res.status(404).json({ error: err.message }); return; }
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─── Toggle helpful vote on an answer ────────────────────────────────────────
+router.post("/:id/answers/:aid/helpful", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const answerId = parseId(req.params.aid);
+    if (!answerId) { res.status(400).json({ error: "Invalid answer ID" }); return; }
+
+    const { rowCount } = await pool.query(
+      `INSERT INTO doubt_answer_votes (user_id, answer_id) VALUES ($1, $2) ON CONFLICT (user_id, answer_id) DO NOTHING`,
+      [user.id, answerId]
+    );
+
+    if ((rowCount ?? 0) > 0) {
+      await pool.query(`UPDATE doubt_answers SET helpful_count = helpful_count + 1 WHERE id = $1`, [answerId]);
+      const { rows } = await pool.query(`SELECT helpful_count FROM doubt_answers WHERE id = $1`, [answerId]);
+      res.json({ voted: true, helpfulCount: rows[0]?.helpful_count ?? 1 });
+    } else {
+      await pool.query(`DELETE FROM doubt_answer_votes WHERE user_id = $1 AND answer_id = $2`, [user.id, answerId]);
+      await pool.query(`UPDATE doubt_answers SET helpful_count = GREATEST(0, helpful_count - 1) WHERE id = $1`, [answerId]);
+      const { rows } = await pool.query(`SELECT helpful_count FROM doubt_answers WHERE id = $1`, [answerId]);
+      res.json({ voted: false, helpfulCount: rows[0]?.helpful_count ?? 0 });
+    }
+  } catch (err) {
+    console.error("helpful vote error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });

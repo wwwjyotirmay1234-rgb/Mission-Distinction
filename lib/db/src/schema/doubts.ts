@@ -19,6 +19,7 @@ export const doubtAnswersTable = pgTable("doubt_answers", {
   authorName: text("author_name").notNull(),
   answer: text("answer").notNull(),
   isAccepted: boolean("is_accepted").default(false).notNull(),
+  helpfulCount: integer("helpful_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

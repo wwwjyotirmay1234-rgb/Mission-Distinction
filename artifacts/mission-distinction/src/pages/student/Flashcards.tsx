@@ -14,7 +14,7 @@ import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "NEET PG", "General"];
 
-interface Deck { id: number; userId: number; subject: string; title: string; cardCount: number; isAdminShared: boolean; createdAt: string; }
+interface Deck { id: number; userId: number; subject: string; title: string; cardCount: number; isAdminShared: boolean; createdAt: string; dueCount?: number; }
 interface Flashcard { id: number; deckId: number; front: string; back: string; nextReview: string; ease: number; interval: number; repetitions: number; }
 
 function timeAgo(d: string) {
@@ -420,26 +420,50 @@ export default function StudentFlashcards({ hideHeader }: { hideHeader?: boolean
                   <p className="text-sm">No personal decks yet. Create one to start studying with spaced repetition.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {myDecks.map(deck => (
-                    <Card key={deck.id} className="bg-card/30 border-border/40 hover:bg-card/50 transition-colors cursor-pointer group" onClick={() => setSelectedDeck({ id: deck.id, isAdminShared: false })}>
-                      <CardContent className="p-5">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold truncate">{deck.title}</p>
-                            <Badge variant="outline" className="text-[10px] mt-1 bg-primary/10 text-primary border-primary/20">{deck.subject}</Badge>
+                <>
+                  {(() => {
+                    const totalDue = myDecks.reduce((sum, d) => sum + (d.dueCount ?? 0), 0);
+                    const decksDue = myDecks.filter(d => (d.dueCount ?? 0) > 0).length;
+                    if (totalDue === 0) return null;
+                    return (
+                      <div className="mb-3 flex items-center justify-between gap-3 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+                            <Brain size={16} className="text-green-400" />
                           </div>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 shrink-0"
-                            onClick={e => { e.stopPropagation(); deleteMutation.mutate(deck.id); }}><Trash2 size={13} /></Button>
+                          <div>
+                            <p className="text-sm font-semibold text-green-400">Today's Review</p>
+                            <p className="text-xs text-muted-foreground">{totalDue} card{totalDue !== 1 ? "s" : ""} due across {decksDue} deck{decksDue !== 1 ? "s" : ""} — open a deck to review</p>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between mt-4">
-                          <span className="text-xs text-muted-foreground">{deck.cardCount} card{deck.cardCount !== 1 ? "s" : ""}</span>
-                          <span className="text-xs text-muted-foreground">{timeAgo(deck.createdAt)}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                        <Badge className="shrink-0 bg-green-500/20 text-green-400 border-green-500/30">{totalDue} due</Badge>
+                      </div>
+                    );
+                  })()}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {myDecks.map(deck => (
+                      <Card key={deck.id} className="bg-card/30 border-border/40 hover:bg-card/50 transition-colors cursor-pointer group" onClick={() => setSelectedDeck({ id: deck.id, isAdminShared: false })}>
+                        <CardContent className="p-5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold truncate">{deck.title}</p>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">{deck.subject}</Badge>
+                                {(deck.dueCount ?? 0) > 0 && <Badge className="text-[10px] bg-green-500/20 text-green-400 border-green-500/30">{deck.dueCount} due</Badge>}
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 shrink-0"
+                              onClick={e => { e.stopPropagation(); deleteMutation.mutate(deck.id); }}><Trash2 size={13} /></Button>
+                          </div>
+                          <div className="flex items-center justify-between mt-4">
+                            <span className="text-xs text-muted-foreground">{deck.cardCount} card{deck.cardCount !== 1 ? "s" : ""}</span>
+                            <span className="text-xs text-muted-foreground">{timeAgo(deck.createdAt)}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           ) : (

@@ -27,14 +27,26 @@ function nextReviewDate(days: number) {
   return d;
 }
 
-// List decks (own + admin-shared)
+// List decks (own + admin-shared) with per-deck due-card counts
 router.get("/decks", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id as number;
     const { or } = await import("drizzle-orm");
     const decks = await db.select().from(flashcardDecksTable)
       .where(or(eq(flashcardDecksTable.userId, userId), eq(flashcardDecksTable.isAdminShared, true)));
-    res.json(decks);
+
+    const now = new Date();
+    const dueCounts = await db.select({
+      deckId: flashcardsTable.deckId,
+      dueCount: sql<number>`count(*)::int`,
+    })
+      .from(flashcardsTable)
+      .where(and(eq(flashcardsTable.userId, userId), lte(flashcardsTable.nextReview, now)))
+      .groupBy(flashcardsTable.deckId);
+
+    const dueMap = new Map(dueCounts.map(d => [d.deckId, d.dueCount]));
+    const decksWithDue = decks.map(d => ({ ...d, dueCount: dueMap.get(d.id) ?? 0 }));
+    res.json(decksWithDue);
   } catch { res.status(500).json({ error: "Failed to load decks" }); }
 });
 

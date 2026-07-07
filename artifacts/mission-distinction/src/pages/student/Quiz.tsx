@@ -19,7 +19,7 @@ import {
   Play, Clock, CheckCircle, ChevronLeft, ChevronRight,
   Timer, Trophy, XCircle, AlertCircle, ArrowLeft, Flag,
   Upload, RefreshCw, ImageIcon, PenLine, FileText, ShieldCheck,
-  BarChart2,
+  BarChart2, GraduationCap,
 } from "lucide-react";
 import QuizAnalysisSection from "./QuizAnalysis";
 import ProctorOverlay from "@/components/ProctorOverlay";
@@ -440,6 +440,7 @@ export default function StudentQuiz() {
   const [proctoringSessionId, setProctoringSessionId] = useState<string | null>(null);
   const [showProctoringSetup, setShowProctoringSetup] = useState(false);
   const [pendingProctoredQuiz, setPendingProctoredQuiz] = useState<QuizSummary | null>(null);
+  const [mockMode, setMockMode] = useState(false);
   const submittedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queryClient = useQueryClient();
@@ -468,7 +469,8 @@ export default function StudentQuiz() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [mode, selectedQuizId]);
 
-  const doStartQuiz = (quiz: QuizSummary, sessionId?: string) => {
+  const doStartQuiz = (quiz: QuizSummary, sessionId?: string, isMockMode = false) => {
+    setMockMode(isMockMode);
     setSelectedQuizId(quiz.id);
     setCurrentQ(0);
     setAnswers({});
@@ -480,14 +482,14 @@ export default function StudentQuiz() {
     setMode("taking");
   };
 
-  const startQuiz = (quiz: QuizSummary) => {
+  const startQuiz = (quiz: QuizSummary, isMockMode = false) => {
     if (!quiz.questionCount || quiz.questionCount === 0) { toast.error("This quiz has no questions yet."); return; }
     if (quiz.isProctored) {
       setPendingProctoredQuiz(quiz);
       setShowProctoringSetup(true);
       return;
     }
-    doStartQuiz(quiz);
+    doStartQuiz(quiz, undefined, isMockMode);
   };
 
   const doSubmit = async () => {
@@ -818,7 +820,14 @@ export default function StudentQuiz() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium truncate pr-4">{quiz.title}</span>
-              <span className="text-xs text-muted-foreground shrink-0">{currentQ + 1} / {questions.length}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                {mockMode && (
+                  <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-500 border-amber-500/30 gap-1">
+                    <GraduationCap size={9} /> Mock
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground">{currentQ + 1} / {questions.length}</span>
+              </div>
             </div>
             <Progress value={progressPct} className="h-1.5" />
             <div className="flex justify-between mt-2 text-xs text-muted-foreground">
@@ -856,9 +865,11 @@ export default function StudentQuiz() {
         </Card>
 
         <div className="flex gap-3 pb-8">
-          <Button variant="outline" disabled={currentQ === 0} onClick={() => setCurrentQ(p => p - 1)} className="gap-2">
-            <ChevronLeft size={16} /> Prev
-          </Button>
+          {!mockMode && (
+            <Button variant="outline" disabled={currentQ === 0} onClick={() => setCurrentQ(p => p - 1)} className="gap-2">
+              <ChevronLeft size={16} /> Prev
+            </Button>
+          )}
           <div className="flex-1" />
           {!isLastQ ? (
             <Button onClick={() => setCurrentQ(p => p + 1)} className="gap-2">
@@ -1041,9 +1052,15 @@ export default function StudentQuiz() {
                             <span className="flex items-center gap-1"><Clock size={14} /> {quiz.durationMinutes || 30} mins</span>
                           </div>
                         </div>
-                        <Button onClick={() => startQuiz(quiz)} className="w-full sm:w-auto shrink-0 mt-2 sm:mt-0 gap-2">
-                          <Play size={16} /> Start
-                        </Button>
+                        <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0 w-full sm:w-auto shrink-0">
+                          <Button variant="outline" onClick={() => startQuiz(quiz, true)}
+                            className="gap-2 text-amber-500 border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-400 text-sm">
+                            <GraduationCap size={15} /> Mock Exam
+                          </Button>
+                          <Button onClick={() => startQuiz(quiz)} className="gap-2">
+                            <Play size={16} /> Start
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   ))

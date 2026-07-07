@@ -369,4 +369,47 @@ router.post("/question-of-day/broadcast", authMiddleware, adminMiddleware, async
   }
 });
 
+// ── Per-quiz accuracy breakdown ──────────────────────────────────────────────
+router.get("/per-quiz-breakdown", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+
+    const rows = await db
+      .select({
+        quizId: quizAnswersTable.quizId,
+        subject: quizAnswersTable.subject,
+        total: sql<number>`count(*)::int`,
+        correctCount: sql<number>`sum(case when ${quizAnswersTable.correct} then 1 else 0 end)::int`,
+      })
+      .from(quizAnswersTable)
+      .where(eq(quizAnswersTable.userId, user.id))
+      .groupBy(quizAnswersTable.quizId, quizAnswersTable.subject);
+
+    const filtered = rows.filter(r => r.total >= 3);
+    if (filtered.length === 0) { res.json({ breakdown: [] }); return; }
+
+    const quizIds = [...new Set(filtered.map(r => r.quizId))];
+    const quizzes = await db
+      .select({ id: quizzesTable.id, title: quizzesTable.title })
+      .from(quizzesTable)
+      .where(sql`${quizzesTable.id} = ANY(${quizIds})`);
+    const quizMap = new Map(quizzes.map(q => [q.id, q.title]));
+
+    const breakdown = filtered
+      .map(r => ({
+        quizId: r.quizId,
+        quizTitle: quizMap.get(r.quizId) ?? `Quiz #${r.quizId}`,
+        subject: r.subject,
+        total: r.total,
+        accuracy: Math.round((r.correctCount / r.total) * 100),
+      }))
+      .sort((a, b) => a.accuracy - b.accuracy);
+
+    res.json({ breakdown });
+  } catch (err) {
+    console.error("per-quiz-breakdown error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export { router as analyticsRouter };

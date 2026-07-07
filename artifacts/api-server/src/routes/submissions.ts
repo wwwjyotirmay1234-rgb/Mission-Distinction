@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { pool } from "@workspace/db";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { awardXp, getContributionXp } from "../lib/xp";
+import { sendEmail, getAppUrl } from "../lib/email";
 
 const router = Router();
 
@@ -173,6 +174,23 @@ router.patch("/:id/approve", adminMiddleware, async (req: Request, res: Response
       `Contribution approved: ${String(sub.title).slice(0, 60)}`
     ).catch(() => {});
 
+    // Email the student
+    pool.query(`SELECT email, full_name FROM users WHERE id = $1`, [sub.user_id])
+      .then(async ({ rows: userRows }) => {
+        const u = userRows[0];
+        if (!u?.email) return;
+        const appUrl = getAppUrl();
+        const safeTitle = String(sub.title).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const html =
+          `<h2 style="margin:0 0 8px;font-size:20px;color:#1e1e2e;">🎉 Contribution Approved!</h2>` +
+          `<p style="margin:0 0 16px;font-size:15px;color:#4b5563;line-height:1.6;">Great news! Your submission <strong>${safeTitle}</strong> has been approved and is now live on Mission Distinction.</p>` +
+          `<p style="margin:0 0 16px;font-size:15px;color:#4b5563;">You've earned <strong>+${contributionXp} XP</strong> for your contribution. Keep sharing knowledge!</p>` +
+          `<div style="text-align:center;margin:24px 0;"><a href="${appUrl}/mission-distinction/scholar-hub" style="display:inline-block;background:#7c3aed;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">View Scholar Hub</a></div>`;
+        const text = `Your submission "${sub.title}" has been approved on Mission Distinction! You earned +${contributionXp} XP.`;
+        await sendEmail(u.email, "Your contribution was approved! 🎉", html, text);
+      })
+      .catch(() => {});
+
     res.json({ success: true, xpAwarded: contributionXp });
   } catch (err) {
     console.error("submissions approve error:", err);
@@ -195,6 +213,7 @@ router.patch("/:id/reject", adminMiddleware, async (req: Request, res: Response)
       return;
     }
 
+    const { rows: subRows } = await pool.query(`SELECT user_id, title FROM student_submissions WHERE id = $1`, [id]);
     await pool.query(
       `UPDATE student_submissions
        SET status = 'rejected', reviewed_by = $1, reviewed_by_name = $2,
@@ -202,6 +221,28 @@ router.patch("/:id/reject", adminMiddleware, async (req: Request, res: Response)
        WHERE id = $4`,
       [admin.id, admin.displayName || admin.email, reason || null, id]
     );
+
+    // Email the student
+    if (subRows[0]) {
+      const sub2 = subRows[0];
+      pool.query(`SELECT email, full_name FROM users WHERE id = $1`, [sub2.user_id])
+        .then(async ({ rows: userRows }) => {
+          const u = userRows[0];
+          if (!u?.email) return;
+          const safeTitle = String(sub2.title).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          const safeReason = reason ? String(reason).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
+          const appUrl = getAppUrl();
+          const html =
+            `<h2 style="margin:0 0 8px;font-size:20px;color:#1e1e2e;">Submission Needs Revision</h2>` +
+            `<p style="margin:0 0 16px;font-size:15px;color:#4b5563;line-height:1.6;">Your submission <strong>${safeTitle}</strong> was not approved at this time.</p>` +
+            (safeReason ? `<div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:4px;margin:0 0 16px;"><p style="margin:0;font-size:14px;color:#92400e;"><strong>Feedback:</strong> ${safeReason}</p></div>` : "") +
+            `<p style="margin:0 0 16px;font-size:15px;color:#4b5563;">You can revise and resubmit. Every contribution helps the community!</p>` +
+            `<div style="text-align:center;margin:24px 0;"><a href="${appUrl}/mission-distinction/scholar-hub" style="display:inline-block;background:#7c3aed;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">Go to Scholar Hub</a></div>`;
+          const text = `Your submission "${sub2.title}" was not approved. ${reason ? `Reason: ${reason}` : ""} You can revise and resubmit on Mission Distinction.`;
+          await sendEmail(u.email, "Update on your Mission Distinction submission", html, text);
+        })
+        .catch(() => {});
+    }
 
     res.json({ success: true });
   } catch (err) {

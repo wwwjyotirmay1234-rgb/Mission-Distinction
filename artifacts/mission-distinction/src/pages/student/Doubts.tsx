@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Paperclip, Globe, Copy, Check, Loader2, FileText } from "lucide-react";
+import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Paperclip, Globe, Copy, Check, Loader2, FileText, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -78,6 +78,8 @@ interface DoubtAnswer {
   authorName: string;
   answer: string;
   isAccepted: boolean;
+  helpfulCount: number;
+  myVote: boolean;
   createdAt: string;
 }
 
@@ -1084,6 +1086,16 @@ function CommunityTab() {
     onError: () => toast.error("Failed to accept answer"),
   });
 
+  const helpfulMutation = useMutation({
+    mutationFn: ({ doubtId, answerId }: { doubtId: number; answerId: number }) =>
+      apiFetch(`/api/doubts/${doubtId}/answers/${answerId}/helpful`, { method: "POST" })
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["doubt", selectedId] });
+    },
+    onError: () => toast.error("Failed to vote"),
+  });
+
   // ── Detail view ──
   if (selectedId) {
     return (
@@ -1154,10 +1166,24 @@ function CommunityTab() {
                     </div>
                   )}
                   <p className="text-sm leading-relaxed">{ans.answer}</p>
-                  <div className="flex items-center justify-between mt-3">
-                    <p className="text-xs text-muted-foreground">
-                      <strong>{ans.authorName}</strong> · {timeAgo(ans.createdAt)}
-                    </p>
+                  <div className="flex items-center justify-between mt-3 gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => helpfulMutation.mutate({ doubtId: doubtDetail.id, answerId: ans.id })}
+                        disabled={helpfulMutation.isPending}
+                        className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                          ans.myVote
+                            ? "border-blue-500/40 bg-blue-500/10 text-blue-400"
+                            : "border-border/50 text-muted-foreground hover:border-blue-500/30 hover:text-blue-400"
+                        }`}
+                      >
+                        <ThumbsUp size={11} />
+                        {(ans.helpfulCount ?? 0) > 0 ? ans.helpfulCount : "Helpful"}
+                      </button>
+                      <p className="text-xs text-muted-foreground">
+                        <strong>{ans.authorName}</strong> · {timeAgo(ans.createdAt)}
+                      </p>
+                    </div>
                     {!ans.isAccepted && doubtDetail.userId === user?.id && !doubtDetail.resolved && (
                       <Button
                         size="sm"
