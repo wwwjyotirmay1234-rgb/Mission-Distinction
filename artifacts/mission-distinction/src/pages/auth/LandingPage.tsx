@@ -512,6 +512,37 @@ export default function LandingPage() {
           </div>
         </motion.div>
 
+        {/* ── Social Proof Bar ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="w-full max-w-lg mb-4 px-4"
+        >
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-xs text-muted-foreground/70 text-center tracking-wide uppercase font-medium">
+              Trusted by <span className="text-primary font-bold">2,400+</span> students across Odisha
+            </p>
+            <div className="w-full overflow-hidden relative">
+              <div className="flex gap-3 animate-[marquee_28s_linear_infinite]" style={{ width: "max-content" }}>
+                {[
+                  "SCB Medical College", "AIIMS Bhubaneswar", "MKCG Medical College",
+                  "Hi-Tech Medical College", "IMS & SUM Hospital", "VIMSAR Burla",
+                  "KIMS Bhubaneswar", "Shri Ram Chandra Bhanj MC", "Apollo Hospitals Medical",
+                  "SCB Medical College", "AIIMS Bhubaneswar", "MKCG Medical College",
+                  "Hi-Tech Medical College", "IMS & SUM Hospital", "VIMSAR Burla",
+                  "KIMS Bhubaneswar", "Shri Ram Chandra Bhanj MC", "Apollo Hospitals Medical",
+                ].map((college, i) => (
+                  <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/8 border border-primary/15 text-[11px] text-muted-foreground/80 whitespace-nowrap shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary/60 inline-block" />
+                    {college}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* ── Auth Forms ── */}
         <div className="w-full max-w-md">
           <motion.div

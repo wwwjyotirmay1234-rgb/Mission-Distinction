@@ -139,3 +139,67 @@ If you didn't request this, you can safely ignore this email.
 
   return { html, text };
 }
+
+export interface DigestData {
+  name: string;
+  xpEarned: number;
+  streak: number;
+  weakTopics: string[];
+  studyTip: string;
+  appUrl: string;
+}
+
+export function weeklyDigestEmail(data: DigestData): { html: string; text: string } {
+  const { name, xpEarned, streak, weakTopics, studyTip, appUrl } = data;
+  const safeName = escapeHtml(name);
+  const safeUrl = encodeURI(appUrl);
+  const topicRows = weakTopics.length > 0
+    ? weakTopics.map(t =>
+        "<li style=\"margin:4px 0;font-size:14px;color:#4b5563;\">⚠️ " + escapeHtml(t) + "</li>"
+      ).join("")
+    : "<li style=\"margin:4px 0;font-size:14px;color:#6b7280;\">No weak spots detected — great week! 🎉</li>";
+
+  const bodyContent =
+    "<h2 style=\"margin:0 0 6px;font-size:20px;color:#1e1e2e;\">Your Weekly Study Digest 📊</h2>" +
+    "<p style=\"margin:0 0 20px;font-size:15px;color:#4b5563;\">Hi " + safeName + "! Here's how your study week went on Mission Distinction.</p>" +
+
+    "<table width=\"100%\" cellpadding=\"0\" cellspacing=\"8\" style=\"margin-bottom:24px;\">" +
+    "<tr>" +
+    "<td style=\"background:#f5f3ff;border-radius:10px;padding:16px 20px;width:50%;\">" +
+    "<p style=\"margin:0;font-size:26px;font-weight:700;color:#7c3aed;\">" + xpEarned.toLocaleString() + " XP</p>" +
+    "<p style=\"margin:4px 0 0;font-size:12px;color:#6b7280;\">Earned this week</p></td>" +
+    "<td style=\"background:#fffbeb;border-radius:10px;padding:16px 20px;\">" +
+    "<p style=\"margin:0;font-size:26px;font-weight:700;color:#d97706;\">🔥 " + streak + "</p>" +
+    "<p style=\"margin:4px 0 0;font-size:12px;color:#6b7280;\">Day streak</p></td>" +
+    "</tr></table>" +
+
+    "<h3 style=\"margin:0 0 8px;font-size:15px;color:#1e1e2e;\">Topics to Revise This Week</h3>" +
+    "<ul style=\"margin:0 0 20px;padding-left:18px;\">" + topicRows + "</ul>" +
+
+    "<div style=\"background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px 20px;margin-bottom:24px;\">" +
+    "<p style=\"margin:0;font-size:13px;font-weight:600;color:#15803d;\">💡 Tip of the week</p>" +
+    "<p style=\"margin:6px 0 0;font-size:14px;color:#166534;\">" + escapeHtml(studyTip) + "</p></div>" +
+
+    "<div style=\"text-align:center;margin:28px 0;\">" +
+    "<a href=\"" + safeUrl + "\" style=\"display:inline-block;background:#7c3aed;color:#ffffff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;\">Continue Studying →</a>" +
+    "</div>";
+
+  const html = baseHtml(bodyContent);
+
+  const text = `Your Weekly Study Digest — Mission Distinction
+
+Hi ${name}!
+
+This week: ${xpEarned} XP earned · ${streak}-day streak 🔥
+
+Topics to revise:
+${weakTopics.length > 0 ? weakTopics.map(t => "  • " + t).join("\n") : "  No weak spots this week — great job!"}
+
+Tip of the week: ${studyTip}
+
+Keep going → ${appUrl}
+
+— Mission Distinction Team`;
+
+  return { html, text };
+}

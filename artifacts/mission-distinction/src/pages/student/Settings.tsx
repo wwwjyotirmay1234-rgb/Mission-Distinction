@@ -20,15 +20,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { customFetch } from "@workspace/api-client-react";
 import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "sonner";
-import { Star, MessageSquare, Bell, BellOff, Loader2, Camera, Trash2, ShieldAlert, ExternalLink, Reply, ChevronDown, ChevronUp } from "lucide-react";
+import { Star, MessageSquare, Bell, BellOff, Loader2, Camera, Trash2, ShieldAlert, ExternalLink, Reply, ChevronDown, ChevronUp, Sun, Moon, Type, Mail } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { resetAnalytics } from "@/lib/analytics";
+import { useTheme, type FontSize } from "@/contexts/ThemeContext";
 
 export default function StudentSettings() {
   const { user, updateUser, logout } = useAuth();
+  const { theme, toggleTheme, fontSize, setFontSize } = useTheme();
   const { supported, blockReason, permission, subscribed, loading: pushLoading, requestAndSubscribe, unsubscribe } = usePushNotifications();
+  const [savingDigest, setSavingDigest] = useState(false);
   const [feedback, setFeedback] = useState({ category: "general", subject: "", message: "", rating: 0 });
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -305,6 +308,87 @@ export default function StudentSettings() {
               <p className="text-xs text-muted-foreground" id="mentions-desc">Alerts when someone mentions you or replies to your post.</p>
             </div>
             <Switch id="mentions-switch" defaultChecked aria-describedby="mentions-desc" />
+          </div>
+          {/* Weekly digest */}
+          <div className="flex items-start justify-between p-3 border border-border/40 rounded-lg gap-3">
+            <div className="space-y-0.5 flex-1 min-w-0">
+              <Label className="text-sm font-medium flex items-center gap-2" htmlFor="digest-switch">
+                <Mail className="h-3.5 w-3.5 text-primary" /> Weekly Digest Email
+              </Label>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Every Sunday: your weak topics this week, XP earned, and a personalised study tip.
+              </p>
+            </div>
+            <Switch
+              id="digest-switch"
+              disabled={savingDigest}
+              checked={Boolean((user as any)?.weeklyDigestOptIn)}
+              onCheckedChange={async (checked) => {
+                setSavingDigest(true);
+                try {
+                  const res = await apiFetch(`/api/users/${user?.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ weeklyDigestOptIn: checked }),
+                  });
+                  if (res.ok) {
+                    const updated = await res.json();
+                    updateUser(updated);
+                    toast.success(checked ? "Weekly digest enabled ✓" : "Digest turned off");
+                  }
+                } catch {
+                  toast.error("Failed to update preference");
+                } finally {
+                  setSavingDigest(false);
+                }
+              }}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Appearance ── */}
+      <Card className="bg-card/40 border-border/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sun className="h-4 w-4 text-primary" aria-hidden="true" /> Appearance
+          </CardTitle>
+          <CardDescription>Adjust theme and text size for comfort.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Theme toggle */}
+          <div className="flex items-center justify-between p-3 border border-border/40 rounded-lg">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                {theme === "dark" ? <Moon className="h-3.5 w-3.5 text-primary" /> : <Sun className="h-3.5 w-3.5 text-amber-400" />}
+                {theme === "dark" ? "Dark Mode" : "Light Mode"}
+              </Label>
+              <p className="text-xs text-muted-foreground">Switch between dark and light appearance.</p>
+            </div>
+            <Switch checked={theme === "light"} onCheckedChange={toggleTheme} aria-label="Toggle light mode" />
+          </div>
+          {/* Font size */}
+          <div className="space-y-2.5">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Type className="h-3.5 w-3.5 text-primary" /> Text Size
+            </Label>
+            <div className="flex gap-2">
+              {(["sm", "md", "lg"] as FontSize[]).map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setFontSize(size)}
+                  className={cn(
+                    "flex-1 py-2 rounded-lg border text-sm font-medium transition-colors",
+                    fontSize === size
+                      ? "bg-primary/15 border-primary/50 text-primary"
+                      : "border-border/50 text-muted-foreground hover:border-primary/30"
+                  )}
+                >
+                  {size === "sm" ? "Small" : size === "md" ? "Normal" : "Large"}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground">Changing size applies immediately and is remembered on next visit.</p>
           </div>
         </CardContent>
       </Card>

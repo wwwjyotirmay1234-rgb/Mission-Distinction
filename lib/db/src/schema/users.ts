@@ -22,6 +22,7 @@ export const usersTable = pgTable("users", {
   bannedAt: timestamp("banned_at"),
   banReason: text("ban_reason"),
   lastSeenAppUpdateAt: timestamp("last_seen_app_update_at").defaultNow(),
+  weeklyDigestOptIn: boolean("weekly_digest_opt_in").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

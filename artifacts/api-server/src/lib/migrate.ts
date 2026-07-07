@@ -386,6 +386,9 @@ export async function runStartupMigrations() {
       ALTER TABLE users
         ADD COLUMN IF NOT EXISTS last_seen_app_update_at TIMESTAMP DEFAULT NOW();
 
+      ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS weekly_digest_opt_in BOOLEAN NOT NULL DEFAULT FALSE;
+
       CREATE TABLE IF NOT EXISTS quiz_answers (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,

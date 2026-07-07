@@ -226,6 +226,11 @@
   --destructive-border: rgba(239,68,68,0.3);
 }
 
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
 @layer base {
   * {
     @apply border-border;

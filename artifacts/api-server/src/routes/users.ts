@@ -90,7 +90,7 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
-    const { fullName, year, sessionYear, college, avatarUrl, mobileNumber } = req.body;
+    const { fullName, year, sessionYear, college, avatarUrl, mobileNumber, weeklyDigestOptIn } = req.body;
 
     if (fullName !== undefined && (typeof fullName !== "string" || fullName.trim().length < 2)) {
       res.status(400).json({ error: "Name must be at least 2 characters" }); return;
@@ -126,6 +126,7 @@ router.patch("/:id", authMiddleware, async (req: Request, res: Response) => {
         college: college?.trim(),
         ...(mobileNumber !== undefined ? { mobileNumber: mobileNumber?.trim() || null } : {}),
         ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl?.trim() || null } : {}),
+        ...(weeklyDigestOptIn !== undefined ? { weeklyDigestOptIn: Boolean(weeklyDigestOptIn) } : {}),
       })
       .where(eq(usersTable.id, id))
       .returning();
