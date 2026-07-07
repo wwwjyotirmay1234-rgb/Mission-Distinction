@@ -460,6 +460,12 @@ export default function StudentDashboard() {
         </Card>
       </div>
 
+      {/* Clinical Case + Question of Day — full width, visible immediately on all screens */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <ClinicalCaseWidget />
+        <QuestionOfDayWidget />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Quick Access */}
@@ -533,12 +539,6 @@ export default function StudentDashboard() {
 
         {/* Right Panel */}
         <div className="space-y-6">
-          {/* Clinical Case of the Day */}
-          <ClinicalCaseWidget />
-
-          {/* Question of the Day */}
-          <QuestionOfDayWidget />
-
           {/* Community */}
           <Card className="bg-card/40 border-border/40">
             <CardHeader className="p-4 pb-2 border-b border-border/40">
