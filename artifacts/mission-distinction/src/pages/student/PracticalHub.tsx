@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Stethoscope, Mic, Square, PhoneOff, Loader2, Award, CheckCircle2, AlertTriangle, ArrowRight, Sparkles,
   Search, Users, ChevronLeft, Volume2, TrendingUp, ZoomIn, ZoomOut, MessageSquare, Send, BarChart2,
-  GraduationCap, FlaskConical, X, BookOpen,
+  GraduationCap, FlaskConical, X, BookOpen, Brain, ListChecks, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
@@ -93,7 +93,12 @@ type SessionState =
   | "listening"
   | "processing"
   | "section_ended"
-  | "history";
+  | "history"
+  | "teach_back_setup"
+  | "teach_back_recording"
+  | "teach_back_processing"
+  | "teach_back_result"
+  | "teach_back_history";
 
 type VoiceEvent =
   | { type: "user_transcript"; data: string }
@@ -171,6 +176,30 @@ interface AnatomyImageInfo {
   category: string;
 }
 
+interface TeachBackFeedback {
+  transcript: string;
+  score: number;
+  coveredPoints: string[];
+  missedPoints: string[];
+  clinicalCorrelatesMissed: string[];
+  feedbackText: string;
+}
+
+interface TeachBackHistoryRow {
+  id: number;
+  topic: string;
+  subject: string;
+  transcript: string | null;
+  score: number | null;
+  feedbackJson: {
+    coveredPoints: string[];
+    missedPoints: string[];
+    clinicalCorrelatesMissed: string[];
+    feedbackText: string;
+  };
+  createdAt: string;
+}
+
 export default function PracticalHub() {
   const { user } = useAuth();
   const [topic, setTopic] = useState("");
@@ -212,6 +241,14 @@ export default function PracticalHub() {
   const [textMode, setTextMode] = useState(false);
   const [textInput, setTextInput] = useState("");
   const [textSubmitting, setTextSubmitting] = useState(false);
+  // Teach-Back Mode
+  const [tbSubject, setTbSubject] = useState<Subject>("Physiology");
+  const [tbTopic, setTbTopic] = useState("");
+  const [tbSecondsLeft, setTbSecondsLeft] = useState(90);
+  const [tbResult, setTbResult] = useState<TeachBackFeedback | null>(null);
+  const [tbHistory, setTbHistory] = useState<TeachBackHistoryRow[]>([]);
+  const [tbHistoryLoading, setTbHistoryLoading] = useState(false);
+  const tbTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const practiceModeRef = useRef(practiceMode);
   practiceModeRef.current = practiceMode;
@@ -253,6 +290,7 @@ export default function PracticalHub() {
       currentRequestRef.current?.abort();
       if (timerRef.current) clearInterval(timerRef.current);
       if (answerTimerRef.current) clearInterval(answerTimerRef.current);
+      if (tbTimerRef.current) clearInterval(tbTimerRef.current);
       playbackRef.current.clear();
       if (recorderRef.current.state === "recording") {
         recorderRef.current.stopRecording().catch(() => {});
@@ -582,6 +620,72 @@ export default function PracticalHub() {
     }
   };
 
+  const doStopAndSubmitRef = useRef<(() => Promise<void>) | null>(null);
+
+  const doStopAndSubmit = async () => {
+    if (tbTimerRef.current) { clearInterval(tbTimerRef.current); tbTimerRef.current = null; }
+    setState("teach_back_processing");
+    try {
+      const blob = await recorderRef.current.stopRecording();
+      if (!blob) { toast.error("Recording failed — no audio captured."); setState("teach_back_setup"); return; }
+      const audioBase64 = await blobToBase64(blob);
+      const res = await apiFetch("/api/practical-hub/teach-back", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: tbTopic.trim(), subject: tbSubject, audioBase64 }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error((data as any).error || "Failed to analyse your explanation.");
+        setState("teach_back_setup");
+        return;
+      }
+      const data = await res.json();
+      setTbResult(data as TeachBackFeedback);
+      setState("teach_back_result");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to submit your explanation.");
+      setState("teach_back_setup");
+    }
+  };
+  doStopAndSubmitRef.current = doStopAndSubmit;
+
+  const startTeachBackRecording = async () => {
+    if (!tbTopic.trim()) { toast.error("Please enter a topic first."); return; }
+    try {
+      await recorder.startRecording();
+      setTbSecondsLeft(90);
+      setState("teach_back_recording");
+      tbTimerRef.current = setInterval(() => {
+        setTbSecondsLeft((s) => {
+          if (s <= 1) {
+            if (tbTimerRef.current) { clearInterval(tbTimerRef.current); tbTimerRef.current = null; }
+            doStopAndSubmitRef.current?.();
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
+    } catch {
+      toast.error("Could not access microphone. Please allow microphone access.");
+    }
+  };
+
+  const loadTeachBackHistory = async () => {
+    setTbHistoryLoading(true);
+    try {
+      const res = await apiFetch("/api/practical-hub/teach-back/history");
+      if (res.ok) {
+        const data = await res.json();
+        setTbHistory(data.sessions ?? []);
+      }
+    } catch {
+      toast.error("Failed to load teach-back history.");
+    } finally {
+      setTbHistoryLoading(false);
+    }
+  };
+
   if (state === "home") {
     const tiles: {
       key: string;
@@ -613,6 +717,14 @@ export default function PracticalHub() {
         title: "My Viva History",
         description: "Score trends across all your completed viva sessions — see where you're improving.",
         onClick: () => { setState("history"); loadHistory(); },
+      },
+      {
+        key: "teach-back",
+        icon: <Brain size={22} className="text-primary" />,
+        title: "Teach-Back Mode",
+        description: "Record a 90-second voice explanation of any topic — AI gives structured feedback on what you covered and missed.",
+        badge: "New",
+        onClick: () => { setTbTopic(""); setState("teach_back_setup"); },
       },
     ];
 
@@ -779,6 +891,328 @@ export default function PracticalHub() {
             </Card>
           </>
         )}
+      </div>
+    );
+  }
+
+  if (state === "teach_back_setup") {
+    return (
+      <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto pb-20">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" className="gap-2 -ml-2" onClick={() => setState("home")}>
+            <ChevronLeft size={16} /> Practical Hub
+          </Button>
+        </div>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Brain size={20} className="text-primary" /> Teach-Back Mode
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Record a 90-second explanation of any topic as if teaching a classmate — get AI feedback on what you covered and missed.
+          </p>
+        </div>
+        <Card className="bg-card/40 border-border/40">
+          <CardContent className="p-5 space-y-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Subject</label>
+              <Select value={tbSubject} onValueChange={(v) => setTbSubject(v as Subject)}>
+                <SelectTrigger className="bg-background/50 border-border/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_SUBJECTS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic to Explain</label>
+              <Input
+                value={tbTopic}
+                onChange={(e) => setTbTopic(e.target.value)}
+                placeholder="e.g. Cardiac Cycle, Krebs Cycle, Brachial Plexus..."
+                className="bg-background/50 border-border/50"
+                onKeyDown={(e) => { if (e.key === "Enter" && tbTopic.trim()) startTeachBackRecording(); }}
+              />
+              <p className="text-[11px] text-muted-foreground mt-1.5">
+                Choose any topic from the {tbSubject} Phase I syllabus. You'll have 90 seconds to explain it out loud.
+              </p>
+            </div>
+            <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground leading-relaxed flex gap-2">
+              <Sparkles size={14} className="text-primary shrink-0 mt-0.5" />
+              <span>
+                Speak as if teaching a batchmate — cover the key points, mechanisms, and clinical significance. AI will give you a score and tell you exactly what you covered and what you missed.
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={startTeachBackRecording} disabled={!tbTopic.trim()} className="gap-2">
+                <Mic size={15} /> Start Recording (90 s)
+              </Button>
+              <Button variant="outline" onClick={() => { setState("teach_back_history"); loadTeachBackHistory(); }} className="gap-2">
+                <BarChart2 size={14} /> View History
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (state === "teach_back_recording") {
+    const pct = Math.round(((90 - tbSecondsLeft) / 90) * 100);
+    return (
+      <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto pb-20">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Brain size={20} className="text-primary" /> Teach-Back
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">{tbSubject} — {tbTopic}</p>
+        </div>
+        <Card className="bg-gradient-to-b from-card/60 to-card/30 border-red-500/30">
+          <CardContent className="p-0">
+            <div className="flex flex-col items-center justify-center py-12 px-6 text-center gap-5">
+              <div className="relative w-24 h-24 rounded-full bg-red-500/20 ring-4 ring-red-500/30 flex items-center justify-center">
+                <Mic size={34} className="text-red-500" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-red-500">Recording...</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                  Explain <span className="font-semibold text-foreground">"{tbTopic}"</span> as if teaching a batchmate. Cover mechanisms, key facts, and clinical relevance.
+                </p>
+              </div>
+              <div className="flex items-end gap-1 h-6">
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <span
+                    key={i}
+                    className="w-1 rounded-full bg-red-500/70 animate-pulse"
+                    style={{ height: `${6 + ((i * 7) % 18)}px`, animationDuration: `${0.6 + (i % 4) * 0.15}s`, animationDelay: `${i * 0.07}s` }}
+                  />
+                ))}
+              </div>
+              <div className={`text-3xl font-mono font-bold ${tbSecondsLeft <= 15 ? "text-red-500" : "text-foreground"}`}>
+                {Math.floor(tbSecondsLeft / 60)}:{String(tbSecondsLeft % 60).padStart(2, "0")}
+                <span className="text-sm font-normal text-muted-foreground ml-2">remaining</span>
+              </div>
+              <div className="w-full max-w-xs bg-border/30 rounded-full h-1.5">
+                <div className="bg-red-500 h-1.5 rounded-full transition-all duration-1000" style={{ width: `${pct}%` }} />
+              </div>
+              <Button
+                onClick={() => doStopAndSubmitRef.current?.()}
+                variant="outline"
+                className="gap-2 border-red-500/30 text-red-500 hover:bg-red-500/10"
+              >
+                <Square size={14} /> Stop & Submit Early
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (state === "teach_back_processing") {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4 max-w-3xl mx-auto">
+        <Loader2 size={32} className="animate-spin text-primary" />
+        <p className="text-sm font-medium">Analysing your explanation...</p>
+        <p className="text-xs text-muted-foreground max-w-xs text-center">
+          Transcribing your voice and checking coverage against the {tbSubject} syllabus. This takes a few seconds.
+        </p>
+      </div>
+    );
+  }
+
+  if (state === "teach_back_result" && tbResult) {
+    const scoreColor = tbResult.score >= 8 ? "text-emerald-500" : tbResult.score >= 5 ? "text-amber-500" : "text-red-500";
+    const scoreBg = tbResult.score >= 8 ? "bg-emerald-500/10 border-emerald-500/30" : tbResult.score >= 5 ? "bg-amber-500/10 border-amber-500/30" : "bg-red-500/10 border-red-500/30";
+    return (
+      <div className="space-y-4 sm:space-y-5 max-w-3xl mx-auto pb-20">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" className="gap-2 -ml-2" onClick={() => setState("teach_back_setup")}>
+            <ChevronLeft size={16} /> Teach-Back
+          </Button>
+        </div>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Brain size={20} className="text-primary" /> Teach-Back Feedback
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">{tbSubject} — {tbTopic}</p>
+        </div>
+
+        <Card className={`border ${scoreBg}`}>
+          <CardContent className="p-5 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-0.5">Coverage Score</p>
+              <p className={`text-4xl font-bold ${scoreColor}`}>{tbResult.score}<span className="text-base font-normal text-muted-foreground">/10</span></p>
+            </div>
+            <Award size={32} className={scoreColor} />
+          </CardContent>
+        </Card>
+
+        {tbResult.feedbackText && (
+          <Card className="bg-card/40 border-border/40">
+            <CardContent className="p-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">AI Examiner's Remarks</p>
+              <p className="text-sm leading-relaxed italic text-foreground/90">"{tbResult.feedbackText}"</p>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {tbResult.coveredPoints.length > 0 && (
+            <Card className="bg-emerald-500/5 border-emerald-500/20">
+              <CardContent className="p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-2 flex items-center gap-1.5">
+                  <ListChecks size={13} /> Points Covered
+                </p>
+                <ul className="space-y-1.5">
+                  {tbResult.coveredPoints.map((pt, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-foreground/90">
+                      <CheckCircle2 size={12} className="text-emerald-500 mt-0.5 shrink-0" />
+                      {pt}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+          {tbResult.missedPoints.length > 0 && (
+            <Card className="bg-red-500/5 border-red-500/20">
+              <CardContent className="p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-red-600 mb-2 flex items-center gap-1.5">
+                  <XCircle size={13} /> Key Points Missed
+                </p>
+                <ul className="space-y-1.5">
+                  {tbResult.missedPoints.map((pt, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-foreground/90">
+                      <AlertTriangle size={12} className="text-red-500 mt-0.5 shrink-0" />
+                      {pt}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {tbResult.clinicalCorrelatesMissed.length > 0 && (
+          <Card className="bg-amber-500/5 border-amber-500/20">
+            <CardContent className="p-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-600 mb-2 flex items-center gap-1.5">
+                <Stethoscope size={13} /> Clinical Correlates Missed
+              </p>
+              <ul className="space-y-1.5">
+                {tbResult.clinicalCorrelatesMissed.map((pt, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-foreground/90">
+                    <AlertTriangle size={12} className="text-amber-500 mt-0.5 shrink-0" />
+                    {pt}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
+        {tbResult.transcript && (
+          <details className="group">
+            <summary className="text-xs text-muted-foreground cursor-pointer select-none flex items-center gap-1.5 hover:text-foreground transition-colors">
+              <ChevronLeft size={12} className="rotate-[-90deg] group-open:rotate-90 transition-transform" />
+              Show transcript
+            </summary>
+            <Card className="bg-card/30 border-border/30 mt-2">
+              <CardContent className="p-3">
+                <p className="text-xs text-muted-foreground leading-relaxed italic">"{tbResult.transcript}"</p>
+              </CardContent>
+            </Card>
+          </details>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => { setTbTopic(""); setState("teach_back_setup"); }} className="gap-2">
+            <Brain size={14} /> Try Another Topic
+          </Button>
+          <Button variant="outline" onClick={() => { setState("teach_back_history"); loadTeachBackHistory(); }} className="gap-2">
+            <BarChart2 size={14} /> View History
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "teach_back_history") {
+    return (
+      <div className="space-y-5 max-w-3xl mx-auto pb-20">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" className="gap-2 -ml-2" onClick={() => setState("teach_back_setup")}>
+            <ChevronLeft size={16} /> Teach-Back
+          </Button>
+        </div>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <BarChart2 size={20} className="text-primary" /> Teach-Back History
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">Your last {tbHistory.length} teach-back sessions.</p>
+        </div>
+
+        {tbHistoryLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-10 justify-center">
+            <Loader2 size={16} className="animate-spin" /> Loading…
+          </div>
+        ) : tbHistory.length === 0 ? (
+          <Card className="bg-card/40 border-border/40">
+            <CardContent className="p-8 text-center text-muted-foreground text-sm">
+              No teach-back sessions yet. Try explaining a topic to get structured feedback.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {tbHistory.map((row) => {
+              const sc = row.score ?? 0;
+              const scoreColor = sc >= 8 ? "text-emerald-500" : sc >= 5 ? "text-amber-500" : "text-red-500";
+              return (
+                <Card key={row.id} className="bg-card/40 border-border/40">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{row.topic}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {row.subject} · {new Date(row.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" })}
+                        </p>
+                        {row.feedbackJson?.feedbackText && (
+                          <p className="text-xs text-muted-foreground mt-1.5 italic line-clamp-2">"{row.feedbackJson.feedbackText}"</p>
+                        )}
+                      </div>
+                      <span className={`text-xl font-bold shrink-0 ${scoreColor}`}>
+                        {sc}<span className="text-xs font-normal text-muted-foreground">/10</span>
+                      </span>
+                    </div>
+                    {row.feedbackJson?.missedPoints?.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-border/30">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-red-500/70 mb-1">Missed</p>
+                        <ul className="space-y-0.5">
+                          {row.feedbackJson.missedPoints.slice(0, 2).map((pt, i) => (
+                            <li key={i} className="text-[11px] text-muted-foreground flex items-start gap-1.5">
+                              <AlertTriangle size={10} className="text-red-400 mt-0.5 shrink-0" />
+                              {pt}
+                            </li>
+                          ))}
+                          {row.feedbackJson.missedPoints.length > 2 && (
+                            <li className="text-[11px] text-muted-foreground">+{row.feedbackJson.missedPoints.length - 2} more…</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        <Button onClick={() => setState("teach_back_setup")} className="gap-2">
+          <Brain size={14} /> New Teach-Back Session
+        </Button>
       </div>
     );
   }

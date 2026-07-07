@@ -6,7 +6,7 @@ import { convertAndCheckSilence, isHallucinatedTranscript, isUnexpectedScript, s
 import { ai as gemini } from "@workspace/integrations-gemini-ai";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { db } from "@workspace/db";
-import { vivaSourcesTable, vivaSourceDocumentsTable, vivaHistoryTable } from "@workspace/db";
+import { vivaSourcesTable, vivaSourceDocumentsTable, vivaHistoryTable, teachBackSessionsTable } from "@workspace/db";
 import { eq, desc, sql } from "drizzle-orm";
 import rateLimit from "express-rate-limit";
 import { awardXp, XP_VALUES } from "../lib/xp";
@@ -1155,6 +1155,131 @@ router.post("/viva/turn-text", authMiddleware, voiceLimiter, async (req: Request
     sendEvent(res, { type: "error", error: err?.message || "Failed to continue the viva." });
   } finally {
     res.end();
+  }
+});
+
+// Teach-Back Mode: student records a 90-second voice explanation of a topic.
+// GPT-4o evaluates coverage (covered points, missed points, clinical correlates missed)
+// and returns a structured score + feedback. Session is saved for history.
+const teachBackLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  message: { error: "Too many teach-back requests. Please wait a few minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post("/teach-back", authMiddleware, teachBackLimiter, async (req: Request, res: Response) => {
+  const userId = (req as any).user?.id;
+  if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+
+  const topic = sanitizeText(req.body.topic, 300);
+  const subjectRaw = req.body.subject;
+  const audioBase64 = typeof req.body.audioBase64 === "string" ? req.body.audioBase64.trim() : null;
+
+  if (!topic) { res.status(400).json({ error: "topic is required" }); return; }
+  if (!isVivaSubject(subjectRaw)) { res.status(400).json({ error: "subject must be Anatomy, Physiology, or Biochemistry" }); return; }
+  if (!audioBase64) { res.status(400).json({ error: "audioBase64 is required" }); return; }
+
+  const subject: VivaSubject = subjectRaw;
+
+  try {
+    // Convert base64 → buffer for Whisper
+    const audioBuffer = Buffer.from(audioBase64, "base64");
+
+    // Silence detection + STT
+    let transcript = "";
+    try {
+      const { buffer: processedBuffer, format, isSilent } = await convertAndCheckSilence(audioBuffer);
+      if (isSilent) {
+        res.status(422).json({ error: "No speech detected. Please record yourself explaining the topic." });
+        return;
+      }
+      const rawTranscript = await speechToText(processedBuffer, format, "en", STT_VOCABULARY_HINT[subject]);
+      transcript = rawTranscript?.trim() ?? "";
+    } catch {
+      // Fall through with empty transcript — AI will flag it as insufficient
+      transcript = "";
+    }
+
+    if (!transcript || isHallucinatedTranscript(transcript)) {
+      res.status(422).json({ error: "Could not transcribe your explanation. Please speak clearly and try again." });
+      return;
+    }
+
+    // AI coverage evaluation
+    const evalResponse = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are a strict but fair MBBS Phase I ${subject} examiner evaluating a student's 90-second "teach-back" explanation of a topic. The student was asked to explain "${topic}" in ${subject} as if teaching a classmate. Your job is to evaluate their coverage and give structured feedback.
+
+${CBME_CONTEXT}
+
+Evaluate based on MBBS Phase I standard reference textbooks. Score out of 10 (0 = completely wrong/silent, 5 = basic correct but major gaps, 8 = good coverage with minor gaps, 10 = comprehensive and accurate).
+
+Return ONLY valid JSON (no markdown fences):
+{
+  "score": number (0-10),
+  "coveredPoints": string[] (2-5 points the student got right, specific),
+  "missedPoints": string[] (2-5 important points they missed or got wrong),
+  "clinicalCorrelatesMissed": string[] (1-3 key clinical correlates/applications they did not mention),
+  "feedbackText": string (2-3 sentences of overall feedback, honest and constructive, like a real examiner)
+}`,
+        },
+        {
+          role: "user",
+          content: `Topic: ${topic}\nSubject: ${subject}\n\nStudent's explanation (transcribed from voice):\n"${transcript}"`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 800,
+    });
+
+    const raw = evalResponse.choices[0]?.message?.content?.trim() ?? "{}";
+    let parsed: any = {};
+    try { parsed = JSON.parse(raw); } catch { parsed = {}; }
+
+    const score = typeof parsed.score === "number" ? Math.max(0, Math.min(10, Math.round(parsed.score))) : 0;
+    const coveredPoints: string[] = Array.isArray(parsed.coveredPoints) ? parsed.coveredPoints : [];
+    const missedPoints: string[] = Array.isArray(parsed.missedPoints) ? parsed.missedPoints : [];
+    const clinicalCorrelatesMissed: string[] = Array.isArray(parsed.clinicalCorrelatesMissed) ? parsed.clinicalCorrelatesMissed : [];
+    const feedbackText: string = typeof parsed.feedbackText === "string" ? parsed.feedbackText : "";
+
+    const feedbackJson = { coveredPoints, missedPoints, clinicalCorrelatesMissed, feedbackText };
+
+    // Save session to DB
+    await db.insert(teachBackSessionsTable).values({
+      userId,
+      topic,
+      subject,
+      transcript,
+      score,
+      feedbackJson,
+    });
+
+    res.json({ transcript, score, coveredPoints, missedPoints, clinicalCorrelatesMissed, feedbackText });
+  } catch (err: any) {
+    console.error("Teach-back error:", err);
+    res.status(500).json({ error: err?.message || "Failed to process your teach-back session." });
+  }
+});
+
+// Teach-Back history: return the student's last 30 teach-back sessions.
+router.get("/teach-back/history", authMiddleware, async (req: Request, res: Response) => {
+  const userId = (req as any).user?.id;
+  if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  try {
+    const rows = await db
+      .select()
+      .from(teachBackSessionsTable)
+      .where(eq(teachBackSessionsTable.userId, userId))
+      .orderBy(desc(teachBackSessionsTable.createdAt))
+      .limit(30);
+    res.json({ sessions: rows });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Failed to load teach-back history." });
   }
 });
 

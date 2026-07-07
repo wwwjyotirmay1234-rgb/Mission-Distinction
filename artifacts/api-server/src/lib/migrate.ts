@@ -566,6 +566,17 @@ export async function runStartupMigrations() {
         insights_json JSONB NOT NULL DEFAULT '[]',
         generated_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS teach_back_sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        topic TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        transcript TEXT,
+        score INTEGER,
+        feedback_json JSONB NOT NULL DEFAULT '{}',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
     `);
   } finally {
     client.release();
