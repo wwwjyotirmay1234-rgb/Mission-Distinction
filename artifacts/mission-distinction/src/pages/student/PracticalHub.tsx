@@ -765,7 +765,7 @@ export default function PracticalHub() {
             <img
               src={clinicalImage.src}
               alt="Apparatus/specimen shown for identification"
-              className="w-full max-w-md max-h-[70vh] object-contain rounded-lg bg-background/40 border border-border/30"
+              className="w-full max-w-md object-contain rounded-lg bg-background/40 border border-border/30"
             />
             <div className="text-xs text-muted-foreground leading-relaxed text-center">
               <p className="font-semibold text-sm text-foreground mb-0.5">{clinicalImage.topic}</p>
@@ -781,7 +781,7 @@ export default function PracticalHub() {
             <img
               src={`${anatomyStationImage.url}${anatomyStationImage.url.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("mission_token") ?? "")}`}
               alt={`${vivaType ?? "Anatomy"} specimen`}
-              className="w-full max-w-md max-h-[70vh] object-contain rounded-lg bg-background/40 border border-border/30"
+              className="w-full max-w-md object-contain rounded-lg bg-background/40 border border-border/30"
             />
             <div className="text-xs text-muted-foreground leading-relaxed text-center">
               <p className="font-bold uppercase tracking-wider text-[10px] text-primary mb-1">{vivaType} Spotter</p>
