@@ -7,6 +7,7 @@ import { gcsClient } from "../lib/gcs";
 import { loadPdfDocument, renderPageRangeFromDoc } from "./aiDoubt";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { ANATOMY_IMAGE_CATEGORIES, isAnatomyImageCategory } from "../lib/anatomyVivaImages";
+import seedRows from "../data/anatomy-viva-images-seed.json" assert { type: "json" };
 
 const router = Router();
 
@@ -369,5 +370,86 @@ router.post("/admin/manual", adminMiddleware, async (req: Request, res: Response
   }
 });
 
+
+// Admin: apply the bundled seed data (anatomy-viva-images-seed.json compiled into
+// the dist). Idempotent — skips objectNames already present in the DB.
+// Designed to populate a fresh production DB without any manual data transfer.
+router.post("/admin/apply-seed", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const rows = Array.isArray(seedRows) ? seedRows : [];
+    if (rows.length === 0) { res.status(500).json({ error: "Seed file is empty" }); return; }
+
+    const existing = await db.select({ objectName: anatomyVivaImagesTable.objectName }).from(anatomyVivaImagesTable);
+    const existingSet = new Set(existing.map((r) => r.objectName));
+
+    let inserted = 0, skipped = 0;
+    for (const r of rows as any[]) {
+      if (!isAnatomyImageCategory(r.category) || typeof r.title !== "string" || typeof r.objectName !== "string") {
+        skipped++; continue;
+      }
+      if (existingSet.has(r.objectName)) { skipped++; continue; }
+      try {
+        await db.insert(anatomyVivaImagesTable).values({
+          category: r.category,
+          title: r.title,
+          side: r.side || null,
+          region: r.region || null,
+          notes: r.notes || null,
+          objectName: r.objectName,
+          sourceFileName: r.sourceFileName || "seed",
+          sourcePage: Number.isInteger(r.sourcePage) ? r.sourcePage : null,
+          createdBy: null,
+        });
+        existingSet.add(r.objectName);
+        inserted++;
+      } catch { skipped++; }
+    }
+    res.json({ success: true, inserted, skipped, total: rows.length });
+  } catch (err: any) {
+    console.error("Anatomy viva images: apply-seed error", err);
+    res.status(500).json({ error: err?.message || "Seed failed" });
+  }
+});
+
+// Admin: bulk-import image metadata rows (no image bytes — objectName must already
+// exist in GCS). Used to seed a fresh production DB from dev DB export.
+// Idempotent: fetches existing objectNames first, skips rows already present.
+router.post("/admin/bulk-import", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const rows = Array.isArray(req.body?.rows) ? req.body.rows : null;
+    if (!rows || rows.length === 0) { res.status(400).json({ error: "rows array required" }); return; }
+
+    // Fetch all existing objectNames so we can skip duplicates
+    const existing = await db.select({ objectName: anatomyVivaImagesTable.objectName }).from(anatomyVivaImagesTable);
+    const existingSet = new Set(existing.map((r) => r.objectName));
+
+    let inserted = 0, skipped = 0;
+    for (const r of rows) {
+      if (!isAnatomyImageCategory(r.category) || typeof r.title !== "string" || typeof r.objectName !== "string") {
+        skipped++; continue;
+      }
+      if (existingSet.has(r.objectName)) { skipped++; continue; }
+      try {
+        await db.insert(anatomyVivaImagesTable).values({
+          category: r.category,
+          title: r.title,
+          side: r.side || null,
+          region: r.region || null,
+          notes: r.notes || null,
+          objectName: r.objectName,
+          sourceFileName: r.sourceFileName || "import",
+          sourcePage: Number.isInteger(r.sourcePage) ? r.sourcePage : null,
+          createdBy: null,
+        });
+        existingSet.add(r.objectName);
+        inserted++;
+      } catch { skipped++; }
+    }
+    res.json({ success: true, inserted, skipped, total: rows.length });
+  } catch (err: any) {
+    console.error("Anatomy viva images: bulk-import error", err);
+    res.status(500).json({ error: err?.message || "Bulk import failed" });
+  }
+});
 
 export { router as anatomyVivaImagesRouter, ANATOMY_IMAGE_CATEGORIES };

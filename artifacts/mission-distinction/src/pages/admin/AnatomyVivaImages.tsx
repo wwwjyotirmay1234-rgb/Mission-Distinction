@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
-import { Loader2, Trash2, Sparkles, RefreshCw, Image as ImageIcon, FileText } from "lucide-react";
+import { Loader2, Trash2, Sparkles, RefreshCw, Image as ImageIcon, FileText, DatabaseZap } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -65,6 +65,7 @@ export default function AnatomyVivaImages() {
   const [extractLog, setExtractLog] = useState<string[]>([]);
   const [extractProgress, setExtractProgress] = useState<{ fileName: string; processedPages: number; totalPages: number } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AnatomyImageRow | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
   const loadPdfs = useCallback(async () => {
     setLoadingPdfs(true);
@@ -169,6 +170,22 @@ export default function AnatomyVivaImages() {
     }
   };
 
+  const applySeed = async () => {
+    setSeeding(true);
+    try {
+      const data = await apiFetchJson<{ inserted: number; skipped: number; total: number }>(
+        "/api/anatomy-viva-images/admin/apply-seed",
+        { method: "POST" }
+      );
+      toast.success(`Seed complete — ${data.inserted} images added, ${data.skipped} already existed.`);
+      loadImages(categoryFilter);
+    } catch {
+      toast.error("Seed failed. Check server logs.");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
@@ -185,14 +202,27 @@ export default function AnatomyVivaImages() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <ImageIcon className="h-6 w-6 text-teal-400" /> Anatomy Viva Images
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Automatically extract labeled specimen images from already-uploaded PDFs for the 5 Anatomy image-based viva
-          stations. Extraction is fully automatic — no review step; delete unwanted images below afterwards.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <ImageIcon className="h-6 w-6 text-teal-400" /> Anatomy Viva Images
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Automatically extract labeled specimen images from already-uploaded PDFs for the 5 Anatomy image-based viva
+            stations. Extraction is fully automatic — no review step; delete unwanted images below afterwards.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={applySeed}
+          disabled={seeding}
+          className="shrink-0 gap-2 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+          title="Seed production DB with all 338 bundled images (idempotent)"
+        >
+          {seeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <DatabaseZap className="h-4 w-4" />}
+          {seeding ? "Seeding..." : "Seed DB"}
+        </Button>
       </div>
 
       <Card className="p-4 space-y-4">
