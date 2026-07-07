@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Stethoscope, Mic, Square, PhoneOff, Loader2, Award, CheckCircle2, AlertTriangle, ArrowRight, Sparkles,
-  Search, Users, ChevronLeft, Volume2, TrendingUp,
+  Search, Users, ChevronLeft, Volume2, TrendingUp, ZoomIn, ZoomOut, MessageSquare, Send, BarChart2,
+  GraduationCap, FlaskConical, X, BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
@@ -15,6 +16,9 @@ import { PHYSIOLOGY_CLINICAL_IMAGES, type PhysiologyClinicalImage } from "@/data
 import { PHYSIOLOGY_HEMATOLOGY_IMAGES } from "@/data/physiologyHematologyImages";
 import { BIOCHEMISTRY_SERUM_URINE_IMAGES } from "@/data/biochemistryImages";
 import VivaRooms from "@/pages/student/VivaRooms";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from "recharts";
 
 const ALL_SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"] as const;
 type Subject = (typeof ALL_SUBJECTS)[number];
@@ -54,16 +58,22 @@ const ANATOMY_VIVA_TYPE_DESCRIPTIONS: Record<AnatomyVivaType, string> = {
   Prosection: "Identify the dissected structure(s) shown in the cadaveric prosection photo — nerves, vessels, muscles.",
 };
 
+// Predefined region/topic filter options per anatomy image viva type
+const ANATOMY_REGION_OPTIONS: Partial<Record<AnatomyVivaType, string[]>> = {
+  Histology: ["GI Tract", "Endocrine", "Reproductive", "Respiratory", "Neural", "Musculoskeletal", "Lymphoid", "Urinary", "Cardiovascular"],
+  Bone: ["Upper Limb", "Lower Limb", "Thorax", "Pelvis", "Head and Neck", "Vertebral Column"],
+  Visceral: ["Thorax", "Abdomen", "Pelvis"],
+  "Section Anatomy": ["Head and Neck", "Thorax", "Abdomen", "Pelvis", "Upper Limb", "Lower Limb", "Brain"],
+  Prosection: ["Upper Limb", "Lower Limb", "Head and Neck", "Thorax", "Abdomen"],
+};
+
 type VivaType = PhysiologyVivaType | BiochemistryVivaType | AnatomyVivaType;
 
 const ANSWER_WINDOW_SECONDS = 50;
 const ANSWER_HURRY_UP_SECONDS = 15;
-
-// Target time budget for a single-subject viva station, mirroring a real practical rotation
-// where each station has a fixed slot before the batch moves to the next one.
 const STATION_TARGET_SECONDS = 10 * 60;
-
 const ENTRANCE_BEAT_MS = 1800;
+
 const ENTRANCE_LINES: Record<string, string[]> = {
   "Dr. Mamata": ["Come in, beta. Sit down.", "Let's see your roll number... right, ready?", "No wasting time, let's begin."],
   "Dr. Rajiv": ["Come in, come in. Have a seat.", "Don't be nervous, just answer what you know.", "Alright, settling in?"],
@@ -82,7 +92,8 @@ type SessionState =
   | "examiner_speaking"
   | "listening"
   | "processing"
-  | "section_ended";
+  | "section_ended"
+  | "history";
 
 type VoiceEvent =
   | { type: "user_transcript"; data: string }
@@ -143,6 +154,23 @@ interface VivaSummary {
   questionBreakdown?: QuestionBreakdownItem[];
 }
 
+interface VivaHistoryRow {
+  id: number;
+  subject: string;
+  vivaType: string | null;
+  score: number;
+  createdAt: string;
+}
+
+interface AnatomyImageInfo {
+  id: number;
+  title: string;
+  side: string | null;
+  region: string | null;
+  notes: string | null;
+  category: string;
+}
+
 export default function PracticalHub() {
   const { user } = useAuth();
   const [topic, setTopic] = useState("");
@@ -168,6 +196,28 @@ export default function PracticalHub() {
   const [sectionSummary, setSectionSummary] = useState<VivaSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
 
+  // Feature 5: Practice vs Exam mode
+  const [practiceMode, setPracticeMode] = useState(true);
+  // Feature 4: Region filter for anatomy image stations
+  const [selectedRegionFilter, setSelectedRegionFilter] = useState<string[]>([]);
+  // Feature 1: Image zoom
+  const [imageZoomed, setImageZoomed] = useState(false);
+  // Feature 2: Labeled reveal after session ends
+  const [endedAnatomyImageId, setEndedAnatomyImageId] = useState<number | null>(null);
+  const [anatomyImageInfo, setAnatomyImageInfo] = useState<AnatomyImageInfo | null>(null);
+  // Feature 7: History
+  const [historyRows, setHistoryRows] = useState<VivaHistoryRow[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  // Feature 9: Text mode
+  const [textMode, setTextMode] = useState(false);
+  const [textInput, setTextInput] = useState("");
+  const [textSubmitting, setTextSubmitting] = useState(false);
+
+  const practiceModeRef = useRef(practiceMode);
+  practiceModeRef.current = practiceMode;
+  const vivaTypeRef = useRef(vivaType);
+  vivaTypeRef.current = vivaType;
+
   const recorder = useVoiceRecorder();
   const playback = useAudioPlayback("/audio-playback-worklet.js");
 
@@ -178,12 +228,16 @@ export default function PracticalHub() {
   const answerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recorderStateRef = useRef(recorder.state);
   recorderStateRef.current = recorder.state;
-  // Live refs so the unmount cleanup can call the latest versions without
-  // adding them to the dependency array (which would re-register the effect).
   const playbackRef = useRef(playback);
   playbackRef.current = playback;
   const recorderRef = useRef(recorder);
   recorderRef.current = recorder;
+  const subjectRef = useRef(subject);
+  subjectRef.current = subject;
+  const topicRef = useRef(topic);
+  topicRef.current = topic;
+  const clinicalImageRef = useRef(clinicalImage);
+  clinicalImageRef.current = clinicalImage;
 
   useEffect(() => {
     if (state === "setup" || state === "section_ended") {
@@ -196,15 +250,10 @@ export default function PracticalHub() {
 
   useEffect(() => {
     return () => {
-      // Abort any in-flight SSE request so the stream handler stops.
       currentRequestRef.current?.abort();
-      // Clear all timers.
       if (timerRef.current) clearInterval(timerRef.current);
       if (answerTimerRef.current) clearInterval(answerTimerRef.current);
-      // Stop audio playback so the examiner's voice doesn't keep playing
-      // after the user navigates away from this page.
       playbackRef.current.clear();
-      // Stop the microphone if it is still recording.
       if (recorderRef.current.state === "recording") {
         recorderRef.current.stopRecording().catch(() => {});
       }
@@ -234,8 +283,6 @@ export default function PracticalHub() {
           onExpire();
           return null;
         }
-        // Interruption/hurry-up: once the answer window is running low, nudge the student
-        // like a real examiner cutting in on a rambling or stalled answer.
         if (s - 1 <= ANSWER_HURRY_UP_SECONDS && !hurryUpShownRef.current) {
           hurryUpShownRef.current = true;
           setHurryUpNudge(true);
@@ -300,6 +347,7 @@ export default function PracticalHub() {
               playback.pushAudio(event.data);
             } else if (event.type === "station_image") {
               setAnatomyStationImage({ id: event.imageId, url: event.imageUrl });
+              setImageZoomed(false);
             } else if (event.type === "station_image_arrow") {
               setAnatomyStationImage((prev) => prev ? { ...prev, arrowTarget: event.arrowTarget } : prev);
             } else if (event.type === "error") {
@@ -339,8 +387,6 @@ export default function PracticalHub() {
 
     const trimmedTopic = requestedTopic.trim().toLowerCase();
     if (trimmedTopic) {
-      // The student asked for a specific topic — only show an image if one actually matches it,
-      // so we never force an unrelated image (e.g. ECG) on top of an unrelated requested topic.
       const match = pool.find(
         (img) =>
           img.topic.toLowerCase().includes(trimmedTopic) ||
@@ -349,8 +395,6 @@ export default function PracticalHub() {
       );
       return match ?? null;
     }
-
-    // No specific topic requested — a random reference image is fine to keep vivas varied.
     return pool[Math.floor(Math.random() * pool.length)];
   }, []);
 
@@ -361,29 +405,19 @@ export default function PracticalHub() {
     setState("processing");
     const audio = await blobToBase64(blob);
     await streamTurn("/api/practical-hub/viva/turn-voice", {
-      subject,
-      topic,
+      subject: subjectRef.current,
+      topic: topicRef.current,
       history: turnsRef.current,
-      vivaType: vivaType ?? undefined,
-      imageCaption: clinicalImage?.caption ?? undefined,
+      vivaType: vivaTypeRef.current ?? undefined,
+      imageCaption: clinicalImageRef.current?.caption ?? undefined,
       imageId: anatomyStationImageRef.current?.id,
       arrowLabel: anatomyStationImageRef.current?.arrowTarget?.label,
+      practiceMode: practiceModeRef.current,
       audio,
     });
-  }, [recorder, streamTurn, subject, topic, vivaType, clinicalImage]);
+  }, [recorder, streamTurn]);
 
   const startViva = async () => {
-    // Create/unlock the AudioContext synchronously within this click handler,
-    // BEFORE any `await` breaks the user-gesture chain. Safari/iOS (and Chrome's
-    // stricter autoplay policies) only allow an AudioContext to start in the
-    // "running" state if it's created inside the same synchronous call stack as
-    // a user gesture (e.g. this button click). If we wait until streamTurn()
-    // calls playback.init() later — after the ~1.8s entrance-beat setTimeout —
-    // the context gets created several event-loop turns removed from the click,
-    // so browsers create it "suspended" and it silently never plays audio again,
-    // with no console error. Kicking off init() here (fire-and-forget is fine;
-    // streamTurn's own playback.init() call is a no-op once ready) keeps the
-    // AudioContext creation tied to the gesture.
     playback.init().catch(() => {});
 
     setSubject(selectedSubject);
@@ -401,6 +435,11 @@ export default function PracticalHub() {
     setVivaType(chosenVivaType);
     setClinicalImage(chosenImage);
     setAnatomyStationImage(null);
+    setEndedAnatomyImageId(null);
+    setAnatomyImageInfo(null);
+    setImageZoomed(false);
+    setTextMode(false);
+    setTextInput("");
     setTurns([]);
     turnsRef.current = [];
     setLiveUserText("");
@@ -409,8 +448,6 @@ export default function PracticalHub() {
     clearAnswerTimer();
     setSectionSummary(null);
 
-    // Visible "waiting to be called" entrance beat before the first question — a brief moment
-    // where the examiner is shown greeting/settling in, rather than jumping straight to Q1.
     const examinerName = EXAMINER_BY_SUBJECT[selectedSubject];
     const lines = ENTRANCE_LINES[examinerName] ?? ["Come in, take a seat."];
     setEntranceLine(lines[Math.floor(Math.random() * lines.length)]);
@@ -418,11 +455,20 @@ export default function PracticalHub() {
     await new Promise((resolve) => setTimeout(resolve, ENTRANCE_BEAT_MS));
 
     setState("connecting");
+
+    const hasRegionFilter =
+      isAnatomy &&
+      chosenVivaType != null &&
+      chosenVivaType !== "Theory" &&
+      selectedRegionFilter.length > 0;
+
     await streamTurn("/api/practical-hub/viva/start-voice", {
       subject: selectedSubject,
       topic,
       vivaType: chosenVivaType ?? undefined,
       imageCaption: chosenImage?.caption ?? undefined,
+      practiceMode,
+      regionFilter: hasRegionFilter ? selectedRegionFilter : undefined,
     });
   };
 
@@ -440,6 +486,7 @@ export default function PracticalHub() {
         imageCaption: clinicalImage?.caption ?? undefined,
         imageId: anatomyStationImageRef.current?.id,
         arrowLabel: anatomyStationImageRef.current?.arrowTarget?.label,
+        practiceMode,
         audio,
       });
     } else {
@@ -453,11 +500,45 @@ export default function PracticalHub() {
     }
   };
 
+  const handleTextSubmit = async () => {
+    const text = textInput.trim();
+    if (!text || textSubmitting) return;
+    setTextInput("");
+    setTextSubmitting(true);
+    setState("processing");
+    try {
+      await streamTurn("/api/practical-hub/viva/turn-text", {
+        subject,
+        topic,
+        history: turnsRef.current,
+        vivaType: vivaType ?? undefined,
+        imageCaption: clinicalImage?.caption ?? undefined,
+        imageId: anatomyStationImageRef.current?.id,
+        arrowLabel: anatomyStationImageRef.current?.arrowTarget?.label,
+        practiceMode,
+        text,
+      });
+    } finally {
+      setTextSubmitting(false);
+    }
+  };
+
   const endSection = async () => {
     currentRequestRef.current?.abort();
     clearAnswerTimer();
     if (recorder.state === "recording") await recorder.stopRecording();
+
+    const endedImageId = anatomyStationImageRef.current?.id ?? null;
+    setEndedAnatomyImageId(endedImageId);
     setState("section_ended");
+
+    if (endedImageId) {
+      apiFetch(`/api/anatomy-viva-images/info/${endedImageId}`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => { if (data) setAnatomyImageInfo(data as AnatomyImageInfo); })
+        .catch(() => {});
+    }
+
     if (turnsRef.current.length === 0) {
       setSectionSummary(null);
       return;
@@ -467,7 +548,12 @@ export default function PracticalHub() {
       const res = await apiFetch("/api/practical-hub/viva/end", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, history: turnsRef.current }),
+        body: JSON.stringify({
+          subject,
+          vivaType: vivaType ?? undefined,
+          history: turnsRef.current,
+          imageId: endedImageId,
+        }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -478,6 +564,21 @@ export default function PracticalHub() {
       // silent — summary is a bonus, not required
     } finally {
       setSummaryLoading(false);
+    }
+  };
+
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await apiFetch("/api/practical-hub/viva/history");
+      if (res.ok) {
+        const data = await res.json();
+        setHistoryRows(data.sessions ?? []);
+      }
+    } catch {
+      toast.error("Failed to load history.");
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -505,6 +606,13 @@ export default function PracticalHub() {
         description: "Live multiplayer viva panels — practice with real batchmates over voice/video.",
         badge: "Live",
         onClick: () => setState("rooms"),
+      },
+      {
+        key: "history",
+        icon: <BarChart2 size={22} className="text-primary" />,
+        title: "My Viva History",
+        description: "Score trends across all your completed viva sessions — see where you're improving.",
+        onClick: () => { setState("history"); loadHistory(); },
       },
     ];
 
@@ -575,7 +683,116 @@ export default function PracticalHub() {
     return <VivaRooms onBack={() => setState("home")} />;
   }
 
+  if (state === "history") {
+    const chartData = [...historyRows].reverse().map((row, i) => ({
+      n: i + 1,
+      score: row.score,
+      subject: row.subject,
+      type: row.vivaType ?? row.subject,
+      label: new Date(row.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
+    }));
+
+    const bySubject: Record<string, { sessions: number; avg: number }> = {};
+    for (const row of historyRows) {
+      if (!bySubject[row.subject]) bySubject[row.subject] = { sessions: 0, avg: 0 };
+      bySubject[row.subject].sessions += 1;
+      bySubject[row.subject].avg += row.score;
+    }
+    for (const key of Object.keys(bySubject)) {
+      bySubject[key].avg = Math.round(bySubject[key].avg / bySubject[key].sessions);
+    }
+
+    return (
+      <div className="space-y-5 max-w-3xl mx-auto pb-20">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" className="gap-2 -ml-2" onClick={() => setState("home")}>
+            <ChevronLeft size={16} /> Practical Hub
+          </Button>
+        </div>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <BarChart2 size={20} className="text-primary" /> My Viva History
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">Your last {historyRows.length} viva sessions.</p>
+        </div>
+
+        {historyLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-10 justify-center">
+            <Loader2 size={16} className="animate-spin" /> Loading history…
+          </div>
+        ) : historyRows.length === 0 ? (
+          <Card className="bg-card/40 border-border/40">
+            <CardContent className="p-8 text-center text-muted-foreground text-sm">
+              No viva sessions recorded yet. Complete a viva to see your score history here.
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {Object.entries(bySubject).map(([subj, stats]) => (
+                <Card key={subj} className="bg-card/40 border-border/40">
+                  <CardContent className="p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">{subj}</p>
+                    <p className="text-2xl font-bold">{stats.avg}<span className="text-sm font-normal text-muted-foreground">/100</span></p>
+                    <p className="text-xs text-muted-foreground">{stats.sessions} session{stats.sessions !== 1 ? "s" : ""}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <Card className="bg-card/40 border-border/40">
+              <CardContent className="p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Score Trend</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                    <Tooltip
+                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                      formatter={(value: number, _name: string, props: any) => [`${value}/100 — ${props.payload.type}`, "Score"]}
+                    />
+                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card/40 border-border/40">
+              <CardContent className="p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Recent Sessions</p>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {historyRows.map((row) => (
+                    <div key={row.id} className="flex items-center justify-between text-xs py-1.5 border-b border-border/20 last:border-0">
+                      <div>
+                        <span className="font-medium">{row.subject}</span>
+                        {row.vivaType && <span className="text-muted-foreground"> — {row.vivaType}</span>}
+                        <span className="text-muted-foreground ml-2">{new Date(row.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" })}</span>
+                      </div>
+                      <span className={`font-bold ${row.score >= 75 ? "text-emerald-500" : row.score >= 50 ? "text-amber-500" : "text-red-500"}`}>
+                        {row.score}/100
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
+    );
+  }
+
   if (state === "setup") {
+    const isAnatomyImageType =
+      selectedSubject === "Anatomy" &&
+      (selectedAnatomyVivaType === "Histology" ||
+        selectedAnatomyVivaType === "Bone" ||
+        selectedAnatomyVivaType === "Visceral" ||
+        selectedAnatomyVivaType === "Section Anatomy" ||
+        selectedAnatomyVivaType === "Prosection");
+    const regionOptions = isAnatomyImageType ? (ANATOMY_REGION_OPTIONS[selectedAnatomyVivaType] ?? []) : [];
+
     return (
       <div className="space-y-4 sm:space-y-6 max-w-3xl mx-auto pb-20">
         <div className="flex items-center gap-3">
@@ -596,7 +813,7 @@ export default function PracticalHub() {
           <CardContent className="p-5 space-y-4">
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Choose Subject</label>
-              <Select value={selectedSubject} onValueChange={(v) => setSelectedSubject(v as Subject)}>
+              <Select value={selectedSubject} onValueChange={(v) => { setSelectedSubject(v as Subject); setSelectedRegionFilter([]); }}>
                 <SelectTrigger className="bg-background/50 border-border/50">
                   <SelectValue placeholder="Select a subject" />
                 </SelectTrigger>
@@ -607,6 +824,7 @@ export default function PracticalHub() {
                 </SelectContent>
               </Select>
             </div>
+
             {selectedSubject === "Physiology" && (
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Viva Type</label>
@@ -623,6 +841,7 @@ export default function PracticalHub() {
                 <p className="text-[11px] text-muted-foreground mt-1.5">{PHYSIOLOGY_VIVA_TYPE_DESCRIPTIONS[selectedPhysiologyVivaType]}</p>
               </div>
             )}
+
             {selectedSubject === "Biochemistry" && (
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Viva Type</label>
@@ -639,10 +858,11 @@ export default function PracticalHub() {
                 <p className="text-[11px] text-muted-foreground mt-1.5">{BIOCHEMISTRY_VIVA_TYPE_DESCRIPTIONS[selectedBiochemistryVivaType]}</p>
               </div>
             )}
+
             {selectedSubject === "Anatomy" && (
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Viva Type</label>
-                <Select value={selectedAnatomyVivaType} onValueChange={(v) => setSelectedAnatomyVivaType(v as AnatomyVivaType)}>
+                <Select value={selectedAnatomyVivaType} onValueChange={(v) => { setSelectedAnatomyVivaType(v as AnatomyVivaType); setSelectedRegionFilter([]); }}>
                   <SelectTrigger className="bg-background/50 border-border/50">
                     <SelectValue placeholder="Select a viva type" />
                   </SelectTrigger>
@@ -655,10 +875,72 @@ export default function PracticalHub() {
                 <p className="text-[11px] text-muted-foreground mt-1.5">{ANATOMY_VIVA_TYPE_DESCRIPTIONS[selectedAnatomyVivaType]}</p>
               </div>
             )}
+
+            {/* Feature 4: Topic/Region filter for anatomy image-based stations */}
+            {isAnatomyImageType && regionOptions.length > 0 && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                  Filter by Region <span className="text-[10px] text-muted-foreground/60">(optional — all regions if none selected)</span>
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {regionOptions.map((region) => {
+                    const selected = selectedRegionFilter.includes(region);
+                    return (
+                      <button
+                        key={region}
+                        type="button"
+                        onClick={() => setSelectedRegionFilter((prev) =>
+                          selected ? prev.filter((r) => r !== region) : [...prev, region]
+                        )}
+                        className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                          selected
+                            ? "bg-primary/20 border-primary/40 text-primary font-medium"
+                            : "bg-card/40 border-border/40 text-muted-foreground hover:border-primary/30"
+                        }`}
+                      >
+                        {region}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic Focus (Optional)</label>
               <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Cranial Nerves, Cardiac Cycle..." className="bg-background/50 border-border/50" />
             </div>
+
+            {/* Feature 5: Practice vs Exam mode toggle */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Mode</label>
+              <div className="flex rounded-lg overflow-hidden border border-border/50 w-fit">
+                <button
+                  type="button"
+                  onClick={() => setPracticeMode(true)}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+                    practiceMode ? "bg-primary text-primary-foreground" : "bg-background/50 text-muted-foreground hover:bg-card/60"
+                  }`}
+                >
+                  <BookOpen size={13} /> Practice
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPracticeMode(false)}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+                    !practiceMode ? "bg-primary text-primary-foreground" : "bg-background/50 text-muted-foreground hover:bg-card/60"
+                  }`}
+                >
+                  <GraduationCap size={13} /> Exam
+                </button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1.5">
+                {practiceMode
+                  ? "Practice: examiner may offer a gentle hint if you're genuinely stuck."
+                  : "Exam: no hints — exactly like a real university viva."}
+              </p>
+            </div>
+
             <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground leading-relaxed flex gap-2">
               <Sparkles size={14} className="text-primary shrink-0 mt-0.5" />
               <span>
@@ -684,6 +966,37 @@ export default function PracticalHub() {
           <p className="text-muted-foreground text-sm mt-1">{subject} viva complete.</p>
         </div>
 
+        {/* Feature 2: Labeled reveal of anatomy image after session ends */}
+        {endedAnatomyImageId && (
+          <Card className="bg-card/40 border-border/40 overflow-hidden">
+            <CardContent className="p-4 space-y-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Specimen Reveal</p>
+              <img
+                src={`/api/anatomy-viva-images/serve/${endedAnatomyImageId}?token=${encodeURIComponent(localStorage.getItem("mission_token") ?? "")}`}
+                alt="Anatomy specimen"
+                className="w-full max-w-sm mx-auto object-contain rounded-lg bg-background/40 border border-border/30"
+              />
+              {anatomyImageInfo ? (
+                <div className="rounded-lg bg-card/60 border border-border/30 p-3 space-y-1.5">
+                  <p className="font-bold text-sm text-foreground">
+                    {anatomyImageInfo.title}{anatomyImageInfo.side ? ` (${anatomyImageInfo.side})` : ""}
+                  </p>
+                  {anatomyImageInfo.region && (
+                    <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground/80">Region:</span> {anatomyImageInfo.region}</p>
+                  )}
+                  {anatomyImageInfo.notes && (
+                    <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground/80">Key notes:</span> {anatomyImageInfo.notes}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 size={12} className="animate-spin" /> Loading specimen details…
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="bg-card/40 border-border/40">
           <CardContent className="p-5 space-y-4">
             {summaryLoading ? (
@@ -695,10 +1008,14 @@ export default function PracticalHub() {
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">Not enough of a conversation to score. Try answering a few questions next time.</p>
             )}
-            <Button onClick={() => setState("setup")} className="w-full sm:w-auto gap-1.5">
-              Start Another Practical Viva
-              <ArrowRight size={15} />
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => setState("setup")} className="gap-1.5">
+                Start Another Viva <ArrowRight size={15} />
+              </Button>
+              <Button variant="outline" onClick={() => { setState("history"); loadHistory(); }} className="gap-1.5">
+                <BarChart2 size={14} /> View History
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -724,6 +1041,11 @@ export default function PracticalHub() {
                   Waiting to be called in — {EXAMINER_BY_SUBJECT[subject]}
                 </p>
                 <p className="text-sm font-medium max-w-md">"{entranceLine}"</p>
+                {practiceMode && (
+                  <p className="text-[10px] text-primary/70 mt-2 flex items-center justify-center gap-1">
+                    <BookOpen size={10} /> Practice Mode — hints available if you're stuck
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -750,6 +1072,7 @@ export default function PracticalHub() {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             {EXAMINER_BY_SUBJECT[subject]}{topic ? ` · ${topic}` : ""} · Question {questionNumber}
+            {practiceMode && <span className="ml-2 text-primary/60 text-[10px]">Practice</span>}
           </p>
         </div>
         <div className="text-right shrink-0">
@@ -783,13 +1106,21 @@ export default function PracticalHub() {
       {anatomyStationImage && (state === "examiner_speaking" || state === "listening" || isRecording || state === "processing") && (
         <Card className="bg-card/40 border-border/40 overflow-hidden">
           <CardContent className="p-3 flex flex-col gap-3 items-center">
+            {/* Feature 1: Zoom button + CSS zoom on anatomy images */}
             <div className="relative w-full max-w-md">
-              <img
-                src={`${anatomyStationImage.url}${anatomyStationImage.url.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("mission_token") ?? "")}`}
-                alt={`${vivaType ?? "Anatomy"} specimen`}
-                className="w-full object-contain rounded-lg bg-background/40 border border-border/30"
-              />
-              {anatomyStationImage.arrowTarget && (
+              <div
+                className={`overflow-hidden rounded-lg transition-transform duration-200 ${imageZoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}
+                style={{ touchAction: "pinch-zoom" }}
+                onClick={() => setImageZoomed((z) => !z)}
+              >
+                <img
+                  src={`${anatomyStationImage.url}${anatomyStationImage.url.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("mission_token") ?? "")}`}
+                  alt={`${vivaType ?? "Anatomy"} specimen`}
+                  className="w-full object-contain bg-background/40 border border-border/30 transition-transform duration-200"
+                  style={{ transform: imageZoomed ? "scale(2)" : "scale(1)", transformOrigin: "center center" }}
+                />
+              </div>
+              {anatomyStationImage.arrowTarget && !imageZoomed && (
                 <svg
                   className="absolute inset-0 w-full h-full pointer-events-none"
                   viewBox="0 0 100 100"
@@ -797,15 +1128,7 @@ export default function PracticalHub() {
                   overflow="visible"
                 >
                   <defs>
-                    <marker
-                      id="red-tip"
-                      markerWidth="6"
-                      markerHeight="6"
-                      refX="3"
-                      refY="6"
-                      orient="auto"
-                      markerUnits="userSpaceOnUse"
-                    >
+                    <marker id="red-tip" markerWidth="6" markerHeight="6" refX="3" refY="6" orient="auto" markerUnits="userSpaceOnUse">
                       <polygon points="0,0 6,0 3,6" fill="#ef4444" />
                     </marker>
                   </defs>
@@ -818,18 +1141,22 @@ export default function PracticalHub() {
                     strokeWidth="1.8"
                     markerEnd="url(#red-tip)"
                   />
-                  <circle
-                    cx={anatomyStationImage.arrowTarget.x}
-                    cy={anatomyStationImage.arrowTarget.y}
-                    r="1.8"
-                    fill="#ef4444"
-                    opacity="0.85"
-                  />
+                  <circle cx={anatomyStationImage.arrowTarget.x} cy={anatomyStationImage.arrowTarget.y} r="1.8" fill="#ef4444" opacity="0.85" />
                 </svg>
               )}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setImageZoomed((z) => !z); }}
+                className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
+                title={imageZoomed ? "Zoom out" : "Zoom in"}
+              >
+                {imageZoomed ? <ZoomOut size={14} /> : <ZoomIn size={14} />}
+              </button>
             </div>
             <div className="text-xs text-muted-foreground leading-relaxed text-center">
-              <p className="font-bold uppercase tracking-wider text-[10px] text-primary mb-1">{vivaType} Spotter</p>
+              <p className="font-bold uppercase tracking-wider text-[10px] text-primary mb-1">
+                {vivaType} Spotter {imageZoomed && <span className="text-muted-foreground font-normal">(tap to zoom out)</span>}
+              </p>
               {anatomyStationImage.arrowTarget
                 ? "Identify the structure indicated by the red arrow."
                 : "Identify the structure shown and be ready for follow-up questions."}
@@ -854,7 +1181,8 @@ export default function PracticalHub() {
                 {state === "connecting" && "Connecting to the examiner..."}
                 {state === "examiner_speaking" && "Examiner is speaking..."}
                 {state === "processing" && "Examiner is reviewing your answer..."}
-                {state === "listening" && !isRecording && "Your turn — tap the mic when ready"}
+                {state === "listening" && !isRecording && !textMode && "Your turn — tap the mic when ready"}
+                {state === "listening" && !isRecording && textMode && "Your turn — type your answer below"}
                 {isRecording && "Listening... tap to stop and submit"}
               </p>
               <p className="text-xs text-muted-foreground mt-1 max-w-md">
@@ -894,20 +1222,61 @@ export default function PracticalHub() {
               </div>
             )}
 
-            <div className="flex items-center gap-3 mt-2">
-              <Button
-                size="icon"
-                onClick={handleMicClick}
-                disabled={isBusy}
-                className={`h-16 w-16 rounded-full ${isRecording ? "bg-red-500 hover:bg-red-600" : ""}`}
-              >
-                {isBusy ? <Loader2 size={22} className="animate-spin" /> : isRecording ? <Square size={22} /> : <Mic size={22} />}
-              </Button>
-            </div>
+            {/* Feature 9: Text mode input */}
+            {textMode && state === "listening" && !isBusy && (
+              <div className="w-full max-w-sm flex gap-2">
+                <Input
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleTextSubmit(); } }}
+                  placeholder="Type your answer…"
+                  className="bg-background/60 border-border/50 text-sm"
+                  autoFocus
+                  disabled={textSubmitting}
+                />
+                <Button
+                  size="icon"
+                  onClick={handleTextSubmit}
+                  disabled={!textInput.trim() || textSubmitting}
+                  className="shrink-0"
+                >
+                  {textSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                </Button>
+              </div>
+            )}
+
+            {!textMode && (
+              <div className="flex items-center gap-3 mt-2">
+                <Button
+                  size="icon"
+                  onClick={handleMicClick}
+                  disabled={isBusy}
+                  className={`h-16 w-16 rounded-full ${isRecording ? "bg-red-500 hover:bg-red-600" : ""}`}
+                >
+                  {isBusy ? <Loader2 size={22} className="animate-spin" /> : isRecording ? <Square size={22} /> : <Mic size={22} />}
+                </Button>
+              </div>
+            )}
           </div>
 
-          <div className="border-t border-border/40 px-4 py-3 flex justify-between items-center bg-card/40">
-            <p className="text-[11px] text-muted-foreground">{turns.filter((t) => t.role === "user").length} answers given</p>
+          <div className="border-t border-border/40 px-4 py-3 flex justify-between items-center bg-card/40 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] text-muted-foreground">{turns.filter((t) => t.role === "user").length} answers given</p>
+              {/* Feature 9: Text mode toggle button */}
+              {!isBusy && !isRecording && (
+                <button
+                  type="button"
+                  onClick={() => setTextMode((m) => !m)}
+                  className={`text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-full border transition-colors ${
+                    textMode
+                      ? "border-primary/40 text-primary bg-primary/10"
+                      : "border-border/40 text-muted-foreground hover:border-primary/30"
+                  }`}
+                >
+                  <MessageSquare size={10} /> {textMode ? "Switch to mic" : "Type instead"}
+                </button>
+              )}
+            </div>
             <Button variant="ghost" size="sm" onClick={endSection} className="text-xs h-7 gap-1.5 text-destructive hover:text-destructive">
               <PhoneOff size={13} /> End {subject} Viva
             </Button>

@@ -6,8 +6,8 @@ import { convertAndCheckSilence, isHallucinatedTranscript, isUnexpectedScript, s
 import { ai as gemini } from "@workspace/integrations-gemini-ai";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { db } from "@workspace/db";
-import { vivaSourcesTable, vivaSourceDocumentsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { vivaSourcesTable, vivaSourceDocumentsTable, vivaHistoryTable } from "@workspace/db";
+import { eq, desc, sql } from "drizzle-orm";
 import rateLimit from "express-rate-limit";
 import { awardXp, XP_VALUES } from "../lib/xp";
 import { CBME_CONTEXT } from "../lib/cbmeContext";
@@ -382,7 +382,8 @@ function buildExaminerPersona(
   imageCaption: string | null,
   bookExcerpt: string | null = null,
   anatomyImageGroundTruth: string | null = null,
-  studentName: string | null = null
+  studentName: string | null = null,
+  practiceMode: boolean = false
 ): string {
   const examinerName = EXAMINER_NAMES[subject];
   const examinerTone = EXAMINER_TONE[subject];
@@ -480,6 +481,14 @@ function buildExaminerPersona(
 - GIVE-UP RULE (different from the retry rule above): if the student says anything like "sorry sir", "I don't know", "I'm not sure", "pass", or otherwise clearly gives up without attempting, do NOT re-explain, re-ask, or offer a retry on that same question — briefly acknowledge it in one short phrase ("That's alright, let's move on") and immediately ask a fresh question on the next topic at basic level. Never dwell on a question the student has given up on.
 - HURRY-UP / INTERRUPTION RULE: if the student's answer transcript sounds like it rambled on with a lot of filler or repeated itself without adding new information, briefly and naturally interrupt-acknowledge like a real impatient examiner would — a short phrase such as "Yes yes, come to the point" or "Alright, next point quickly" — before moving on. Keep this rare (only when the answer actually rambled), not on every turn.`;
 
+  const practiceModeBlock = practiceMode
+    ? `\nPRACTICE MODE (student chose this): if the student is genuinely stuck after a clear wrong or incomplete attempt (not merely a pause or a vague filler), you MAY offer ONE gentle guiding hint per question — hint at the broad category only (e.g. "Think about which type of epithelium lines this organ", or "Consider which embryonic layer this structure derives from", or "What joint type is this?") — then ask the same question again, rephrased simply. Only give the hint ONCE per question, and NEVER in Exam mode. Keep the hint short: one sentence.`
+    : `\nEXAM MODE (student chose this): no hints under any circumstances — if the student is stuck, briefly acknowledge and move on exactly as a real university examiner would.`;
+
+  const mandatoryDepthBlock = subject === "Anatomy" && isAnatomyImageCategory(vivaType)
+    ? `\nMANDATORY MINIMUM DEPTH — image-based Anatomy stations: before ending the session or saying goodbye, you MUST have covered ALL FIVE of the following dimensions for the specimen shown, in this order: (1) Identification — what the structure/specimen is and its side if applicable, (2) Structural/microscopic features — key markings, layers, cells, or distinctive features, (3) Embryological origin — germ layer, developmental structure it comes from, and a classic congenital anomaly linked to it, (4) Functional/physiological significance — what this structure does, (5) Applied/clinical correlation — a common clinical condition, surgical landmark, radiological appearance, or pathology associated with it. Do not say "viva is complete" or bid farewell until all five have been probed.`
+    : "";
+
   const icebreakerNote = `\nSmall-talk opener (use only when this is the very FIRST question of the whole session, i.e. no prior turns exist): before your first real subject question, spend one short natural sentence on a quick icebreaker a real examiner would actually ask — e.g. "Which college are you from?" or "Which year are you in?" or "All ready for the viva?" — then move straight into your first spot/case question in the same turn. Do not repeat this icebreaker on any later turn.`;
 
   const studentNameNote = studentName
@@ -517,7 +526,9 @@ Rules:
 ${icebreakerNote}
 - If a "Panel note" from a co-examiner appears in your instructions, weave its suggested harder question in naturally as your own next question — never mention the co-examiner or that you received a note.
 - If the student clearly says they want to stop or end the viva, wish them well briefly and end.
-- After roughly 4-6 questions (or once the mandatory list is exhausted plus 1-2 extra questions), tell the student the viva is complete and wrap up.`;
+- After roughly 4-6 questions (or once the mandatory list is exhausted plus 1-2 extra questions), tell the student the viva is complete and wrap up.
+${practiceModeBlock}
+${mandatoryDepthBlock}`;
 }
 
 // Gemini panel member: generates ONE tougher/alternate cross-question to keep the exam rigorous.
@@ -768,6 +779,12 @@ router.post("/viva/start-voice", authMiddleware, voiceLimiter, async (req: Reque
     return;
   }
 
+  const practiceMode = req.body.practiceMode === true;
+  const regionFilter: string[] = Array.isArray(req.body.regionFilter)
+    ? (req.body.regionFilter as unknown[]).filter((r): r is string => typeof r === "string").slice(0, 10)
+    : [];
+  const userId: number | undefined = (req as any).user?.id;
+
   // For the 5 image-based Anatomy stations, pick a fresh (least-recently-shown)
   // specimen image up front — before any streaming starts — so the SSE
   // station_image event can reach the frontend before the examiner's audio.
@@ -775,7 +792,10 @@ router.post("/viva/start-voice", authMiddleware, voiceLimiter, async (req: Reque
   let anatomyImageGroundTruth: string | null = null;
   if (subject === "Anatomy" && isAnatomyImageCategory(vivaType)) {
     try {
-      const image = await selectAnatomyImageForCategory(vivaType);
+      const image = await selectAnatomyImageForCategory(vivaType, {
+        userId,
+        regionFilter: regionFilter.length > 0 ? regionFilter : undefined,
+      });
       if (image) {
         anatomyImageId = image.id;
         anatomyImageGroundTruth = buildAnatomyImageGroundTruth(image);
@@ -806,7 +826,7 @@ router.post("/viva/start-voice", authMiddleware, voiceLimiter, async (req: Reque
       anatomyImageGroundTruth = anatomyImageGroundTruth ? `${anatomyImageGroundTruth} | ${arrowNote}` : arrowNote;
     }
     const studentName = (req as any).user?.fullName || null;
-    const persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth, studentName);
+    const persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth, studentName, practiceMode);
     const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
     const hasVisual = !!imageCaption || !!anatomyImageId;
     await streamExaminerAudioTurn(
@@ -836,6 +856,7 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
   const history = sanitizeHistory(req.body.history);
   const audioBase64 = typeof req.body.audio === "string" ? req.body.audio : null;
   const imageCaption = sanitizeText(req.body.imageCaption, 300);
+  const practiceMode = req.body.practiceMode === true;
   if (!isVivaSubject(subject) || !audioBase64) {
     res.status(400).json({ error: `subject (one of ${VIVA_SUBJECTS.join(", ")}) and audio required` });
     return;
@@ -944,7 +965,7 @@ router.post("/viva/turn-voice", authMiddleware, voiceLimiter, async (req: Reques
     ]);
     const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
     const studentName = (req as any).user?.fullName || null;
-    let persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth, studentName) + `\nCurrent viva Subject: ${stationName}${topic ? `, Topic: ${topic}` : ""}.`;
+    let persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth, studentName, practiceMode) + `\nCurrent viva Subject: ${stationName}${topic ? `, Topic: ${topic}` : ""}.`;
 
     if (crossQuestion) {
       persona += weakAnswer
@@ -973,6 +994,8 @@ router.post("/viva/end", authMiddleware, voiceLimiter, async (req: Request, res:
   try {
     const subject = req.body.subject;
     const history = sanitizeHistory(req.body.history);
+    const vivaType = parseVivaType(subject, req.body.vivaType);
+    const imageId = typeof req.body.imageId === "number" ? req.body.imageId : null;
     if (!isVivaSubject(subject) || history.length === 0) {
       res.status(400).json({ error: `subject (one of ${VIVA_SUBJECTS.join(", ")}) and history required` });
       return;
@@ -1009,6 +1032,16 @@ router.post("/viva/end", authMiddleware, voiceLimiter, async (req: Request, res:
       awardXp(userId, XP_VALUES.VIVA_COMPLETE, "viva_complete", `Completed ${subject} viva`).catch((err) => {
         console.error("Practical Hub: failed to award viva completion XP", err);
       });
+      // Save session to viva_history for weak-area tracking and history dashboard
+      db.insert(vivaHistoryTable).values({
+        userId,
+        subject,
+        vivaType: vivaType ?? null,
+        imageId,
+        score: finalScore,
+      }).catch((err: Error) => {
+        console.error("Practical Hub: failed to save viva history", err);
+      });
     }
 
     res.json({
@@ -1027,6 +1060,118 @@ router.post("/viva/end", authMiddleware, voiceLimiter, async (req: Request, res:
   } catch (err: any) {
     console.error("Practical Hub voice viva end error:", err);
     res.status(500).json({ error: err?.message || "Failed to summarize the viva." });
+  }
+});
+
+// Text-mode alternative to turn-voice: accepts typed student text instead of audio.
+// Identical scoring/feedback pipeline, just skips STT.
+router.post("/viva/turn-text", authMiddleware, voiceLimiter, async (req: Request, res: Response) => {
+  const subject = req.body.subject;
+  const topic = sanitizeText(req.body.topic, 200);
+  const history = sanitizeHistory(req.body.history);
+  const studentText = typeof req.body.text === "string" ? req.body.text.trim().slice(0, 2000) : null;
+  const imageCaption = sanitizeText(req.body.imageCaption, 300);
+  const practiceMode = req.body.practiceMode === true;
+  if (!isVivaSubject(subject) || !studentText) {
+    res.status(400).json({ error: "subject and text required" });
+    return;
+  }
+  const vivaType = parseVivaType(subject, req.body.vivaType);
+  if ((subject === "Physiology" || subject === "Biochemistry" || subject === "Anatomy") && !vivaType) {
+    res.status(400).json({ error: vivaTypesRequiredMessage(subject) });
+    return;
+  }
+
+  let anatomyImageGroundTruth: string | null = null;
+  const anatomyImageIdRaw = req.body.imageId;
+  const arrowLabelRaw = typeof req.body.arrowLabel === "string" ? req.body.arrowLabel.trim().slice(0, 120) : null;
+  if (subject === "Anatomy" && isAnatomyImageCategory(vivaType) && typeof anatomyImageIdRaw === "number") {
+    try {
+      const image = await getAnatomyImageById(anatomyImageIdRaw);
+      if (image) {
+        anatomyImageGroundTruth = buildAnatomyImageGroundTruth(image);
+        if (arrowLabelRaw) {
+          anatomyImageGroundTruth += ` | The red arrow in the image points to the "${arrowLabelRaw}" — keep this as the focal structure for follow-up questions.`;
+        }
+      }
+    } catch (err) {
+      console.error("Practical Hub: failed to fetch anatomy viva image for text turn", err);
+    }
+  }
+
+  sseHeaders(res);
+  try {
+    sendEvent(res, { type: "user_transcript", data: studentText });
+
+    const recentTranscript = [...history.slice(-4), { role: "user" as const, content: studentText }]
+      .map((h) => h.content)
+      .join(" ");
+    const isBoneStation = subject === "Anatomy" && vivaType === "Bone";
+    const queryHint = isBoneStation
+      ? [topic, vivaType, recentTranscript, "X-ray radiograph radiological appearance fracture"].filter(Boolean).join(" ")
+      : [topic, vivaType, recentTranscript].filter(Boolean).join(" ");
+
+    const answerCount = history.filter((h) => h.role === "user").length + 1;
+    const weakAnswer = isWeakOrVagueAnswer(studentText);
+    const needsCrossQuestion = weakAnswer || (answerCount >= 2 && answerCount % 3 === 0);
+    const isPracticalMeasurementStation =
+      (subject === "Physiology" && (vivaType === "Hematology Experiment" || vivaType === "Human Experiments & Clinical Physiology")) ||
+      (subject === "Biochemistry" && vivaType === "Serum and Urine Estimation");
+
+    const [sourceNotes, bookExcerpt, crossQuestion] = await Promise.all([
+      fetchSourceNotes(subject),
+      fetchBookExcerpt(subject, queryHint, isBoneStation ? /radiolog/i : undefined),
+      needsCrossQuestion
+        ? geminiCrossQuestion(
+            subject,
+            historyToTranscript([...history, { role: "user", content: studentText }]),
+            isPracticalMeasurementStation,
+            subject === "Anatomy" && isAnatomyImageCategory(vivaType)
+              ? (ANATOMY_CBME_STATION_SCOPE[vivaType as string] ?? null)
+              : null,
+          )
+        : Promise.resolve(null),
+    ]);
+    const stationName = vivaType ? `${subject} — ${vivaType}` : subject;
+    const studentName = (req as any).user?.fullName || null;
+    let persona = buildExaminerPersona(subject, sourceNotes, vivaType, imageCaption, bookExcerpt, anatomyImageGroundTruth, studentName, practiceMode) + `\nCurrent viva Subject: ${stationName}${topic ? `, Topic: ${topic}` : ""}.`;
+
+    if (crossQuestion) {
+      persona += weakAnswer
+        ? `\n\nThe student's last answer was weak, vague, or a give-up. Panel note from co-examiner: probe this immediately with a sharper follow-up on the SAME topic before moving anywhere else, phrased naturally in your own voice: "${crossQuestion}"`
+        : `\n\nPanel note from co-examiner: consider asking this harder question next, phrased naturally in your own voice: "${crossQuestion}"`;
+    }
+
+    const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+      { role: "system", content: persona },
+      ...history,
+      { role: "user", content: studentText },
+    ];
+
+    await streamExaminerAudioTurn(res, messages, EXAMINER_VOICE[subject]);
+    sendEvent(res, { done: true });
+  } catch (err: any) {
+    console.error("Practical Hub text viva turn error:", err);
+    sendEvent(res, { type: "error", error: err?.message || "Failed to continue the viva." });
+  } finally {
+    res.end();
+  }
+});
+
+// History dashboard: return the student's last 50 viva sessions grouped for charting.
+router.get("/viva/history", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+    const rows = await db
+      .select()
+      .from(vivaHistoryTable)
+      .where(eq(vivaHistoryTable.userId, userId))
+      .orderBy(desc(vivaHistoryTable.createdAt))
+      .limit(50);
+    res.json({ sessions: rows });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Failed to load history" });
   }
 });
 

@@ -58,23 +58,23 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-// Admin: list PDFs already uploaded to the shared bucket, so the admin can
-// pick which book(s) to run through automatic image extraction.
-// TEMP: download a PDF from GCS so scripts can pull it locally
-router.get("/admin/download-pdf", adminMiddleware, async (req: Request, res: Response) => {
+// Public (token-auth): return non-sensitive metadata for one image — used by the
+// frontend's "labeled reveal" feature after the viva session ends.
+router.get("/info/:id", pdfAuthMiddleware, async (req: Request, res: Response) => {
   try {
-    const objectName = req.query.objectName as string;
-    if (!objectName || !objectName.startsWith("pdfs/")) { res.status(400).json({ error: "objectName required (must start with pdfs/)" }); return; }
-    const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
-    if (!bucketId) { res.status(500).json({ error: "Storage not configured" }); return; }
-    const file = gcsClient.bucket(bucketId).file(objectName);
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${objectName.split("/").pop()}"`);
-    const stream = file.createReadStream();
-    stream.on("error", (err) => { console.error("PDF download stream error:", err); if (!res.headersSent) res.status(500).end(); });
-    stream.pipe(res);
+    const id = parseInt(req.params.id, 10);
+    if (!id || isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+    const [row] = await db.select({
+      id: anatomyVivaImagesTable.id,
+      title: anatomyVivaImagesTable.title,
+      side: anatomyVivaImagesTable.side,
+      region: anatomyVivaImagesTable.region,
+      notes: anatomyVivaImagesTable.notes,
+      category: anatomyVivaImagesTable.category,
+    }).from(anatomyVivaImagesTable).where(eq(anatomyVivaImagesTable.id, id)).limit(1);
+    if (!row) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(row);
   } catch (err: any) {
-    console.error("PDF download error:", err);
     res.status(500).json({ error: err?.message || "Failed" });
   }
 });

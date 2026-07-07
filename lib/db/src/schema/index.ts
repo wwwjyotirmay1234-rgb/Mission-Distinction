@@ -32,3 +32,4 @@ export * from "./vivaSources";
 export * from "./vivaSourceDocuments";
 export * from "./anatomyVivaImages";
 export * from "./vivaRooms";
+export * from "./vivaHistory";

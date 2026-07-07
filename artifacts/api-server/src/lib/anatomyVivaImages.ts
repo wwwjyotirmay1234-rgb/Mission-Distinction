@@ -1,10 +1,7 @@
 import { db } from "@workspace/db";
-import { anatomyVivaImagesTable, type AnatomyVivaImage } from "@workspace/db";
-import { eq, asc, sql } from "drizzle-orm";
+import { anatomyVivaImagesTable, vivaHistoryTable, type AnatomyVivaImage } from "@workspace/db";
+import { eq, asc, sql, and } from "drizzle-orm";
 
-// The 5 image-based Anatomy viva stations. Kept here (rather than only in
-// practicalHub.ts) so both the admin extraction/gallery routes and the viva
-// session routes share a single source of truth for valid category names.
 export const ANATOMY_IMAGE_CATEGORIES = [
   "Histology",
   "Bone",
@@ -18,15 +15,65 @@ export function isAnatomyImageCategory(value: unknown): value is AnatomyImageCat
   return typeof value === "string" && (ANATOMY_IMAGE_CATEGORIES as readonly string[]).includes(value);
 }
 
-// Picks the least-recently-shown image in a category (rows never shown yet —
-// lastShownAt is null — are treated as oldest) and stamps it as shown now, so
-// repeated vivas cycle through the whole bank instead of always surfacing the
-// same handful of images.
-export async function selectAnatomyImageForCategory(category: AnatomyImageCategory): Promise<AnatomyVivaImage | null> {
+// Picks the least-recently-shown image in a category.
+// If userId is provided, images the student has scored low on (avg < 60) are
+// weighted to the front so weak areas get more practice.
+// If regionFilter is provided, only images whose region matches one of the
+// filter values (case-insensitive) are considered.
+export async function selectAnatomyImageForCategory(
+  category: AnatomyImageCategory,
+  options?: { userId?: number; regionFilter?: string[] },
+): Promise<AnatomyVivaImage | null> {
+  const { userId, regionFilter } = options ?? {};
+
+  // Build the WHERE clause
+  const regionCondition =
+    regionFilter && regionFilter.length > 0
+      ? sql`AND lower(${anatomyVivaImagesTable.region}) = ANY(ARRAY[${sql.join(
+          regionFilter.map((r) => sql`lower(${r})`),
+          sql`, `,
+        )}])`
+      : sql``;
+
+  if (userId) {
+    // Use raw SQL to join with viva_history and weight weak images to the front.
+    // Images with no history default to avg_score = 50 (neutral priority).
+    const rows = await db.execute(sql`
+      SELECT avi.*,
+             COALESCE(AVG(vh.score)::int, 50) AS avg_score
+        FROM anatomy_viva_images avi
+        LEFT JOIN viva_history vh
+               ON vh.image_id = avi.id
+              AND vh.user_id = ${userId}
+       WHERE avi.category = ${category}
+             ${regionCondition}
+       GROUP BY avi.id
+       ORDER BY
+         COALESCE(AVG(vh.score)::int, 50) ASC,
+         avi.last_shown_at ASC NULLS FIRST,
+         avi.id ASC
+       LIMIT 1
+    `);
+    const row = (rows as any[])[0] as AnatomyVivaImage | undefined;
+    if (!row) return null;
+    await db
+      .update(anatomyVivaImagesTable)
+      .set({ lastShownAt: new Date() })
+      .where(eq(anatomyVivaImagesTable.id, row.id));
+    return row;
+  }
+
+  // No userId — simple round-robin with optional region filter
+  const conditions = [eq(anatomyVivaImagesTable.category, category)];
+  if (regionFilter && regionFilter.length > 0) {
+    const lower = regionFilter.map((r) => r.toLowerCase());
+    conditions.push(sql`lower(${anatomyVivaImagesTable.region}) = ANY(${lower})`);
+  }
+
   const [row] = await db
     .select()
     .from(anatomyVivaImagesTable)
-    .where(eq(anatomyVivaImagesTable.category, category))
+    .where(and(...conditions))
     .orderBy(sql`${anatomyVivaImagesTable.lastShownAt} asc nulls first`, asc(anatomyVivaImagesTable.id))
     .limit(1);
   if (!row) return null;
@@ -42,13 +89,22 @@ export async function getAnatomyImageById(id: number): Promise<AnatomyVivaImage 
   return row ?? null;
 }
 
-// Builds the hidden ground-truth string injected into the examiner's system
-// prompt only — never shown to the student — so the AI knows exactly what the
-// displayed image is and can judge the student's identification answer.
 export function buildAnatomyImageGroundTruth(row: AnatomyVivaImage): string {
   const parts = [`Identity: ${row.title}`];
   if (row.side) parts.push(`Side: ${row.side}`);
   if (row.region) parts.push(`Region: ${row.region}`);
   if (row.notes) parts.push(`Notes: ${row.notes}`);
   return parts.join(" | ");
+}
+
+// Returns public-safe metadata (no GCS path) for the labeled-reveal feature.
+export function getAnatomyImagePublicMeta(row: AnatomyVivaImage) {
+  return {
+    id: row.id,
+    title: row.title,
+    side: row.side,
+    region: row.region,
+    notes: row.notes,
+    category: row.category,
+  };
 }
