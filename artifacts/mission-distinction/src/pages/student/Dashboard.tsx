@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { registerPushIfNeeded } from "@/lib/pushSubscription";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -257,6 +258,12 @@ export default function StudentDashboard() {
   const [, setLocation] = useLocation();
 
   const [pendingYear, setPendingYear] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.id) {
+      setTimeout(() => registerPushIfNeeded(), 3000);
+    }
+  }, [user?.id]);
 
   const handleYearChange = async (newYear: string) => {
     if (!user || newYear === user.year) return;

@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "sonner";
+import { ScreenshotButton } from "@/components/ScreenshotButton";
 import { 
   TrendingUp, 
   BookOpen, 
@@ -25,6 +26,12 @@ import {
   Zap,
   TrendingDown,
   Star,
+  History,
+  FileText,
+  Download,
+  ClipboardCheck,
+  Mic,
+  Layers,
 } from "lucide-react";
 
 interface WeakTopic {
@@ -191,6 +198,35 @@ function ReQuizSession({ mistakes, onDone }: { mistakes: Mistake[]; onDone: () =
   );
 }
 
+interface ActivityItem {
+  id: number;
+  type: string;
+  description: string;
+  score?: number | null;
+  createdAt: string;
+}
+
+function activityIcon(type: string) {
+  switch (type) {
+    case "quiz": return <ClipboardCheck size={13} className="text-primary" />;
+    case "note": return <FileText size={13} className="text-blue-400" />;
+    case "pdf": return <Download size={13} className="text-green-400" />;
+    case "viva": return <Mic size={13} className="text-purple-400" />;
+    case "flashcard_reviewed": return <Layers size={13} className="text-amber-400" />;
+    default: return <BookOpen size={13} className="text-muted-foreground" />;
+  }
+}
+
+function groupByDay(items: ActivityItem[]): { label: string; items: ActivityItem[] }[] {
+  const map = new Map<string, ActivityItem[]>();
+  for (const item of items) {
+    const d = new Date(item.createdAt);
+    const key = d.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" });
+    (map.get(key) ?? map.set(key, []).get(key)!).push(item);
+  }
+  return Array.from(map.entries()).map(([label, items]) => ({ label, items }));
+}
+
 export default function MyProgress() {
   const [activeTab, setActiveTab] = useState("overview");
   const [weakTopics, setWeakTopics] = useState<WeakTopic[]>([]);
@@ -198,6 +234,7 @@ export default function MyProgress() {
   const [perQuizBreakdown, setPerQuizBreakdown] = useState<PerQuizBreakdown[]>([]);
   const [readiness, setReadiness] = useState<ExamReadiness | null>(null);
   const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
+  const [activityLog, setActivityLog] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [reQuizMistakes, setReQuizMistakes] = useState<Mistake[] | null>(null);
@@ -205,12 +242,13 @@ export default function MyProgress() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [wtRes, mRes, erRes, spRes, pqRes] = await Promise.all([
+      const [wtRes, mRes, erRes, spRes, pqRes, actRes] = await Promise.all([
         apiFetch("/api/analytics/weak-topics"),
         apiFetch("/api/analytics/mistakes"),
         apiFetch("/api/analytics/exam-readiness"),
         apiFetch("/api/analytics/study-plan/latest"),
         apiFetch("/api/analytics/per-quiz-breakdown"),
+        apiFetch("/api/progress/activity"),
       ]);
 
       if (wtRes.ok) {
@@ -232,6 +270,10 @@ export default function MyProgress() {
       if (pqRes.ok) {
         const data = await pqRes.json();
         setPerQuizBreakdown(data.breakdown || []);
+      }
+      if (actRes.ok) {
+        const data = await actRes.json();
+        setActivityLog(Array.isArray(data) ? data.slice(0, 200) : []);
       }
     } catch (error) {
       console.error("Error fetching progress data:", error);
@@ -297,15 +339,19 @@ export default function MyProgress() {
           <TabsTrigger value="weak-topics">Weak Topics</TabsTrigger>
           <TabsTrigger value="mistakes">Mistake Notebook</TabsTrigger>
           <TabsTrigger value="study-plan">Study Plan</TabsTrigger>
+          <TabsTrigger value="activity" className="gap-1"><History size={13} />Revision History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 outline-none">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="md:col-span-2 bg-card/40 border-border/50">
+            <Card id="md-capture-area" className="md:col-span-2 bg-card/40 border-border/50">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Target className="text-primary" size={20} /> Exam Readiness Score
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Target className="text-primary" size={20} /> Exam Readiness Score
+                  </CardTitle>
+                  <ScreenshotButton />
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 {loading ? (
@@ -672,6 +718,66 @@ export default function MyProgress() {
                 </Button>
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        {/* ── Revision History Tab ── */}
+        <TabsContent value="activity" className="space-y-6 outline-none">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <History className="text-primary" size={20} /> Revision History
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Everything you've studied — notes, PDFs, quizzes, viva sessions, flashcards.</p>
+            </div>
+            {activityLog.length > 0 && (
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                {activityLog.length} activities
+              </Badge>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full" />)}</div>
+          ) : activityLog.length === 0 ? (
+            <Card className="bg-card/40 border-border/40 border-dashed">
+              <CardContent className="py-16 text-center">
+                <History className="mx-auto text-muted-foreground/30 mb-3" size={40} />
+                <p className="font-medium">No activity recorded yet</p>
+                <p className="text-xs text-muted-foreground mt-2">Start studying — every quiz, note, viva, and flashcard review will appear here.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {groupByDay(activityLog).map((group, gi) => (
+                <div key={gi}>
+                  <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground/70 mb-3 flex items-center gap-2">
+                    <Calendar size={11} /> {group.label}
+                    <span className="font-normal normal-case tracking-normal text-muted-foreground/50">· {group.items.length} {group.items.length === 1 ? "activity" : "activities"}</span>
+                  </p>
+                  <div className="space-y-2">
+                    {group.items.map((item, ii) => (
+                      <div key={ii} className="flex items-center gap-3 p-3 rounded-xl bg-card/40 border border-border/30 hover:border-primary/20 transition-colors">
+                        <div className="w-7 h-7 rounded-full bg-muted/30 flex items-center justify-center shrink-0">
+                          {activityIcon(item.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm leading-snug truncate">{item.description}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {new Date(item.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                        {item.score != null && (
+                          <Badge variant="outline" className={`text-[10px] shrink-0 ${item.score >= 70 ? "bg-green-500/10 text-green-400 border-green-500/20" : item.score >= 50 ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}`}>
+                            {item.score}%
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </TabsContent>
       </Tabs>
