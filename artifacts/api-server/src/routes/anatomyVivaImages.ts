@@ -60,6 +60,25 @@ async function mapWithConcurrency<T, R>(
 
 // Admin: list PDFs already uploaded to the shared bucket, so the admin can
 // pick which book(s) to run through automatic image extraction.
+// TEMP: download a PDF from GCS so scripts can pull it locally
+router.get("/admin/download-pdf", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const objectName = req.query.objectName as string;
+    if (!objectName || !objectName.startsWith("pdfs/")) { res.status(400).json({ error: "objectName required (must start with pdfs/)" }); return; }
+    const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+    if (!bucketId) { res.status(500).json({ error: "Storage not configured" }); return; }
+    const file = gcsClient.bucket(bucketId).file(objectName);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${objectName.split("/").pop()}"`);
+    const stream = file.createReadStream();
+    stream.on("error", (err) => { console.error("PDF download stream error:", err); if (!res.headersSent) res.status(500).end(); });
+    stream.pipe(res);
+  } catch (err: any) {
+    console.error("PDF download error:", err);
+    res.status(500).json({ error: err?.message || "Failed" });
+  }
+});
+
 router.get("/admin/available-pdfs", adminMiddleware, async (_req: Request, res: Response) => {
   try {
     const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
