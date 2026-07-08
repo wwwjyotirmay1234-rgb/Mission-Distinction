@@ -133,8 +133,8 @@ function StudentLayoutInner({ children }: { children: React.ReactNode }) {
         <EmailVerificationBanner />
         <WarningBanner />
         <main
-          className="flex-1 p-4 md:p-6 md:pb-6 overflow-x-hidden"
-          style={{ paddingBottom: isMobile ? (playing ? 168 : 96) : undefined }}
+          className="flex-1 p-4 md:p-6 overflow-x-hidden"
+          style={{ paddingBottom: playing ? 168 : 96 }}
         >
           {children}
         </main>

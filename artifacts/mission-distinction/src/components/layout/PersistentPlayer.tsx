@@ -1,8 +1,29 @@
 import { Link, useLocation } from "wouter";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { X, Music2, Youtube, Maximize2 } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import type { NowPlaying } from "@/contexts/MusicPlayerContext";
+import { useSidebar } from "@/contexts/SidebarContext";
+
+// The bottom tab bar is now shown on every device size, so the persistent
+// mini-player always sits above it (bottom-16), and — on desktop, where the
+// fixed sidebar is also visible — is inset from the left by the sidebar's
+// current width so it doesn't overlap it.
+function useSidebarInset() {
+  const { collapsed, hidden } = useSidebar();
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 768
+  );
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 768px)");
+    const handler = () => setIsDesktop(mql.matches);
+    handler();
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+  if (!isDesktop || hidden) return 0;
+  return collapsed ? 60 : 220;
+}
 
 /**
  * PersistentPlayer — lives in StudentLayout, never unmounts.
@@ -24,6 +45,7 @@ export function PersistentPlayer() {
   const { playing, stop } = useMusicPlayer();
   const [location] = useLocation();
   const onMusicPage = location === "/student/music";
+  const sidebarInset = useSidebarInset();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // Keep a ref to playing so the visibilitychange closure always sees current value
   const playingRef = useRef<NowPlaying | null>(playing);
@@ -119,10 +141,10 @@ export function PersistentPlayer() {
           ─────────────────────────────────────────────────────────────────── */}
       <div
         aria-hidden="true"
-        className={onMusicPage ? "fixed bottom-0 left-0 right-0 md:left-64 z-40" : ""}
+        className={onMusicPage ? "fixed bottom-0 right-0 z-40 transition-[left] duration-200 ease-in-out" : ""}
         style={
           onMusicPage
-            ? { borderTop: "1px solid rgba(124,58,237,0.3)" }
+            ? { borderTop: "1px solid rgba(124,58,237,0.3)", left: sidebarInset }
             : {
                 position: "fixed",
                 bottom: 0,
@@ -206,8 +228,9 @@ export function PersistentPlayer() {
       {/* ── Mini-bar (only when NOT on music page) ─── */}
       {!onMusicPage && (
         <div
-          className="fixed bottom-16 left-0 right-0 z-50 md:left-64 md:bottom-0"
+          className="fixed bottom-16 right-0 z-50 transition-[left] duration-200 ease-in-out"
           style={{
+            left: sidebarInset,
             background: "linear-gradient(90deg,#1a0a3a 0%,#12072b 100%)",
             borderTop: "1px solid rgba(124,58,237,0.3)",
             boxShadow: "0 -4px 24px rgba(124,58,237,0.15)",

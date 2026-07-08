@@ -54,3 +54,4 @@
 - [Bone viva image classifier scope](bone-viva-image-classifier-scope.md) — accept labeled illustrations/X-rays as viva spotter candidates, not just raw photos; erase labels separately, spot-check erasure quality
 - [Gemini rate-limit-safe batch cleanup](gemini-rate-limit-safe-batch-cleanup.md) — resumable AI-cleanup jobs must not write a "done" marker on a caught rate-limit exception, or retried rows get permanently hidden from future runs
 - [PNG C2PA chunk crashes @napi-rs/canvas](png-c2pa-chunk-canvas-crash.md) — strip non-standard ancillary chunks (e.g. caBX) before loadImage() or it throws "Unsupported image type" on valid PNGs
+- [Bottom nav + sidebar + player coordination](bottom-nav-desktop-sidebar-coordination.md) — making mobile-only BottomNav universal requires updating fixed-position insets in PersistentPlayer + StudentLayout together

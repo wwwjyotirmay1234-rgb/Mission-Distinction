@@ -9,6 +9,26 @@ import {
   Timer, Gamepad2, Music, Settings, MessageSquare, MessageCircleHeart,
 } from "lucide-react";
 import { getSectionColor } from "@/lib/sectionColors";
+import { useSidebar } from "@/contexts/SidebarContext";
+
+// Bottom nav now shows on every device size (phone, tablet, desktop), not
+// just mobile. On desktop the fixed sidebar still occupies the left edge,
+// so we inset the bar by the sidebar's current width to avoid overlap.
+function useSidebarInset() {
+  const { collapsed, hidden } = useSidebar();
+  const [isDesktop, setIsDesktop] = React.useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 768
+  );
+  React.useEffect(() => {
+    const mql = window.matchMedia("(min-width: 768px)");
+    const handler = () => setIsDesktop(mql.matches);
+    handler();
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+  if (!isDesktop || hidden) return 0;
+  return collapsed ? 60 : 220;
+}
 
 interface DrawerLink {
   icon: React.ComponentType<{ className?: string; size?: number | string }>;
@@ -50,6 +70,7 @@ function tapFeedback() {
 export function BottomNav() {
   const [location, setLocation] = useLocation();
   const [learnOpen, setLearnOpen] = React.useState(false);
+  const sidebarInset = useSidebarInset();
 
   const isActive = (href: string) => location === href || location.startsWith(href + "/");
   const isLearnActive = LEARN_LINKS.some((l) => isActive(l.href));
@@ -65,12 +86,12 @@ export function BottomNav() {
   return (
     <>
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-sidebar/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
-        style={{ boxShadow: "0 -2px 12px rgba(0,0,0,0.35)" }}
+        className="fixed bottom-0 right-0 z-40 bg-sidebar/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)] transition-[left] duration-200 ease-in-out"
+        style={{ boxShadow: "0 -2px 12px rgba(0,0,0,0.35)", left: sidebarInset }}
         role="navigation"
         aria-label="Bottom navigation"
       >
-        <div className="grid grid-cols-5 h-16">
+        <div className="grid grid-cols-5 h-16 max-w-3xl mx-auto">
           {items.map((item) => {
             const content = (
               <div className="flex flex-col items-center justify-center gap-1 h-full">
