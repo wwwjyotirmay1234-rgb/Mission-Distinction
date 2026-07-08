@@ -59,3 +59,9 @@ id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
 type = "text"
 title = "Official MoU — Mission Distinction × Medical College"
+
+[[outputs]]
+id = "MwtIUlho0ig_lWo5q7bSM"
+uri = "file://attached_assets/screenshots/dashboard_android_mobile.jpg"
+type = "image"
+title = "Dashboard — Android mobile view"
