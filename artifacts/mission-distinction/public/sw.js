@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v31"; // sidebar regrouped into sections, mobile bottom nav, dashboard card color identity
+const CACHE_VERSION = "v32"; // Android-focused bottom nav polish: pill active state, haptics, elevation, mini-player offset
 
 // Derive the app base from the SW registration scope, not the SW script URL.
 // This is correct regardless of where sw.js itself is served (root vs sub-path).

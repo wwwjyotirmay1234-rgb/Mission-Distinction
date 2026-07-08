@@ -206,7 +206,7 @@ export function PersistentPlayer() {
       {/* ── Mini-bar (only when NOT on music page) ─── */}
       {!onMusicPage && (
         <div
-          className="fixed bottom-0 left-0 right-0 z-50 md:left-64"
+          className="fixed bottom-16 left-0 right-0 z-50 md:left-64 md:bottom-0"
           style={{
             background: "linear-gradient(90deg,#1a0a3a 0%,#12072b 100%)",
             borderTop: "1px solid rgba(124,58,237,0.3)",

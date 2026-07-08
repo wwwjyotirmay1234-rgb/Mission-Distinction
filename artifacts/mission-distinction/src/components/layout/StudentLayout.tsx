@@ -15,7 +15,7 @@ import { BottomNav } from "./BottomNav";
 import { Header } from "./Header";
 import { PersistentPlayer } from "./PersistentPlayer";
 import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
-import { MusicPlayerProvider } from "@/contexts/MusicPlayerContext";
+import { MusicPlayerProvider, useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import { Button } from "@/components/ui/button";
@@ -114,6 +114,7 @@ function EmailVerificationBanner() {
 function StudentLayoutInner({ children }: { children: React.ReactNode }) {
   const { collapsed, hidden } = useSidebar();
   const isMobile = useIsMobile();
+  const { playing } = useMusicPlayer();
   const sidebarMargin = isMobile ? 0 : hidden ? 0 : collapsed ? 60 : 220;
   return (
     <div
@@ -131,7 +132,10 @@ function StudentLayoutInner({ children }: { children: React.ReactNode }) {
         <PinnedBanner />
         <EmailVerificationBanner />
         <WarningBanner />
-        <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6 overflow-x-hidden">
+        <main
+          className="flex-1 p-4 md:p-6 md:pb-6 overflow-x-hidden"
+          style={{ paddingBottom: isMobile ? (playing ? 168 : 96) : undefined }}
+        >
           {children}
         </main>
         <BottomNav />
