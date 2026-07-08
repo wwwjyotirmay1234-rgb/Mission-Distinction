@@ -803,7 +803,7 @@ export default function LandingPage() {
                             <FormItem>
                               <FormLabel>Work Email</FormLabel>
                               <FormControl>
-                                <Input placeholder="admin@mission.edu" autoComplete="email" {...field} className="bg-background/50" />
+                                <Input placeholder="admin@mission.edu" autoComplete="username" {...field} className="bg-background/50" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

@@ -90,6 +90,7 @@ const StudentGames         = lazy(() => import("@/pages/student/Games"));
 const StudentQuizAnalysis  = lazy(() => import("@/pages/student/QuizAnalysis"));
 const StudentScholarHub    = lazy(() => import("@/pages/student/ScholarHub"));
 const StudentClinicalCase  = lazy(() => import("@/pages/student/ClinicalCase"));
+const StudentBookmarks     = lazy(() => import("@/pages/student/Bookmarks"));
 
 // Admin pages
 const AdminDashboard     = lazy(() => import("@/pages/admin/Dashboard"));
@@ -215,6 +216,7 @@ function Router() {
                 <Route path="/student/games"        component={StudentGames} />
                 <Route path="/student/scholar-hub" component={StudentScholarHub} />
                 <Route path="/student/clinical-case" component={StudentClinicalCase} />
+                <Route path="/student/bookmarks"    component={StudentBookmarks} />
                 <Route component={NotFound} />
               </Switch>
             </StudentLayout>
