@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v29"; // 8-feature update: flashcard due counts, mock exam, upvotes, per-quiz analytics, email notifications
+const CACHE_VERSION = "v30"; // dashboard layout: Clinical Case + Question of the Day moved above the fold
 
 // Derive the app base from the SW registration scope, not the SW script URL.
 // This is correct regardless of where sw.js itself is served (root vs sub-path).
