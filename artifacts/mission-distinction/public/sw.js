@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v30"; // dashboard layout: Clinical Case + Question of the Day moved above the fold
+const CACHE_VERSION = "v31"; // sidebar regrouped into sections, mobile bottom nav, dashboard card color identity
 
 // Derive the app base from the SW registration scope, not the SW script URL.
 // This is correct regardless of where sw.js itself is served (root vs sub-path).

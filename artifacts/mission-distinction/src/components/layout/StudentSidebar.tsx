@@ -9,11 +9,12 @@ import {
   Calendar as CalendarIcon, Settings, Trophy, MessageSquare,
   Timer, Music, MessageCircleHeart,
   Bot, Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight, BarChart2,
-  GraduationCap, Stethoscope, Zap,
+  GraduationCap, Stethoscope, Zap, ChevronDown, MoreHorizontal,
 } from "lucide-react";
 import { useXPStats } from "@/hooks/useXPStats";
 import { XPProgressBar } from "@/components/XPProgressBar";
 import { useAuth } from "@/contexts/AuthContext";
+import { getSectionColor } from "@/lib/sectionColors";
 
 const ANATOMY_PREVIEW_EMAIL = "www.jyotirmay1234@gmail.com";
 const LAST_SEEN_KEY = "md_announcements_last_seen";
@@ -36,11 +37,23 @@ interface NavItem {
   comingSoon?: boolean;
 }
 
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+  collapsible?: boolean;
+}
+
+const MORE_GROUP_OPEN_KEY = "md_sidebar_more_open";
+
 function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void; forceExpanded?: boolean }) {
   const [location] = useLocation();
   const { data: xpStats } = useXPStats();
   const { user } = useAuth();
   const { collapsed, setCollapsed } = useSidebar();
+  const [moreOpen, setMoreOpen] = React.useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(MORE_GROUP_OPEN_KEY) === "1";
+  });
 
   const isCollapsed = forceExpanded ? false : collapsed;
 
@@ -56,31 +69,132 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
     return getUnseenCount(list);
   }, [announcements]);
 
-  const navItems: NavItem[] = [
-    { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy", comingSoon: !canSeeAnatomy },
-    { icon: LayoutDashboard, label: "Dashboard", href: "/student/dashboard" },
-    { icon: Stethoscope, label: "Practical Hub", href: "/student/practical-hub" },
-    { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
-    { icon: BarChart2, label: "Quiz Analysis", href: "/student/quiz-analysis" },
-    { icon: FileText, label: "Notes & Books", href: "/student/notes" },
-    { icon: GraduationCap, label: "Scholar Hub", href: "/student/scholar-hub" },
-    { icon: File, label: "PDF Library", href: "/student/pdfs" },
-    { icon: Users, label: "Community", href: "/student/community" },
-    { icon: Newspaper, label: "News & Announcements", href: "/student/announcements", badge: unseenCount > 0 ? unseenCount : undefined },
-    { icon: TrendingUp, label: "My Progress", href: "/student/progress" },
-    { icon: Trophy, label: "Leaderboard", href: "/student/leaderboard" },
-    { icon: MessageSquare, label: "Doubt Board", href: "/student/doubts" },
-    { icon: CalendarIcon, label: "Calendar", href: "/student/calendar" },
-    { icon: Timer, label: "Study Tools", href: "/student/tools" },
-    { icon: Zap, label: "Cheat Codes", href: "/student/cheat-codes" },
-    { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
-    { icon: Users, label: "Study Rooms", href: "/student/study-rooms" },
-    { icon: Stethoscope, label: "Clinical Cases", href: "/student/clinical-case" },
-    { icon: Bot, label: "AI Tools", href: "/student/ai-tools" },
-    { icon: Gamepad2, label: "Medical Games", href: "/student/games" },
-    { icon: Music, label: "Music", href: "/student/music" },
-    { icon: Settings, label: "Settings", href: "/student/settings" },
+  const toggleMore = () => {
+    setMoreOpen((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(MORE_GROUP_OPEN_KEY, next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
+
+  const dashboardItem: NavItem = { icon: LayoutDashboard, label: "Dashboard", href: "/student/dashboard" };
+
+  const navGroups: NavGroup[] = [
+    {
+      label: "Learn",
+      items: [
+        { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy", comingSoon: !canSeeAnatomy },
+        { icon: Stethoscope, label: "Practical Hub", href: "/student/practical-hub" },
+        { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
+        { icon: FileText, label: "Notes & Books", href: "/student/notes" },
+        { icon: File, label: "PDF Library", href: "/student/pdfs" },
+      ],
+    },
+    {
+      label: "Practice",
+      items: [
+        { icon: Stethoscope, label: "Clinical Cases", href: "/student/clinical-case" },
+        { icon: BarChart2, label: "Quiz Analysis", href: "/student/quiz-analysis" },
+        { icon: Zap, label: "Cheat Codes", href: "/student/cheat-codes" },
+        { icon: GraduationCap, label: "Scholar Hub", href: "/student/scholar-hub" },
+      ],
+    },
+    {
+      label: "Progress",
+      items: [
+        { icon: TrendingUp, label: "My Progress", href: "/student/progress" },
+        { icon: Trophy, label: "Leaderboard", href: "/student/leaderboard" },
+      ],
+    },
+    {
+      label: "Community",
+      items: [
+        { icon: Users, label: "Community", href: "/student/community" },
+        { icon: Users, label: "Study Rooms", href: "/student/study-rooms" },
+        { icon: MessageSquare, label: "Doubt Board", href: "/student/doubts" },
+        { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
+        { icon: Newspaper, label: "News & Announcements", href: "/student/announcements", badge: unseenCount > 0 ? unseenCount : undefined },
+      ],
+    },
+    {
+      label: "More",
+      collapsible: true,
+      items: [
+        { icon: Bot, label: "AI Tools", href: "/student/ai-tools" },
+        { icon: CalendarIcon, label: "Calendar", href: "/student/calendar" },
+        { icon: Timer, label: "Study Tools", href: "/student/tools" },
+        { icon: Gamepad2, label: "Medical Games", href: "/student/games" },
+        { icon: Music, label: "Music", href: "/student/music" },
+        { icon: Settings, label: "Settings", href: "/student/settings" },
+      ],
+    },
   ];
+
+  function renderNavItem(item: NavItem) {
+    const isActive = location === item.href || location.startsWith(item.href + "/");
+    const required = item.requiredLevel ?? 1;
+    const isLocked = required > rankLevel;
+    const color = getSectionColor(item.href);
+
+    if (item.comingSoon) {
+      return (
+        <div key={item.href}
+          title={isCollapsed ? item.label + " (Coming soon)" : "Coming soon"}
+          className={cn(
+            "flex items-center rounded-lg text-sm font-medium cursor-not-allowed text-muted-foreground/40 select-none",
+            isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
+          )}>
+          <item.icon size={18} className="shrink-0 text-muted-foreground/30" />
+          {!isCollapsed && <><span className="flex-1 truncate">{item.label}</span>
+            <span className="text-[9px] font-bold uppercase tracking-wide bg-muted/60 text-muted-foreground/50 px-1.5 py-0.5 rounded-full shrink-0">Soon</span></>}
+        </div>
+      );
+    }
+
+    if (isLocked) {
+      return (
+        <Link key={item.href} href="/student/progress" onClick={() => onNavigate?.()}>
+          <div title={isCollapsed ? item.label + ` (Unlock at Level ${required})` : `Unlock at Level ${required}`}
+            className={cn(
+              "flex items-center rounded-lg text-sm font-medium transition-colors cursor-pointer text-muted-foreground/50 hover:bg-muted/50 hover:text-muted-foreground",
+              isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
+            )}>
+            <item.icon size={18} className="shrink-0 text-muted-foreground/40" />
+            {!isCollapsed && <><span className="flex-1 truncate">{item.label}</span>
+              <Lock size={12} className="text-muted-foreground/40 shrink-0" /></>}
+          </div>
+        </Link>
+      );
+    }
+
+    return (
+      <Link key={item.href} href={item.href}
+        onClick={() => {
+          if (item.href === "/student/announcements") markAnnouncementsSeen();
+          onNavigate?.();
+        }}>
+        <div title={isCollapsed ? item.label : undefined}
+          className={cn(
+            "flex items-center rounded-lg text-sm font-medium transition-colors cursor-pointer relative",
+            isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5",
+            isActive
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : cn("text-muted-foreground hover:bg-muted hover:text-foreground")
+          )}>
+          <item.icon size={18} className={cn("shrink-0", isActive ? "text-primary-foreground" : color.text)} />
+          {!isCollapsed && <span className="flex-1 truncate">{item.label}</span>}
+          {item.badge !== undefined && (
+            <span className={cn(
+              "flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white px-1",
+              isCollapsed ? "absolute top-0.5 right-0.5" : "ml-auto"
+            )}>
+              {item.badge > 9 ? "9+" : item.badge}
+            </span>
+          )}
+        </div>
+      </Link>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -113,69 +227,36 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
       </div>
 
       {/* Nav items */}
-      <nav className={cn("flex-1 py-2 space-y-0.5 overflow-y-auto", isCollapsed ? "px-1" : "px-3")}>
-        {navItems.map((item) => {
-          const isActive = location === item.href || location.startsWith(item.href + "/");
-          const required = item.requiredLevel ?? 1;
-          const isLocked = required > rankLevel;
+      <nav className={cn("flex-1 py-2 space-y-3 overflow-y-auto", isCollapsed ? "px-1" : "px-3")}>
+        {/* Dashboard — pinned, always visible above the groups */}
+        {renderNavItem(dashboardItem)}
 
-          if (item.comingSoon) {
-            return (
-              <div key={item.href}
-                title={isCollapsed ? item.label + " (Coming soon)" : "Coming soon"}
-                className={cn(
-                  "flex items-center rounded-lg text-sm font-medium cursor-not-allowed text-muted-foreground/40 select-none",
-                  isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
-                )}>
-                <item.icon size={18} className="shrink-0 text-muted-foreground/30" />
-                {!isCollapsed && <><span className="flex-1 truncate">{item.label}</span>
-                  <span className="text-[9px] font-bold uppercase tracking-wide bg-muted/60 text-muted-foreground/50 px-1.5 py-0.5 rounded-full shrink-0">Soon</span></>}
-              </div>
-            );
-          }
-
-          if (isLocked) {
-            return (
-              <Link key={item.href} href="/student/progress" onClick={() => onNavigate?.()}>
-                <div title={isCollapsed ? item.label + ` (Unlock at Level ${required})` : `Unlock at Level ${required}`}
-                  className={cn(
-                    "flex items-center rounded-lg text-sm font-medium transition-colors cursor-pointer text-muted-foreground/50 hover:bg-muted/50 hover:text-muted-foreground",
-                    isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
-                  )}>
-                  <item.icon size={18} className="shrink-0 text-muted-foreground/40" />
-                  {!isCollapsed && <><span className="flex-1 truncate">{item.label}</span>
-                    <Lock size={12} className="text-muted-foreground/40 shrink-0" /></>}
-                </div>
-              </Link>
-            );
-          }
-
+        {navGroups.map((group) => {
+          const isMoreCollapsedGroup = !!group.collapsible;
+          const groupOpen = isMoreCollapsedGroup ? moreOpen : true;
           return (
-            <Link key={item.href} href={item.href}
-              onClick={() => {
-                if (item.href === "/student/announcements") markAnnouncementsSeen();
-                onNavigate?.();
-              }}>
-              <div title={isCollapsed ? item.label : undefined}
-                className={cn(
-                  "flex items-center rounded-lg text-sm font-medium transition-colors cursor-pointer relative",
-                  isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}>
-                <item.icon size={18} className={cn("shrink-0", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
-                {!isCollapsed && <span className="flex-1 truncate">{item.label}</span>}
-                {item.badge !== undefined && (
-                  <span className={cn(
-                    "flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white px-1",
-                    isCollapsed ? "absolute top-0.5 right-0.5" : "ml-auto"
-                  )}>
-                    {item.badge > 9 ? "9+" : item.badge}
-                  </span>
-                )}
-              </div>
-            </Link>
+            <div key={group.label}>
+              {!isCollapsed && (
+                isMoreCollapsedGroup ? (
+                  <button
+                    onClick={toggleMore}
+                    className="w-full flex items-center justify-between px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 hover:text-foreground transition-colors"
+                  >
+                    <span className="flex items-center gap-1.5"><MoreHorizontal size={12} />{group.label}</span>
+                    <ChevronDown size={12} className={cn("transition-transform", groupOpen && "rotate-180")} />
+                  </button>
+                ) : (
+                  <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/50">
+                    {group.label}
+                  </div>
+                )
+              )}
+              {(groupOpen || isCollapsed) && (
+                <div className="space-y-0.5 mt-0.5">
+                  {group.items.map((item) => renderNavItem(item))}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>

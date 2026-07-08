@@ -11,6 +11,7 @@ function useIsMobile() {
 }
 
 import { StudentSidebar } from "./StudentSidebar";
+import { BottomNav } from "./BottomNav";
 import { Header } from "./Header";
 import { PersistentPlayer } from "./PersistentPlayer";
 import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
@@ -130,9 +131,10 @@ function StudentLayoutInner({ children }: { children: React.ReactNode }) {
         <PinnedBanner />
         <EmailVerificationBanner />
         <WarningBanner />
-        <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
+        <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6 overflow-x-hidden">
           {children}
         </main>
+        <BottomNav />
       </div>
     </div>
   );

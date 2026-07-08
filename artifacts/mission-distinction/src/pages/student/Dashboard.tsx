@@ -134,16 +134,16 @@ function QuestionOfDayWidget() {
   const isAnswered = question.answered;
 
   return (
-    <Card className="bg-card/40 border-border/50 overflow-hidden relative group">
+    <Card className="bg-card/40 border-blue-500/20 overflow-hidden relative group">
       <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-        <Brain size={60} className="text-primary" />
+        <Brain size={60} className="text-blue-400" />
       </div>
-      <CardHeader className="p-4 pb-2 border-b border-border/40 bg-primary/5">
+      <CardHeader className="p-4 pb-2 border-b border-blue-500/20 bg-blue-500/10">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <Sparkles size={16} className="text-primary" /> Question of the Day
+            <Sparkles size={16} className="text-blue-400" /> Question of the Day
           </CardTitle>
-          <Badge variant="outline" className="text-[10px] uppercase border-primary/20 text-primary bg-primary/5">
+          <Badge variant="outline" className="text-[10px] uppercase border-blue-500/30 text-blue-300 bg-blue-500/10">
             {question.subject}
           </Badge>
         </div>
@@ -215,19 +215,19 @@ function ClinicalCaseWidget() {
 
   return (
     <Card
-      className="bg-card/40 border-border/50 overflow-hidden relative group cursor-pointer hover:border-primary/30 transition-colors"
+      className="bg-card/40 border-red-500/20 overflow-hidden relative group cursor-pointer hover:border-red-500/40 transition-colors"
       onClick={() => setLocation("/student/clinical-case")}
     >
       <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-        <Stethoscope size={56} className="text-primary" />
+        <Stethoscope size={56} className="text-red-400" />
       </div>
-      <CardHeader className="p-4 pb-2 border-b border-border/40 bg-primary/5">
+      <CardHeader className="p-4 pb-2 border-b border-red-500/20 bg-red-500/10">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <Stethoscope size={15} className="text-primary" /> Clinical Case of the Day
+            <Stethoscope size={15} className="text-red-400" /> Clinical Case of the Day
           </CardTitle>
           <div className="flex items-center gap-1.5">
-            <Badge variant="outline" className="text-[10px] uppercase border-primary/20 text-primary bg-primary/5">
+            <Badge variant="outline" className="text-[10px] uppercase border-red-500/30 text-red-300 bg-red-500/10">
               {clinicalCase.subject}
             </Badge>
             {clinicalCase.attempted && (
@@ -244,7 +244,7 @@ function ClinicalCaseWidget() {
           <span className="text-[10px] text-muted-foreground">
             {clinicalCase.attempted ? "View your feedback →" : "+15 XP · AI evaluation"}
           </span>
-          <ArrowRight size={13} className="text-primary" />
+          <ArrowRight size={13} className="text-red-400" />
         </div>
       </CardContent>
     </Card>
@@ -540,10 +540,10 @@ export default function StudentDashboard() {
         {/* Right Panel */}
         <div className="space-y-6">
           {/* Community */}
-          <Card className="bg-card/40 border-border/40">
-            <CardHeader className="p-4 pb-2 border-b border-border/40">
+          <Card className="bg-card/40 border-pink-500/20">
+            <CardHeader className="p-4 pb-2 border-b border-pink-500/20 bg-pink-500/10">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <MessageSquare size={16} className="text-primary" /> Community Chat
+                <MessageSquare size={16} className="text-pink-400" /> Community Chat
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -558,7 +558,7 @@ export default function StudentDashboard() {
                 <div className="divide-y divide-border/40">
                   {recentGroups.map((grp) => (
                     <div key={grp.id} className="p-3 flex items-start gap-3 hover:bg-muted/20 cursor-pointer transition-colors">
-                      <div className="w-8 h-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-pink-500/20 text-pink-400 font-bold flex items-center justify-center text-xs shrink-0">
                         {grp.name?.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -569,9 +569,9 @@ export default function StudentDashboard() {
                   ))}
                 </div>
               )}
-              <div className="p-3 border-t border-border/40">
+              <div className="p-3 border-t border-pink-500/10">
                 <Link href="/student/community">
-                  <Button variant="outline" className="w-full text-xs h-8 border-dashed">
+                  <Button variant="outline" className="w-full text-xs h-8 border-dashed border-pink-500/30 text-pink-300 hover:bg-pink-500/10">
                     View Community <ArrowRight className="ml-1 w-3 h-3" />
                   </Button>
                 </Link>
