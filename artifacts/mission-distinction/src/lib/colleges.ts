@@ -27,7 +27,7 @@ export const ODISHA_DEEMED_COLLEGES = [
   "Kalinga Institute of Medical Sciences (KIMS), Bhubaneswar",
 ];
 
-export const MBBS_YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "Final Year"];
+export const MBBS_YEARS = ["1st Year", "2nd Year", "3rd/4th Year", "Final Year"];
 
 export const SESSION_YEARS = [
   "2022-23", "2023-24", "2024-25", "2025-26", "2026-27", "2027-28",
