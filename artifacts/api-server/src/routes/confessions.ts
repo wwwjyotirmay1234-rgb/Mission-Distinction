@@ -7,6 +7,7 @@ import { parseId } from "../lib/auth";
 import rateLimit from "express-rate-limit";
 import { awardXp, XP_VALUES } from "../lib/xp";
 import { stripHtml } from "../lib/sanitize";
+import { cohortWhere, userCohort } from "../lib/cohort";
 
 const router = Router();
 
@@ -21,13 +22,18 @@ const postLimiter = rateLimit({
 // List confessions — userId is NEVER returned
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = ((req as any).user.id as number);
-    const rows = await db.select({
+    const user = (req as any).user;
+    const userId = (user.id as number);
+    const cohort = cohortWhere(confessionsTable, user);
+    const baseQuery = db.select({
       id: confessionsTable.id,
       content: confessionsTable.content,
       likes: confessionsTable.likes,
       createdAt: confessionsTable.createdAt,
-    }).from(confessionsTable).orderBy(desc(confessionsTable.createdAt)).limit(100);
+    }).from(confessionsTable);
+    const rows = cohort
+      ? await baseQuery.where(cohort).orderBy(desc(confessionsTable.createdAt)).limit(100)
+      : await baseQuery.orderBy(desc(confessionsTable.createdAt)).limit(100);
 
     const liked = await db.select({ confessionId: confessionLikesTable.confessionId })
       .from(confessionLikesTable).where(eq(confessionLikesTable.userId, userId));
@@ -40,13 +46,14 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 // Post confession
 router.post("/", authMiddleware, postLimiter, async (req: Request, res: Response) => {
   try {
-    const userId = ((req as any).user.id as number);
+    const user = (req as any).user;
+    const userId = (user.id as number);
     const { content } = req.body;
     if (!content?.trim()) { res.status(400).json({ error: "content required" }); return; }
     const stripped = stripHtml(String(content)).trim();
     if (!stripped) { res.status(400).json({ error: "content required" }); return; }
     if (stripped.length > 500) { res.status(400).json({ error: "Max 500 characters" }); return; }
-    const [row] = await db.insert(confessionsTable).values({ userId, content: stripped }).returning();
+    const [row] = await db.insert(confessionsTable).values({ userId, content: stripped, ...userCohort(user) }).returning();
     res.json({ id: row.id, content: row.content, likes: row.likes, createdAt: row.createdAt, hasLiked: false });
   } catch { res.status(500).json({ error: "Failed to post confession" }); }
 });

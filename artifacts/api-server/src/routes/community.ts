@@ -8,6 +8,7 @@ import { eq, desc, and, count, ne } from "drizzle-orm";
 import { getIO } from "../lib/socket-server";
 import rateLimit from "express-rate-limit";
 import { awardXp, XP_VALUES } from "../lib/xp";
+import { cohortWhere, userCohort } from "../lib/cohort";
 
 const router = Router();
 
@@ -41,7 +42,10 @@ router.get("/posts", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const { group, search } = req.query;
-    let posts = await db.select().from(communityPostsTable).orderBy(desc(communityPostsTable.createdAt)).limit(500);
+    const cohort = cohortWhere(communityPostsTable, user);
+    let posts = cohort
+      ? await db.select().from(communityPostsTable).where(cohort).orderBy(desc(communityPostsTable.createdAt)).limit(500)
+      : await db.select().from(communityPostsTable).orderBy(desc(communityPostsTable.createdAt)).limit(500);
     if (group) posts = posts.filter(p => p.groupName?.toLowerCase().includes((group as string).toLowerCase()));
     if (search) posts = posts.filter(p => p.title.toLowerCase().includes((search as string).toLowerCase()) || p.content.toLowerCase().includes((search as string).toLowerCase()));
 
@@ -100,6 +104,7 @@ router.post("/posts", authMiddleware, postCreateLimiter, async (req: Request, re
       author: user.fullName,
       authorId: user.id,
       authorAvatarUrl: user.avatarUrl || null,
+      ...userCohort(user),
     };
     if (safeMediaUrl) {
       insertValues.mediaUrl = safeMediaUrl;
@@ -244,8 +249,13 @@ router.get("/groups", authMiddleware, async (req: Request, res: Response) => {
       .groupBy(groupMembersTable.groupId);
     const countMap = new Map(memberCounts.map(r => [r.groupId, r.cnt]));
 
+    // Admin-created groups are official and stay visible to every cohort.
+    // Student-created groups are scoped to the creator's own batch/session.
+    const inOwnCohort = (g: typeof allGroups[number]) =>
+      !g.cohortYear || !g.cohortSessionYear || (g.cohortYear === user.year && g.cohortSessionYear === user.sessionYear);
+
     const visible = allGroups
-      .filter(g => g.isAdminCreated || memberGroupIds.has(g.id))
+      .filter(g => g.isAdminCreated || (memberGroupIds.has(g.id) && inOwnCohort(g)))
       .map(g => ({
         ...g,
         memberCount: countMap.get(g.id) ?? 0,
@@ -273,7 +283,7 @@ router.post("/groups", authMiddleware, groupCreateLimiter, async (req: Request, 
       const ownedGroups = await db.select({ id: communityGroupsTable.id }).from(communityGroupsTable).where(eq(communityGroupsTable.createdBy, user.id));
       if (ownedGroups.length >= 3) { res.status(400).json({ error: "You can own a maximum of 3 groups" }); return; }
     }
-    const [group] = await db.insert(communityGroupsTable).values({ name: safeName, subject: safeSubject, description: safeDesc, createdBy: user.id, isAdminCreated: user.role === "admin", memberCount: 1 }).returning();
+    const [group] = await db.insert(communityGroupsTable).values({ name: safeName, subject: safeSubject, description: safeDesc, createdBy: user.id, isAdminCreated: user.role === "admin", memberCount: 1, ...userCohort(user) }).returning();
     await db.insert(groupMembersTable).values({ groupId: group.id, userId: user.id, role: "owner" });
     res.status(201).json(group);
   } catch { res.status(500).json({ error: "Internal server error" }); }

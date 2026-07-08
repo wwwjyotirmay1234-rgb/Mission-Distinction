@@ -3,6 +3,7 @@
 - [Bundle minification](bundle-minification.md) — adding minify+treeShaking to esbuild cut bundle 4.4MB→2.3MB; sourcemap still 7.9MB (linked, not inline, fine)
 - [Load test baseline](load-test-baseline.md) — localhost: 2032 req/s, 0% errors, p95=20ms, p99=41ms; thresholds: error<1%, p95<2000ms, rps>10
 - [Admin 12-feature schema and routes](admin-features-schema.md) — new tables (audit_logs, student_warnings, content_reports, pinned_notices), route files, quiz schema column gotchas
+- [Cohort isolation pattern](cohort-isolation-pattern.md) — nullable cohortYear/sessionYear cols + legacy-NULL fallback to isolate community/doubts/confessions/study-rooms/leaderboard per batch without backfill
 - [Mobile PWA lessons](mobile-pwa-lessons.md) — JWT expiry, Google auth, PDF viewer, SW caching, and viewport pitfalls for this app
 - [Refresh token race condition fix](refresh-lock.md) — single-use rotation + parallel 401s = cascade logout; fix with a shared Promise lock in setTokenRefresher
 - [SW base path for production](sw-base-path.md) — derive BASE from self.location so /assets/ and nav fallback work at /mission-distinction/ not just /

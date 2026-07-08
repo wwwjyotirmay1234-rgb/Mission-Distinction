@@ -5,6 +5,8 @@ export const confessionsTable = pgTable("confessions", {
   userId: integer("user_id").notNull(),
   content: text("content").notNull(),
   likes: integer("likes").default(0).notNull(),
+  cohortYear: text("cohort_year"),
+  cohortSessionYear: text("cohort_session_year"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

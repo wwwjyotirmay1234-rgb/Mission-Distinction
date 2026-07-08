@@ -12,6 +12,8 @@ export const communityGroupsTable = pgTable("community_groups", {
   memberCount: integer("member_count").default(0).notNull(),
   lastMessage: text("last_message"),
   lastMessageTime: timestamp("last_message_time"),
+  cohortYear: text("cohort_year"),
+  cohortSessionYear: text("cohort_session_year"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -45,6 +47,8 @@ export const communityPostsTable = pgTable("community_posts", {
   mediaType: text("media_type"),
   likeCount: integer("like_count").default(0).notNull(),
   replyCount: integer("reply_count").default(0),
+  cohortYear: text("cohort_year"),
+  cohortSessionYear: text("cohort_session_year"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

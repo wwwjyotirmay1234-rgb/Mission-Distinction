@@ -8,6 +8,7 @@ import { stripHtml } from "../lib/sanitize";
 import rateLimit from "express-rate-limit";
 import { awardXp, XP_VALUES } from "../lib/xp";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { cohortWhere, userCohort } from "../lib/cohort";
 
 const router = Router();
 
@@ -30,16 +31,14 @@ const answerPostLimiter = rateLimit({
 // ─── List doubts ─────────────────────────────────────────────────────────────
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
     const { subject } = req.query;
-    const doubts =
-      subject && subject !== "All"
-        ? await db
-            .select()
-            .from(doubtsTable)
-            .where(eq(doubtsTable.subject, subject as string))
-            .orderBy(desc(doubtsTable.createdAt))
-            .limit(500)
-        : await db.select().from(doubtsTable).orderBy(desc(doubtsTable.createdAt)).limit(500);
+    const cohort = cohortWhere(doubtsTable, user);
+    const subjectFilter = subject && subject !== "All" ? eq(doubtsTable.subject, subject as string) : undefined;
+    const where = cohort && subjectFilter ? and(cohort, subjectFilter) : (cohort ?? subjectFilter);
+    const doubts = where
+      ? await db.select().from(doubtsTable).where(where).orderBy(desc(doubtsTable.createdAt)).limit(500)
+      : await db.select().from(doubtsTable).orderBy(desc(doubtsTable.createdAt)).limit(500);
     res.json(doubts);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
@@ -73,6 +72,7 @@ router.post("/", authMiddleware, doubtPostLimiter, async (req: Request, res: Res
       subject: stripHtml(String(subject)),
       title: safeTitle,
       question: safeQuestion,
+      ...userCohort(user),
     }).returning();
     awardXp(user.id, XP_VALUES.DOUBT_ASKED, "doubt_asked", `Asked a doubt: ${safeTitle.slice(0, 60)}`).catch(() => {});
 

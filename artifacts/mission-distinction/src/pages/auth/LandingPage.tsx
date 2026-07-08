@@ -19,7 +19,7 @@ import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChan
 import { auth, googleProvider } from "@/lib/firebase";
 
 
-import { ODISHA_GOVT_COLLEGES, ODISHA_PRIVATE_COLLEGES, ODISHA_DEEMED_COLLEGES, MBBS_YEARS, SESSION_YEARS, ACTIVE_SESSION_YEAR, ACTIVE_MBBS_YEAR } from "@/lib/colleges";
+import { ODISHA_GOVT_COLLEGES, ODISHA_PRIVATE_COLLEGES, ODISHA_DEEMED_COLLEGES, MBBS_YEARS, SESSION_YEARS, ACTIVE_SESSION_YEAR, ACTIVE_SESSION_YEARS, ACTIVE_MBBS_YEAR } from "@/lib/colleges";
 
 function getRoute(year: string | undefined, sessionYear: string | undefined) {
   // Students without a year/session set yet (e.g. Google sign-ins) must land on
@@ -28,7 +28,7 @@ function getRoute(year: string | undefined, sessionYear: string | undefined) {
   if (!year || !sessionYear) return "/student/dashboard";
   return (
     (year === ACTIVE_MBBS_YEAR || year === "1st Year MBBS") &&
-    sessionYear === ACTIVE_SESSION_YEAR
+    ACTIVE_SESSION_YEARS.includes(sessionYear)
   ) ? "/student/dashboard" : "/coming-soon";
 }
 

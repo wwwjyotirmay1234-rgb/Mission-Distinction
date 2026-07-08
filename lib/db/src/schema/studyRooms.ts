@@ -11,6 +11,8 @@ export const studyRoomsTable = pgTable("study_rooms", {
   startedAt: timestamp("started_at"),
   endsAt: timestamp("ends_at"),
   memberCount: integer("member_count").default(1).notNull(),
+  cohortYear: text("cohort_year"),
+  cohortSessionYear: text("cohort_session_year"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

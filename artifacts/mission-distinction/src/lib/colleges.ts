@@ -35,3 +35,9 @@ export const SESSION_YEARS = [
 
 export const ACTIVE_SESSION_YEAR = "2025-26";
 export const ACTIVE_MBBS_YEAR   = "1st Year";
+
+// Session years that currently have a live 1st Year feature portal.
+// "2026-27" is the upcoming batch — they get the same features as the
+// current batch, but in their own isolated cohort ("room") for
+// community/doubts/confessions/study rooms/leaderboard.
+export const ACTIVE_SESSION_YEARS = [ACTIVE_SESSION_YEAR, "2026-27"];

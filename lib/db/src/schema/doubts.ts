@@ -9,6 +9,8 @@ export const doubtsTable = pgTable("doubts", {
   question: text("question").notNull(),
   answerCount: integer("answer_count").default(0).notNull(),
   resolved: boolean("resolved").default(false).notNull(),
+  cohortYear: text("cohort_year"),
+  cohortSessionYear: text("cohort_session_year"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -8,12 +8,16 @@ import { logger } from "../lib/logger";
 
 const router = Router();
 
-const CACHE_KEY = "leaderboard:all";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
-router.get("/", authMiddleware, async (_req: Request, res: Response) => {
+router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const cached = getCache<{ topScorers: unknown[]; streakLeaders: unknown[] }>(CACHE_KEY);
+    const user = (req as any).user;
+    // Each cohort (year + session) gets its own leaderboard "room" —
+    // an upcoming batch (e.g. 2026-27) never competes against/sees the
+    // current batch's leaderboard.
+    const cacheKey = `leaderboard:${user.year || "unknown"}:${user.sessionYear || "unknown"}`;
+    const cached = getCache<{ topScorers: unknown[]; streakLeaders: unknown[] }>(cacheKey);
     if (cached) {
       res.setHeader("X-Cache", "HIT");
       res.json(cached);
@@ -23,6 +27,8 @@ router.get("/", authMiddleware, async (_req: Request, res: Response) => {
     const visibleStudents = and(
       eq(usersTable.role, "student"),
       eq(usersTable.isSuperAdmin, false),
+      ...(user.year ? [eq(usersTable.year, user.year)] : []),
+      ...(user.sessionYear ? [eq(usersTable.sessionYear, user.sessionYear)] : []),
     );
 
     const [scoreStats, streakStats] = await Promise.all([
@@ -97,7 +103,7 @@ router.get("/", authMiddleware, async (_req: Request, res: Response) => {
     }));
 
     const result = { topScorers, streakLeaders };
-    setCache(CACHE_KEY, result, CACHE_TTL_MS);
+    setCache(cacheKey, result, CACHE_TTL_MS);
     res.setHeader("X-Cache", "MISS");
     res.json(result);
   } catch (err) {

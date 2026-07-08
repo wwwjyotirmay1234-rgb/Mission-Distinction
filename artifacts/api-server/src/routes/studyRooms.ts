@@ -6,6 +6,7 @@ import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import rateLimit from "express-rate-limit";
 import { awardXp, XP_VALUES } from "../lib/xp";
+import { cohortWhere, userCohort } from "../lib/cohort";
 
 const router = Router();
 
@@ -34,8 +35,11 @@ function activeThreshold() {
 // List active rooms
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
+    const recent = gte(studyRoomsTable.createdAt, new Date(Date.now() - 12 * 60 * 60 * 1000));
+    const cohort = cohortWhere(studyRoomsTable, user);
     const rooms = await db.select().from(studyRoomsTable)
-      .where(gte(studyRoomsTable.createdAt, new Date(Date.now() - 12 * 60 * 60 * 1000)))
+      .where(cohort ? and(recent, cohort) : recent)
       .orderBy(desc(studyRoomsTable.createdAt));
     res.json(rooms);
   } catch { res.status(500).json({ error: "Failed to load rooms" }); }
@@ -57,12 +61,13 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 // Create room
 router.post("/", authMiddleware, createRoomLimiter, async (req: Request, res: Response) => {
   try {
-    const userId = ((req as any).user.id as number);
-    const userName = (req as any).user?.fullName || (req as any).user?.name || "Anonymous";
+    const user = (req as any).user;
+    const userId = (user.id as number);
+    const userName = user?.fullName || user?.name || "Anonymous";
     const { name, subject, timerMinutes } = req.body;
     if (!name?.trim() || !subject) { res.status(400).json({ error: "name and subject required" }); return; }
     const mins = Math.min(Math.max(parseInt(timerMinutes) || 25, 5), 180);
-    const [room] = await db.insert(studyRoomsTable).values({ hostId: userId, hostName: userName, name: name.trim(), subject, timerMinutes: mins }).returning();
+    const [room] = await db.insert(studyRoomsTable).values({ hostId: userId, hostName: userName, name: name.trim(), subject, timerMinutes: mins, ...userCohort(user) }).returning();
     await db.insert(studyRoomMembersTable).values({ roomId: room.id, userId, userName });
     res.json(room);
   } catch { res.status(500).json({ error: "Failed to create room" }); }
