@@ -18,9 +18,9 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
     return <Redirect to="/student/dashboard" />;
   }
 
-  if (!requireAdmin && isAdmin) {
-    return <Redirect to="/admin/dashboard" />;
-  }
+  // Admins are allowed onto student routes deliberately (e.g. via the
+  // "Switch to Student View" toggle in the header) — do NOT auto-redirect
+  // them back to the admin panel here.
 
   return <>{children}</>;
 }

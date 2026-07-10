@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, Bell, LogOut, User as UserIcon, Menu, Zap, Megaphone, Newspaper, CalendarDays, AlertTriangle, Sun, Moon, PanelLeft } from "lucide-react";
+import { Search, Bell, LogOut, User as UserIcon, Menu, Zap, Megaphone, Newspaper, CalendarDays, AlertTriangle, Sun, Moon, PanelLeft, ArrowLeftRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
@@ -209,13 +209,20 @@ function NotificationsBell() {
 
 export function Header() {
   const { user, logout } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { setOpen, hidden, setHidden } = useSidebar();
   const { data: xpStats } = useXPStats();
+
+  const isAdmin = user?.role === "admin";
+  const onStudentSide = location.startsWith("/student");
 
   const handleLogout = () => {
     logout();
     setLocation("/");
+  };
+
+  const handleSwitchAccount = () => {
+    setLocation(onStudentSide ? "/admin/dashboard" : "/student/dashboard");
   };
 
   const initials =
@@ -277,6 +284,17 @@ export function Header() {
           </button>
         )}
 
+        {isAdmin && (
+          <button
+            onClick={handleSwitchAccount}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-primary/30 bg-primary/10 hover:bg-primary/20 transition-colors text-xs font-medium text-primary"
+            title={onStudentSide ? "Back to Admin Panel" : "View as Student"}
+          >
+            <ArrowLeftRight size={13} />
+            {onStudentSide ? "Back to Admin" : "View as Student"}
+          </button>
+        )}
+
         <button
           onClick={toggleTheme}
           className="p-2 rounded-lg hover:bg-muted/60 transition-colors text-muted-foreground hover:text-foreground"
@@ -331,6 +349,12 @@ export function Header() {
               <DropdownMenuItem onClick={() => setLocation("/student/progress")}>
                 <Zap className="mr-2 h-4 w-4 text-amber-400" />
                 <span>My XP & Rank</span>
+              </DropdownMenuItem>
+            )}
+            {isAdmin && (
+              <DropdownMenuItem onClick={handleSwitchAccount} className="sm:hidden">
+                <ArrowLeftRight className="mr-2 h-4 w-4 text-primary" />
+                <span>{onStudentSide ? "Back to Admin Panel" : "View as Student"}</span>
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />

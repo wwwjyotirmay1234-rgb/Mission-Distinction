@@ -27,9 +27,8 @@ export function CompleteProfileModal() {
 
   const missingFields =
     !user ||
-    !(user as any).year ||
-    !(user as any).sessionYear ||
-    !(user as any).college;
+    ((user as any).role !== "admin" &&
+      (!(user as any).year || !(user as any).sessionYear || !(user as any).college));
 
   const [year, setYear] = useState((user as any)?.year ?? "");
   const [sessionYear, setSessionYear] = useState((user as any)?.sessionYear ?? "");
