@@ -150,6 +150,14 @@ export function initSocketServer(httpServer: HttpServer) {
     path: "/api/socket.io/",
     cors: { origin: getAllowedOrigins(), methods: ["GET", "POST"] },
     transports: ["websocket", "polling"],
+    // Without these, a half-open connection (phone locked, tab backgrounded,
+    // flaky mobile network) can sit "connected" from the server's point of
+    // view indefinitely — leaking memory in gameRooms/callRooms/callJoinRequests
+    // and never firing the "disconnect" cleanup handlers. Under sustained heavy
+    // use this accumulates and looks like the whole app "hanging".
+    pingTimeout: 20000,
+    pingInterval: 25000,
+    maxHttpBufferSize: 1e6,
   });
 
   io.use(async (socket, next) => {

@@ -4,7 +4,7 @@ import { communityPostsTable, communityGroupsTable, communityMessagesTable, grou
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
-import { eq, desc, and, count, ne } from "drizzle-orm";
+import { eq, desc, and, count, ne, inArray } from "drizzle-orm";
 import { getIO } from "../lib/socket-server";
 import rateLimit from "express-rate-limit";
 import { awardXp, XP_VALUES } from "../lib/xp";
@@ -49,8 +49,15 @@ router.get("/posts", authMiddleware, async (req: Request, res: Response) => {
     if (group) posts = posts.filter(p => p.groupName?.toLowerCase().includes((group as string).toLowerCase()));
     if (search) posts = posts.filter(p => p.title.toLowerCase().includes((search as string).toLowerCase()) || p.content.toLowerCase().includes((search as string).toLowerCase()));
 
-    // Fetch all reactions for these posts
-    const allReactions = await db.select({ postId: postLikesTable.postId, userId: postLikesTable.userId, emoji: postLikesTable.emoji }).from(postLikesTable);
+    // Fetch reactions only for the posts we're actually returning — pulling the
+    // whole postLikesTable on every feed load was a full-table scan on one of
+    // the most-hit endpoints in the app and a prime cause of pool exhaustion
+    // ("hanging") once the table grew large under real usage.
+    const postIds = posts.map(p => p.id);
+    const allReactions = postIds.length > 0
+      ? await db.select({ postId: postLikesTable.postId, userId: postLikesTable.userId, emoji: postLikesTable.emoji })
+          .from(postLikesTable).where(inArray(postLikesTable.postId, postIds))
+      : [];
     const reactionsByPost = new Map<number, { emoji: string; userId: number }[]>();
     for (const r of allReactions) {
       if (!reactionsByPost.has(r.postId)) reactionsByPost.set(r.postId, []);
