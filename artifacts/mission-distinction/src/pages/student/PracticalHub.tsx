@@ -1569,7 +1569,7 @@ export default function PracticalHub() {
               className="w-full max-w-md object-contain rounded-lg bg-background/40 border border-border/30"
             />
             <div className="text-xs text-muted-foreground leading-relaxed text-center">
-              <p className="font-semibold text-sm text-foreground mb-0.5">{clinicalImage.topic}</p>
+              <p className="font-semibold text-sm text-foreground mb-0.5">Identify the apparatus/specimen shown</p>
               <p className="text-[10px] text-muted-foreground">{clinicalImage.displayCaption}</p>
             </div>
           </CardContent>
