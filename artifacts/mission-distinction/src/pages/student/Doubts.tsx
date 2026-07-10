@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Paperclip, Globe, Copy, Check, Loader2, FileText, ThumbsUp, Share2 } from "lucide-react";
+import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Paperclip, Globe, Copy, Check, Loader2, FileText, ThumbsUp, Share2, Mic, MicOff } from "lucide-react";
 
 function shareDoubtToWhatsApp(title: string, subject: string) {
   const appUrl = window.location.origin;
@@ -608,10 +608,74 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const baseTextRef = useRef("");
+  const [listening, setListening] = useState(false);
+
+  const hasVoice = typeof window !== "undefined" && !!(
+    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  );
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs]);
+
+  useEffect(() => {
+    return () => { recognitionRef.current?.stop?.(); };
+  }, []);
+
+  const stopVoice = () => {
+    recognitionRef.current?.stop?.();
+    setListening(false);
+  };
+
+  const startVoice = () => {
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      toast.error("Voice input isn't supported in this browser. Try Chrome.");
+      return;
+    }
+    if (listening) { stopVoice(); return; }
+
+    const rec = new SpeechRec();
+    rec.lang = "en-IN";
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.maxAlternatives = 1;
+    baseTextRef.current = input ? input.trim() + " " : "";
+
+    rec.onresult = (e: any) => {
+      let finalTranscript = "";
+      let interimTranscript = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const transcript = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalTranscript += transcript + " ";
+        else interimTranscript += transcript;
+      }
+      if (finalTranscript) baseTextRef.current += finalTranscript;
+      const combined = (baseTextRef.current + interimTranscript).trim();
+      setInput(combined);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 128) + "px";
+      }
+    };
+    rec.onerror = (e: any) => {
+      setListening(false);
+      if (e.error !== "no-speech" && e.error !== "aborted") {
+        toast.error("Couldn't hear you clearly. Please try again.");
+      }
+    };
+    rec.onend = () => setListening(false);
+
+    recognitionRef.current = rec;
+    try {
+      rec.start();
+      setListening(true);
+    } catch {
+      setListening(false);
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -987,7 +1051,9 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder={
-              pendingImage
+              listening
+                ? "Listening… speak your question"
+                : pendingImage
                 ? "Add a question about this image… (optional)"
                 : pendingDoc
                 ? "Ask anything about this document… (optional)"
@@ -998,6 +1064,19 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
             className="flex-1 bg-transparent resize-none outline-none text-sm placeholder:text-muted-foreground disabled:opacity-60"
             style={{ maxHeight: "128px", overflow: "hidden" }}
           />
+          {hasVoice && (
+            <button
+              onClick={startVoice}
+              disabled={busy || extractingDoc}
+              title={listening ? "Stop listening" : "Ask by voice"}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors disabled:opacity-40 disabled:cursor-not-allowed relative ${
+                listening ? "text-red-500 bg-red-500/15" : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+              }`}
+            >
+              {listening && <span className="absolute inset-0 rounded-xl bg-red-500/20 animate-ping" />}
+              {listening ? <MicOff size={15} className="relative" /> : <Mic size={15} className="relative" />}
+            </button>
+          )}
           <button
             onClick={() => send(input)}
             disabled={(!input.trim() && !pendingImage && !pendingDoc) || busy || extractingDoc}
@@ -1007,7 +1086,7 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
           </button>
         </div>
         <p className="text-center text-[10px] text-muted-foreground/50 mt-1.5">
-          Mission Distinction AI · MBBS · NEET PG · USMLE · Send images, PDFs, or text files · Always cross-verify with textbooks.
+          {hasVoice ? "🎙️ Tap the mic to ask by voice · " : ""}Mission Distinction AI · MBBS · NEET PG · USMLE · Send images, PDFs, or text files · Always cross-verify with textbooks.
         </p>
       </div>
     </div>
