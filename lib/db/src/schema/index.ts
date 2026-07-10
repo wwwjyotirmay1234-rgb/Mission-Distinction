@@ -36,3 +36,4 @@ export * from "./vivaHistory";
 export * from "./clinicalCases";
 export * from "./pyqInsightsCache";
 export * from "./teachBackSessions";
+export * from "./aiChatSessions";

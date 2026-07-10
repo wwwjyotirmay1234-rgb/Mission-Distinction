@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Paperclip, Globe, Copy, Check, Loader2, FileText, ThumbsUp, Share2, Mic, MicOff } from "lucide-react";
+import { Bot, Send, RotateCcw, MessageSquare, Plus, ChevronLeft, CheckCircle2, Sparkles, Trash2, Users, X, ImageIcon, Paperclip, Globe, Copy, Check, Loader2, FileText, ThumbsUp, Share2, Mic, MicOff, History } from "lucide-react";
 
 function shareDoubtToWhatsApp(title: string, subject: string) {
   const appUrl = window.location.origin;
@@ -63,6 +63,14 @@ type ChatMsg = {
   attachedFileName?: string;
   streaming?: boolean;
   error?: boolean;
+};
+
+type ChatSessionSummary = {
+  id: number;
+  title: string;
+  model: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 interface Doubt {
@@ -612,6 +620,84 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
   const baseTextRef = useRef("");
   const [listening, setListening] = useState(false);
 
+  // ── Chat history (persisted sessions) ──────────────────────────────────
+  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const sessionIdRef = useRef<number | null>(null);
+  sessionIdRef.current = sessionId;
+
+  const loadSessions = async () => {
+    setLoadingHistory(true);
+    try {
+      const res = await apiFetch("/api/doubts/ai-chat/sessions");
+      if (res.ok) setSessions(await res.json());
+    } catch {
+      // best-effort — history list failing shouldn't block chatting
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const openHistory = () => {
+    setHistoryOpen(v => !v);
+    if (!historyOpen) loadSessions();
+  };
+
+  const loadSession = async (id: number) => {
+    try {
+      const res = await apiFetch(`/api/doubts/ai-chat/sessions/${id}`);
+      if (!res.ok) { toast.error("Couldn't open this chat"); return; }
+      const session = await res.json();
+      abortRef.current?.abort();
+      setMsgs(Array.isArray(session.messagesJson) ? session.messagesJson : []);
+      setSessionId(session.id);
+      setBusy(false);
+      setPendingImage(null);
+      setPendingDoc(null);
+      setHistoryOpen(false);
+    } catch {
+      toast.error("Couldn't open this chat");
+    }
+  };
+
+  const deleteSession = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSessions(prev => prev.filter(s => s.id !== id));
+    if (sessionIdRef.current === id) {
+      setSessionId(null);
+      setMsgs([]);
+    }
+    try {
+      await apiFetch(`/api/doubts/ai-chat/sessions/${id}`, { method: "DELETE" });
+    } catch {
+      // list already updated optimistically; a stale row reappearing on next
+      // refresh is an acceptable tradeoff over blocking the delete on network.
+    }
+  };
+
+  // Persist the conversation after each finished exchange (create the first
+  // time, then keep updating the same row) so refreshes/re-visits don't lose it.
+  const saveSession = async (allMsgs: ChatMsg[]) => {
+    const clean = allMsgs.filter(m => !m.streaming).map(m => ({ ...m, streaming: undefined }));
+    if (clean.length === 0) return;
+    const firstUserMsg = clean.find(m => m.role === "user");
+    const title = (firstUserMsg?.content || firstUserMsg?.attachedFileName || "New chat").slice(0, 80);
+    try {
+      const res = await apiFetch("/api/doubts/ai-chat/sessions", {
+        method: "POST",
+        body: JSON.stringify({ id: sessionIdRef.current, title, model, messages: clean }),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        if (!sessionIdRef.current) setSessionId(saved.id);
+      }
+    } catch {
+      // Non-fatal — the chat still works in-memory even if a save fails.
+    }
+  };
+
   const hasVoice = typeof window !== "undefined" && !!(
     (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
   );
@@ -756,9 +842,14 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
       .filter(m => !m.streaming && !m.error && m.content)
       .map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content }));
 
+    const userMsg: ChatMsg = { id: userId, role: "user", content: q, imageBase64: img ?? undefined, attachedFileName: doc?.title };
+    const msgsBeforeThisTurn = msgs;
+    let aiContent = "";
+    let aiIsError = false;
+
     setMsgs(prev => [
       ...prev,
-      { id: userId, role: "user", content: q, imageBase64: img ?? undefined, attachedFileName: doc?.title },
+      userMsg,
       { id: aiId, role: "ai", content: "", streaming: true },
     ]);
     setInput("");
@@ -788,8 +879,10 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
       });
 
       if (!res.ok || !res.body) {
+        aiContent = "Sorry, couldn't get an answer. Please try again.";
+        aiIsError = true;
         setMsgs(prev => prev.map(m =>
-          m.id === aiId ? { ...m, content: "Sorry, couldn't get an answer. Please try again.", streaming: false, error: true } : m
+          m.id === aiId ? { ...m, content: aiContent, streaming: false, error: true } : m
         ));
         return;
       }
@@ -809,6 +902,7 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
           try {
             const parsed = JSON.parse(line.slice(6));
             if (parsed.content) {
+              aiContent += parsed.content;
               setMsgs(prev => prev.map(m =>
                 m.id === aiId ? { ...m, content: m.content + parsed.content } : m
               ));
@@ -819,6 +913,8 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
               ));
             }
             if (parsed.error) {
+              aiContent = parsed.error;
+              aiIsError = true;
               setMsgs(prev => prev.map(m =>
                 m.id === aiId ? { ...m, content: parsed.error, streaming: false, error: true } : m
               ));
@@ -828,18 +924,32 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
       }
     } catch (e: any) {
       if (e.name !== "AbortError") {
+        aiContent = "Connection error. Please try again.";
+        aiIsError = true;
         setMsgs(prev => prev.map(m =>
-          m.id === aiId ? { ...m, content: "Connection error. Please try again.", streaming: false, error: true } : m
+          m.id === aiId ? { ...m, content: aiContent, streaming: false, error: true } : m
         ));
+      } else {
+        return;
       }
     } finally {
       setBusy(false);
+    }
+
+    if (aiContent && !aiIsError) {
+      const finalMsgs: ChatMsg[] = [
+        ...msgsBeforeThisTurn,
+        userMsg,
+        { id: aiId, role: "ai", content: aiContent },
+      ];
+      saveSession(finalMsgs);
     }
   };
 
   const clearChat = () => {
     abortRef.current?.abort();
     setMsgs([]);
+    setSessionId(null);
     setBusy(false);
     setPendingImage(null);
     setPendingDoc(null);
@@ -861,8 +971,16 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
 
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 220px)", minHeight: "420px" }}>
-      {/* Toolbar: clear only */}
-      <div className="flex items-center justify-end mb-2">
+      {/* Toolbar: history + clear */}
+      <div className="flex items-center justify-between mb-2 relative">
+        <button
+          onClick={openHistory}
+          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors ${
+            historyOpen ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+          }`}
+        >
+          <History size={12} /> History
+        </button>
         {msgs.length > 0 && (
           <button
             onClick={clearChat}
@@ -870,6 +988,46 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
           >
             <Trash2 size={12} /> New Chat
           </button>
+        )}
+
+        {historyOpen && (
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setHistoryOpen(false)} />
+            <div className="absolute left-0 top-full mt-1 w-72 max-h-80 overflow-y-auto bg-card border border-border/60 rounded-xl shadow-xl z-40 py-1.5">
+              {loadingHistory ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 size={16} className="animate-spin text-muted-foreground" />
+                </div>
+              ) : sessions.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6 px-3">No past chats yet — your conversations will appear here.</p>
+              ) : (
+                sessions.map((s) => (
+                  <div
+                    key={s.id}
+                    onClick={() => loadSession(s.id)}
+                    className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors ${
+                      s.id === sessionId ? "bg-primary/10" : ""
+                    }`}
+                  >
+                    <MessageSquare size={13} className="text-muted-foreground shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-foreground truncate">{s.title}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {new Date(s.updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => deleteSession(s.id, e)}
+                      className="w-5 h-5 rounded-md flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                      aria-label="Delete chat"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
         )}
       </div>
 

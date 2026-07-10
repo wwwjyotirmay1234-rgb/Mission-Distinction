@@ -577,6 +577,18 @@ export async function runStartupMigrations() {
         feedback_json JSONB NOT NULL DEFAULT '{}',
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS ai_chat_sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        model TEXT NOT NULL DEFAULT 'gpt-4o',
+        messages_json JSONB NOT NULL DEFAULT '[]',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_user_updated
+        ON ai_chat_sessions (user_id, updated_at DESC);
     `);
   } finally {
     client.release();

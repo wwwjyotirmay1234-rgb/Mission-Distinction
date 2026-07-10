@@ -2,11 +2,12 @@ import { Router, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 import { authMiddleware } from "../middlewares/auth";
 import { db } from "@workspace/db";
-import { doubtsTable } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { doubtsTable, aiChatSessionsTable } from "@workspace/db/schema";
+import { eq, and, desc, count } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { CBME_CONTEXT } from "../lib/cbmeContext";
+import { parseId } from "../lib/auth";
 import { createRequire } from "module";
 const _require = createRequire(import.meta.url);
 const pdfParse: (buf: Buffer, opts?: { max?: number }) => Promise<{ text: string; numpages: number }> =
@@ -617,6 +618,110 @@ router.post("/:id/ai-answer", authMiddleware, aiChatLimiter, async (req: Request
       res.write(`data: ${JSON.stringify({ error: "AI answer failed." })}\n\n`);
       res.end();
     }
+  }
+});
+
+// ── AI chat history (persisted sessions) ──────────────────────────────────
+const MAX_SESSIONS_PER_USER = 100;
+const MAX_MESSAGES_PER_SESSION = 300;
+
+// List past sessions for the sidebar (lightweight — no message bodies)
+router.get("/ai-chat/sessions", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const rows = await db
+      .select({
+        id: aiChatSessionsTable.id,
+        title: aiChatSessionsTable.title,
+        model: aiChatSessionsTable.model,
+        createdAt: aiChatSessionsTable.createdAt,
+        updatedAt: aiChatSessionsTable.updatedAt,
+      })
+      .from(aiChatSessionsTable)
+      .where(eq(aiChatSessionsTable.userId, user.id))
+      .orderBy(desc(aiChatSessionsTable.updatedAt))
+      .limit(MAX_SESSIONS_PER_USER);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Could not load chat history" });
+  }
+});
+
+// Fetch one full session (with messages)
+router.get("/ai-chat/sessions/:id", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid session ID" }); return; }
+    const [session] = await db
+      .select()
+      .from(aiChatSessionsTable)
+      .where(and(eq(aiChatSessionsTable.id, id), eq(aiChatSessionsTable.userId, user.id)))
+      .limit(1);
+    if (!session) { res.status(404).json({ error: "Chat not found" }); return; }
+    res.json(session);
+  } catch (err) {
+    res.status(500).json({ error: "Could not load chat" });
+  }
+});
+
+// Create or update a session (upsert by id — client creates once, then keeps saving)
+router.post("/ai-chat/sessions", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const sessionId = req.body.id ? parseId(String(req.body.id)) : null;
+    const title = sanitize(req.body.title, 120) ?? "New chat";
+    const model = req.body.model === "claude" ? "claude" : "gpt-4o";
+    const messages = Array.isArray(req.body.messages) ? req.body.messages.slice(-MAX_MESSAGES_PER_SESSION) : [];
+
+    if (sessionId) {
+      const [updated] = await db
+        .update(aiChatSessionsTable)
+        .set({ title, model, messagesJson: messages, updatedAt: new Date() })
+        .where(and(eq(aiChatSessionsTable.id, sessionId), eq(aiChatSessionsTable.userId, user.id)))
+        .returning();
+      if (!updated) { res.status(404).json({ error: "Chat not found" }); return; }
+      res.json(updated);
+      return;
+    }
+
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(aiChatSessionsTable)
+      .where(eq(aiChatSessionsTable.userId, user.id));
+    if (Number(total) >= MAX_SESSIONS_PER_USER) {
+      // Drop the oldest session for this user to make room, rather than blocking history from being saved.
+      const [oldest] = await db
+        .select({ id: aiChatSessionsTable.id })
+        .from(aiChatSessionsTable)
+        .where(eq(aiChatSessionsTable.userId, user.id))
+        .orderBy(aiChatSessionsTable.updatedAt)
+        .limit(1);
+      if (oldest) await db.delete(aiChatSessionsTable).where(eq(aiChatSessionsTable.id, oldest.id));
+    }
+
+    const [created] = await db.insert(aiChatSessionsTable).values({
+      userId: user.id,
+      title,
+      model,
+      messagesJson: messages,
+    }).returning();
+    res.status(201).json(created);
+  } catch (err) {
+    console.error("[ai-chat/sessions save]", (err as any)?.message);
+    res.status(500).json({ error: "Could not save chat" });
+  }
+});
+
+router.delete("/ai-chat/sessions/:id", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid session ID" }); return; }
+    await db.delete(aiChatSessionsTable).where(and(eq(aiChatSessionsTable.id, id), eq(aiChatSessionsTable.userId, user.id)));
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: "Could not delete chat" });
   }
 });
 

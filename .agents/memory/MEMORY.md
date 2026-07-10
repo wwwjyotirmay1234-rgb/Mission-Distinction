@@ -1,4 +1,5 @@
 - [Web Speech API voice input](voice-input-webspeech-pattern.md) — reusable client-only mic dictation pattern for chat inputs (interim+final results, no backend needed)
+- [Chat session persistence pattern](chat-session-persistence-pattern.md) — one JSONB blob per conversation, sessionIdRef for upsert-by-id, save only after streaming completes
 - [JWT UA fingerprinting](jwt-ua-fingerprint.md) — generateToken takes optional ua param, embeds 16-char SHA256 uah claim; MUST be soft-warn only in authMiddleware (never reject)
 - [JWT timing test fix](jwt-timing.md) — JWT iat is second-precision; refresh-rotation test needs ≥1100ms sleep or tokens will be identical within same second
 - [Bundle minification](bundle-minification.md) — adding minify+treeShaking to esbuild cut bundle 4.4MB→2.3MB; sourcemap still 7.9MB (linked, not inline, fine)
