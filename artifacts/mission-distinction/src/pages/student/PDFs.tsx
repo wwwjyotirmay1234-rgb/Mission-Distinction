@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useListPdfs, getListPdfsQueryKey } from "@workspace/api-client-react";
+import { trackEvent } from "@/lib/analytics";
 import { Search, Filter, Download, BookOpen, X, ExternalLink, FileText, ChevronDown, Loader2, WifiOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -217,6 +218,7 @@ async function downloadPdfViaProxy(pdf: Pdf) {
 }
 
 async function trackDownload(pdfId: number) {
+  trackEvent("pdf_download", { pdfId });
   try {
     const { apiFetch } = await import("@/lib/apiFetch");
     await apiFetch(`/api/pdfs/${pdfId}/download`, { method: "POST" });

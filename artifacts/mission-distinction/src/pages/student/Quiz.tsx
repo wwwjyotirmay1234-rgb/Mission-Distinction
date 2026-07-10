@@ -26,6 +26,7 @@ import ProctorOverlay from "@/components/ProctorOverlay";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/apiFetch";
+import { trackEvent } from "@/lib/analytics";
 
 type QuizMode = "browse" | "taking" | "results";
 
@@ -521,6 +522,7 @@ export default function StudentQuiz() {
       if (!res.ok) throw new Error("Submission failed");
       const data: QuizResult = await res.json();
       setResult(data);
+      trackEvent("quiz_attempt_submitted", { quizId: selectedQuizId, score: (data as any).score });
       if (proctoringSessionId) {
         apiFetch("/api/proctoring/link", {
           method: "POST",

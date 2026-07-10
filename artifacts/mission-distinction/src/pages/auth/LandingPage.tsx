@@ -17,8 +17,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-
-
+import { trackEvent } from "@/lib/analytics";
 import { ODISHA_GOVT_COLLEGES, ODISHA_PRIVATE_COLLEGES, ODISHA_DEEMED_COLLEGES, MBBS_YEARS, SESSION_YEARS, ACTIVE_SESSION_YEAR, ACTIVE_SESSION_YEARS, ACTIVE_MBBS_YEAR } from "@/lib/colleges";
 
 function getRoute(year: string | undefined, sessionYear: string | undefined) {
@@ -127,6 +126,7 @@ export default function LandingPage() {
     }
     const data = await res.json();
     login(data);
+    trackEvent("login", { method: "google" });
     toast.success("Signed in with Google!");
     // Google users may not have a year set yet — always route to dashboard
     // (1st year content) and prompt them to complete their profile in Settings.
@@ -275,6 +275,7 @@ export default function LandingPage() {
     studentLoginMutation.mutate({ data: values }, {
       onSuccess: (res) => {
         login(res);
+        trackEvent("login", { method: "student" });
         toast.success("Login successful!");
         setLocation(getRoute(res.user?.year ?? undefined, (res.user as any)?.sessionYear ?? undefined));
       },
@@ -288,6 +289,7 @@ export default function LandingPage() {
     studentRegisterMutation.mutate({ data: values }, {
       onSuccess: (res) => {
         login(res);
+        trackEvent("signup", { method: "student" });
         toast.success("Account created successfully!");
         setLocation(getRoute(values.year, values.sessionYear));
       },
@@ -301,6 +303,7 @@ export default function LandingPage() {
     adminLoginMutation.mutate({ data: values }, {
       onSuccess: (res) => {
         login(res);
+        trackEvent("login", { method: "admin" });
         toast.success("Admin login successful!");
         setLocation("/admin/dashboard");
       },
@@ -314,6 +317,7 @@ export default function LandingPage() {
     adminRegisterMutation.mutate({ data: values }, {
       onSuccess: (res) => {
         login(res);
+        trackEvent("signup", { method: "admin" });
         toast.success("Admin account created!");
         setLocation("/admin/dashboard");
       },

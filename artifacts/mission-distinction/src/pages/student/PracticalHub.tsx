@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
+import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVoiceRecorder, useAudioPlayback } from "@workspace/integrations-openai-ai-react";
 import { PHYSIOLOGY_CLINICAL_IMAGES, type PhysiologyClinicalImage } from "@/data/physiologyClinicalImages";
@@ -493,6 +494,7 @@ export default function PracticalHub() {
     await new Promise((resolve) => setTimeout(resolve, ENTRANCE_BEAT_MS));
 
     setState("connecting");
+    trackEvent("practical_hub_viva_started", { subject: selectedSubject, vivaType: chosenVivaType ?? undefined, topic });
 
     const hasRegionFilter =
       isAnatomy &&

@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { io, Socket } from "socket.io-client";
 import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
+import { trackEvent } from "@/lib/analytics";
 import VideoCall from "@/components/VideoCall";
 
 type RichFlashcard = { deckId: number; title: string; subject: string; cardCount: number; isAdminShared?: boolean };
@@ -680,6 +681,7 @@ export default function StudentCommunity() {
       });
       if (!res.ok) return;
       const data = await res.json();
+      trackEvent("community_reaction_added", { postId, emoji });
       queryClient.setQueryData(getListCommunityPostsQueryKey({ search: search || undefined }), (old: any) => {
         if (!old) return old;
         const arr = Array.isArray(old) ? old : (old?.posts ?? []);
@@ -724,6 +726,7 @@ export default function StudentCommunity() {
       });
       if (!res.ok) { const err = await res.json().catch(() => ({})); toast.error(err.error || "Failed to comment"); return; }
       const comment = await res.json();
+      trackEvent("community_comment_added", { postId });
       setCommentsData(prev => ({ ...prev, [postId]: [...(prev[postId] || []), comment] }));
       setCommentTexts(prev => ({ ...prev, [postId]: "" }));
       // Increment replyCount in posts cache
@@ -775,6 +778,7 @@ export default function StudentCommunity() {
     }
     createPost.mutate({ data: payload }, {
       onSuccess: () => {
+        trackEvent("community_post_created");
         toast.success("Post shared!");
         queryClient.invalidateQueries({ queryKey: getListCommunityPostsQueryKey() });
         setPostOpen(false);
