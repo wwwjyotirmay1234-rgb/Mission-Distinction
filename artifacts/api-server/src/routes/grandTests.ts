@@ -128,8 +128,8 @@ router.get("/:id/submissions", adminMiddleware, async (req: Request, res: Respon
       SELECT gts.*, u.name, u.email,
         json_agg(json_build_object(
           'id', gta.id, 'questionId', gta.question_id,
-          'answerText', gta.answer_text, 'aiMarks', gta.ai_marks,
-          'aiFeedback', gta.ai_feedback,
+          'answerText', gta.answer_text, 'answerImageUrl', gta.answer_image_url,
+          'aiMarks', gta.ai_marks, 'aiFeedback', gta.ai_feedback,
           'aiKeyPointsCovered', gta.ai_key_points_covered,
           'aiKeyPointsMissed', gta.ai_key_points_missed,
           'status', gta.status,
@@ -142,6 +142,27 @@ router.get("/:id/submissions", adminMiddleware, async (req: Request, res: Respon
       WHERE gts.test_id=$1
       GROUP BY gts.id, u.name, u.email
       ORDER BY gts.submitted_at DESC NULLS LAST
+    `, [req.params.id]);
+    res.json(rows);
+  } finally { client.release(); }
+});
+
+// ─── Leaderboard: top scores for a test ──────────────────────────────────────
+router.get("/:id/leaderboard", authMiddleware, async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      SELECT
+        ROW_NUMBER() OVER (ORDER BY gts.total_marks_obtained DESC NULLS LAST, gts.submitted_at ASC) AS rank,
+        u.name, u.email,
+        gts.total_marks_obtained, gts.total_marks_possible,
+        ROUND((gts.total_marks_obtained::numeric / NULLIF(gts.total_marks_possible,0)) * 100) AS percentage,
+        gts.submitted_at
+      FROM grand_test_submissions gts
+      JOIN users u ON u.id = gts.user_id
+      WHERE gts.test_id=$1 AND gts.status='graded'
+      ORDER BY gts.total_marks_obtained DESC NULLS LAST, gts.submitted_at ASC
+      LIMIT 50
     `, [req.params.id]);
     res.json(rows);
   } finally { client.release(); }
@@ -208,10 +229,82 @@ router.post("/:id/start", authMiddleware, async (req: Request, res: Response) =>
   } finally { client.release(); }
 });
 
+// ─── Advanced AI grading helper ───────────────────────────────────────────────
+async function gradeAnswer(opts: {
+  subject: string;
+  questionText: string;
+  questionType: string;
+  maxMarks: number;
+  modelAnswer: string | null;
+  answerText: string;
+  imageUrl: string | null;
+}): Promise<{ marks: number; feedback: string; covered: string; missed: string; extractedText?: string }> {
+  const { subject, questionText, questionType, maxMarks, modelAnswer, answerText, imageUrl } = opts;
+
+  const systemPrompt = `You are a strict but fair MBBS university examiner grading a ${questionType === "long" ? "Long Answer Question (LAQ)" : "Short Answer Question (SAQ)"}.
+Subject: ${subject}
+You grade against CBME (Competency-Based Medical Education) standards.
+${modelAnswer ? `Key points / model answer to look for:\n${modelAnswer}` : ""}
+
+Grading rubric:
+- Award marks for each valid key point covered, clinical correlation, mechanisms explained
+- Deduct for missing key points, wrong facts, vague answers
+- For diagrams/drawings in images: evaluate labelling accuracy, completeness, neatness
+- For handwritten text in images: read carefully even if messy, give benefit of doubt for legible content
+- If both typed text AND image are provided, consider them together as one combined answer
+- Never penalise for language imperfection — medical accuracy is what matters
+
+Respond ONLY with a valid JSON object:
+{
+  "marks": <integer 0 to ${maxMarks}>,
+  "feedback": "<3-4 sentences: what was good, what was missing, clinical relevance comment>",
+  "keyPointsCovered": "<comma-separated key points covered, or 'None'>",
+  "keyPointsMissed": "<comma-separated key points missing, or 'None'>",
+  "extractedText": "<if image present, transcribe any handwritten text or describe any diagram you see; else empty string>"
+}`;
+
+  const userContent: any[] = [];
+
+  userContent.push({
+    type: "text",
+    text: `Question: ${questionText}\nMaximum Marks: ${maxMarks}\n\n${answerText ? `Student's typed answer:\n${answerText}` : "(No typed answer — answer is in the uploaded image only)"}`,
+  });
+
+  if (imageUrl) {
+    userContent.push({
+      type: "image_url",
+      image_url: { url: imageUrl, detail: "high" },
+    });
+  }
+
+  const model = imageUrl ? "gpt-4o" : "gpt-4o-mini";
+
+  const completion = await openai.chat.completions.create({
+    model,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: imageUrl ? userContent : userContent[0].text },
+    ],
+    response_format: { type: "json_object" },
+    max_tokens: 600,
+  });
+
+  const parsed = JSON.parse(completion.choices[0].message.content || "{}");
+  return {
+    marks: Math.max(0, Math.min(maxMarks, parseInt(parsed.marks) || 0)),
+    feedback: parsed.feedback || "",
+    covered: parsed.keyPointsCovered || "None",
+    missed: parsed.keyPointsMissed || "None",
+    extractedText: parsed.extractedText || "",
+  };
+}
+
 // ─── Student: submit + AI grade via SSE ──────────────────────────────────────
 router.post("/submissions/:submissionId/submit", authMiddleware, async (req: Request, res: Response) => {
   const userId = (req as any).user?.id;
-  const { answers } = req.body as { answers: { questionId: number; answerText: string }[] };
+  const { answers } = req.body as {
+    answers: { questionId: number; answerText: string; imageUrl?: string }[];
+  };
   const client = await pool.connect();
 
   try {
@@ -251,56 +344,43 @@ router.post("/submissions/:submissionId/submit", authMiddleware, async (req: Req
 
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
-      const studentAnswer = answers?.find((a: any) => a.questionId === q.id)?.answerText || "";
+      const submitted = answers?.find((a: any) => a.questionId === q.id);
+      const studentText = submitted?.answerText || "";
+      const imageUrl = submitted?.imageUrl || null;
+      const hasImage = !!imageUrl;
 
-      send({ type: "grading", questionIndex: i, total: questions.length, message: `Grading Q${i + 1}/${questions.length}…` });
+      send({
+        type: "grading",
+        questionIndex: i,
+        total: questions.length,
+        message: `Grading Q${i + 1}/${questions.length}${hasImage ? " (with handwritten sheet)" : ""}…`,
+      });
 
-      const prompt = `You are an MBBS university examiner grading a ${q.question_type === "long" ? "long answer" : "short answer"} question.
-
-Subject: ${sub.subject}
-Question: ${q.question_text}
-Maximum Marks: ${q.max_marks}
-${q.model_answer ? `Key Points / Model Answer: ${q.model_answer}` : ""}
-
-Student's Answer:
-${studentAnswer || "(No answer provided)"}
-
-Grade strictly but fairly as a CBME-based examiner. Respond ONLY with a valid JSON object:
-{
-  "marks": <integer 0 to ${q.max_marks}>,
-  "feedback": "<2-3 sentences of specific feedback>",
-  "keyPointsCovered": "<comma-separated key points correctly mentioned, or 'None'>",
-  "keyPointsMissed": "<comma-separated key points missing, or 'None'>"
-}`;
-
-      let aiMarks = 0;
-      let aiFeedback = "Could not grade.";
-      let covered = "None";
-      let missed = "None";
-
+      let result = { marks: 0, feedback: "Could not grade.", covered: "None", missed: "None", extractedText: "" };
       try {
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: prompt }],
-          response_format: { type: "json_object" },
-          max_tokens: 400,
+        result = await gradeAnswer({
+          subject: sub.subject,
+          questionText: q.question_text,
+          questionType: q.question_type,
+          maxMarks: q.max_marks,
+          modelAnswer: q.model_answer,
+          answerText: studentText,
+          imageUrl,
         });
-        const parsed = JSON.parse(completion.choices[0].message.content || "{}");
-        aiMarks = Math.max(0, Math.min(q.max_marks, parseInt(parsed.marks) || 0));
-        aiFeedback = parsed.feedback || "";
-        covered = parsed.keyPointsCovered || "None";
-        missed = parsed.keyPointsMissed || "None";
-      } catch { /* keep defaults */ }
+      } catch (e: any) {
+        console.error("[GrandTest grading error]", e?.message);
+      }
 
       await client.query(
         `INSERT INTO grand_test_answers
-         (submission_id, question_id, answer_text, ai_marks, ai_feedback, ai_key_points_covered, ai_key_points_missed, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,'graded')`,
-        [sub.id, q.id, studentAnswer, aiMarks, aiFeedback, covered, missed]
+         (submission_id, question_id, answer_text, answer_image_url, ai_marks, ai_feedback,
+          ai_key_points_covered, ai_key_points_missed, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'graded')`,
+        [sub.id, q.id, studentText, imageUrl, result.marks, result.feedback, result.covered, result.missed]
       );
 
-      totalObtained += aiMarks;
-      send({ type: "graded", questionIndex: i, marks: aiMarks, maxMarks: q.max_marks });
+      totalObtained += result.marks;
+      send({ type: "graded", questionIndex: i, marks: result.marks, maxMarks: q.max_marks });
     }
 
     const pct = totalPossible > 0 ? Math.round((totalObtained / totalPossible) * 100) : 0;
@@ -311,7 +391,7 @@ Grade strictly but fairly as a CBME-based examiner. Respond ONLY with a valid JS
         model: "gpt-4o-mini",
         messages: [{
           role: "user",
-          content: `You are an MBBS examiner. A student scored ${totalObtained}/${totalPossible} (${pct}%) on the "${sub.title}" grand test (${sub.subject}). Write 2-3 sentences of overall performance feedback with one specific improvement tip.`
+          content: `You are an MBBS examiner. A student scored ${totalObtained}/${totalPossible} (${pct}%) on the "${sub.title}" grand test (${sub.subject}). Write 2-3 sentences of overall performance feedback and one specific, actionable improvement tip for MBBS preparation.`,
         }],
         max_tokens: 200,
       });

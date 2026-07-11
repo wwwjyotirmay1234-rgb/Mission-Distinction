@@ -659,6 +659,9 @@ export async function runStartupMigrations() {
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
       CREATE INDEX IF NOT EXISTS idx_gta_submission ON grand_test_answers(submission_id);
+
+      -- Add image support to grand test answers (idempotent)
+      ALTER TABLE grand_test_answers ADD COLUMN IF NOT EXISTS answer_image_url TEXT;
     `);
   } finally {
     client.release();
