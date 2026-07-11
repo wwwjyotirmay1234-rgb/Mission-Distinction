@@ -54,7 +54,7 @@ export async function selectAnatomyImageForCategory(
          avi.id ASC
        LIMIT 1
     `);
-    const row = (rows as any[])[0] as AnatomyVivaImage | undefined;
+    const row = (rows.rows as any[])[0] as AnatomyVivaImage | undefined;
     if (!row) return null;
     await db
       .update(anatomyVivaImagesTable)

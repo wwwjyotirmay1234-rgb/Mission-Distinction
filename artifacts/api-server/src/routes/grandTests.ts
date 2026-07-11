@@ -28,7 +28,7 @@ router.get("/admin/:id", adminMiddleware, async (req: Request, res: Response) =>
   const client = await pool.connect();
   try {
     const testRes = await client.query("SELECT * FROM grand_tests WHERE id=$1", [req.params.id]);
-    if (!testRes.rows[0]) return res.status(404).json({ error: "not found" });
+    if (!testRes.rows[0]) { res.status(404).json({ error: "not found" }); return; }
     const qRes = await client.query("SELECT * FROM grand_test_questions WHERE test_id=$1 ORDER BY order_index", [req.params.id]);
     res.json({ ...testRes.rows[0], questions: qRes.rows });
   } finally { client.release(); }
@@ -37,7 +37,7 @@ router.get("/admin/:id", adminMiddleware, async (req: Request, res: Response) =>
 // ─── Admin: create grand test ─────────────────────────────────────────────────
 router.post("/", adminMiddleware, async (req: Request, res: Response) => {
   const { title, subject, description, durationMinutes, availableFrom, availableUntil } = req.body;
-  if (!title || !subject) return res.status(400).json({ error: "title and subject required" });
+  if (!title || !subject) { res.status(400).json({ error: "title and subject required" }); return; }
   const client = await pool.connect();
   try {
     const { rows } = await client.query(
@@ -62,7 +62,7 @@ router.put("/:id", adminMiddleware, async (req: Request, res: Response) => {
        WHERE id=$8 RETURNING *`,
       [title, subject, description, durationMinutes, availableFrom || null, availableUntil || null, isPublished, req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: "not found" });
+    if (!rows[0]) { res.status(404).json({ error: "not found" }); return; }
     res.json(rows[0]);
   } finally { client.release(); }
 });
@@ -79,7 +79,7 @@ router.delete("/:id", adminMiddleware, async (req: Request, res: Response) => {
 // ─── Admin: add question ──────────────────────────────────────────────────────
 router.post("/:id/questions", adminMiddleware, async (req: Request, res: Response) => {
   const { questionText, questionType, maxMarks, modelAnswer } = req.body;
-  if (!questionText) return res.status(400).json({ error: "questionText required" });
+  if (!questionText) { res.status(400).json({ error: "questionText required" }); return; }
   const client = await pool.connect();
   try {
     const orderRes = await client.query(
@@ -197,7 +197,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     const testRes = await client.query("SELECT * FROM grand_tests WHERE id=$1 AND is_published=true", [req.params.id]);
-    if (!testRes.rows[0]) return res.status(404).json({ error: "not found" });
+    if (!testRes.rows[0]) { res.status(404).json({ error: "not found" }); return; }
     const qRes = await client.query(
       "SELECT id, question_text, question_type, max_marks, order_index FROM grand_test_questions WHERE test_id=$1 ORDER BY order_index",
       [req.params.id]
@@ -212,15 +212,15 @@ router.post("/:id/start", authMiddleware, async (req: Request, res: Response) =>
   const client = await pool.connect();
   try {
     const testRes = await client.query("SELECT * FROM grand_tests WHERE id=$1 AND is_published=true", [req.params.id]);
-    if (!testRes.rows[0]) return res.status(404).json({ error: "not found" });
+    if (!testRes.rows[0]) { res.status(404).json({ error: "not found" }); return; }
     const existing = await client.query(
       "SELECT * FROM grand_test_submissions WHERE test_id=$1 AND user_id=$2 ORDER BY created_at DESC LIMIT 1",
       [req.params.id, userId]
     );
     if (existing.rows[0] && existing.rows[0].status !== "in_progress") {
-      return res.status(409).json({ error: "already_submitted", submissionId: existing.rows[0].id });
+      res.status(409).json({ error: "already_submitted", submissionId: existing.rows[0].id }); return;
     }
-    if (existing.rows[0]) return res.json({ submissionId: existing.rows[0].id, resuming: true });
+    if (existing.rows[0]) { res.json({ submissionId: existing.rows[0].id, resuming: true }); return; }
     const { rows } = await client.query(
       "INSERT INTO grand_test_submissions (test_id, user_id) VALUES ($1,$2) RETURNING *",
       [req.params.id, userId]
@@ -238,7 +238,7 @@ async function gradeAnswer(opts: {
   modelAnswer: string | null;
   answerText: string;
   imageUrl: string | null;
-}): Promise<{ marks: number; feedback: string; covered: string; missed: string; extractedText?: string }> {
+}): Promise<{ marks: number; feedback: string; covered: string; missed: string; extractedText: string }> {
   const { subject, questionText, questionType, maxMarks, modelAnswer, answerText, imageUrl } = opts;
 
   const systemPrompt = `You are a strict but fair MBBS university examiner grading a ${questionType === "long" ? "Long Answer Question (LAQ)" : "Short Answer Question (SAQ)"}.
@@ -315,8 +315,8 @@ router.post("/submissions/:submissionId/submit", authMiddleware, async (req: Req
        WHERE gts.id=$1 AND gts.user_id=$2`,
       [req.params.submissionId, userId]
     );
-    if (!subRes.rows[0]) { client.release(); return res.status(404).json({ error: "not found" }); }
-    if (subRes.rows[0].status !== "in_progress") { client.release(); return res.status(409).json({ error: "already_submitted" }); }
+    if (!subRes.rows[0]) { client.release(); res.status(404).json({ error: "not found" }); return; }
+    if (subRes.rows[0].status !== "in_progress") { client.release(); res.status(409).json({ error: "already_submitted" }); return; }
     const sub = subRes.rows[0];
 
     const qRes = await client.query(
@@ -424,7 +424,7 @@ router.get("/submissions/:submissionId", authMiddleware, async (req: Request, re
        WHERE gts.id=$1 AND gts.user_id=$2`,
       [req.params.submissionId, userId]
     );
-    if (!subRes.rows[0]) return res.status(404).json({ error: "not found" });
+    if (!subRes.rows[0]) { res.status(404).json({ error: "not found" }); return; }
     const aRes = await client.query(
       `SELECT gta.*, gtq.question_text, gtq.max_marks, gtq.order_index, gtq.question_type
        FROM grand_test_answers gta

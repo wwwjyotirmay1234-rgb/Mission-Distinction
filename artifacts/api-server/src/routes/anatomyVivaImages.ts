@@ -62,7 +62,7 @@ async function mapWithConcurrency<T, R>(
 // frontend's "labeled reveal" feature after the viva session ends.
 router.get("/info/:id", pdfAuthMiddleware, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(String(req.params.id), 10);
     if (!id || isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
     const [row] = await db.select({
       id: anatomyVivaImagesTable.id,
