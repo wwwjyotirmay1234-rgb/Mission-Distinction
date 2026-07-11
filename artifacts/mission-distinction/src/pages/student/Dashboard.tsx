@@ -197,6 +197,87 @@ function QuestionOfDayWidget() {
   );
 }
 
+// Day 0=Sun,1=Mon,...6=Sat — weekly MBBS subject rotation
+const WEEKLY_PLAN: { subject: string; topic: string; icon: string; color: string; href: string }[][] = [
+  // Sunday
+  [
+    { subject: "Revision", topic: "Review this week's weak areas", icon: "🔁", color: "text-purple-400", href: "/student/quiz" },
+    { subject: "PYQs", topic: "Solve 10 past year questions", icon: "📄", color: "text-amber-400", href: "/student/notes" },
+  ],
+  // Monday
+  [
+    { subject: "Anatomy", topic: "Gross Anatomy — Upper Limb", icon: "🦴", color: "text-blue-400", href: "/student/pdfs" },
+    { subject: "Physiology", topic: "Blood & Body Fluids", icon: "🩸", color: "text-red-400", href: "/student/notes" },
+  ],
+  // Tuesday
+  [
+    { subject: "Biochemistry", topic: "Enzyme Kinetics & Metabolism", icon: "⚗️", color: "text-green-400", href: "/student/notes" },
+    { subject: "Anatomy", topic: "Histology — Epithelium & Connective Tissue", icon: "🔬", color: "text-blue-400", href: "/student/pdfs" },
+  ],
+  // Wednesday
+  [
+    { subject: "Physiology", topic: "Cardiovascular System", icon: "🫀", color: "text-red-400", href: "/student/notes" },
+    { subject: "Biochemistry", topic: "Carbohydrate & Lipid Metabolism", icon: "⚗️", color: "text-green-400", href: "/student/pdfs" },
+  ],
+  // Thursday
+  [
+    { subject: "Anatomy", topic: "Neuroanatomy — Brain & Spinal Cord", icon: "🧠", color: "text-blue-400", href: "/student/pdfs" },
+    { subject: "Physiology", topic: "Respiratory System", icon: "🫁", color: "text-red-400", href: "/student/notes" },
+  ],
+  // Friday
+  [
+    { subject: "Biochemistry", topic: "Vitamins, Minerals & Nutrition", icon: "💊", color: "text-green-400", href: "/student/notes" },
+    { subject: "Anatomy", topic: "Embryology Essentials", icon: "🦠", color: "text-blue-400", href: "/student/pdfs" },
+  ],
+  // Saturday
+  [
+    { subject: "Mock Quiz", topic: "Full-length timed MCQ practice", icon: "✅", color: "text-primary", href: "/student/quiz" },
+    { subject: "Anatomy", topic: "Lower Limb & Back", icon: "🦴", color: "text-blue-400", href: "/student/pdfs" },
+  ],
+];
+
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+function TodayStudyPlanWidget() {
+  const today = new Date().getDay();
+  const plan = WEEKLY_PLAN[today];
+  const dayName = DAY_NAMES[today];
+
+  return (
+    <Card className="bg-card/40 border-border/40">
+      <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <Calendar size={15} className="text-primary" />
+          Today's Study Plan
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 ml-1 border-primary/30 text-primary">{dayName}</Badge>
+        </CardTitle>
+        <span className="text-[11px] text-muted-foreground">Day {today + 1} of 7 · 1st Year MBBS</span>
+      </CardHeader>
+      <CardContent className="p-4 pt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {plan.map((item, i) => (
+            <Link key={i} href={item.href}>
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-border/40 hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group">
+                <div className="w-9 h-9 rounded-full bg-background flex items-center justify-center text-lg shrink-0 border border-border/40 group-hover:border-primary/30">
+                  {item.icon}
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-xs font-semibold ${item.color}`}>{item.subject}</p>
+                  <p className="text-sm font-medium text-foreground leading-snug mt-0.5 line-clamp-2">{item.topic}</p>
+                </div>
+                <ArrowRight size={13} className="shrink-0 text-muted-foreground/50 group-hover:text-primary transition-colors mt-1 ml-auto" />
+              </div>
+            </Link>
+          ))}
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-3 text-center">
+          Suggested topics rotate daily — adapt to your own schedule as needed.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ClinicalCaseWidget() {
   const [loading, setLoading] = useState(true);
   const [clinicalCase, setClinicalCase] = useState<{ id: number; scenario: string; subject: string; attempted: boolean } | null>(null);
@@ -459,6 +540,9 @@ export default function StudentDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Today's Study Plan */}
+      <TodayStudyPlanWidget />
 
       {/* Clinical Case + Question of Day — full width, visible immediately on all screens */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

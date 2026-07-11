@@ -444,6 +444,7 @@ export default function StudentQuiz() {
   const [mockMode, setMockMode] = useState(false);
   const submittedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const doSubmitRef = useRef<() => Promise<void>>(async () => {});
   const queryClient = useQueryClient();
 
   const { data: quizzesData, isLoading } = useListQuizzes(
@@ -458,17 +459,20 @@ export default function StudentQuiz() {
   const quizDetail = quizData as QuizDetail | undefined;
   const questions: QuizQuestion[] = quizDetail?.questions ?? [];
 
+  // Keep doSubmitRef always pointing at the latest doSubmit (fixes stale closure in timer)
+  useEffect(() => { doSubmitRef.current = doSubmit; });
+
   useEffect(() => {
     if (mode === "taking" && timeLeft > 0) {
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
-          if (prev <= 1) { clearInterval(timerRef.current!); doSubmit(); return 0; }
+          if (prev <= 1) { clearInterval(timerRef.current!); doSubmitRef.current(); return 0; }
           return prev - 1;
         });
       }, 1000);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [mode, selectedQuizId]);
+  }, [mode, selectedQuizId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const doStartQuiz = (quiz: QuizSummary, sessionId?: string, isMockMode = false) => {
     setMockMode(isMockMode);

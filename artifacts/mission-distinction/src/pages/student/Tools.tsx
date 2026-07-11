@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Timer, AlarmClock, Play, Pause, RotateCcw, Flag, Bell, BellOff, Plus, Trash2, Music, Upload, Volume2 } from "lucide-react";
+import { Timer, AlarmClock, Play, Pause, RotateCcw, Flag, Bell, BellOff, Plus, Trash2, Music, Upload, Volume2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 
@@ -892,15 +892,241 @@ function AlarmClock_() {
   );
 }
 
+// ─── Pomodoro Timer ───────────────────────────────────────────────────────────
+const POMO_KEY = "md_pomodoro_v1";
+type PomoPhase = "work" | "shortBreak" | "longBreak";
+const POMO_DURATIONS: Record<PomoPhase, number> = {
+  work: 25 * 60,
+  shortBreak: 5 * 60,
+  longBreak: 15 * 60,
+};
+
+function readPomoSnap() {
+  try {
+    return JSON.parse(localStorage.getItem(POMO_KEY) ?? "null") as {
+      phase: PomoPhase; timeLeft: number; cycles: number; running: boolean; wallStart: number;
+    } | null;
+  } catch { return null; }
+}
+function writePomoSnap(s: { phase: PomoPhase; timeLeft: number; cycles: number; running: boolean; wallStart: number }) {
+  try { localStorage.setItem(POMO_KEY, JSON.stringify(s)); } catch {}
+}
+
+function PomodoroTimer() {
+  const snap = readPomoSnap();
+  const initElapsed = snap?.running ? Math.floor((Date.now() - (snap.wallStart ?? 0)) / 1000) : 0;
+  const initTimeLeft = snap ? Math.max(0, snap.timeLeft - initElapsed) : POMO_DURATIONS.work;
+  const initPhase: PomoPhase = snap?.phase ?? "work";
+  const initCycles = snap?.cycles ?? 0;
+  const initRunning = !!(snap?.running && initTimeLeft > 0);
+
+  const [phase, setPhase] = useState<PomoPhase>(initPhase);
+  const [timeLeft, setTimeLeft] = useState(initTimeLeft);
+  const [cycles, setCycles] = useState(initCycles);
+  const [running, setRunning] = useState(initRunning);
+  const [flash, setFlash] = useState<string | null>(null);
+
+  const phaseRef = useRef<PomoPhase>(initPhase);
+  const cyclesRef = useRef(initCycles);
+  const timeLeftRef = useRef(initTimeLeft);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const onPhaseComplete = useCallback(() => {
+    const cur = phaseRef.current;
+    let newCycles = cyclesRef.current;
+    let next: PomoPhase;
+    if (cur === "work") {
+      newCycles++;
+      cyclesRef.current = newCycles;
+      setCycles(newCycles);
+      next = newCycles % 4 === 0 ? "longBreak" : "shortBreak";
+      awardActivityXP("stopwatch_session");
+    } else {
+      next = "work";
+    }
+    phaseRef.current = next;
+    timeLeftRef.current = POMO_DURATIONS[next];
+    setPhase(next);
+    setTimeLeft(POMO_DURATIONS[next]);
+    setRunning(false);
+    writePomoSnap({ phase: next, timeLeft: POMO_DURATIONS[next], cycles: newCycles, running: false, wallStart: 0 });
+    playChime();
+    showAlarmNotification(
+      cur === "work" ? "Pomodoro complete! 🎉" : "Break over! 📚",
+      cur === "work" ? "Take a break — you earned it." : "Time to focus again.",
+      `pomo-${Date.now()}`
+    ).catch(() => {});
+    setFlash(cur === "work" ? "🎉 Pomodoro complete! Time for a break." : "📚 Break over — back to focus!");
+    setTimeout(() => setFlash(null), 4000);
+  }, []);
+
+  const startInterval = useCallback(() => {
+    timerRef.current = setInterval(() => {
+      timeLeftRef.current--;
+      if (timeLeftRef.current <= 0) {
+        clearInterval(timerRef.current!);
+        timerRef.current = null;
+        setTimeLeft(0);
+        onPhaseComplete();
+      } else {
+        setTimeLeft(timeLeftRef.current);
+      }
+    }, 1000);
+  }, [onPhaseComplete]);
+
+  useEffect(() => {
+    if (initRunning) startInterval();
+    return () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; } };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const start = () => {
+    requestNotificationPermission();
+    startSilentAudio();
+    startInterval();
+    setRunning(true);
+    writePomoSnap({ phase: phaseRef.current, timeLeft: timeLeftRef.current, cycles: cyclesRef.current, running: true, wallStart: Date.now() });
+  };
+
+  const pause = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    setRunning(false);
+    writePomoSnap({ phase: phaseRef.current, timeLeft: timeLeftRef.current, cycles: cyclesRef.current, running: false, wallStart: 0 });
+  };
+
+  const reset = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    const t = POMO_DURATIONS[phaseRef.current];
+    timeLeftRef.current = t;
+    setTimeLeft(t);
+    setRunning(false);
+    writePomoSnap({ phase: phaseRef.current, timeLeft: t, cycles: cyclesRef.current, running: false, wallStart: 0 });
+  };
+
+  const skipToNext = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    setRunning(false);
+    timeLeftRef.current = 0;
+    onPhaseComplete();
+  };
+
+  const switchPhase = (p: PomoPhase) => {
+    if (running) return;
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    phaseRef.current = p;
+    const t = POMO_DURATIONS[p];
+    timeLeftRef.current = t;
+    setPhase(p);
+    setTimeLeft(t);
+    writePomoSnap({ phase: p, timeLeft: t, cycles: cyclesRef.current, running: false, wallStart: 0 });
+  };
+
+  const totalTime = POMO_DURATIONS[phase];
+  const progress = totalTime > 0 ? (totalTime - timeLeft) / totalTime : 0;
+  const R = 54, C = 2 * Math.PI * R;
+  const ringColor = phase === "work" ? "text-red-400" : phase === "shortBreak" ? "text-green-400" : "text-blue-400";
+  const timeColor = phase === "work" ? "text-red-400" : phase === "shortBreak" ? "text-green-400" : "text-blue-400";
+  const phaseLabel = phase === "work" ? "Focus" : phase === "shortBreak" ? "Short Break" : "Long Break";
+  const hint = phase === "work"
+    ? "Stay focused — no distractions for 25 minutes 📚"
+    : phase === "shortBreak"
+    ? "Rest your eyes. Stretch. Hydrate. 🌿"
+    : "Great work! Longer rest before the next set. ☕";
+
+  return (
+    <Card className="bg-card/40 border-border/40">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <span>🍅</span> Pomodoro Timer
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {/* Phase tabs */}
+        <div className="flex gap-1 bg-muted/40 p-1 rounded-lg">
+          {(["work", "shortBreak", "longBreak"] as PomoPhase[]).map(p => (
+            <button key={p} onClick={() => switchPhase(p)} disabled={running}
+              className={`flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
+                phase === p
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+              }`}>
+              {p === "work" ? "Focus" : p === "shortBreak" ? "Short Break" : "Long Break"}
+            </button>
+          ))}
+        </div>
+
+        {/* Circular timer */}
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative w-40 h-40">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r={R} fill="none" stroke="currentColor" className="text-muted/20" strokeWidth="8" />
+              <circle cx="60" cy="60" r={R} fill="none" stroke="currentColor" className={ringColor}
+                strokeWidth="8" strokeLinecap="round"
+                strokeDasharray={C}
+                strokeDashoffset={C * (1 - progress)}
+                style={{ transition: running ? "stroke-dashoffset 1s linear" : undefined }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className={`text-3xl font-mono font-bold ${timeColor}`}>
+                {pad(Math.floor(timeLeft / 60))}:{pad(timeLeft % 60)}
+              </span>
+              <span className="text-xs text-muted-foreground mt-0.5">{phaseLabel}</span>
+            </div>
+          </div>
+
+          {/* Cycle indicator dots */}
+          <div className="flex items-center gap-2">
+            {[0, 1, 2, 3].map(i => (
+              <div key={i} className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                i < (cycles % 4) ? "bg-primary" : "bg-muted/40 border border-border/50"
+              }`} />
+            ))}
+            <span className="text-xs text-muted-foreground ml-1">
+              {cycles} pomodoro{cycles !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center gap-3">
+            <Button size="icon" variant="ghost" className="h-10 w-10" onClick={reset} title="Reset">
+              <RotateCcw size={15} />
+            </Button>
+            <Button
+              size="icon"
+              className={`h-14 w-14 rounded-full ${running ? "bg-muted hover:bg-muted/80 text-foreground border border-border" : ""}`}
+              onClick={running ? pause : start}
+            >
+              {running ? <Pause size={22} /> : <Play size={22} />}
+            </Button>
+            <Button size="icon" variant="ghost" className="h-10 w-10" onClick={skipToNext} title="Skip to next phase">
+              <ChevronRight size={15} />
+            </Button>
+          </div>
+        </div>
+
+        {/* Flash notification */}
+        {flash && (
+          <div className="text-center text-sm font-medium text-primary bg-primary/10 border border-primary/30 rounded-lg px-3 py-2 animate-pulse">
+            {flash}
+          </div>
+        )}
+
+        <p className="text-center text-xs text-muted-foreground">{hint}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function StudentTools() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Study Tools</h1>
-        <p className="text-muted-foreground">Stopwatch for timed practice. Alarm to stay on schedule.</p>
+        <p className="text-muted-foreground">Stopwatch, Pomodoro timer, and alarm clock for focused study sessions.</p>
       </div>
       <Stopwatch />
+      <PomodoroTimer />
       <AlarmClock_ />
     </div>
   );

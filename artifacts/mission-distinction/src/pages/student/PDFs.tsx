@@ -65,6 +65,7 @@ function getDownloadUrl(url: string): string {
 // ─── PDF Viewer Modal ─────────────────────────────────────────────────────────
 function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
   const [embedFailed, setEmbedFailed] = React.useState(false);
+  const [iframeLoaded, setIframeLoaded] = React.useState(false);
   const [isOffline, setIsOffline] = React.useState(!navigator.onLine);
   const [downloading, setDownloading] = React.useState(false);
 
@@ -174,13 +175,22 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
               <p className="text-xs text-muted-foreground">Preview unavailable — tap "Read PDF" to open in your browser.</p>
             </div>
           ) : (
-            <iframe
-              src={embedUrl}
-              className="w-full h-full border-0"
-              title={pdf.title}
-              allow="fullscreen"
-              onError={() => setEmbedFailed(true)}
-            />
+            <>
+              {!iframeLoaded && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-card/90 backdrop-blur-sm z-10">
+                  <Loader2 size={32} className="animate-spin text-primary/60" />
+                  <p className="text-sm text-muted-foreground">Loading PDF…</p>
+                </div>
+              )}
+              <iframe
+                src={embedUrl}
+                className="w-full h-full border-0"
+                title={pdf.title}
+                allow="fullscreen"
+                onLoad={() => setIframeLoaded(true)}
+                onError={() => setEmbedFailed(true)}
+              />
+            </>
           )}
         </div>
       </DialogContent>
@@ -324,18 +334,29 @@ export default function StudentPDFs() {
                     <Badge variant="outline" className="text-[9px] px-1 py-0 bg-card">{pdf.subject}</Badge>
                     {pdf.pages && <span className="text-[10px] text-muted-foreground">{pdf.pages} pages</span>}
                   </div>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-1.5 mt-2">
                     <Button
                       size="sm"
-                      className="flex-1 h-8 text-xs gap-1.5"
+                      className="flex-1 h-8 text-xs gap-1"
                       onClick={() => setViewingPdf(pdf as Pdf)}
                     >
-                      <BookOpen size={13} /> Read
+                      <BookOpen size={12} /> Read
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0 shrink-0"
+                      title="Open in browser"
+                      asChild
+                    >
+                      <a href={getOpenUrl((pdf as Pdf).url)} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink size={12} />
+                      </a>
                     </Button>
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="flex-1 h-8 text-xs gap-1.5"
+                      className="flex-1 h-8 text-xs gap-1"
                       onClick={() => {
                         const isTouchDevice =
                           /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ||
@@ -350,7 +371,7 @@ export default function StudentPDFs() {
                         }
                       }}
                     >
-                      <Download size={13} /> Download
+                      <Download size={12} /> Save
                     </Button>
                   </div>
                 </div>

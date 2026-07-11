@@ -735,6 +735,7 @@ export default function StudentNotes() {
   const [activeTab, setActiveTab] = useState<"notes" | "books" | "pyqs">("notes");
   const [search, setSearch] = useState("");
   const [activeSubject, setActiveSubject] = useState("All Subjects");
+  const [activeYear, setActiveYear] = useState("All Years");
   const [viewingNote, setViewingNote] = useState<Note | null>(null);
 
   useEffect(() => {
@@ -938,19 +939,49 @@ export default function StudentNotes() {
       )}
 
       {/* PYQs Grid */}
-      {activeTab === "pyqs" && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {isLoading ? (
-            Array(10).fill(0).map((_, i) => <Skeleton key={i} className="h-56 w-full rounded-xl" />)
-          ) : !pyqsData || pyqsData.length === 0 ? (
-            <div className="col-span-full p-12 text-center border border-dashed rounded-xl text-muted-foreground">
-              No PYQs found. {activeSubject !== "All Subjects" || search ? "Try adjusting your search or filter." : "Admin hasn't uploaded any PYQs yet."}
+      {activeTab === "pyqs" && (() => {
+        const allYears = pyqsData
+          ? ["All Years", ...Array.from(new Set(pyqsData.map(p => p.year).filter(Boolean) as string[])).sort((a, b) => b.localeCompare(a))]
+          : ["All Years"];
+        const filtered = pyqsData
+          ? (activeYear === "All Years" ? pyqsData : pyqsData.filter(p => p.year === activeYear))
+          : [];
+        return (
+          <>
+            {!isLoading && pyqsData && pyqsData.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                {allYears.map(yr => (
+                  <Badge
+                    key={yr}
+                    variant={activeYear === yr ? "default" : "outline"}
+                    className={`px-3 py-1.5 cursor-pointer shrink-0 text-xs ${
+                      activeYear === yr ? "bg-amber-500 text-white border-amber-500" : "hover:bg-muted border-border/50"
+                    }`}
+                    onClick={() => setActiveYear(yr)}
+                  >
+                    {yr}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {isLoading ? (
+                Array(10).fill(0).map((_, i) => <Skeleton key={i} className="h-56 w-full rounded-xl" />)
+              ) : !pyqsData || pyqsData.length === 0 ? (
+                <div className="col-span-full p-12 text-center border border-dashed rounded-xl text-muted-foreground">
+                  No PYQs found. {activeSubject !== "All Subjects" || search ? "Try adjusting your search or filter." : "Admin hasn't uploaded any PYQs yet."}
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="col-span-full p-12 text-center border border-dashed rounded-xl text-muted-foreground">
+                  No PYQs for {activeYear}. <button className="text-primary underline ml-1" onClick={() => setActiveYear("All Years")}>Show all years</button>
+                </div>
+              ) : (
+                filtered.map((pyq) => <PYQCard key={pyq.id} pyq={pyq} />)
+              )}
             </div>
-          ) : (
-            pyqsData.map((pyq) => <PYQCard key={pyq.id} pyq={pyq} />)
-          )}
-        </div>
-      )}
+          </>
+        );
+      })()}
     </div>
   );
 }
