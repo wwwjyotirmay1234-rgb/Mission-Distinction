@@ -662,6 +662,11 @@ export async function runStartupMigrations() {
 
       -- Add image support to grand test answers (idempotent)
       ALTER TABLE grand_test_answers ADD COLUMN IF NOT EXISTS answer_image_url TEXT;
+
+      -- Link admin account to personal student account
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS linked_student_id INTEGER REFERENCES users(id);
+      UPDATE users SET linked_student_id = (SELECT id FROM users WHERE email = 'www.jyotirmay1234@gmail.com' LIMIT 1)
+        WHERE email = 'missiondistinction108@gmail.com' AND linked_student_id IS NULL;
     `);
   } finally {
     client.release();
