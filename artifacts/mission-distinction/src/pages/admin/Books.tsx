@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useListBooks, useCreateBook, useDeleteBook, getListBooksQueryKey, customFetch } from "@workspace/api-client-react";
-import { Search, Plus, MoreVertical, Trash2, BookOpen, Pencil, ImagePlus, X, Upload, CheckCircle2, Zap } from "lucide-react";
+import { Search, Plus, MoreVertical, Trash2, BookOpen, Pencil, ImagePlus, X, Upload, CheckCircle2, Zap, Sparkles, Loader2, ListChecks, Table2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -97,6 +97,57 @@ export default function AdminBooks() {
   const coverRef = useRef<HTMLInputElement>(null);
   const editCoverRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  const [generateOpen, setGenerateOpen] = useState(false);
+  const [generatingBook, setGeneratingBook] = useState<BookItem | null>(null);
+  const [generateStatus, setGenerateStatus] = useState<string>("");
+  const [generateResult, setGenerateResult] = useState<{ oneLinersCount: number; tablesCount: number } | null>(null);
+  const [generating, setGenerating] = useState(false);
+
+  const handleGenerate = async (book: BookItem) => {
+    setGeneratingBook(book);
+    setGenerateOpen(true);
+    setGenerateResult(null);
+    setGenerateStatus("Starting…");
+    setGenerating(true);
+    const token = localStorage.getItem("mission_token");
+    try {
+      const res = await fetch(`/api/revision-items/generate/${book.id}`, {
+        method: "POST",
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (!res.body) throw new Error("No response stream");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.type === "status") setGenerateStatus(evt.message);
+            else if (evt.type === "done") {
+              setGenerateResult({ oneLinersCount: evt.oneLinersCount, tablesCount: evt.tablesCount });
+              setGenerateStatus("Done!");
+            } else if (evt.type === "error") {
+              toast.error(evt.message || "Generation failed");
+              setGenerateStatus("Error: " + (evt.message || "Unknown error"));
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to generate revision content");
+      setGenerateStatus("Failed");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const handlePdfFile = async (file: File, mode: "add" | "edit") => {
     if (mode === "add") {
@@ -280,6 +331,9 @@ export default function AdminBooks() {
                           <DropdownMenuItem onClick={() => openEdit(book as BookItem)}>
                             <Pencil className="mr-2 h-4 w-4" /> Edit
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleGenerate(book as BookItem)}>
+                            <Sparkles className="mr-2 h-4 w-4 text-amber-400" /> Generate AI Content
+                          </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => handleDelete(book.id)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
@@ -453,6 +507,58 @@ export default function AdminBooks() {
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
             <Button onClick={handleEdit} disabled={editPending || editPdfUploading || editCoverUploading}>
               {editPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={generateOpen} onOpenChange={(v) => { if (!generating) setGenerateOpen(v); }}>
+        <DialogContent className="bg-card border-border/50 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles size={18} className="text-amber-400" /> Generate AI Revision Content
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {generatingBook && (
+              <p className="text-sm text-muted-foreground">
+                Book: <span className="font-medium text-foreground">{generatingBook.title}</span>
+              </p>
+            )}
+            {generating && (
+              <div className="flex items-center gap-3 py-2">
+                <Loader2 size={20} className="animate-spin text-amber-400 shrink-0" />
+                <p className="text-sm">{generateStatus}</p>
+              </div>
+            )}
+            {!generating && !generateResult && generateStatus && (
+              <p className="text-sm text-muted-foreground">{generateStatus}</p>
+            )}
+            {generateResult && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-green-400">
+                  <CheckCircle2 size={18} />
+                  <span className="font-medium text-sm">Generation complete!</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-center">
+                    <ListChecks size={20} className="mx-auto text-amber-400 mb-1" />
+                    <div className="text-2xl font-bold text-amber-400">{generateResult.oneLinersCount}</div>
+                    <div className="text-xs text-muted-foreground">One-Liners</div>
+                  </div>
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center">
+                    <Table2 size={20} className="mx-auto text-blue-400 mb-1" />
+                    <div className="text-2xl font-bold text-blue-400">{generateResult.tablesCount}</div>
+                    <div className="text-xs text-muted-foreground">Key Tables</div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Students can now see this content in Cheat Codes → One-Liners / Key Tables.</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGenerateOpen(false)} disabled={generating}>
+              {generating ? "Please wait…" : "Close"}
             </Button>
           </DialogFooter>
         </DialogContent>

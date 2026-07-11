@@ -589,6 +589,21 @@ export async function runStartupMigrations() {
       );
       CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_user_updated
         ON ai_chat_sessions (user_id, updated_at DESC);
+
+      CREATE TABLE IF NOT EXISTS ai_revision_items (
+        id SERIAL PRIMARY KEY,
+        book_id INTEGER NOT NULL,
+        subject TEXT NOT NULL,
+        chapter TEXT NOT NULL,
+        type TEXT NOT NULL,
+        title TEXT,
+        content TEXT NOT NULL,
+        generated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_ai_revision_items_subject_type
+        ON ai_revision_items (subject, type);
+      CREATE INDEX IF NOT EXISTS idx_ai_revision_items_book_id
+        ON ai_revision_items (book_id);
     `);
   } finally {
     client.release();
