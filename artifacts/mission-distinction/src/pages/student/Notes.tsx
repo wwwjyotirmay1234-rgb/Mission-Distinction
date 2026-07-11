@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -747,6 +747,16 @@ export default function StudentNotes() {
     { query: { queryKey: getListNotesQueryKey({ search: search || undefined, subject: activeSubject === "All Subjects" ? undefined : activeSubject }) } }
   );
 
+  const { data: allNotesData } = useListNotes(
+    {},
+    { query: { queryKey: getListNotesQueryKey({}), staleTime: 5 * 60 * 1000 } }
+  );
+  const noteCountBySubject = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const n of allNotesData ?? []) counts[n.subject] = (counts[n.subject] || 0) + 1;
+    return counts;
+  }, [allNotesData]);
+
   const { data: booksData, isLoading: booksLoading } = useQuery<Book[]>({
     queryKey: ["books", search, activeSubject],
     queryFn: () => fetchBooks(search || undefined, activeSubject === "All Subjects" ? undefined : activeSubject),
@@ -824,25 +834,33 @@ export default function StudentNotes() {
 
       {/* Subject filter */}
       <div className="flex gap-2 overflow-x-auto pb-2 snap-x hide-scrollbar">
-        {CATEGORIES.map((cat) => (
-          <Badge
-            key={cat}
-            variant={activeSubject === cat ? "default" : "outline"}
-            className={`px-4 py-2 cursor-pointer shrink-0 snap-start ${
-              activeSubject === cat
-                ? "bg-primary text-primary-foreground"
-                : "hover:bg-muted"
-            }`}
-            onClick={() => setActiveSubject(cat)}
-          >
-            {cat}
-          </Badge>
-        ))}
+        {CATEGORIES.map((cat) => {
+          const count = cat === "All Subjects"
+            ? (allNotesData?.length ?? null)
+            : (noteCountBySubject[cat] ?? null);
+          return (
+            <Badge
+              key={cat}
+              variant={activeSubject === cat ? "default" : "outline"}
+              className={`px-3 py-1.5 cursor-pointer shrink-0 snap-start flex items-center gap-1.5 ${
+                activeSubject === cat
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted"
+              }`}
+              onClick={() => setActiveSubject(cat)}
+            >
+              {cat}
+              {count != null && (
+                <span className={`text-[10px] font-bold rounded-full px-1 ${activeSubject === cat ? "bg-white/20" : "bg-muted-foreground/20"}`}>{count}</span>
+              )}
+            </Badge>
+          );
+        })}
       </div>
 
       {/* Notes Grid */}
       {activeTab === "notes" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {isLoading ? (
             Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)
           ) : notesError ? (
@@ -865,53 +883,48 @@ export default function StudentNotes() {
                   className="bg-card/40 border-border/40 hover:border-primary/40 transition-all group flex flex-col cursor-pointer"
                   onClick={() => setViewingNote(note as Note)}
                 >
-                  <CardContent className="p-5 flex-1 flex flex-col">
-                    <div className="flex justify-between items-start mb-3">
-                      <Badge variant="outline" className={`text-[10px] uppercase tracking-wider px-2 border ${color}`}>
+                  <CardContent className="p-3 flex-1 flex flex-col">
+                    <div className="flex justify-between items-start mb-2">
+                      <Badge variant="outline" className={`text-[9px] uppercase tracking-wider px-1.5 py-0 border ${color}`}>
                         {note.subject}
                       </Badge>
-                      <button
-                        className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <BookMarked size={16} />
-                      </button>
                     </div>
-                    <h3 className="font-semibold text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                    <h3 className="font-semibold text-sm mb-1.5 line-clamp-2 group-hover:text-primary transition-colors leading-snug">
                       {note.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">
+                    <p className="text-[11px] text-muted-foreground line-clamp-2 mb-2 flex-1 leading-snug">
                       {note.fileType === "link"
-                        ? "External link — click to open"
+                        ? "External link"
                         : note.fileType && note.fileType !== "text"
-                          ? "Attached file — click to view"
+                          ? "Attached file"
                           : note.content
-                            ? `${note.content.substring(0, 120)}...`
-                            : "No preview available"}
+                            ? `${note.content.substring(0, 80)}...`
+                            : "No preview"}
                     </p>
-                    <p className="text-xs text-muted-foreground mb-4 flex items-center gap-4">
+                    <p className="text-[10px] text-muted-foreground mb-2 flex items-center gap-2">
                       {note.content
-                        ? <span className="flex items-center gap-1"><FileText size={12} /> {Math.ceil(note.content.length / 1000)} pages</span>
-                        : <span className="flex items-center gap-1"><FileText size={12} /> {note.fileType || "text"}</span>}
-                      <span className="flex items-center gap-1"><Download size={12} /> {note.downloadCount ?? 0} dl</span>
+                        ? <span className="flex items-center gap-0.5"><FileText size={10} /> {Math.ceil(note.content.length / 1000)}p</span>
+                        : <span className="flex items-center gap-0.5"><FileText size={10} /> {note.fileType || "text"}</span>}
+                      <span className="flex items-center gap-0.5"><Download size={10} /> {note.downloadCount ?? 0}</span>
                     </p>
                     {note.fileUrl && note.fileType !== "text" ? (
-                      <div className="flex gap-2">
-                        <Button className="flex-1 text-xs gap-1" variant="secondary" size="sm">
-                          {note.fileType === "link" ? <ExternalLink size={11} /> : <BookOpen size={11} />}
+                      <div className="flex gap-1.5">
+                        <Button className="flex-1 text-[11px] gap-1 h-7 px-2" variant="secondary" size="sm">
+                          {note.fileType === "link" ? <ExternalLink size={10} /> : <BookOpen size={10} />}
                           {note.fileType === "link" ? "Open" : "Read"}
                         </Button>
                         <Button
-                          className="flex-1 text-xs gap-1"
+                          className="h-7 w-7 p-0 shrink-0"
                           variant="outline"
                           size="sm"
+                          title="Download"
                           onClick={(e) => { e.stopPropagation(); openDownload(note.fileUrl!); }}
                         >
-                          <Download size={11} /> Download
+                          <Download size={10} />
                         </Button>
                       </div>
                     ) : (
-                      <Button className="w-full text-xs" variant="secondary" size="sm">
+                      <Button className="w-full text-[11px] h-7" variant="secondary" size="sm">
                         Read Note
                       </Button>
                     )}

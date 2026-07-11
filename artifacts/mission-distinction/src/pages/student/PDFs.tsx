@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -248,6 +248,17 @@ export default function StudentPDFs() {
     { query: { queryKey: getListPdfsQueryKey({ search: search || undefined, subject: activeSubject }) } }
   );
 
+  const { data: allPdfsData } = useListPdfs(
+    {},
+    { query: { queryKey: getListPdfsQueryKey({}), staleTime: 5 * 60 * 1000 } }
+  );
+  const subjectCounts = useMemo(() => {
+    const all = Array.isArray(allPdfsData) ? allPdfsData : (allPdfsData as any)?.pdfs ?? [];
+    const counts: Record<string, number> = {};
+    for (const pdf of all) counts[pdf.subject] = (counts[pdf.subject] || 0) + 1;
+    return counts;
+  }, [allPdfsData]);
+
   return (
     <div className="space-y-6">
       {viewingPdf && (
@@ -277,14 +288,17 @@ export default function StudentPDFs() {
                 <ChevronDown className="h-3 w-3 opacity-60" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-52">
               {SUBJECTS.map(s => (
                 <DropdownMenuItem
                   key={s}
-                  className={subject === s ? "bg-primary/10 text-primary font-medium" : ""}
+                  className={`flex justify-between ${subject === s ? "bg-primary/10 text-primary font-medium" : ""}`}
                   onClick={() => setSubject(s)}
                 >
-                  {s}
+                  <span>{s}</span>
+                  {s !== "All" && subjectCounts[s] != null && (
+                    <span className="ml-2 text-[10px] font-semibold bg-muted rounded-full px-1.5 py-0.5 text-muted-foreground">{subjectCounts[s]}</span>
+                  )}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -296,7 +310,7 @@ export default function StudentPDFs() {
         <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
           <FileText size={16} className="text-primary" /> All PDFs
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 xl:gap-6">
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 xl:gap-4">
           {isLoading ? (
             Array(8).fill(0).map((_, i) => <Skeleton key={i} className="aspect-[3/4] w-full rounded-xl" />)
           ) : isError ? (
