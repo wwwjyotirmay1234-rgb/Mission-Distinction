@@ -313,7 +313,7 @@ function StuckOverlayGuard() {
       }
     };
 
-    const interval = setInterval(clearIfStuck, 500);
+    const interval = setInterval(clearIfStuck, 2000);
 
     const observer = new MutationObserver((mutations) => {
       for (const m of mutations) {

@@ -60,6 +60,12 @@ function getServeUrlWithToken(url: string): string {
   return `${url}${sep}token=${encodeURIComponent(token)}`;
 }
 
+function showAuthor(author?: string | null): boolean {
+  if (!author) return false;
+  const t = author.trim().toLowerCase();
+  return t !== "" && t !== "unknown" && t !== "unknown author" && t !== "n/a" && t !== "na" && t !== "-" && t !== "anonymous";
+}
+
 function getDownloadUrl(url: string): string {
   const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
   if (match) return `https://drive.usercontent.google.com/download?id=${match[1]}&export=download&authuser=0`;
@@ -88,7 +94,7 @@ function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void })
               <Badge variant="outline" className={`text-[10px] uppercase tracking-wider px-2 border ${color}`}>
                 {note.subject}
               </Badge>
-              {note.author && (
+              {showAuthor(note.author) && (
                 <span className="text-xs text-muted-foreground">{note.author}</span>
               )}
             </div>
@@ -639,6 +645,7 @@ function BookCard({ book }: { book: Book }) {
             <img
               src={book.coverUrl}
               alt={book.title}
+              loading="lazy"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           </div>
@@ -656,7 +663,7 @@ function BookCard({ book }: { book: Book }) {
           <h3 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors flex-1">
             {book.title}
           </h3>
-          {book.author && (
+          {showAuthor(book.author) && (
             <p className="text-xs text-muted-foreground mb-3">by {book.author}</p>
           )}
           <div className="flex gap-2 mt-auto">
@@ -677,7 +684,7 @@ function BookCard({ book }: { book: Book }) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <Badge variant="outline" className={`text-[10px] uppercase tracking-wider px-2 border ${color}`}>{book.subject}</Badge>
-                  {book.author && <span className="text-xs text-muted-foreground">by {book.author}</span>}
+                  {showAuthor(book.author) && <span className="text-xs text-muted-foreground">by {book.author}</span>}
                 </div>
                 <DialogTitle className="text-lg font-bold leading-tight">{book.title}</DialogTitle>
               </div>
@@ -691,7 +698,7 @@ function BookCard({ book }: { book: Book }) {
                   <BookText size={48} className="text-primary/50" />
                   <div>
                     <p className="font-semibold text-lg">{book.title}</p>
-                    {book.author && <p className="text-sm text-muted-foreground mt-1">by {book.author}</p>}
+                    {showAuthor(book.author) && <p className="text-sm text-muted-foreground mt-1">by {book.author}</p>}
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
                     <Button className="flex-1 gap-2" asChild>
@@ -771,6 +778,17 @@ export default function StudentNotes() {
     staleTime: 30_000,
   });
 
+  const { data: allPyqsData } = useQuery<PYQ[]>({
+    queryKey: ["pyqs-all"],
+    queryFn: () => fetchPYQs(undefined, undefined),
+    staleTime: 5 * 60 * 1000,
+  });
+  const pyqCountBySubject = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of allPyqsData ?? []) counts[p.subject] = (counts[p.subject] || 0) + 1;
+    return counts;
+  }, [allPyqsData]);
+
   const isLoading = activeTab === "notes" ? notesLoading : activeTab === "books" ? booksLoading : pyqsLoading;
 
   return (
@@ -836,8 +854,8 @@ export default function StudentNotes() {
       <div className="flex gap-2 overflow-x-auto pb-2 snap-x hide-scrollbar">
         {CATEGORIES.map((cat) => {
           const count = cat === "All Subjects"
-            ? (allNotesData?.length ?? null)
-            : (noteCountBySubject[cat] ?? null);
+            ? (activeTab === "pyqs" ? (allPyqsData?.length ?? null) : activeTab === "notes" ? (allNotesData?.length ?? null) : null)
+            : (activeTab === "pyqs" ? (pyqCountBySubject[cat] ?? null) : activeTab === "notes" ? (noteCountBySubject[cat] ?? null) : null);
           return (
             <Badge
               key={cat}

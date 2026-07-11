@@ -111,7 +111,7 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
           <div className="min-w-0">
             <DialogTitle className="text-base font-semibold truncate">{pdf.title}</DialogTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {pdf.subject}{pdf.professor ? ` · ${pdf.professor}` : ""}{pdf.pages ? ` · ${pdf.pages} pages` : ""}
+              {pdf.subject}{pdf.professor && !["unknown", "unknown author", "n/a", "na", "-", "anonymous"].includes(pdf.professor.trim().toLowerCase()) ? ` · ${pdf.professor}` : ""}{pdf.pages ? ` · ${pdf.pages} pages` : ""}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-4">

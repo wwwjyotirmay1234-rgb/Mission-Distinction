@@ -447,9 +447,9 @@ export default function StudentQuiz() {
   const doSubmitRef = useRef<() => Promise<void>>(async () => {});
   const queryClient = useQueryClient();
 
-  const { data: quizzesData, isLoading } = useListQuizzes(
+  const { data: quizzesData, isLoading, isError: quizzesError, refetch: refetchQuizzes } = useListQuizzes(
     { subject: activeTab === "all" ? undefined : activeTab },
-    { query: { queryKey: getListQuizzesQueryKey({ subject: activeTab === "all" ? undefined : activeTab }) } }
+    { query: { queryKey: getListQuizzesQueryKey({ subject: activeTab === "all" ? undefined : activeTab }), staleTime: 30_000 } }
   );
 
   const { data: quizData, isLoading: quizLoading } = useGetQuiz(selectedQuizId!, {
@@ -1030,6 +1030,15 @@ export default function StudentQuiz() {
               <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {isLoading ? (
                   Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)
+                ) : quizzesError ? (
+                  <div className="col-span-2 p-12 text-center border border-dashed border-destructive/30 rounded-xl">
+                    <AlertCircle size={32} className="mx-auto mb-3 text-destructive/50" />
+                    <p className="font-semibold mb-2">Couldn't load quizzes</p>
+                    <p className="text-sm text-muted-foreground mb-4">Check your connection and try again.</p>
+                    <Button size="sm" variant="outline" onClick={() => refetchQuizzes()} className="gap-2">
+                      <RefreshCw size={14} /> Retry
+                    </Button>
+                  </div>
                 ) : quizList.length === 0 ? (
                   <div className="col-span-2 p-12 text-center border border-dashed rounded-xl text-muted-foreground">
                     No quizzes found for this category.
