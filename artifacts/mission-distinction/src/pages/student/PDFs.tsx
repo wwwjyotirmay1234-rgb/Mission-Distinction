@@ -319,7 +319,7 @@ export default function StudentPDFs() {
                 </div>
                 <div className="mt-3">
                   <h3 className="font-semibold text-sm line-clamp-1 group-hover:text-primary transition-colors">{pdf.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{pdf.professor || "Unknown Author"}</p>
+
                   <div className="flex items-center gap-2 mt-1.5">
                     <Badge variant="outline" className="text-[9px] px-1 py-0 bg-card">{pdf.subject}</Badge>
                     {pdf.pages && <span className="text-[10px] text-muted-foreground">{pdf.pages} pages</span>}
