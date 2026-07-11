@@ -51,6 +51,7 @@ import { appUpdatesRouter } from "./appUpdates";
 import { analyticsRouter } from "./analytics";
 import { clinicalCasesRouter } from "./clinicalCases";
 import { revisionItemsRouter } from "./revisionItems";
+import { grandTestsRouter } from "./grandTests";
 
 const router: IRouter = Router();
 
@@ -113,5 +114,6 @@ router.use("/analytics", analyticsRouter);
 router.use("/clinical-cases", clinicalCasesRouter);
 router.use("/admin/clinical-cases", clinicalCasesRouter);
 router.use("/revision-items", revisionItemsRouter);
+router.use("/grand-tests", grandTestsRouter);
 
 export default router;

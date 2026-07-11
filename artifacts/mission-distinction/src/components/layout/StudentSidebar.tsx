@@ -86,6 +86,7 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
         { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy", comingSoon: !canSeeAnatomy },
         { icon: Stethoscope, label: "Practical Hub", href: "/student/practical-hub" },
         { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
+        { icon: Trophy, label: "Grand Tests", href: "/student/grand-tests" },
         { icon: FileText, label: "Notes & Books", href: "/student/notes" },
         { icon: File, label: "PDF Library", href: "/student/pdfs" },
       ],

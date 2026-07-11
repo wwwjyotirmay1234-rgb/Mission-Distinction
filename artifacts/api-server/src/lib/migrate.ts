@@ -604,6 +604,61 @@ export async function runStartupMigrations() {
         ON ai_revision_items (subject, type);
       CREATE INDEX IF NOT EXISTS idx_ai_revision_items_book_id
         ON ai_revision_items (book_id);
+
+      -- Grand Test Series
+      CREATE TABLE IF NOT EXISTS grand_tests (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        description TEXT,
+        duration_minutes INTEGER NOT NULL DEFAULT 180,
+        available_from TIMESTAMP,
+        available_until TIMESTAMP,
+        is_published BOOLEAN NOT NULL DEFAULT false,
+        created_by INTEGER,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS grand_test_questions (
+        id SERIAL PRIMARY KEY,
+        test_id INTEGER NOT NULL REFERENCES grand_tests(id) ON DELETE CASCADE,
+        question_text TEXT NOT NULL,
+        question_type TEXT NOT NULL DEFAULT 'long',
+        max_marks INTEGER NOT NULL DEFAULT 10,
+        order_index INTEGER NOT NULL DEFAULT 0,
+        model_answer TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_gtq_test_id ON grand_test_questions(test_id, order_index);
+
+      CREATE TABLE IF NOT EXISTS grand_test_submissions (
+        id SERIAL PRIMARY KEY,
+        test_id INTEGER NOT NULL REFERENCES grand_tests(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL,
+        started_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        submitted_at TIMESTAMP,
+        total_marks_obtained INTEGER,
+        total_marks_possible INTEGER,
+        status TEXT NOT NULL DEFAULT 'in_progress',
+        ai_overall_feedback TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_gts_test_user ON grand_test_submissions(test_id, user_id);
+      CREATE INDEX IF NOT EXISTS idx_gts_user ON grand_test_submissions(user_id);
+
+      CREATE TABLE IF NOT EXISTS grand_test_answers (
+        id SERIAL PRIMARY KEY,
+        submission_id INTEGER NOT NULL REFERENCES grand_test_submissions(id) ON DELETE CASCADE,
+        question_id INTEGER NOT NULL REFERENCES grand_test_questions(id) ON DELETE CASCADE,
+        answer_text TEXT NOT NULL DEFAULT '',
+        ai_marks INTEGER,
+        ai_feedback TEXT,
+        ai_key_points_covered TEXT,
+        ai_key_points_missed TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_gta_submission ON grand_test_answers(submission_id);
     `);
   } finally {
     client.release();

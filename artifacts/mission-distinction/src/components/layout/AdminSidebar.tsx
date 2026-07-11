@@ -55,6 +55,7 @@ const navItems = [
     subItems: [
       { label: "Manage Quizzes", href: "/admin/quizzes" },
       { label: "Student Submissions", href: "/admin/quiz-submissions" },
+      { label: "Grand Test Series", href: "/admin/grand-tests" },
     ],
   },
   {

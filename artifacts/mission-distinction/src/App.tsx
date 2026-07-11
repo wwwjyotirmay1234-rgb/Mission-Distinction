@@ -123,6 +123,8 @@ const AdminScholarHub    = lazy(() => import("@/pages/admin/ScholarHub"));
 const VivaQuestionBank   = lazy(() => import("@/pages/admin/VivaQuestionBank"));
 const AnatomyVivaImages  = lazy(() => import("@/pages/admin/AnatomyVivaImages"));
 const AdminClinicalCases = lazy(() => import("@/pages/admin/ClinicalCases"));
+const AdminGrandTests    = lazy(() => import("@/pages/admin/GrandTests"));
+const StudentGrandTests  = lazy(() => import("@/pages/student/GrandTests"));
 
 const queryClient = new QueryClient();
 
@@ -217,6 +219,7 @@ function Router() {
                 <Route path="/student/scholar-hub" component={StudentScholarHub} />
                 <Route path="/student/clinical-case" component={StudentClinicalCase} />
                 <Route path="/student/bookmarks"    component={StudentBookmarks} />
+                <Route path="/student/grand-tests"  component={StudentGrandTests} />
                 <Route component={NotFound} />
               </Switch>
             </StudentLayout>
@@ -258,6 +261,7 @@ function Router() {
                 <Route path="/admin/scholar-hub"            component={AdminScholarHub} />
                 <Route path="/admin/anatomy-viva-images"    component={AnatomyVivaImages} />
                 <Route path="/admin/clinical-cases"         component={AdminClinicalCases} />
+                <Route path="/admin/grand-tests"            component={AdminGrandTests} />
                 <Route component={NotFound} />
               </Switch>
             </AdminLayout>
