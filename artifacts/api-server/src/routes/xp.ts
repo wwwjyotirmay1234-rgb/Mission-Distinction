@@ -60,8 +60,16 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-router.get("/leaderboard", authMiddleware, async (_req: Request, res: Response) => {
+router.get("/leaderboard", authMiddleware, async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
+    const cohortFilter = and(
+      eq(usersTable.role, "student"),
+      eq(usersTable.isSuperAdmin, false),
+      ...(user.year ? [eq(usersTable.year, user.year)] : []),
+      ...(user.sessionYear ? [eq(usersTable.sessionYear, user.sessionYear)] : []),
+    );
+
     const users = await db
       .select({
         id: usersTable.id,
@@ -73,7 +81,7 @@ router.get("/leaderboard", authMiddleware, async (_req: Request, res: Response) 
         studyStreak: usersTable.studyStreak,
       })
       .from(usersTable)
-      .where(eq(usersTable.role, "student"))
+      .where(cohortFilter)
       .orderBy(desc(usersTable.totalXp))
       .limit(50);
 
