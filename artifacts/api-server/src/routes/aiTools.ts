@@ -200,7 +200,14 @@ Return JSON only:
     const jsonEnd = text.lastIndexOf("}");
     if (jsonStart === -1 || jsonEnd === -1) { res.status(500).json({ error: "AI returned invalid format" }); return; }
     const result = JSON.parse(text.slice(jsonStart, jsonEnd + 1));
-    res.json(result);
+    // AI sometimes returns description as an object (e.g. {P: "...", O: "..."})
+    // Normalise to a formatted string so the textarea never receives [object Object]
+    if (typeof result.description !== "string" && result.description != null) {
+      result.description = Object.entries(result.description as Record<string, unknown>)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join("\n");
+    }
+    res.json({ mnemonic: String(result.mnemonic ?? ""), description: String(result.description ?? "") });
   } catch {
     res.status(500).json({ error: "Failed to generate mnemonic" });
   }
