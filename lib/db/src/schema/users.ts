@@ -23,6 +23,7 @@ export const usersTable = pgTable("users", {
   banReason: text("ban_reason"),
   lastSeenAppUpdateAt: timestamp("last_seen_app_update_at").defaultNow(),
   weeklyDigestOptIn: boolean("weekly_digest_opt_in").default(false).notNull(),
+  linkedStudentId: integer("linked_student_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

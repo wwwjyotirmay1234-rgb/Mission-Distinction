@@ -208,21 +208,57 @@ function NotificationsBell() {
 // ── Main Header ───────────────────────────────────────────────────────────────
 
 export function Header() {
-  const { user, logout } = useAuth();
+  const { user, logout, login } = useAuth();
   const [location, setLocation] = useLocation();
   const { setOpen, hidden, setHidden } = useSidebar();
   const { data: xpStats } = useXPStats();
+  const [switching, setSwitching] = React.useState(false);
 
   const isAdmin = user?.role === "admin";
+  const isSwitchedToStudent = !isAdmin && !!localStorage.getItem("mission_admin_token");
+  const showSwitchButton = isAdmin || isSwitchedToStudent;
   const onStudentSide = location.startsWith("/student");
 
   const handleLogout = () => {
+    localStorage.removeItem("mission_admin_token");
+    localStorage.removeItem("mission_admin_user");
     logout();
     setLocation("/");
   };
 
-  const handleSwitchAccount = () => {
-    setLocation(onStudentSide ? "/admin/dashboard" : "/student/dashboard");
+  const handleSwitchAccount = async () => {
+    if (isSwitchedToStudent) {
+      const adminToken = localStorage.getItem("mission_admin_token");
+      const adminUserRaw = localStorage.getItem("mission_admin_user");
+      if (!adminToken || !adminUserRaw) { logout(); setLocation("/"); return; }
+      const adminUser = JSON.parse(adminUserRaw);
+      localStorage.removeItem("mission_admin_token");
+      localStorage.removeItem("mission_admin_user");
+      login({ token: adminToken, user: adminUser });
+      setLocation("/admin/dashboard");
+      return;
+    }
+
+    if (isAdmin) {
+      setSwitching(true);
+      try {
+        const res = await apiFetch("/api/super-admin/switch-to-student", { method: "POST" });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          alert((err as any).error || "Could not switch to student account.");
+          return;
+        }
+        const data = await res.json() as { token: string; user: object };
+        localStorage.setItem("mission_admin_token", localStorage.getItem("mission_token") || "");
+        localStorage.setItem("mission_admin_user", localStorage.getItem("mission_user") || "{}");
+        login({ token: data.token, user: data.user as any });
+        setLocation("/student/dashboard");
+      } catch {
+        alert("Could not switch to student account.");
+      } finally {
+        setSwitching(false);
+      }
+    }
   };
 
   const initials =
@@ -284,14 +320,15 @@ export function Header() {
           </button>
         )}
 
-        {isAdmin && (
+        {showSwitchButton && (
           <button
             onClick={handleSwitchAccount}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-primary/30 bg-primary/10 hover:bg-primary/20 transition-colors text-xs font-medium text-primary"
-            title={onStudentSide ? "Back to Admin Panel" : "View as Student"}
+            disabled={switching}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-primary/30 bg-primary/10 hover:bg-primary/20 transition-colors text-xs font-medium text-primary disabled:opacity-60"
+            title={isSwitchedToStudent ? "Back to Admin Panel" : "Switch to Student Account"}
           >
-            <ArrowLeftRight size={13} />
-            {onStudentSide ? "Back to Admin" : "View as Student"}
+            <ArrowLeftRight size={13} className={switching ? "animate-spin" : ""} />
+            {isSwitchedToStudent ? "Back to Admin" : (switching ? "Switching…" : "My Student Account")}
           </button>
         )}
 
@@ -351,10 +388,10 @@ export function Header() {
                 <span>My XP & Rank</span>
               </DropdownMenuItem>
             )}
-            {isAdmin && (
-              <DropdownMenuItem onClick={handleSwitchAccount} className="sm:hidden">
+            {showSwitchButton && (
+              <DropdownMenuItem onClick={handleSwitchAccount} className="sm:hidden" disabled={switching}>
                 <ArrowLeftRight className="mr-2 h-4 w-4 text-primary" />
-                <span>{onStudentSide ? "Back to Admin Panel" : "View as Student"}</span>
+                <span>{isSwitchedToStudent ? "Back to Admin Panel" : "My Student Account"}</span>
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />

@@ -7,7 +7,7 @@ import {
 } from "@workspace/db";
 import { eq, desc, sql, count, inArray } from "drizzle-orm";
 import { superAdminMiddleware } from "../middlewares/auth";
-import { parseId } from "../lib/auth";
+import { parseId, generateToken } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
 
 const router = Router();
@@ -290,6 +290,76 @@ router.get("/settings", superAdminMiddleware, async (_req: Request, res: Respons
       },
       inviteCodeConfigured: !!process.env.ADMIN_INVITE_CODE,
     });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─── Switch to Linked Student Account ─────────────────────────────────────────
+router.post("/switch-to-student", superAdminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const adminId = (req as any).user?.userId;
+    const [admin] = await db
+      .select({ linkedStudentId: usersTable.linkedStudentId })
+      .from(usersTable)
+      .where(eq(usersTable.id, adminId));
+
+    if (!admin?.linkedStudentId) {
+      return res.status(404).json({ error: "No linked student account. Ask the administrator to set one up." });
+    }
+
+    const [student] = await db
+      .select({
+        id: usersTable.id,
+        fullName: usersTable.fullName,
+        email: usersTable.email,
+        role: usersTable.role,
+        year: usersTable.year,
+        college: usersTable.college,
+        sessionYear: usersTable.sessionYear,
+        avatarUrl: usersTable.avatarUrl,
+        studyStreak: usersTable.studyStreak,
+        totalXp: usersTable.totalXp,
+        currentRank: usersTable.currentRank,
+        emailVerified: usersTable.emailVerified,
+        isSuperAdmin: usersTable.isSuperAdmin,
+        mobileNumber: usersTable.mobileNumber,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, admin.linkedStudentId));
+
+    if (!student) {
+      return res.status(404).json({ error: "Linked student account not found." });
+    }
+
+    const token = generateToken(student.id, student.role, req.headers["user-agent"]);
+    res.json({ token, user: student });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─── Link a Student Account to This Admin ────────────────────────────────────
+router.post("/link-student", superAdminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const adminId = (req as any).user?.userId;
+    const { studentEmail } = req.body as { studentEmail?: string };
+    if (!studentEmail) return res.status(400).json({ error: "studentEmail required" });
+
+    const [student] = await db
+      .select({ id: usersTable.id, fullName: usersTable.fullName, email: usersTable.email, role: usersTable.role })
+      .from(usersTable)
+      .where(eq(usersTable.email, studentEmail));
+
+    if (!student) return res.status(404).json({ error: "Student account not found." });
+    if (student.role !== "student") return res.status(400).json({ error: "That account is not a student account." });
+
+    await db
+      .update(usersTable)
+      .set({ linkedStudentId: student.id })
+      .where(eq(usersTable.id, adminId));
+
+    res.json({ success: true, linkedStudent: { id: student.id, fullName: student.fullName, email: student.email } });
   } catch {
     res.status(500).json({ error: "Internal server error" });
   }
