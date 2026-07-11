@@ -16,6 +16,19 @@ const router = Router();
 
 const pyqAiLimiter = rateLimit({ windowMs: 60_000, max: 8, standardHeaders: true, legacyHeaders: false });
 
+// In-memory cache for repeated-questions analysis results, keyed by pyq id.
+// Avoids re-downloading the PDF and re-running all AI calls on every click.
+const REPEATED_QUESTIONS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const repeatedQuestionsCache = new Map<number, { result: Record<string, unknown>; cachedAt: number }>();
+
+// Timeout for fetching the PDF from the source URL (Google Drive, etc).
+// Without this, a slow or stalled response hangs the entire request indefinitely.
+const PDF_FETCH_TIMEOUT_MS = 60_000;
+
+// Per-call timeout for OpenAI completions. Long PDFs can have many batches;
+// a single stuck AI call should not silently block the whole pipeline.
+const OPENAI_CALL_TIMEOUT_MS = 120_000;
+
 const MAX_DOCUMENT_TEXT_CHARS = 350_000;
 // Pages per vision-AI call when walking a scanned (image-only) PDF. Small enough that
 // a batch reliably gets a real response back from the model, large enough to keep the
@@ -79,12 +92,20 @@ async function downloadPyqBuffer(url: string): Promise<Buffer> {
     fetchUrl = `https://drive.usercontent.google.com/download?id=${driveMatch[1]}&export=download&authuser=0&confirm=t`;
   }
 
-  const resp = await fetch(fetchUrl, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; Mission-Distinction/1.0)",
-      "Accept": "application/pdf,*/*",
-    },
-  });
+  const fetchController = new AbortController();
+  const fetchTimeout = setTimeout(() => fetchController.abort(), PDF_FETCH_TIMEOUT_MS);
+  let resp: globalThis.Response;
+  try {
+    resp = await fetch(fetchUrl, {
+      signal: fetchController.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; Mission-Distinction/1.0)",
+        "Accept": "application/pdf,*/*",
+      },
+    });
+  } finally {
+    clearTimeout(fetchTimeout);
+  }
   if (!resp.ok) throw new Error(`Could not download PDF (status ${resp.status})`);
   const arrayBuf = await resp.arrayBuffer();
   return Buffer.from(arrayBuf);
@@ -351,6 +372,14 @@ router.post("/:id/repeated-questions", authMiddleware, pyqAiLimiter, async (req:
     const [pyq] = await db.select().from(pyqsTable).where(eq(pyqsTable.id, id));
     if (!pyq) { send({ type: "error", message: "PYQ not found" }); return; }
 
+    // Return cached result instantly if still fresh — avoids re-downloading the
+    // PDF and re-running all AI calls every time the student clicks Analyse.
+    const cached = repeatedQuestionsCache.get(id);
+    if (cached && Date.now() - cached.cachedAt < REPEATED_QUESTIONS_CACHE_TTL_MS) {
+      send({ type: "done", pyq: { id: pyq.id, title: pyq.title, subject: pyq.subject }, ...cached.result, fromCache: true });
+      return;
+    }
+
     const doc = await loadPyqDocument(pyq.url);
     const pyqInfo = { id: pyq.id, title: pyq.title, subject: pyq.subject };
 
@@ -393,9 +422,10 @@ ${synthesisSchema}`;
 ${CBME_CONTEXT}` },
           { role: "user", content: buildDocMessageContent(doc.text, prompt) as any },
         ],
-      });
+      }, { signal: AbortSignal.timeout(OPENAI_CALL_TIMEOUT_MS) });
       const content = completion.choices[0]?.message?.content;
       const result = content ? JSON.parse(content) : { chapters: [], summary: "AI returned no content." };
+      repeatedQuestionsCache.set(id, { result, cachedAt: Date.now() });
       send({ type: "done", pyq: pyqInfo, ...result });
       return;
     }
@@ -433,7 +463,7 @@ If no questions are visible on these pages, return { "questions": [] }.`;
             { role: "system", content: "You are a meticulous medical education assistant. Always respond with valid JSON only." },
             { role: "user", content: buildImageMessageContent(images, batchPrompt) as any },
           ],
-        });
+        }, { signal: AbortSignal.timeout(OPENAI_CALL_TIMEOUT_MS) });
         const content = completion.choices[0]?.message?.content;
         if (!content) return { lines: [] as string[], warning: `pages ${start}-${end}: AI returned no content` };
         const parsed = JSON.parse(content);
@@ -493,16 +523,18 @@ ${synthesisSchema}`;
 ${CBME_CONTEXT}` },
         { role: "user", content: synthesisPrompt },
       ],
-    });
+    }, { signal: AbortSignal.timeout(OPENAI_CALL_TIMEOUT_MS) });
     const synthContent = synthesis.choices[0]?.message?.content;
     const result = synthContent ? JSON.parse(synthContent) : { chapters: [], summary: "AI returned no content." };
+    const warningMsg = batchWarnings.length
+      ? `Read all ${doc.pages} pages across ${numBatches} batches. Some batches had issues: ${batchWarnings.join("; ")}.`
+      : `Read all ${doc.pages} scanned pages across ${numBatches} batches.`;
+    repeatedQuestionsCache.set(id, { result: { ...result, warning: warningMsg }, cachedAt: Date.now() });
     send({
       type: "done",
       pyq: pyqInfo,
       ...result,
-      warning: batchWarnings.length
-        ? `Read all ${doc.pages} pages across ${numBatches} batches. Some batches had issues: ${batchWarnings.join("; ")}.`
-        : `Read all ${doc.pages} scanned pages across ${numBatches} batches.`,
+      warning: warningMsg,
     });
   } catch (err: any) {
     console.error("[pyqs/repeated-questions]", err?.message);
