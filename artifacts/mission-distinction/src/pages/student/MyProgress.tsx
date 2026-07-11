@@ -32,6 +32,8 @@ import {
   ClipboardCheck,
   Mic,
   Layers,
+  Stethoscope,
+  ListOrdered,
 } from "lucide-react";
 
 interface WeakTopic {
@@ -213,6 +215,8 @@ function activityIcon(type: string) {
     case "pdf": return <Download size={13} className="text-green-400" />;
     case "viva": return <Mic size={13} className="text-purple-400" />;
     case "flashcard_reviewed": return <Layers size={13} className="text-amber-400" />;
+    case "clinical_case_attempt": return <Stethoscope size={13} className="text-teal-400" />;
+    case "clinical_case_bonus": return <Star size={13} className="text-yellow-400" />;
     default: return <BookOpen size={13} className="text-muted-foreground" />;
   }
 }
@@ -716,6 +720,51 @@ export default function MyProgress() {
                 <Button onClick={generatePlan} disabled={generatingPlan} variant="outline" className="gap-2">
                   <Sparkles size={16} /> Generate First Plan
                 </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Smart Study Queue — always visible when quiz data is available */}
+          {!loading && weakTopics.length > 0 && (
+            <Card className="bg-card/40 border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ListOrdered className="text-primary" size={18} /> Smart Study Queue
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">Ranked by quiz performance — red topics need the most attention.</p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {[...weakTopics]
+                  .sort((a, b) => a.accuracy - b.accuracy)
+                  .slice(0, 6)
+                  .map((topic, i) => {
+                    const tag = i === 0 ? "URGENT" : i < 3 ? "FOCUS" : "REVIEW";
+                    const tagColor = i === 0
+                      ? "border-red-500/30 text-red-400 bg-red-500/8"
+                      : i < 3
+                      ? "border-amber-500/30 text-amber-400 bg-amber-500/8"
+                      : "border-border/40 text-muted-foreground bg-muted/20";
+                    return (
+                      <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-card/50 border border-border/30 hover:border-primary/20 transition-colors">
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${tagColor}`}>{tag}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{topic.subject}</p>
+                          <p className="text-[10px] text-muted-foreground">{topic.total} questions attempted</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="w-14 h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${topic.accuracy < 60 ? "bg-red-500/60" : topic.accuracy < 80 ? "bg-amber-500/60" : "bg-green-500/60"}`}
+                              style={{ width: `${Math.max(2, topic.accuracy)}%` }}
+                            />
+                          </div>
+                          <span className={`text-xs font-semibold w-9 text-right ${topic.accuracy < 60 ? "text-red-400" : topic.accuracy < 80 ? "text-amber-400" : "text-green-400"}`}>
+                            {topic.accuracy}%
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
               </CardContent>
             </Card>
           )}

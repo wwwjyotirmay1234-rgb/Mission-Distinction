@@ -1285,6 +1285,12 @@ function CommunityTab() {
     queryKey: ["doubt", selectedId],
     queryFn: () => fetchDoubt(selectedId!),
     enabled: !!selectedId,
+    refetchInterval: (data: any) => {
+      if (!data || data.answers.length > 0) return false;
+      const ageMs = Date.now() - new Date(data.createdAt).getTime();
+      return ageMs < 2 * 60 * 1000 ? 5000 : false;
+    },
+    refetchIntervalInBackground: false,
   });
 
   const createMutation = useMutation({

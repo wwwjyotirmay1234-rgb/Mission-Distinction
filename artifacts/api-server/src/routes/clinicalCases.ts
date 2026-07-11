@@ -168,6 +168,33 @@ Evaluate the student's answer and return ONLY valid JSON:
   }
 });
 
+// ─── Student: My attempt history ─────────────────────────────────────────────
+router.get("/my-history", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const rows = await db
+      .select({
+        id: clinicalCaseAttemptsTable.id,
+        caseId: clinicalCaseAttemptsTable.caseId,
+        dateKey: clinicalCaseAttemptsTable.dateKey,
+        answerText: clinicalCaseAttemptsTable.answerText,
+        aiFeedback: clinicalCaseAttemptsTable.aiFeedback,
+        createdAt: clinicalCaseAttemptsTable.createdAt,
+        scenario: clinicalCasesTable.scenario,
+        subject: clinicalCasesTable.subject,
+      })
+      .from(clinicalCaseAttemptsTable)
+      .innerJoin(clinicalCasesTable, eq(clinicalCaseAttemptsTable.caseId, clinicalCasesTable.id))
+      .where(eq(clinicalCaseAttemptsTable.userId, user.id))
+      .orderBy(desc(clinicalCaseAttemptsTable.createdAt))
+      .limit(20);
+    res.json({ attempts: rows });
+  } catch (err) {
+    console.error("clinical-cases my-history error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ─── Admin: List all cases ────────────────────────────────────────────────────
 router.get("/", authMiddleware, adminMiddleware, async (_req: Request, res: Response) => {
   try {

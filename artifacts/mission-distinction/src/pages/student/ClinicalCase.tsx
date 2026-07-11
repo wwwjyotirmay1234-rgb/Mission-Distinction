@@ -9,7 +9,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   Stethoscope, Sparkles, CheckCircle2, AlertTriangle, Star,
-  Target, ChevronRight, RefreshCw, Lightbulb, Share2,
+  Target, ChevronRight, RefreshCw, Lightbulb, Share2, History,
+  ChevronLeft, ChevronDown,
 } from "lucide-react";
 
 function shareToWhatsApp(text: string) {
@@ -154,12 +155,42 @@ function FeedbackCard({ feedback, explanation }: { feedback: AiFeedback; explana
   );
 }
 
+interface HistoryAttempt {
+  id: number;
+  caseId: number;
+  dateKey: string;
+  answerText: string;
+  aiFeedback: AiFeedback | null;
+  createdAt: string;
+  scenario: string;
+  subject: string;
+}
+
 export default function ClinicalCase() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [clinicalCase, setClinicalCase] = useState<ClinicalCaseData | null>(null);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState<AiFeedback | null>(null);
+  const [view, setView] = useState<"today" | "history">("today");
+  const [historyAttempts, setHistoryAttempts] = useState<HistoryAttempt[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await apiFetch(`${BASE}/api/clinical-cases/my-history`);
+      if (res.ok) {
+        const data = await res.json();
+        setHistoryAttempts(data.attempts ?? []);
+      }
+    } catch {
+      toast.error("Failed to load case history.");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   const fetchCase = async () => {
     setLoading(true);
@@ -224,17 +255,100 @@ export default function ClinicalCase() {
     );
   }
 
-  if (!clinicalCase) {
+  if (!clinicalCase && view !== "history") {
     return (
-      <div className="max-w-2xl mx-auto p-4">
+      <div className="max-w-2xl mx-auto p-4 space-y-4">
         <div className="p-12 text-center border border-dashed rounded-2xl text-muted-foreground">
           <Stethoscope size={40} className="mx-auto mb-3 opacity-30" />
           <p className="text-sm font-medium">No clinical case available today</p>
           <p className="text-xs mt-1 opacity-70">Check back soon — cases are added regularly.</p>
         </div>
+        <div className="text-center">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => { setView("history"); fetchHistory(); }}>
+            <History size={14} /> View Past Cases
+          </Button>
+        </div>
       </div>
     );
   }
+
+  if (view === "history") {
+    return (
+      <div className="max-w-2xl mx-auto p-4 space-y-5">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" className="gap-2 -ml-2" onClick={() => setView("today")}>
+            <ChevronLeft size={16} /> Today's Case
+          </Button>
+        </div>
+        <div>
+          <h1 className="text-xl font-black flex items-center gap-2">
+            <History size={20} className="text-primary" /> Past Cases
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Your clinical case attempt history.</p>
+        </div>
+
+        {historyLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+          </div>
+        ) : historyAttempts.length === 0 ? (
+          <Card className="bg-card/40 border-border/40">
+            <CardContent className="p-10 text-center text-muted-foreground text-sm">
+              <Stethoscope size={36} className="mx-auto mb-3 opacity-30" />
+              No past attempts yet. Complete today's case to get started!
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {historyAttempts.map(attempt => {
+              const score = attempt.aiFeedback?.score ?? null;
+              const scoreColor = score === null ? "text-muted-foreground" : score >= 7 ? "text-green-400" : score >= 4 ? "text-amber-400" : "text-red-400";
+              const isExpanded = expandedId === attempt.id;
+              return (
+                <Card key={attempt.id} className="bg-card/40 border-border/40 overflow-hidden">
+                  <button
+                    className="w-full p-4 text-left hover:bg-card/60 transition-colors"
+                    onClick={() => setExpandedId(isExpanded ? null : attempt.id)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <Badge variant="outline" className="text-[10px] border-primary/20 text-primary bg-primary/5">
+                            {attempt.subject}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(attempt.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" })}
+                          </span>
+                        </div>
+                        <p className="text-sm font-medium line-clamp-2 text-left">{attempt.scenario}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {score !== null && (
+                          <span className={`text-lg font-black ${scoreColor}`}>{score}<span className="text-[10px] font-normal text-muted-foreground">/10</span></span>
+                        )}
+                        <ChevronDown size={14} className={`text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                      </div>
+                    </div>
+                  </button>
+                  {isExpanded && attempt.aiFeedback && (
+                    <div className="px-4 pb-4 border-t border-border/30 pt-3 space-y-3 animate-in fade-in duration-200">
+                      <div className="p-3 rounded-xl bg-muted/20 border border-border/20">
+                        <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5">Your Answer</p>
+                        <p className="text-xs leading-relaxed text-foreground/80 line-clamp-4">{attempt.answerText}</p>
+                      </div>
+                      <FeedbackCard feedback={attempt.aiFeedback} explanation="" />
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (!clinicalCase) return null;
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-5">
@@ -249,9 +363,19 @@ export default function ClinicalCase() {
             {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
           </p>
         </div>
-        <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">
-          {clinicalCase.subject}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => { setView("history"); fetchHistory(); }}
+          >
+            <History size={13} /> Past Cases
+          </Button>
+          <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">
+            {clinicalCase.subject}
+          </Badge>
+        </div>
       </div>
 
       {/* Scenario */}
