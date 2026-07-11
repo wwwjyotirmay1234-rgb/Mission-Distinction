@@ -79,6 +79,7 @@ router.get("/leaderboard", authMiddleware, async (req: Request, res: Response) =
         totalXp: usersTable.totalXp,
         currentRank: usersTable.currentRank,
         studyStreak: usersTable.studyStreak,
+        avatarUrl: usersTable.avatarUrl,
       })
       .from(usersTable)
       .where(cohortFilter)

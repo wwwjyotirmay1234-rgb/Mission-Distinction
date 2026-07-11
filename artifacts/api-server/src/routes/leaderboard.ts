@@ -50,6 +50,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
           college: usersTable.college,
           year: usersTable.year,
           studyStreak: usersTable.studyStreak,
+          avatarUrl: usersTable.avatarUrl,
         })
         .from(usersTable)
         .where(visibleStudents)
@@ -67,6 +68,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
               college: usersTable.college,
               year: usersTable.year,
               studyStreak: usersTable.studyStreak,
+              avatarUrl: usersTable.avatarUrl,
             })
             .from(usersTable)
             .where(visibleStudents)

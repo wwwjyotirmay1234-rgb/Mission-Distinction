@@ -17,6 +17,7 @@ interface LeaderboardEntry {
   studyStreak: number;
   quizzesAttempted: number;
   avgScore: number;
+  avatarUrl?: string | null;
 }
 
 interface XPLeaderboardEntry {
@@ -28,6 +29,7 @@ interface XPLeaderboardEntry {
   currentRank: number;
   rankName: string;
   studyStreak: number;
+  avatarUrl?: string | null;
 }
 
 interface LeaderboardResponse {
@@ -48,6 +50,25 @@ async function fetchXPLeaderboard(): Promise<XPLeaderboardEntry[]> {
 }
 
 const medals = ["🥇", "🥈", "🥉"];
+
+function Avatar({ name, url }: { name: string; url?: string | null }) {
+  const [failed, setFailed] = React.useState(false);
+  if (url && !failed) {
+    return (
+      <img
+        src={url}
+        alt={name}
+        onError={() => setFailed(true)}
+        className="w-10 h-10 rounded-full object-cover shrink-0"
+      />
+    );
+  }
+  return (
+    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold text-sm shrink-0">
+      {name?.charAt(0)?.toUpperCase()}
+    </div>
+  );
+}
 
 function PositionBadge({ rank }: { rank: number }) {
   if (rank <= 3) {
@@ -201,9 +222,7 @@ export default function StudentLeaderboard() {
                       <div className="w-10 flex items-center justify-center shrink-0">
                         <PositionBadge rank={pos} />
                       </div>
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold text-sm shrink-0">
-                        {entry.fullName?.charAt(0)?.toUpperCase()}
-                      </div>
+                      <Avatar name={entry.fullName} url={entry.avatarUrl} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-semibold truncate">
@@ -246,9 +265,7 @@ export default function StudentLeaderboard() {
                       <div className="w-10 flex items-center justify-center shrink-0">
                         <PositionBadge rank={pos} />
                       </div>
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold text-sm shrink-0">
-                        {entry.fullName?.charAt(0)?.toUpperCase()}
-                      </div>
+                      <Avatar name={entry.fullName} url={entry.avatarUrl} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-semibold truncate">
@@ -289,9 +306,7 @@ export default function StudentLeaderboard() {
                     <div className="w-10 flex items-center justify-center shrink-0">
                       <PositionBadge rank={pos} />
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold text-sm shrink-0">
-                      {entry.fullName?.charAt(0)?.toUpperCase()}
-                    </div>
+                    <Avatar name={entry.fullName} url={entry.avatarUrl} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">
                         {entry.fullName}
