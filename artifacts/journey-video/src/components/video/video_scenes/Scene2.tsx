@@ -82,7 +82,7 @@ export function Scene2() {
             {[
               { n: '01', title: 'CODE', sub: 'Late nights, early mornings.' },
               { n: '02', title: 'DESIGN', sub: 'Medical dashboards & quizzes.' },
-              { n: '03', title: 'TEAM', sub: 'One girl. Five builders. One dream.' },
+              { n: '03', title: 'TEAM', sub: 'One girl. Four builders. One dream.' },
             ].map(({ n, title, sub }, i) => (
               <motion.div
                 key={n}

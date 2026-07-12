@@ -206,7 +206,7 @@ export function Scene3() {
           initial={{ opacity: 0 }}
           animate={phase >= 5 ? { opacity: 1 } : { opacity: 0 }}
           transition={{ duration: 1.2, delay: 1.2 }}>
-          6 students. One promise. One more try.
+          5 students. One promise. One more try.
         </motion.p>
       </motion.div>
     </motion.div>

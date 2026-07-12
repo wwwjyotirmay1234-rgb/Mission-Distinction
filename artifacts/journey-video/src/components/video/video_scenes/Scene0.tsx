@@ -65,7 +65,7 @@ export function Scene0() {
           initial={{ opacity: 0 }}
           animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }}
           transition={{ duration: 2, delay: 0.6 }}>
-          18 APRIL 2026 · 6 STUDENTS · 1 MISSION
+          18 APRIL 2026 · 5 STUDENTS · 1 MISSION
         </motion.p>
       </motion.div>
 
