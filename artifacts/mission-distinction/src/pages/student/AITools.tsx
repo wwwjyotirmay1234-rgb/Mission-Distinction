@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -304,7 +307,8 @@ function DiagramExplainer() {
             </div>
             <div className="text-sm leading-relaxed text-foreground summary-markdown">
               <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeKatex]}
                 components={{
                   h2: ({ children }) => <h2 className="text-base font-bold text-primary mt-5 mb-2 first:mt-0 border-b border-primary/20 pb-1">{children}</h2>,
                   h3: ({ children }) => <h3 className="text-sm font-semibold text-foreground mt-4 mb-1.5">{children}</h3>,
@@ -407,7 +411,7 @@ function AnswerGrading() {
               <div>
                 <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Model Answer Outline</h4>
                 <div className="text-sm text-foreground bg-primary/5 p-3 rounded-lg border border-primary/20 prose prose-invert prose-sm max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.modelAnswerOutline}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{result.modelAnswerOutline}</ReactMarkdown>
                 </div>
               </div>
             </div>
@@ -473,7 +477,8 @@ function NoteSummariser() {
             </div>
             <div className="text-sm leading-relaxed text-foreground summary-markdown">
               <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeKatex]}
                 components={{
                   h2: ({ children }) => (
                     <h2 className="text-base font-bold text-primary mt-5 mb-2 first:mt-0 border-b border-primary/20 pb-1">{children}</h2>

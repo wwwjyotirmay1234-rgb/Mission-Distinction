@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import DOMPurify from "dompurify";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -568,7 +571,7 @@ function renderMessageContent(text: string) {
         if (p.type === "diagram") return <DiagramBlock key={i} description={p.value} />;
         if (p.type === "mermaid") return <MermaidBlock key={i} code={p.value} />;
         return p.value.trim() ? (
-          <ReactMarkdown key={i} remarkPlugins={[remarkGfm]} components={mdComponents}>{p.value}</ReactMarkdown>
+          <ReactMarkdown key={i} remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={mdComponents}>{p.value}</ReactMarkdown>
         ) : null;
       })}
     </>
@@ -1104,7 +1107,7 @@ function AiChatTab({ model }: { model: "gpt-4o" | "claude" }) {
                 ) : msg.streaming ? (
                   msg.content ? (
                     <>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={mdComponents}>
                         {msg.content.replace(/\[DIAGRAM:[^\]]*$/g, "")}
                       </ReactMarkdown>
                       <span className="inline-block w-0.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-text-bottom" />
