@@ -3,13 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useListPdfs, getListPdfsQueryKey } from "@workspace/api-client-react";
 import { trackEvent } from "@/lib/analytics";
-import { Search, Filter, Download, BookOpen, X, ExternalLink, FileText, ChevronDown, Loader2, WifiOff } from "lucide-react";
+import { Search, Download, BookOpen, X, ExternalLink, FileText, Loader2, WifiOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const SUBJECTS = ["All", "Anatomy", "Physiology", "Biochemistry"];
+
+const SUBJECT_COLORS: Record<string, string> = {
+  Anatomy:      "border-blue-500/50 text-blue-400 bg-blue-500/10",
+  Physiology:   "border-red-500/50 text-red-400 bg-red-500/10",
+  Biochemistry: "border-green-500/50 text-green-400 bg-green-500/10",
+};
 
 type Pdf = {
   id: number;
@@ -270,40 +275,46 @@ export default function StudentPDFs() {
           <h1 className="text-2xl font-bold tracking-tight">PDF Library</h1>
           <p className="text-muted-foreground">Standard textbooks &amp; reference materials.</p>
         </div>
-        <div className="flex gap-2">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search by title, subject..."
-              className="pl-9 bg-muted/50 border-border/50"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant={subject !== "All" ? "default" : "outline"} className="shrink-0 gap-1.5 bg-muted/50 px-3">
-                <Filter className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">{subject}</span>
-                <ChevronDown className="h-3 w-3 opacity-60" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              {SUBJECTS.map(s => (
-                <DropdownMenuItem
-                  key={s}
-                  className={`flex justify-between ${subject === s ? "bg-primary/10 text-primary font-medium" : ""}`}
-                  onClick={() => setSubject(s)}
-                >
-                  <span>{s}</span>
-                  {s !== "All" && subjectCounts[s] != null && (
-                    <span className="ml-2 text-[10px] font-semibold bg-muted rounded-full px-1.5 py-0.5 text-muted-foreground">{subjectCounts[s]}</span>
-                  )}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search by title, subject..."
+            className="pl-9 bg-muted/50 border-border/50"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
+      </div>
+
+      {/* Subject tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1 snap-x hide-scrollbar">
+        {SUBJECTS.map((s) => {
+          const count = s === "All"
+            ? Object.values(subjectCounts).reduce((a, b) => a + b, 0) || null
+            : (subjectCounts[s] ?? null);
+          const isActive = subject === s;
+          const color = SUBJECT_COLORS[s];
+          return (
+            <button
+              key={s}
+              onClick={() => setSubject(s)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium shrink-0 snap-start border transition-all ${
+                isActive
+                  ? color
+                    ? `${color} border-current`
+                    : "bg-primary text-primary-foreground border-primary"
+                  : "bg-muted/40 text-muted-foreground border-border/40 hover:bg-muted"
+              }`}
+            >
+              {s}
+              {count != null && (
+                <span className={`text-[10px] font-bold rounded-full px-1 ${isActive ? "bg-white/20" : "bg-muted-foreground/20"}`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <div>

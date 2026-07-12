@@ -37,31 +37,68 @@ interface DrawerLink {
   href: string;
 }
 
-const LEARN_LINKS: DrawerLink[] = [
-  { icon: Wand2, label: "Custom Quiz", href: "/student/custom-quiz" },
-  { icon: Stethoscope, label: "Grand Rounds", href: "/student/grand-rounds" },
-  { icon: Store, label: "Notes Marketplace", href: "/student/notes-marketplace" },
-  { icon: Camera, label: "Photo Doubt Solver", href: "/student/photo-doubt" },
-  { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy" },
-  { icon: Stethoscope, label: "Practical Hub", href: "/student/practical-hub" },
-  { icon: FileText, label: "Notes & Books", href: "/student/notes" },
-  { icon: Trophy, label: "Grand Tests", href: "/student/grand-tests" },
-  { icon: File, label: "PDF Library", href: "/student/pdfs" },
-  { icon: ScholarIcon, label: "Scholar Hub", href: "/student/scholar-hub" },
-  { icon: Zap, label: "Cheat Codes", href: "/student/cheat-codes" },
-  { icon: Stethoscope, label: "Clinical Cases", href: "/student/clinical-case" },
-  { icon: BarChart2, label: "Quiz Analysis", href: "/student/quiz-analysis" },
-  { icon: TrendingUp, label: "My Progress", href: "/student/progress" },
-  { icon: Trophy, label: "Leaderboard", href: "/student/leaderboard" },
-  { icon: MessageSquare, label: "Doubt Board", href: "/student/doubts" },
-  { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
-  { icon: Bot, label: "AI Tools", href: "/student/ai-tools" },
-  { icon: CalendarIcon, label: "Calendar", href: "/student/calendar" },
-  { icon: Timer, label: "Study Tools", href: "/student/tools" },
-  { icon: Gamepad2, label: "Medical Games", href: "/student/games" },
-  { icon: Music, label: "Music", href: "/student/music" },
-  { icon: Settings, label: "Settings", href: "/student/settings" },
+interface DrawerSection {
+  heading: string;
+  links: DrawerLink[];
+}
+
+const LEARN_SECTIONS: DrawerSection[] = [
+  {
+    heading: "Study",
+    links: [
+      { icon: Microscope,    label: "Anatomy Hub",    href: "/student/anatomy" },
+      { icon: Stethoscope,   label: "Practical Hub",  href: "/student/practical-hub" },
+      { icon: FileText,      label: "Notes & Books",  href: "/student/notes" },
+      { icon: File,          label: "PDF Library",    href: "/student/pdfs" },
+      { icon: ScholarIcon,   label: "Scholar Hub",    href: "/student/scholar-hub" },
+      { icon: Zap,           label: "Cheat Codes",    href: "/student/cheat-codes" },
+    ],
+  },
+  {
+    heading: "Practice",
+    links: [
+      { icon: Wand2,         label: "Custom Quiz",    href: "/student/custom-quiz" },
+      { icon: Trophy,        label: "Grand Tests",    href: "/student/grand-tests" },
+      { icon: Stethoscope,   label: "Clinical Cases", href: "/student/clinical-case" },
+      { icon: Stethoscope,   label: "Grand Rounds",   href: "/student/grand-rounds" },
+      { icon: BarChart2,     label: "Quiz Analysis",  href: "/student/quiz-analysis" },
+    ],
+  },
+  {
+    heading: "AI Tools",
+    links: [
+      { icon: Camera,        label: "Photo Doubt",    href: "/student/photo-doubt" },
+      { icon: Bot,           label: "AI Tools",       href: "/student/ai-tools" },
+    ],
+  },
+  {
+    heading: "Community",
+    links: [
+      { icon: Store,         label: "Notes Market",   href: "/student/notes-marketplace" },
+      { icon: MessageSquare, label: "Doubt Board",    href: "/student/doubts" },
+      { icon: MessageCircleHeart, label: "Confessions", href: "/student/confessions" },
+    ],
+  },
+  {
+    heading: "Progress",
+    links: [
+      { icon: TrendingUp,    label: "My Progress",    href: "/student/progress" },
+      { icon: Trophy,        label: "Leaderboard",    href: "/student/leaderboard" },
+    ],
+  },
+  {
+    heading: "More",
+    links: [
+      { icon: CalendarIcon,  label: "Calendar",       href: "/student/calendar" },
+      { icon: Timer,         label: "Study Tools",    href: "/student/tools" },
+      { icon: Gamepad2,      label: "Games",          href: "/student/games" },
+      { icon: Music,         label: "Music",          href: "/student/music" },
+      { icon: Settings,      label: "Settings",       href: "/student/settings" },
+    ],
+  },
 ];
+
+const LEARN_LINKS = LEARN_SECTIONS.flatMap((s) => s.links);
 
 // Short vibration pulse on tap — Android Chrome supports the Vibration API,
 // iOS Safari doesn't, so this is silently a no-op there.
@@ -150,26 +187,41 @@ export function BottomNav() {
       </nav>
 
       <Sheet open={learnOpen} onOpenChange={setLearnOpen}>
-        <SheetContent side="bottom" className="max-h-[75vh] overflow-y-auto rounded-t-2xl pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto rounded-t-2xl pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           <SheetHeader>
             <SheetTitle>Learn</SheetTitle>
           </SheetHeader>
-          <div className="grid grid-cols-3 gap-3 mt-4 pb-6">
-            {LEARN_LINKS.map((link) => {
-              const color = getSectionColor(link.href);
-              return (
-                <button
-                  key={link.href}
-                  onClick={() => { tapFeedback(); setLearnOpen(false); setLocation(link.href); }}
-                  className="flex flex-col items-center justify-center gap-1.5 p-3 min-h-[76px] rounded-xl bg-card/60 border border-border/40 active:scale-95 active:bg-card transition-transform touch-manipulation"
-                >
-                  <div className={cn("w-9 h-9 rounded-full flex items-center justify-center", color.bg)}>
-                    <link.icon size={17} className={color.text} />
-                  </div>
-                  <span className="text-[10px] font-medium text-center leading-tight">{link.label}</span>
-                </button>
-              );
-            })}
+          <div className="mt-4 pb-6 space-y-5">
+            {LEARN_SECTIONS.map((section) => (
+              <div key={section.heading}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2 px-0.5">
+                  {section.heading}
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {section.links.map((link) => {
+                    const color = getSectionColor(link.href);
+                    const active = isActive(link.href);
+                    return (
+                      <button
+                        key={link.href}
+                        onClick={() => { tapFeedback(); setLearnOpen(false); setLocation(link.href); }}
+                        className={cn(
+                          "flex flex-col items-center justify-center gap-1.5 p-2.5 min-h-[68px] rounded-xl border transition-all active:scale-95 touch-manipulation",
+                          active
+                            ? "bg-primary/10 border-primary/40"
+                            : "bg-card/60 border-border/40 active:bg-card"
+                        )}
+                      >
+                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", color.bg)}>
+                          <link.icon size={15} className={color.text} />
+                        </div>
+                        <span className="text-[9.5px] font-medium text-center leading-tight">{link.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </SheetContent>
       </Sheet>
