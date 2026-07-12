@@ -12,15 +12,15 @@ import { Scene7 } from './video_scenes/Scene7';
 import { Scene8 } from './video_scenes/Scene8';
 
 export const SCENE_DURATIONS: Record<string, number> = {
-  s0_coldopen:  8000,
-  s1_beginning: 8000,
-  s2_building:  8000,
-  s3_darknight: 9000,
-  s4_progress:  12000,
-  s5_launch:    9000,
-  s6_climb:     9000,
-  s7_foryou:    11000,
-  s8_outro:     10000,
+  s0_coldopen:  20000,  // Opening — 2:17 AM, ticking clock, the fear
+  s1_beginning: 20000,  // The Realization — lecture hall, not alone
+  s2_building:  20000,  // The Spark — 5 students, the whiteboard
+  s3_darknight: 24000,  // The Journey — montage, days to months
+  s4_progress:  22000,  // The Lowest Point — error screen, "we didn't stop"
+  s5_launch:    24000,  // Launch Day — button, counter, 150 in 24 hrs
+  s6_climb:     22000,  // The Ripple Effect — across Odisha
+  s7_foryou:    24000,  // The Milestone — 500, silence
+  s8_outro:     28000,  // Final Scene — narrator, lights, "By Students. For Students."
 };
 
 const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
