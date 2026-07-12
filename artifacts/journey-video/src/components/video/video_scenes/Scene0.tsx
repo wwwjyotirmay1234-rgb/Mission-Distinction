@@ -6,10 +6,10 @@ export function Scene0() {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 600),
-      setTimeout(() => setPhase(2), 1900),
-      setTimeout(() => setPhase(3), 3100),
-      setTimeout(() => setPhase(4), 4500),
+      setTimeout(() => setPhase(1), 700),   // location stamp fades in quietly
+      setTimeout(() => setPhase(2), 2000),  // TITLE SMASHES IN
+      setTimeout(() => setPhase(3), 3500),  // second line
+      setTimeout(() => setPhase(4), 4800),  // smash-cut flash
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
@@ -20,57 +20,96 @@ export function Scene0() {
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.15 }}
+      transition={{ duration: 0.12 }}
     >
-      <div className="text-center max-w-[80vw] z-10">
-        <motion.p
-          className="text-[1.3vw] font-mono tracking-[0.45em] uppercase mb-[1.5vw]"
-          style={{ color: 'rgba(255,255,255,0.22)' }}
-          initial={{ opacity: 0 }}
-          animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 1.2 }}
-        >
-          VIMSAR · Burla, Sambalpur · Odisha, India
-        </motion.p>
+      {/* Subtle CRT grain */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.025]"
+        style={{
+          backgroundImage: 'url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48ZmlsdGVyIGlkPSJuIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC42NSIgbnVtT2N0YXZlcz0iMyIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWx0ZXI9InVybCgjbikiIG9wYWNpdHk9IjEiLz48L3N2Zz4=")',
+        }}
+      />
 
+      {/* Location stamp — small, quiet, establishing */}
+      <motion.div
+        className="absolute z-10"
+        style={{ top: '28%', left: '50%', transform: 'translateX(-50%)' }}
+        initial={{ opacity: 0 }}
+        animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ duration: 2, ease: 'easeOut' }}
+      >
+        <p
+          className="font-mono text-center whitespace-nowrap"
+          style={{ fontSize: '1.1vw', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.18)' }}
+        >
+          VIMSAR · BURLA, SAMBALPUR · ODISHA, INDIA
+        </p>
         <motion.p
-          className="text-[1.1vw] font-mono tracking-[0.4em] mb-[4.5vw]"
-          style={{ color: 'rgba(200,163,64,0.45)' }}
+          className="font-mono text-center mt-2 whitespace-nowrap"
+          style={{ fontSize: '1vw', letterSpacing: '0.35em', color: 'rgba(200,163,64,0.35)' }}
           initial={{ opacity: 0 }}
           animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 1.2, delay: 0.5 }}
+          transition={{ duration: 2, delay: 0.6 }}
         >
           18 APRIL 2026
         </motion.p>
+      </motion.div>
 
-        <motion.div
-          className="mx-auto mb-[4.5vw]"
-          style={{ height: '1px', backgroundColor: 'rgba(255,255,255,0.07)' }}
-          initial={{ width: 0 }}
-          animate={phase >= 2 ? { width: '48vw' } : { width: 0 }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-        />
-
-        <div className="overflow-hidden mb-[2.5vw]">
+      {/* MAIN TITLE — fills the frame, hits like a hammer */}
+      <div className="relative z-10 text-center px-[8vw]" style={{ marginTop: '4vw' }}>
+        <div className="overflow-hidden">
           <motion.h1
-            className="text-[4vw] font-sans font-light text-white leading-snug"
-            initial={{ y: '115%' }}
-            animate={phase >= 2 ? { y: 0 } : { y: '115%' }}
-            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            className="font-display text-white leading-[0.9] text-center"
+            style={{
+              fontSize: '7.5vw',
+              textShadow: '0 2px 40px rgba(255,255,255,0.08)',
+              letterSpacing: '-0.01em',
+            }}
+            initial={{ y: '105%', opacity: 0 }}
+            animate={phase >= 2 ? { y: 0, opacity: 1 } : { y: '105%', opacity: 0 }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           >
-            An MBBS student was struggling in exams.
+            AN MBBS STUDENT
+          </motion.h1>
+        </div>
+        <div className="overflow-hidden">
+          <motion.h1
+            className="font-display leading-[0.9] text-center"
+            style={{
+              fontSize: '7.5vw',
+              color: 'rgba(255,255,255,0.85)',
+              letterSpacing: '-0.01em',
+            }}
+            initial={{ y: '105%', opacity: 0 }}
+            animate={phase >= 2 ? { y: 0, opacity: 1 } : { y: '105%', opacity: 0 }}
+            transition={{ duration: 0.7, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+          >
+            WAS STRUGGLING.
           </motion.h1>
         </div>
 
+        {/* Ruled line between lines */}
+        <motion.div
+          className="mx-auto my-[1.5vw]"
+          style={{ height: '1px', backgroundColor: 'rgba(255,255,255,0.06)' }}
+          initial={{ width: 0 }}
+          animate={phase >= 3 ? { width: '40vw' } : { width: 0 }}
+          transition={{ duration: 0.6 }}
+        />
+
         <div className="overflow-hidden">
           <motion.h2
-            className="text-[3.2vw] font-sans font-light italic"
-            style={{ color: 'rgba(255,255,255,0.45)' }}
-            initial={{ y: '115%' }}
-            animate={phase >= 3 ? { y: 0 } : { y: '115%' }}
-            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            className="font-display text-center"
+            style={{
+              fontSize: '6vw',
+              color: 'rgba(200,163,64,0.9)',
+              letterSpacing: '-0.01em',
+            }}
+            initial={{ y: '105%', opacity: 0 }}
+            animate={phase >= 3 ? { y: 0, opacity: 1 } : { y: '105%', opacity: 0 }}
+            transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
           >
-            So they built something.
+            SO THEY BUILT SOMETHING.
           </motion.h2>
         </div>
       </div>
@@ -80,7 +119,7 @@ export function Scene0() {
         className="absolute inset-0 bg-white pointer-events-none z-50"
         initial={{ opacity: 0 }}
         animate={phase >= 4 ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.18 }}
+        transition={{ duration: 0.15 }}
       />
     </motion.div>
   );
