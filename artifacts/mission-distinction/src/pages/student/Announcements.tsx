@@ -21,6 +21,28 @@ const TABS: { key: FilterType; label: string }[] = [
   { key: "event", label: "Events" },
 ];
 
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
+function renderWithLinks(text: string) {
+  const parts = text.split(URL_REGEX);
+  return parts.map((part, i) =>
+    URL_REGEX.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary underline underline-offset-2 hover:text-primary/80 break-all"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -136,7 +158,7 @@ export default function StudentAnnouncements() {
                           {cfg.label}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{item.content}</p>
+                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed break-words">{renderWithLinks(item.content)}</p>
                       {(item as any).attachmentUrl && (
                         (item as any).attachmentType === "image" ? (
                           <a href={(item as any).attachmentUrl} target="_blank" rel="noopener noreferrer" className="block mt-3">
