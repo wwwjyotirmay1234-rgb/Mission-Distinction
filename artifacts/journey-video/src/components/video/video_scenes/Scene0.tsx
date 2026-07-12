@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
+// SCENE 0 — THE WOUND
+// One student. Alone. Night. Failing. No resources.
 export function Scene0() {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 600),
-      setTimeout(() => setPhase(2), 1800),
+      setTimeout(() => setPhase(1), 500),
+      setTimeout(() => setPhase(2), 1600),
       setTimeout(() => setPhase(3), 3200),
-      setTimeout(() => setPhase(4), 4200),
-      setTimeout(() => setPhase(5), 7200),
+      setTimeout(() => setPhase(4), 4400),
+      setTimeout(() => setPhase(5), 7000),
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
@@ -18,138 +20,126 @@ export function Scene0() {
   return (
     <motion.div
       className="absolute inset-0 overflow-hidden"
-      initial={{ opacity: 1 }}
+      initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.12 }}
+      transition={{ duration: 0.5 }}
     >
-      {/* Full group — cinematic cold open, single background */}
+      {/* Background — lone student at desk */}
       <motion.div
         className="absolute inset-0 z-0"
-        initial={{ scale: 1.08 }}
+        initial={{ scale: 1.1 }}
         animate={{ scale: 1 }}
-        transition={{ duration: 8, ease: 'easeOut' }}
+        transition={{ duration: 9, ease: 'easeOut' }}
       >
         <img
-          src={`${import.meta.env.BASE_URL}images/group_coldopen.png`}
+          src={`${import.meta.env.BASE_URL}images/student_coldopen.png`}
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.4) contrast(1.18) brightness(0.48)' }}
+          style={{ filter: 'saturate(0.25) contrast(1.2) brightness(0.32)' }}
           alt=""
         />
       </motion.div>
 
-      {/* Bottom-heavy vignette */}
+      {/* Cinematic overlays */}
       <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.08) 35%, rgba(0,0,0,0.5) 72%, rgba(0,0,0,0.95) 100%)' }} />
+        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.7) 80%, rgba(0,0,0,0.97) 100%)' }} />
       <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.65) 100%)' }} />
-      <div className="absolute inset-0 z-1 pointer-events-none mix-blend-color"
-        style={{ backgroundColor: 'rgba(180,120,40,0.16)' }} />
+        style={{ background: 'radial-gradient(ellipse at 60% 55%, transparent 30%, rgba(0,0,0,0.8) 100%)' }} />
 
-      {/* Location stamp */}
+      {/* Location stamp — top center */}
       <motion.div
-        className="absolute z-10"
-        style={{ top: '22%', left: '50%', transform: 'translateX(-50%)' }}
+        className="absolute z-10 w-full flex flex-col items-center"
+        style={{ top: '18%' }}
         initial={{ opacity: 0 }}
         animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 2, ease: 'easeOut' }}
-      >
-        <p className="font-mono text-center whitespace-nowrap"
-          style={{ fontSize: '1.05vw', letterSpacing: '0.45em', color: 'rgba(255,255,255,0.3)' }}>
+        transition={{ duration: 2 }}>
+        <p className="font-mono text-center"
+          style={{ fontSize: '1vw', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.25)' }}>
           VIMSAR · BURLA, SAMBALPUR · ODISHA, INDIA
         </p>
-        <motion.p
-          className="font-mono text-center mt-2 whitespace-nowrap"
-          style={{ fontSize: '0.95vw', letterSpacing: '0.35em', color: 'rgba(200,163,64,0.5)' }}
-          initial={{ opacity: 0 }}
-          animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 2, delay: 0.6 }}>
-          18 APRIL 2026 · 5 STUDENTS · 1 MISSION
-        </motion.p>
+        <div className="w-[1px] h-[3vh] bg-white/10 mt-3" />
       </motion.div>
 
-      {/* TITLE — typography contrast */}
+      {/* Main title block — center */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-[8vw]">
-        <div className="text-center" style={{ marginTop: '5vw' }}>
+        <div className="text-center">
 
-          {/* Thin whisper line */}
-          <div className="overflow-hidden mb-[1.2vw]">
+          {/* Thin whisper — sets the subject */}
+          <div className="overflow-hidden mb-[1.4vw]">
             <motion.p
-              className="text-center"
               style={{
-                fontSize: '2.2vw',
+                fontSize: '2.3vw',
                 fontWeight: 100,
-                letterSpacing: '0.25em',
-                color: 'rgba(255,255,255,0.45)',
+                letterSpacing: '0.22em',
+                color: 'rgba(255,255,255,0.42)',
                 fontStyle: 'italic',
-                textShadow: '0 2px 20px rgba(0,0,0,0.9)',
               }}
-              initial={{ y: '110%', opacity: 0 }}
-              animate={phase >= 2 ? { y: 0, opacity: 1 } : { y: '110%', opacity: 0 }}
-              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>
-              an mbbs student
+              initial={{ y: '120%' }}
+              animate={phase >= 2 ? { y: 0 } : { y: '120%' }}
+              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}>
+              one mbbs student
             </motion.p>
           </div>
 
-          {/* Massive impact line */}
+          {/* Massive impact — the wound */}
           <div className="overflow-hidden">
             <motion.h1
-              className="font-display text-white leading-[0.88] text-center"
-              style={{ fontSize: '9.5vw', textShadow: '0 4px 50px rgba(0,0,0,0.9)', letterSpacing: '-0.02em' }}
-              initial={{ y: '105%', opacity: 0 }}
-              animate={phase >= 2 ? { y: 0, opacity: 1 } : { y: '105%', opacity: 0 }}
-              transition={{ duration: 0.75, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}>
-              WAS STRUGGLING.
+              className="font-display text-white leading-none"
+              style={{ fontSize: '10.5vw', letterSpacing: '-0.025em', textShadow: '0 4px 60px rgba(0,0,0,0.95)' }}
+              initial={{ y: '105%' }}
+              animate={phase >= 2 ? { y: 0 } : { y: '105%' }}
+              transition={{ duration: 0.9, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}>
+              COULDN'T PASS.
             </motion.h1>
           </div>
 
-          {/* Divider */}
+          {/* Hair-line divider */}
           <motion.div
-            className="mx-auto my-[2vw]"
-            style={{ height: '1px', backgroundColor: 'rgba(255,255,255,0.1)' }}
+            className="mx-auto my-[2.2vw]"
+            style={{ height: '1px', background: 'rgba(255,255,255,0.08)' }}
             initial={{ width: 0 }}
-            animate={phase >= 3 ? { width: '35vw' } : { width: 0 }}
-            transition={{ duration: 0.8 }}
+            animate={phase >= 3 ? { width: '28vw' } : { width: 0 }}
+            transition={{ duration: 1 }}
           />
 
-          {/* Thin whisper */}
-          <div className="overflow-hidden mb-[0.4vw]">
+          {/* Context whisper */}
+          <div className="overflow-hidden mb-[0.8vw]">
             <motion.p
-              className="text-center"
               style={{
                 fontSize: '2vw',
                 fontWeight: 100,
-                letterSpacing: '0.2em',
-                color: 'rgba(255,255,255,0.4)',
                 fontStyle: 'italic',
+                letterSpacing: '0.12em',
+                color: 'rgba(255,255,255,0.35)',
               }}
-              initial={{ y: '110%', opacity: 0 }}
-              animate={phase >= 3 ? { y: 0, opacity: 1 } : { y: '110%', opacity: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
-              so they stayed up every night
+              initial={{ y: '110%' }}
+              animate={phase >= 3 ? { y: 0 } : { y: '110%' }}
+              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>
+              not for lack of trying —
             </motion.p>
           </div>
 
-          {/* Gold payoff */}
+          {/* Gold payoff — the truth */}
           <div className="overflow-hidden">
             <motion.h2
-              className="font-display text-center"
-              style={{ fontSize: '5.5vw', color: '#C8A340', letterSpacing: '-0.01em', textShadow: '0 4px 40px rgba(0,0,0,0.9)' }}
-              initial={{ y: '105%', opacity: 0 }}
-              animate={phase >= 4 ? { y: 0, opacity: 1 } : { y: '105%', opacity: 0 }}
-              transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}>
-              AND BUILT THE APP THEY WISHED EXISTED.
+              className="font-display leading-tight text-center"
+              style={{ fontSize: '5.8vw', color: '#C8A340', letterSpacing: '-0.01em', textShadow: '0 4px 50px rgba(0,0,0,0.95)' }}
+              initial={{ y: '105%' }}
+              animate={phase >= 4 ? { y: 0 } : { y: '105%' }}
+              transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}>
+              FOR LACK OF RESOURCES.
             </motion.h2>
           </div>
+
         </div>
       </div>
 
-      {/* Smash-cut white flash */}
+      {/* Smash-cut white flash to next scene */}
       <motion.div
         className="absolute inset-0 bg-white pointer-events-none z-50"
         initial={{ opacity: 0 }}
         animate={phase >= 5 ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.15 }}
+        transition={{ duration: 0.18 }}
       />
     </motion.div>
   );

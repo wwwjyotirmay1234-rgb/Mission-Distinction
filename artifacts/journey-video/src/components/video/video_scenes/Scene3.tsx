@@ -1,214 +1,130 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
-const RAIN = Array.from({ length: 65 }, (_, i) => ({
-  id: i,
-  left: 0.5 + (i * 37 % 99),
-  delay: (i * 0.13) % 2.2,
-  duration: 0.45 + (i * 0.09 % 0.65),
-  height: 18 + (i * 11 % 28),
-  opacity: 0.1 + (i * 0.016 % 0.28),
-  width: i % 4 === 0 ? 1.5 : 1,
-}));
-
-const LIGHTNING_FLASHES = [1600, 3200, 4800];
-
+// SCENE 3 — THE PDF
+// They started small. Made MBBS resource PDFs for their college. First win.
 export function Scene3() {
   const [phase, setPhase] = useState(0);
-  const [lightning, setLightning] = useState(false);
-  const [shake, setShake] = useState(false);
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 200),
-      setTimeout(() => setPhase(2), 1400),
-      setTimeout(() => setPhase(3), 3000),
-      setTimeout(() => setPhase(4), 5000),
-      setTimeout(() => setPhase(5), 7000),
+      setTimeout(() => setPhase(1), 500),
+      setTimeout(() => setPhase(2), 1800),
+      setTimeout(() => setPhase(3), 3800),
+      setTimeout(() => setPhase(4), 5800),
+      setTimeout(() => setPhase(5), 7800),
     ];
-    const flashTimers = LIGHTNING_FLASHES.map(t =>
-      setTimeout(() => {
-        setLightning(true);
-        setTimeout(() => setLightning(false), 120);
-      }, t)
-    );
-    const shakeTimer = setTimeout(() => {
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-    }, 3100);
-    return () => {
-      timers.forEach(t => clearTimeout(t));
-      flashTimers.forEach(t => clearTimeout(t));
-      clearTimeout(shakeTimer);
-    };
+    return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
   return (
     <motion.div
-      className="absolute inset-0 overflow-hidden"
-      style={{ backgroundColor: '#02020a' }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ scale: 1.04, opacity: 0 }}
-      transition={{ duration: 0.6 }}
+      className="absolute inset-0 overflow-hidden bg-black"
+      initial={{ opacity: 0, scale: 1.04 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
     >
-      {/* ── AI student dark-night photo ── */}
+      {/* Background — late-night desk, books, papers */}
       <motion.div
         className="absolute inset-0 z-0"
-        initial={{ scale: 1.06 }}
-        animate={phase >= 5 ? { scale: 1.02, filter: 'brightness(0.25) saturate(0.3)' } : { scale: 1, filter: 'brightness(0.35) saturate(0.3) contrast(1.2)' }}
-        transition={{ duration: phase >= 5 ? 2.5 : 8, ease: 'easeOut' }}
+        initial={{ scale: 1.1 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 10, ease: 'easeOut' }}
       >
         <img
-          src={`${import.meta.env.BASE_URL}images/student_darknight.png`}
-          className="w-full h-full object-cover"
+          src={`${import.meta.env.BASE_URL}images/student_desk_overhead.png`}
+          className="w-full h-full object-cover object-center"
+          style={{ filter: 'saturate(0.28) contrast(1.22) brightness(0.32)' }}
           alt=""
         />
       </motion.div>
 
-      {/* Dark overlays */}
-      <motion.div
-        className="absolute inset-0 z-1 pointer-events-none"
-        animate={phase >= 5
-          ? { background: 'linear-gradient(to top, rgba(80,30,0,0.7) 0%, rgba(2,2,10,0.7) 60%)' }
-          : { background: 'linear-gradient(to top, rgba(5,0,15,0.85) 0%, rgba(2,2,10,0.5) 70%)' }
-        }
-        transition={{ duration: 3 }}
-      />
+      {/* Overlays — warm paper glow */}
       <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.75) 100%)' }} />
+        style={{ background: 'linear-gradient(135deg, rgba(5,4,18,0.9) 0%, rgba(5,4,18,0.5) 50%, rgba(5,4,18,0.88) 100%)' }} />
+      <div className="absolute inset-0 z-1 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at 40% 55%, rgba(200,163,64,0.05) 0%, transparent 60%)' }} />
 
-      {/* Lightning flash */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none z-40"
-        style={{ backgroundColor: 'rgba(180,200,255,0.1)' }}
-        animate={lightning ? { opacity: [0, 1, 0.3, 0] } : { opacity: 0 }}
-        transition={{ duration: 0.12 }}
-      />
+      {/* Content — left aligned for contrast with S2 */}
+      <div className="absolute inset-0 z-10 flex flex-col justify-center px-[8vw]">
 
-      {/* Rain */}
-      {phase >= 1 && RAIN.map(drop => (
-        <motion.div
-          key={drop.id}
-          className="absolute top-0 pointer-events-none z-5"
-          style={{ left: `${drop.left}%`, width: `${drop.width}px` }}
-          initial={{ y: '-10vh', opacity: 0 }}
-          animate={phase >= 5
-            ? { y: '-10vh', opacity: 0 }
-            : { y: '110vh', opacity: [0, drop.opacity, drop.opacity, 0] }
-          }
-          transition={{
-            y: { duration: drop.duration, delay: drop.delay, repeat: Infinity, ease: 'linear' },
-            opacity: { duration: drop.duration, delay: drop.delay, repeat: Infinity },
-          }}
-        >
-          <div className="rounded-full"
-            style={{ width: `${drop.width}px`, height: drop.height, background: `rgba(140,170,220,0.7)` }} />
-        </motion.div>
-      ))}
+        {/* Setup whisper */}
+        <div className="overflow-hidden mb-[1.5vw]">
+          <motion.p
+            style={{ fontSize: '2vw', fontWeight: 100, fontStyle: 'italic', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.38)' }}
+            initial={{ y: '110%' }}
+            animate={phase >= 1 ? { y: 0 } : { y: '110%' }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>
+            they started small.
+          </motion.p>
+        </div>
 
-      {/* Main content — shakes on hit */}
-      <motion.div
-        className="absolute inset-0 flex flex-col justify-center px-[8vw] z-10"
-        animate={shake ? { x: [-10, 10, -7, 7, -4, 4, 0] } : { x: 0 }}
-        transition={shake ? { duration: 0.45, ease: 'easeOut' } : { duration: 0 }}
-      >
+        {/* FIRST — dramatic pause */}
+        <div className="overflow-hidden">
+          <motion.h1
+            className="font-display text-white leading-none"
+            style={{ fontSize: '10.5vw', letterSpacing: '-0.03em', textShadow: '0 4px 60px rgba(0,0,0,0.95)' }}
+            initial={{ y: '105%' }}
+            animate={phase >= 2 ? { y: 0 } : { y: '105%' }}
+            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}>
+            FIRST.
+          </motion.h1>
+        </div>
+        <div className="overflow-hidden">
+          <motion.h1
+            className="font-display leading-none"
+            style={{ fontSize: '10.5vw', letterSpacing: '-0.03em', color: '#C8A340', textShadow: '0 4px 60px rgba(0,0,0,0.95)' }}
+            initial={{ y: '105%' }}
+            animate={phase >= 2 ? { y: 0 } : { y: '105%' }}
+            transition={{ duration: 0.85, delay: 0.07, ease: [0.16, 1, 0.3, 1] }}>
+            THE PDF.
+          </motion.h1>
+        </div>
+
+        {/* What they built */}
         <motion.p
-          className="font-mono mb-[5vw]"
-          style={{ fontSize: '1.1vw', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.22)' }}
-          initial={{ opacity: 0 }}
-          animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 1.5 }}>
-          DURING DEVELOPMENT · MAY 2026 · 02:47 AM
+          className="mt-[2.5vw]"
+          style={{ fontSize: '2.1vw', fontWeight: 100, fontStyle: 'italic', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.38)' }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={phase >= 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+          transition={{ duration: 1 }}>
+          MBBS resources — built from scratch.
         </motion.p>
-
-        <div className="overflow-hidden">
-          <motion.h2
-            className="font-display text-white uppercase leading-none"
-            style={{ fontSize: '6.5vw', textShadow: '0 4px 30px rgba(0,0,0,0.9)' }}
-            initial={{ x: -60, opacity: 0 }}
-            animate={phase >= 2 ? { x: 0, opacity: 1 } : { x: -60, opacity: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-            We nearly lost
-          </motion.h2>
-        </div>
-        <div className="overflow-hidden">
-          <motion.h2
-            className="font-display uppercase leading-none"
-            style={{ fontSize: '6.5vw', color: '#dc2626', textShadow: '0 0 60px rgba(220,38,38,0.5)' }}
-            initial={{ x: -60, opacity: 0 }}
-            animate={phase >= 2 ? { x: 0, opacity: 1 } : { x: -60, opacity: 0 }}
-            transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}>
-            everything.
-          </motion.h2>
-        </div>
-
-        <motion.div
-          className="mt-[3.5vw] space-y-[1.5vw]"
+        <motion.p
+          className="mt-[0.4vw]"
+          style={{ fontSize: '2.1vw', fontWeight: 100, fontStyle: 'italic', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.38)' }}
           initial={{ opacity: 0 }}
           animate={phase >= 3 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.7 }}>
-          <p className="font-sans" style={{ fontSize: '2.2vw', color: 'rgba(255,255,255,0.45)' }}>
-            Platform access cut off. Mid-build.
-          </p>
-          <p className="font-sans" style={{ fontSize: '2.2vw', color: 'rgba(255,255,255,0.45)' }}>
-            Weeks of work. Suspended. No backup plan.
-          </p>
-        </motion.div>
-
-        <motion.div
-          className="mt-[3vw] inline-flex items-center gap-3 border rounded-sm"
-          style={{ backgroundColor: 'rgba(220,38,38,0.06)', borderColor: 'rgba(220,38,38,0.2)', padding: '1vw 2vw', width: 'fit-content' }}
-          initial={{ opacity: 0 }}
-          animate={phase >= 3 && phase < 5 ? { opacity: [0, 1, 0.8, 1, 0.6, 1] } : { opacity: 0 }}
-          transition={phase >= 3 && phase < 5 ? { duration: 0.5, times: [0, 0.1, 0.3, 0.5, 0.7, 1] } : { duration: 0.4 }}>
-          <motion.span
-            className="inline-block rounded-full bg-red-500"
-            style={{ width: '0.7vw', height: '0.7vw' }}
-            animate={{ opacity: [1, 0.1, 1] }}
-            transition={{ duration: 0.6, repeat: Infinity }} />
-          <span className="font-mono" style={{ fontSize: '1.4vw', color: 'rgba(252,165,165,0.7)', letterSpacing: '0.1em' }}>
-            ACCESS_DENIED · BUILD_SUSPENDED
-          </span>
-        </motion.div>
-
-        <motion.p
-          className="font-sans font-light italic mt-[4vw]"
-          style={{ fontSize: '2.8vw', color: 'rgba(255,255,255,0.22)' }}
-          initial={{ opacity: 0 }}
-          animate={phase >= 4 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 1.5 }}>
-          "We could have stopped here."
+          transition={{ duration: 1, delay: 0.25 }}>
+          for their college. for their city.
         </motion.p>
-      </motion.div>
 
-      {/* Dawn resolution */}
-      <motion.div
-        className="absolute inset-0 flex flex-col items-center justify-center z-30"
-        initial={{ opacity: 0 }}
-        animate={phase >= 5 ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 2 }}>
-        <div
-          className="absolute bottom-0 left-0 right-0 pointer-events-none"
-          style={{ height: '55%', background: 'linear-gradient(to top, rgba(200,100,15,0.22), rgba(200,80,5,0.08) 50%, transparent)' }}
-        />
-        <motion.h1
-          className="font-display text-brand-gold relative z-10 text-center"
-          style={{ fontSize: '10vw', textShadow: '0 0 80px rgba(200,163,64,0.55), 0 0 160px rgba(200,163,64,0.2)', letterSpacing: '-0.01em' }}
-          initial={{ scale: 0.75, opacity: 0 }}
-          animate={phase >= 5 ? { scale: 1, opacity: 1 } : { scale: 0.75, opacity: 0 }}
-          transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.4 }}>
-          We didn't.
-        </motion.h1>
+        {/* First win */}
+        <motion.div
+          className="mt-[3vw] border-l-2 pl-[1.8vw]"
+          style={{ borderColor: 'rgba(200,163,64,0.45)' }}
+          initial={{ opacity: 0, x: -16 }}
+          animate={phase >= 4 ? { opacity: 1, x: 0 } : { opacity: 0, x: -16 }}
+          transition={{ duration: 1 }}>
+          <p style={{ fontSize: '2.6vw', fontWeight: 700, color: '#C8A340', letterSpacing: '0.04em', textShadow: '0 2px 20px rgba(0,0,0,0.9)' }}>
+            VIMSAR STUDENTS
+          </p>
+          <p style={{ fontSize: '2.6vw', fontWeight: 700, color: 'rgba(255,255,255,0.88)', letterSpacing: '0.04em', textShadow: '0 2px 20px rgba(0,0,0,0.9)' }}>
+            FINALLY HAD SOMETHING.
+          </p>
+        </motion.div>
+
+        {/* The question that changes everything */}
         <motion.p
-          className="font-sans relative z-10 text-center mt-[2vw]"
-          style={{ fontSize: '2vw', color: 'rgba(255,255,255,0.5)' }}
+          className="mt-[3.5vw]"
+          style={{ fontSize: '1.7vw', fontWeight: 100, fontStyle: 'italic', letterSpacing: '0.18em', color: 'rgba(255,255,255,0.22)' }}
           initial={{ opacity: 0 }}
           animate={phase >= 5 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 1.2, delay: 1.2 }}>
-          5 students. One promise. One more try.
+          transition={{ duration: 1.2 }}>
+          but they kept asking —
         </motion.p>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
