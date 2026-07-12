@@ -54,6 +54,18 @@ uri = "file://attached_assets/generated_images/pulse-sites-clean-v2.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "fQXISPMhCPtkksBO1EgkE"
+uri = "file://artifacts/journey-video/public/images/abstract-bg.png"
+type = "image"
+title = "abstract violet gold background"
+
+[[generated]]
+id = "3N7Ix7SY6cupRCJmNb-tf"
+uri = "file://artifacts/journey-video/public/images/medical-pattern.png"
+type = "image"
+title = "medical geometric pattern texture"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
