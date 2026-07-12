@@ -1,10 +1,45 @@
 import * as Sentry from "@sentry/node";
 
+// ── Transient DB error codes that should NOT create new Sentry issues ─────────
+// These are infrastructure hiccups (pool exhaustion, idle-connection drops,
+// statement timeouts) — expected under load, already mitigated by pool config.
+const TRANSIENT_DB_CODES = new Set([
+  "57014", // query_canceled — statement_timeout fired
+  "57P01", // admin_shutdown — Neon/managed-PG kills idle connections
+  "08006", // connection_failure
+  "08001", // sqlclient_unable_to_establish_sqlconnection
+  "08P01", // protocol_violation
+]);
+
+function isTransientDbError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as Record<string, unknown>;
+  if (typeof e.code === "string" && TRANSIENT_DB_CODES.has(e.code)) return true;
+  const cause = e.cause;
+  if (cause && typeof cause === "object") {
+    const c = cause as Record<string, unknown>;
+    if (typeof c.code === "string" && TRANSIENT_DB_CODES.has(c.code)) return true;
+  }
+  const msg = typeof e.message === "string" ? e.message.toLowerCase() : "";
+  return (
+    msg.includes("connection timeout") ||
+    msg.includes("connection terminated") ||
+    msg.includes("query timeout") ||
+    msg.includes("idle connection") ||
+    msg.includes("econnreset") ||
+    msg.includes("econnrefused")
+  );
+}
+
 if (process.env.SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.NODE_ENV || "development",
     tracesSampleRate: 0.1,
+    beforeSend(event, hint) {
+      if (isTransientDbError(hint?.originalException)) return null;
+      return event;
+    },
   });
 }
 

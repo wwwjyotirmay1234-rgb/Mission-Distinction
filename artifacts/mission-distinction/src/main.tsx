@@ -13,6 +13,20 @@ if (SENTRY_DSN) {
     tracesSampleRate: 0.2,
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 0,
+    beforeSend(event, hint) {
+      const err = hint?.originalException;
+      const msg = err instanceof Error ? err.message : String(err ?? "");
+      // Chunk load failures after a new deploy are expected — the app auto-reloads
+      // via the vite:preloadError handler. Don't fill Sentry with these.
+      if (
+        msg.includes("Failed to fetch dynamically imported module") ||
+        msg.includes("Importing a module script failed") ||
+        msg.includes("error loading dynamically imported module")
+      ) {
+        return null;
+      }
+      return event;
+    },
   });
 }
 

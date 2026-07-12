@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
@@ -7,6 +7,28 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { csrfDefense } from "./middlewares/csrf";
 import * as Sentry from "@sentry/node";
+
+// Transient DB / infrastructure error codes — not code bugs, not worth alerting
+const TRANSIENT_DB_CODES = new Set(["57014", "57P01", "08006", "08001", "08P01"]);
+
+function isTransientDbError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as Record<string, unknown>;
+  if (typeof e.code === "string" && TRANSIENT_DB_CODES.has(e.code)) return true;
+  const cause = (e.cause ?? (e as any).originalError) as Record<string, unknown> | undefined;
+  if (cause && typeof cause.code === "string" && TRANSIENT_DB_CODES.has(cause.code)) return true;
+  const msg = typeof e.message === "string" ? e.message.toLowerCase() : "";
+  return (
+    msg.includes("connection timeout") ||
+    msg.includes("connection terminated") ||
+    msg.includes("query timeout") ||
+    msg.includes("idle connection") ||
+    msg.includes("econnreset") ||
+    msg.includes("econnrefused") ||
+    msg.includes("canceling statement") ||
+    msg.includes("terminating connection")
+  );
+}
 
 const app: Express = express();
 
@@ -81,5 +103,20 @@ app.use("/api", csrfDefense);
 app.use("/api", router);
 
 Sentry.setupExpressErrorHandler(app);
+
+// ── Global error handler ───────────────────────────────────────────────────────
+// Must be defined AFTER Sentry's handler so Sentry captures real bugs first.
+// Transient DB errors (pool exhaustion, statement timeout, idle-connection drop)
+// return 503 — not a 500 — so clients can retry without flooding error dashboards.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (isTransientDbError(err)) {
+    logger.warn({ err }, "[DB] Transient connection/timeout error (503)");
+    res.status(503).json({ error: "Service temporarily unavailable. Please try again." });
+    return;
+  }
+  logger.error({ err }, "[App] Unhandled error (500)");
+  res.status(500).json({ error: "Internal server error." });
+});
 
 export default app;
