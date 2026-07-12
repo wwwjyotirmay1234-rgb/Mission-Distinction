@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, Bell, LogOut, User as UserIcon, Menu, Zap, Megaphone, Newspaper, CalendarDays, AlertTriangle, Sun, Moon, PanelLeft, ArrowLeftRight } from "lucide-react";
+import { Search, Bell, LogOut, User as UserIcon, Menu, Zap, Megaphone, Newspaper, CalendarDays, AlertTriangle, Sun, Moon, PanelLeft, ArrowLeftRight, Link2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
@@ -13,6 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { RankBadge } from "@/components/RankBadge";
@@ -20,6 +23,7 @@ import { useXPStats } from "@/hooks/useXPStats";
 import { getRankForXp } from "@/lib/ranks";
 import { apiFetch } from "@/lib/apiFetch";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -213,6 +217,9 @@ export function Header() {
   const { setOpen, hidden, setHidden } = useSidebar();
   const { data: xpStats } = useXPStats();
   const [switching, setSwitching] = React.useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkEmail, setLinkEmail] = useState("");
+  const [linking, setLinking] = useState(false);
 
   const isAdmin = user?.role === "admin";
   const isSwitchedToStudent = !isAdmin && !!localStorage.getItem("mission_admin_token");
@@ -245,7 +252,11 @@ export function Header() {
         const res = await apiFetch("/api/super-admin/switch-to-student", { method: "POST" });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          alert((err as any).error || "Could not switch to student account.");
+          if (res.status === 404) {
+            setLinkDialogOpen(true);
+          } else {
+            toast.error((err as any).error || "Could not switch to student account.");
+          }
           return;
         }
         const data = await res.json() as { token: string; user: object };
@@ -254,10 +265,36 @@ export function Header() {
         login({ token: data.token, user: data.user as any });
         setLocation("/student/dashboard");
       } catch {
-        alert("Could not switch to student account.");
+        toast.error("Could not switch to student account.");
       } finally {
         setSwitching(false);
       }
+    }
+  };
+
+  const handleLinkStudent = async () => {
+    if (!linkEmail.trim()) return;
+    setLinking(true);
+    try {
+      const res = await apiFetch("/api/super-admin/link-student", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentEmail: linkEmail.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error((data as any).error || "Could not link student account.");
+        return;
+      }
+      toast.success(`Linked to ${(data as any).linkedStudent?.fullName || linkEmail} — switching now…`);
+      setLinkDialogOpen(false);
+      setLinkEmail("");
+      // auto-retry the switch now that the account is linked
+      setTimeout(() => handleSwitchAccount(), 300);
+    } catch {
+      toast.error("Could not link student account.");
+    } finally {
+      setLinking(false);
     }
   };
 
@@ -405,6 +442,39 @@ export function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Link Student Account Dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={(v) => { if (!v) { setLinkDialogOpen(false); setLinkEmail(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 size={18} className="text-primary" /> Link Student Account
+            </DialogTitle>
+            <DialogDescription>
+              Enter the email address of the student account you want to preview the app as. You only need to do this once.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Input
+              placeholder="student@example.com"
+              value={linkEmail}
+              onChange={(e) => setLinkEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLinkStudent()}
+              disabled={linking}
+              autoFocus
+              className="bg-muted/30"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setLinkDialogOpen(false); setLinkEmail(""); }} disabled={linking}>
+              Cancel
+            </Button>
+            <Button onClick={handleLinkStudent} disabled={linking || !linkEmail.trim()}>
+              {linking ? "Linking…" : "Link & Switch"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }
