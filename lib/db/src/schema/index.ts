@@ -37,3 +37,5 @@ export * from "./clinicalCases";
 export * from "./pyqInsightsCache";
 export * from "./teachBackSessions";
 export * from "./aiChatSessions";
+export * from "./notesMarketplace";
+export * from "./photoDoubts";

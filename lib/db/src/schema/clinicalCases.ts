@@ -9,6 +9,10 @@ export const clinicalCasesTable = pgTable("clinical_cases", {
   dateAssigned: text("date_assigned"),
   createdBy: integer("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  isGrandRound: boolean("is_grand_round").default(false).notNull(),
+  grandRoundWeek: text("grand_round_week"),
+  featuredAttemptId: integer("featured_attempt_id"),
+  winnerAnnouncedAt: timestamp("winner_announced_at"),
 });
 
 export const clinicalCaseAttemptsTable = pgTable("clinical_case_attempts", {

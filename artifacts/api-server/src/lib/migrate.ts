@@ -667,6 +667,43 @@ export async function runStartupMigrations() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS linked_student_id INTEGER REFERENCES users(id);
       UPDATE users SET linked_student_id = (SELECT id FROM users WHERE email = 'www.jyotirmay1234@gmail.com' LIMIT 1)
         WHERE email = 'missiondistinction108@gmail.com' AND linked_student_id IS NULL;
+
+      -- ── Notes Marketplace ─────────────────────────────────────────────────────
+      CREATE TABLE IF NOT EXISTS student_note_submissions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        description TEXT,
+        file_url TEXT NOT NULL,
+        file_type TEXT NOT NULL DEFAULT 'pdf',
+        status TEXT NOT NULL DEFAULT 'pending',
+        admin_note TEXT,
+        reviewed_by INTEGER,
+        reviewed_at TIMESTAMP,
+        xp_awarded BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_sns_user ON student_note_submissions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_sns_status ON student_note_submissions(status);
+
+      -- ── Photo Doubts ──────────────────────────────────────────────────────────
+      CREATE TABLE IF NOT EXISTS photo_doubts (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        image_url TEXT NOT NULL,
+        question TEXT,
+        ai_explanation TEXT NOT NULL,
+        subject TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_pd_user ON photo_doubts(user_id);
+
+      -- ── Grand Round columns on clinical_cases ─────────────────────────────────
+      ALTER TABLE clinical_cases ADD COLUMN IF NOT EXISTS is_grand_round BOOLEAN NOT NULL DEFAULT FALSE;
+      ALTER TABLE clinical_cases ADD COLUMN IF NOT EXISTS grand_round_week TEXT;
+      ALTER TABLE clinical_cases ADD COLUMN IF NOT EXISTS featured_attempt_id INTEGER;
+      ALTER TABLE clinical_cases ADD COLUMN IF NOT EXISTS winner_announced_at TIMESTAMP;
     `);
   } finally {
     client.release();

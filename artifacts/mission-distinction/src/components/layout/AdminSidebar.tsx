@@ -30,6 +30,7 @@ import {
   ChevronRight,
   Mic,
   Stethoscope,
+  Store,
 } from "lucide-react";
 
 const navItems = [
@@ -68,6 +69,7 @@ const navItems = [
     ],
   },
   { icon: Stethoscope, label: "Clinical Cases", href: "/admin/clinical-cases" },
+  { icon: Store, label: "Notes Marketplace", href: "/admin/notes-marketplace" },
   { icon: Newspaper, label: "News & Discoveries", href: "/admin/news" },
   { icon: Megaphone, label: "Announcements", href: "/admin/announcements" },
   { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },

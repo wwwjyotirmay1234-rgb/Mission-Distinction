@@ -52,6 +52,10 @@ import { analyticsRouter } from "./analytics";
 import { clinicalCasesRouter } from "./clinicalCases";
 import { revisionItemsRouter } from "./revisionItems";
 import { grandTestsRouter } from "./grandTests";
+import { customQuizRouter } from "./customQuiz";
+import { photoDoubtRouter } from "./photoDoubt";
+import { notesMarketplaceRouter } from "./notesMarketplace";
+import { grandRoundsRouter } from "./grandRounds";
 
 const router: IRouter = Router();
 
@@ -115,5 +119,11 @@ router.use("/clinical-cases", clinicalCasesRouter);
 router.use("/admin/clinical-cases", clinicalCasesRouter);
 router.use("/revision-items", revisionItemsRouter);
 router.use("/grand-tests", grandTestsRouter);
+router.use("/quizzes", customQuizRouter);
+router.use("/photo-doubt", photoDoubtRouter);
+router.use("/marketplace/notes", notesMarketplaceRouter);
+router.use("/admin/marketplace/notes", notesMarketplaceRouter);
+router.use("/grand-rounds", grandRoundsRouter);
+router.use("/admin/grand-rounds", grandRoundsRouter);
 
 export default router;

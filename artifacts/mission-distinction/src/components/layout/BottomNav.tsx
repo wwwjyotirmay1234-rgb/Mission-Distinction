@@ -7,6 +7,7 @@ import {
   Microscope, Stethoscope, FileText, File, GraduationCap as ScholarIcon,
   Zap, BarChart2, TrendingUp, Trophy, Bot, Calendar as CalendarIcon,
   Timer, Gamepad2, Music, Settings, MessageSquare, MessageCircleHeart,
+  Wand2, Camera, Store,
 } from "lucide-react";
 import { getSectionColor } from "@/lib/sectionColors";
 import { useSidebar } from "@/contexts/SidebarContext";
@@ -37,6 +38,10 @@ interface DrawerLink {
 }
 
 const LEARN_LINKS: DrawerLink[] = [
+  { icon: Wand2, label: "Custom Quiz", href: "/student/custom-quiz" },
+  { icon: Stethoscope, label: "Grand Rounds", href: "/student/grand-rounds" },
+  { icon: Store, label: "Notes Marketplace", href: "/student/notes-marketplace" },
+  { icon: Camera, label: "Photo Doubt Solver", href: "/student/photo-doubt" },
   { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy" },
   { icon: Stethoscope, label: "Practical Hub", href: "/student/practical-hub" },
   { icon: FileText, label: "Notes & Books", href: "/student/notes" },

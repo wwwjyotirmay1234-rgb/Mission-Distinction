@@ -10,6 +10,7 @@ import {
   Timer, Music, MessageCircleHeart,
   Bot, Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight, BarChart2,
   GraduationCap, Stethoscope, Zap, ChevronDown, MoreHorizontal,
+  Wand2, Camera, Store,
 } from "lucide-react";
 import { useXPStats } from "@/hooks/useXPStats";
 import { XPProgressBar } from "@/components/XPProgressBar";
@@ -94,10 +95,23 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
     {
       label: "Practice",
       items: [
+        { icon: Wand2, label: "Custom Quiz", href: "/student/custom-quiz" },
+        { icon: Stethoscope, label: "Grand Rounds", href: "/student/grand-rounds" },
         { icon: Stethoscope, label: "Clinical Cases", href: "/student/clinical-case" },
         { icon: BarChart2, label: "Quiz Analysis", href: "/student/quiz-analysis" },
-        { icon: Zap, label: "Cheat Codes", href: "/student/cheat-codes" },
         { icon: GraduationCap, label: "Scholar Hub", href: "/student/scholar-hub" },
+        { icon: Zap, label: "Cheat Codes", href: "/student/cheat-codes" },
+      ],
+    },
+    {
+      label: "Community",
+      items: [
+        { icon: Store, label: "Notes Marketplace", href: "/student/notes-marketplace" },
+        { icon: Users, label: "Community", href: "/student/community" },
+        { icon: Users, label: "Study Rooms", href: "/student/study-rooms" },
+        { icon: MessageSquare, label: "Doubt Board", href: "/student/doubts" },
+        { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
+        { icon: Newspaper, label: "News & Announcements", href: "/student/announcements", badge: unseenCount > 0 ? unseenCount : undefined },
       ],
     },
     {
@@ -108,19 +122,10 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
       ],
     },
     {
-      label: "Community",
-      items: [
-        { icon: Users, label: "Community", href: "/student/community" },
-        { icon: Users, label: "Study Rooms", href: "/student/study-rooms" },
-        { icon: MessageSquare, label: "Doubt Board", href: "/student/doubts" },
-        { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
-        { icon: Newspaper, label: "News & Announcements", href: "/student/announcements", badge: unseenCount > 0 ? unseenCount : undefined },
-      ],
-    },
-    {
       label: "More",
       collapsible: true,
       items: [
+        { icon: Camera, label: "Photo Doubt Solver", href: "/student/photo-doubt" },
         { icon: Bot, label: "AI Tools", href: "/student/ai-tools" },
         { icon: CalendarIcon, label: "Calendar", href: "/student/calendar" },
         { icon: Timer, label: "Study Tools", href: "/student/tools" },

@@ -123,8 +123,13 @@ const AdminScholarHub    = lazy(() => import("@/pages/admin/ScholarHub"));
 const VivaQuestionBank   = lazy(() => import("@/pages/admin/VivaQuestionBank"));
 const AnatomyVivaImages  = lazy(() => import("@/pages/admin/AnatomyVivaImages"));
 const AdminClinicalCases = lazy(() => import("@/pages/admin/ClinicalCases"));
-const AdminGrandTests    = lazy(() => import("@/pages/admin/GrandTests"));
-const StudentGrandTests  = lazy(() => import("@/pages/student/GrandTests"));
+const AdminGrandTests         = lazy(() => import("@/pages/admin/GrandTests"));
+const StudentGrandTests       = lazy(() => import("@/pages/student/GrandTests"));
+const StudentCustomQuiz       = lazy(() => import("@/pages/student/CustomQuizBuilder"));
+const StudentPhotoDoubt       = lazy(() => import("@/pages/student/PhotoDoubtSolver"));
+const StudentNotesMarketplace = lazy(() => import("@/pages/student/NotesMarketplace"));
+const StudentGrandRounds      = lazy(() => import("@/pages/student/GrandRounds"));
+const AdminNotesMarketplace   = lazy(() => import("@/pages/admin/NotesMarketplace"));
 
 const queryClient = new QueryClient();
 
@@ -217,9 +222,13 @@ function Router() {
                 <Route path="/student/practical-hub" component={StudentPracticalHub} />
                 <Route path="/student/games"        component={StudentGames} />
                 <Route path="/student/scholar-hub" component={StudentScholarHub} />
-                <Route path="/student/clinical-case" component={StudentClinicalCase} />
-                <Route path="/student/bookmarks"    component={StudentBookmarks} />
-                <Route path="/student/grand-tests"  component={StudentGrandTests} />
+                <Route path="/student/clinical-case"     component={StudentClinicalCase} />
+                <Route path="/student/bookmarks"         component={StudentBookmarks} />
+                <Route path="/student/grand-tests"       component={StudentGrandTests} />
+                <Route path="/student/custom-quiz"       component={StudentCustomQuiz} />
+                <Route path="/student/photo-doubt"       component={StudentPhotoDoubt} />
+                <Route path="/student/notes-marketplace" component={StudentNotesMarketplace} />
+                <Route path="/student/grand-rounds"      component={StudentGrandRounds} />
                 <Route component={NotFound} />
               </Switch>
             </StudentLayout>
@@ -262,6 +271,7 @@ function Router() {
                 <Route path="/admin/anatomy-viva-images"    component={AnatomyVivaImages} />
                 <Route path="/admin/clinical-cases"         component={AdminClinicalCases} />
                 <Route path="/admin/grand-tests"            component={AdminGrandTests} />
+                <Route path="/admin/notes-marketplace"      component={AdminNotesMarketplace} />
                 <Route component={NotFound} />
               </Switch>
             </AdminLayout>
