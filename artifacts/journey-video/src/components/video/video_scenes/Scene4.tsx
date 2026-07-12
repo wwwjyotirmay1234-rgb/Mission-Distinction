@@ -23,18 +23,42 @@ export function Scene4() {
 
   return (
     <motion.div
-      className="absolute inset-0 overflow-hidden bg-brand-navy flex items-center justify-center"
+      className="absolute inset-0 overflow-hidden flex items-center justify-center"
       initial={{ clipPath: 'circle(0% at 50% 50%)' }}
       animate={{ clipPath: 'circle(150% at 50% 50%)' }}
       exit={{ y: '100%', opacity: 0 }}
       transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div className="absolute inset-0 bg-gradient-to-tr from-brand-purple/20 to-transparent" />
+      {/* ── Group coding photo ── */}
+      <motion.div
+        className="absolute inset-0"
+        style={{ zIndex: 0 }}
+        initial={{ scale: 1.08 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 8, ease: 'easeOut' }}
+      >
+        <img
+          src={`${import.meta.env.BASE_URL}images/group_coding.png`}
+          className="w-full h-full object-cover object-center"
+          style={{ filter: 'saturate(0.4) contrast(1.1) brightness(0.45)' }}
+          alt=""
+        />
+      </motion.div>
 
+      {/* Overlays */}
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1,
+        background: 'radial-gradient(ellipse at center, rgba(10,8,30,0.55) 0%, rgba(10,8,30,0.92) 100%)' }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1,
+        background: 'linear-gradient(to bottom, rgba(10,8,30,0.7) 0%, transparent 30%, transparent 70%, rgba(10,8,30,0.85) 100%)' }} />
+      {/* Purple tint */}
+      <div className="absolute inset-0 pointer-events-none mix-blend-color" style={{ zIndex: 1, backgroundColor: 'rgba(80,40,140,0.18)' }} />
+
+      {/* Orbiting dots */}
       {phase >= 1 && Array.from({ length: 12 }).map((_, i) => (
         <motion.div
           key={i}
           className="absolute w-[4px] h-[4px] bg-brand-gold rounded-full"
+          style={{ zIndex: 5 }}
           initial={{ top: '50%', left: '50%', scale: 0 }}
           animate={{
             top: `${50 + Math.sin(i * 30 * Math.PI / 180) * 38}%`,
@@ -45,7 +69,7 @@ export function Scene4() {
         />
       ))}
 
-      <div className="relative z-10 text-center flex flex-col items-center">
+      <div className="relative text-center flex flex-col items-center" style={{ zIndex: 10 }}>
         <motion.div
           className="text-[1.2vw] font-mono tracking-[0.4em] text-brand-purpleLight/60 mb-[1vw]"
           initial={{ opacity: 0 }}
@@ -94,6 +118,7 @@ export function Scene4() {
             <motion.span
               key={f}
               className="text-[1.1vw] font-sans px-3 py-1 rounded-full border border-brand-purple/40 text-brand-purpleLight/70"
+              style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(10,8,30,0.4)' }}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={phase >= 4 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
               transition={{ delay: i * 0.1, duration: 0.4 }}

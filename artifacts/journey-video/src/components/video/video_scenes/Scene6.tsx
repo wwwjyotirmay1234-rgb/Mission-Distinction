@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, useSpring, useTransform } from 'framer-motion';
 
 interface Milestone {
@@ -74,20 +74,37 @@ export function Scene6() {
 
   return (
     <motion.div
-      className="absolute inset-0 bg-black overflow-hidden flex items-center justify-center"
+      className="absolute inset-0 overflow-hidden flex items-center justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
+      {/* ── Group celebration photo ── */}
+      <motion.div
+        className="absolute inset-0"
+        style={{ zIndex: 0 }}
+        initial={{ scale: 1.06 }}
+        animate={phase >= 4 ? { scale: 1.02 } : { scale: 1 }}
+        transition={{ duration: 6, ease: 'easeOut' }}
+      >
+        <img
+          src={`${import.meta.env.BASE_URL}images/group_celebration.png`}
+          className="w-full h-full object-cover object-center"
+          style={{ filter: 'saturate(0.35) contrast(1.15) brightness(0.3)' }}
+          alt=""
+        />
+      </motion.div>
+
       {/* Deep radial — gets warmer on 500 */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
+        style={{ zIndex: 1 }}
         animate={phase >= 4
-          ? { background: 'radial-gradient(ellipse at center, rgba(200,163,64,0.18) 0%, rgba(0,0,0,1) 60%)' }
+          ? { background: 'radial-gradient(ellipse at center, rgba(200,163,64,0.2) 0%, rgba(0,0,0,0.88) 65%)' }
           : milestoneIdx === 1
-            ? { background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12) 0%, rgba(0,0,0,1) 60%)' }
-            : { background: 'radial-gradient(ellipse at center, rgba(10,10,10,0) 0%, rgba(0,0,0,1) 60%)' }
+            ? { background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.15) 0%, rgba(0,0,0,0.88) 65%)' }
+            : { background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.88) 65%)' }
         }
         transition={{ duration: 1.2 }}
       />
@@ -99,6 +116,7 @@ export function Scene6() {
           className="absolute rounded-full pointer-events-none"
           style={{
             left: '50%', top: '50%',
+            zIndex: 5,
             width: 2 + (i % 4),
             height: 2 + (i % 4),
             backgroundColor: i % 3 === 0 ? '#C8A340' : i % 3 === 1 ? '#fff' : '#f97316',
@@ -116,15 +134,16 @@ export function Scene6() {
 
       {/* Gold full-screen flash on 500 */}
       <motion.div
-        className="absolute inset-0 pointer-events-none z-50"
-        style={{ backgroundColor: 'rgba(200,163,64,0.35)' }}
+        className="absolute inset-0 pointer-events-none"
+        style={{ zIndex: 50, backgroundColor: 'rgba(200,163,64,0.35)' }}
         animate={goldFlash ? { opacity: [0, 1, 0] } : { opacity: 0 }}
         transition={{ duration: 0.55 }}
       />
 
       {/* COUNTER — screen shakes on hit */}
       <motion.div
-        className="relative z-10 text-center flex flex-col items-center"
+        className="relative text-center flex flex-col items-center"
+        style={{ zIndex: 10 }}
         animate={shake ? { x: [-12, 12, -8, 8, -4, 4, 0] } : { x: 0 }}
         transition={shake ? { duration: 0.45 } : { duration: 0 }}
       >
@@ -138,7 +157,7 @@ export function Scene6() {
           THE CLIMB
         </motion.p>
 
-        {/* MASSIVE counter — fills the frame */}
+        {/* MASSIVE counter */}
         {!finalReveal && (
           <motion.span
             className="font-display text-white leading-none tracking-tighter block"
@@ -150,7 +169,7 @@ export function Scene6() {
           </motion.span>
         )}
 
-        {/* Milestone headline — big, punchy */}
+        {/* Milestone headline */}
         {currentMilestone && !finalReveal && (
           <motion.div
             className="text-center mt-[1vw]"
@@ -174,7 +193,7 @@ export function Scene6() {
           </motion.div>
         )}
 
-        {/* FINAL QUIET REVEAL — after the explosion */}
+        {/* FINAL QUIET REVEAL */}
         {finalReveal && (
           <motion.div
             className="text-center"

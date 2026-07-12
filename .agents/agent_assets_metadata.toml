@@ -126,6 +126,18 @@ uri = "file://attached_assets/generated_images/group_portrait.png"
 type = "image"
 title = "group portrait looking at camera"
 
+[[generated]]
+id = "0bzaNxL1azpbDYZ3Dfp_y"
+uri = "file://attached_assets/generated_images/group_coding.png"
+type = "image"
+title = "group coding late night screens"
+
+[[generated]]
+id = "yTrwsVl_LjTGJjA76CuWN"
+uri = "file://attached_assets/generated_images/group_celebration.png"
+type = "image"
+title = "group download celebration phone"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
