@@ -67,7 +67,7 @@ export default function CustomQuizBuilder() {
     queryFn: () => apiFetchJson<{ subjects: string[]; tagsBySubject: Record<string, string[]> }>("/api/quizzes/custom/meta"),
   });
 
-  const availableTags = (subject && metaQuery.data?.tagsBySubject?.[subject]) ?? [];
+  const availableTags = ((subject && metaQuery.data?.tagsBySubject?.[subject]) ?? []) as string[];
 
   const buildMutation = useMutation({
     mutationFn: (body: object) =>

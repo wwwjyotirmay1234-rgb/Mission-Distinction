@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/apiFetch";
+import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,7 +36,7 @@ export default function PhotoDoubtSolver() {
 
   const historyQuery = useQuery({
     queryKey: ["photo-doubts-history"],
-    queryFn: () => apiRequest<{ doubts: PhotoDoubt[] }>("/api/photo-doubt/my-history"),
+    queryFn: () => apiFetchJson<{ doubts: PhotoDoubt[] }>("/api/photo-doubt/my-history"),
   });
 
   const solveMutation = useMutation({
