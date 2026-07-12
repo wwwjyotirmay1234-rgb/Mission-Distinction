@@ -66,6 +66,48 @@ uri = "file://artifacts/journey-video/public/images/medical-pattern.png"
 type = "image"
 title = "medical geometric pattern texture"
 
+[[generated]]
+id = "GoWfJqOi6XTL3c7Heo-_n"
+uri = "file://attached_assets/generated_images/student_coldopen.png"
+type = "image"
+title = "student cold open night study"
+
+[[generated]]
+id = "TFMEaFZO9HK7Pviltr7r_"
+uri = "file://attached_assets/generated_images/student_team.png"
+type = "image"
+title = "student team building hostel"
+
+[[generated]]
+id = "Q0Unhvs6reqfiEIIQfhAU"
+uri = "file://attached_assets/generated_images/student_darknight.png"
+type = "image"
+title = "student dark night crisis rain"
+
+[[generated]]
+id = "hhwDu3_oO_D818vT559b4"
+uri = "file://attached_assets/generated_images/student_launch.png"
+type = "image"
+title = "student launch celebration phone"
+
+[[generated]]
+id = "z-rClrvTNTOKRQITQFkbO"
+uri = "file://attached_assets/generated_images/student_hope.png"
+type = "image"
+title = "student white coat hope portrait"
+
+[[generated]]
+id = "vORFRTHp6gFEnXdStO6IC"
+uri = "file://attached_assets/generated_images/student_team_outro.png"
+type = "image"
+title = "student team outro celebration"
+
+[[generated]]
+id = "k3CCZA_Aeyfptu0JI5ia1"
+uri = "file://attached_assets/generated_images/student_desk_overhead.png"
+type = "image"
+title = "student overhead desk books"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
