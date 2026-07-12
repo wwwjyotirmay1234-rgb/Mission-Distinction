@@ -310,7 +310,7 @@ export default function StudentPDFs() {
         <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
           <FileText size={16} className="text-primary" /> All PDFs
         </h2>
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 xl:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 xl:gap-4">
           {isLoading ? (
             Array(8).fill(0).map((_, i) => <Skeleton key={i} className="aspect-[3/4] w-full rounded-xl" />)
           ) : isError ? (
@@ -326,51 +326,58 @@ export default function StudentPDFs() {
             </div>
           ) : (
             (Array.isArray(pdfsData) ? pdfsData : (pdfsData as any).pdfs ?? []).map((pdf: any) => (
-              <div key={pdf.id} className="group relative">
-                <div className="aspect-[3/4] bg-muted/30 rounded-xl border border-border/50 overflow-hidden relative shadow-md transition-transform group-hover:-translate-y-1">
+              <div key={pdf.id} className="group relative flex flex-col">
+                {/* Thumbnail */}
+                <button
+                  className="aspect-[3/4] bg-muted/30 rounded-xl border border-border/50 overflow-hidden relative shadow-md transition-transform group-hover:-translate-y-1 w-full"
+                  onClick={() => setViewingPdf(pdf as Pdf)}
+                >
                   {pdf.thumbnailUrl ? (
-                    <img src={pdf.thumbnailUrl} alt={pdf.title} className="w-full h-full object-cover" />
+                    <img
+                      src={pdf.thumbnailUrl}
+                      alt={pdf.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-primary/20 to-blue-500/20 flex items-center justify-center p-4 text-center border-l-4 border-l-primary shadow-inner">
                       <span className="font-bold text-2xl opacity-40">{pdf.title.substring(0, 2).toUpperCase()}</span>
                     </div>
                   )}
-                  {/* Hover overlay — desktop only */}
-                  <div
-                    className="absolute inset-0 cursor-pointer hidden md:block"
-                    onClick={() => setViewingPdf(pdf as Pdf)}
-                  />
-                </div>
-                <div className="mt-3">
-                  <h3 className="font-semibold text-sm line-clamp-1 group-hover:text-primary transition-colors">{pdf.title}</h3>
+                </button>
 
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <Badge variant="outline" className="text-[9px] px-1 py-0 bg-card">{pdf.subject}</Badge>
-                    {pdf.pages && <span className="text-[10px] text-muted-foreground">{pdf.pages} pages</span>}
+                {/* Info */}
+                <div className="mt-2 flex-1 flex flex-col">
+                  <h3
+                    className="font-semibold text-xs sm:text-sm line-clamp-2 group-hover:text-primary transition-colors leading-snug cursor-pointer"
+                    onClick={() => setViewingPdf(pdf as Pdf)}
+                  >
+                    {pdf.title}
+                  </h3>
+                  <div className="flex items-center gap-1.5 mt-1 mb-2">
+                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-card border-border/50 shrink-0">
+                      {pdf.subject}
+                    </Badge>
+                    {pdf.pages && (
+                      <span className="text-[10px] text-muted-foreground truncate">{pdf.pages}p</span>
+                    )}
                   </div>
-                  <div className="flex gap-1.5 mt-2">
+
+                  {/* Actions: Read + Download (external link available inside modal) */}
+                  <div className="flex gap-1.5 mt-auto">
                     <Button
                       size="sm"
-                      className="flex-1 h-8 text-xs gap-1"
+                      className="flex-1 h-8 text-xs gap-1 min-w-0"
                       onClick={() => setViewingPdf(pdf as Pdf)}
                     >
-                      <BookOpen size={12} /> Read
+                      <BookOpen size={11} />
+                      <span className="truncate">Read</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       className="h-8 w-8 p-0 shrink-0"
-                      title="Open in browser"
-                      asChild
-                    >
-                      <a href={getOpenUrl((pdf as Pdf).url)} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink size={12} />
-                      </a>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="flex-1 h-8 text-xs gap-1"
+                      title="Download"
                       onClick={() => {
                         const isTouchDevice =
                           /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ||
@@ -385,7 +392,7 @@ export default function StudentPDFs() {
                         }
                       }}
                     >
-                      <Download size={12} /> Save
+                      <Download size={13} />
                     </Button>
                   </div>
                 </div>
