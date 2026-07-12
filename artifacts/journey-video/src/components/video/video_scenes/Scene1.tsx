@@ -6,10 +6,10 @@ export function Scene1() {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 1000),
-      setTimeout(() => setPhase(2), 2500),
-      setTimeout(() => setPhase(3), 5000),
-      setTimeout(() => setPhase(4), 7000),
+      setTimeout(() => setPhase(1), 400),
+      setTimeout(() => setPhase(2), 1800),
+      setTimeout(() => setPhase(3), 4000),
+      setTimeout(() => setPhase(4), 6500),
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
@@ -17,10 +17,10 @@ export function Scene1() {
   return (
     <motion.div
       className="absolute inset-0 overflow-hidden bg-black"
-      initial={{ filter: 'brightness(0)' }}
+      initial={{ filter: 'brightness(4)' }}
       animate={{ filter: 'brightness(1)' }}
-      exit={{ scale: 1.1, opacity: 0, filter: 'blur(20px)' }}
-      transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+      exit={{ scale: 1.08, opacity: 0, filter: 'blur(16px)' }}
+      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
     >
       <motion.div
         className="absolute inset-0 z-0"
@@ -68,6 +68,32 @@ export function Scene1() {
           </div>
         </div>
       </div>
+
+      {/* Location stamp — bottom left */}
+      <motion.div
+        className="absolute bottom-[8%] left-[5%] z-20"
+        initial={{ opacity: 0, y: 10 }}
+        animate={phase >= 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+        transition={{ duration: 1 }}
+      >
+        <div className="w-8 h-[1px] bg-brand-gold/50 mb-2" />
+        <p className="text-[1vw] font-mono tracking-[0.3em] text-brand-gold/70 uppercase">
+          Burla, Sambalpur · Odisha
+        </p>
+        <p className="text-[0.9vw] font-mono tracking-[0.25em] text-white/30 uppercase mt-1">
+          18 April 2026
+        </p>
+      </motion.div>
+
+      {/* Tagline fade in */}
+      <motion.p
+        className="absolute bottom-[8%] right-[5%] z-20 text-[1vw] font-sans text-white/30 italic"
+        initial={{ opacity: 0 }}
+        animate={phase >= 4 ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ duration: 1.2 }}
+      >
+        After struggling through 1st year exams —
+      </motion.p>
     </motion.div>
   );
 }

@@ -6,21 +6,19 @@ export function Scene4() {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 500),
-      setTimeout(() => setPhase(2), 2000),
-      setTimeout(() => setPhase(3), 6000),
-      setTimeout(() => setPhase(4), 8500),
+      setTimeout(() => setPhase(1), 400),
+      setTimeout(() => setPhase(2), 1800),
+      setTimeout(() => setPhase(3), 5500),
+      setTimeout(() => setPhase(4), 8000),
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
-  const count = useSpring(0, { stiffness: 40, damping: 20 });
+  const count = useSpring(0, { stiffness: 35, damping: 18 });
   const displayCount = useTransform(count, Math.round);
 
   useEffect(() => {
-    if (phase >= 2) {
-      count.set(500);
-    }
+    if (phase >= 2) count.set(72);
   }, [phase, count]);
 
   return (
@@ -39,8 +37,8 @@ export function Scene4() {
           className="absolute w-[4px] h-[4px] bg-brand-gold rounded-full"
           initial={{ top: '50%', left: '50%', scale: 0 }}
           animate={{
-            top: `${50 + Math.sin(i * 30) * 35}%`,
-            left: `${50 + Math.cos(i * 30) * 35}%`,
+            top: `${50 + Math.sin(i * 30 * Math.PI / 180) * 38}%`,
+            left: `${50 + Math.cos(i * 30 * Math.PI / 180) * 38}%`,
             scale: [0, 1, 0],
           }}
           transition={{ duration: 3, delay: i * 0.1, repeat: Infinity }}
@@ -48,44 +46,71 @@ export function Scene4() {
       ))}
 
       <div className="relative z-10 text-center flex flex-col items-center">
+        <motion.div
+          className="text-[1.2vw] font-mono tracking-[0.4em] text-brand-purpleLight/60 mb-[1vw]"
+          initial={{ opacity: 0 }}
+          animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          18 APR → 29 JUN 2026
+        </motion.div>
+
         <motion.h3
           className="text-[2.5vw] font-sans font-medium text-brand-purpleLight mb-[2vw]"
           initial={{ opacity: 0, y: 20 }}
           animate={phase >= 1 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.8 }}
         >
-          PROGRESS &amp; VICTORIES
+          DAYS OF BUILDING
         </motion.h3>
 
         <motion.div
           className="flex items-baseline justify-center"
           initial={{ scale: 0.5, opacity: 0 }}
-          animate={phase >= 2 ? { scale: phase >= 3 ? 1.2 : 1, opacity: 1 } : { scale: 0.5, opacity: 0 }}
+          animate={phase >= 2 ? { scale: phase >= 3 ? 1.15 : 1, opacity: 1 } : { scale: 0.5, opacity: 0 }}
           transition={{ duration: 0.8, type: 'spring', stiffness: 200, damping: 20 }}
         >
           <motion.span className="text-[18vw] font-display text-white leading-none tracking-tighter">
             {displayCount}
           </motion.span>
-          {phase >= 3 && (
-            <motion.span
-              className="text-[8vw] font-display text-brand-gold ml-[1vw]"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, type: 'spring' }}
-            >
-              +
-            </motion.span>
-          )}
         </motion.div>
 
         <motion.div
-          className="text-[3vw] font-sans text-white/70 mt-[1vw]"
+          className="text-[2.5vw] font-sans text-white/60 mt-[1vw]"
           initial={{ opacity: 0 }}
           animate={phase >= 3 ? { opacity: 1 } : { opacity: 0 }}
           transition={{ duration: 0.8 }}
         >
-          DOWNLOADS
+          Late nights. No guarantee.
         </motion.div>
+
+        <motion.div
+          className="mt-[3vw] flex gap-[3vw]"
+          initial={{ opacity: 0, y: 20 }}
+          animate={phase >= 4 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.8 }}
+        >
+          {['Quizzes', 'Notes', 'Community', 'Clinical AI', 'Viva Prep'].map((f, i) => (
+            <motion.span
+              key={f}
+              className="text-[1.1vw] font-sans px-3 py-1 rounded-full border border-brand-purple/40 text-brand-purpleLight/70"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={phase >= 4 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+              transition={{ delay: i * 0.1, duration: 0.4 }}
+            >
+              {f}
+            </motion.span>
+          ))}
+        </motion.div>
+
+        <motion.p
+          className="mt-[2.5vw] text-[1.5vw] font-sans text-brand-gold/80 tracking-[0.2em]"
+          initial={{ opacity: 0 }}
+          animate={phase >= 4 ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+        >
+          READY FOR LAUNCH
+        </motion.p>
       </div>
     </motion.div>
   );

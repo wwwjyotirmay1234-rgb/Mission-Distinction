@@ -1,43 +1,53 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
+import { Scene0 } from './video_scenes/Scene0';
 import { Scene1 } from './video_scenes/Scene1';
 import { Scene2 } from './video_scenes/Scene2';
 import { Scene3 } from './video_scenes/Scene3';
 import { Scene4 } from './video_scenes/Scene4';
 import { Scene5 } from './video_scenes/Scene5';
 import { Scene6 } from './video_scenes/Scene6';
+import { Scene7 } from './video_scenes/Scene7';
+import { Scene8 } from './video_scenes/Scene8';
 
 export const SCENE_DURATIONS: Record<string, number> = {
-  s1_beginning: 7800,
-  s2_building: 7800,
-  s3_challenges: 8000,
-  s4_progress: 10000,
-  s5_launch: 7800,
-  s6_outro: 10000,
+  s0_coldopen:  5000,
+  s1_beginning: 8000,
+  s2_building:  8000,
+  s3_darknight: 9000,
+  s4_progress:  10000,
+  s5_launch:    9000,
+  s6_climb:     9000,
+  s7_foryou:    11000,
+  s8_outro:     10000,
 };
 
 const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
+  s0_coldopen:  Scene0,
   s1_beginning: Scene1,
-  s2_building: Scene2,
-  s3_challenges: Scene3,
-  s4_progress: Scene4,
-  s5_launch: Scene5,
-  s6_outro: Scene6,
+  s2_building:  Scene2,
+  s3_darknight: Scene3,
+  s4_progress:  Scene4,
+  s5_launch:    Scene5,
+  s6_climb:     Scene6,
+  s7_foryou:    Scene7,
+  s8_outro:     Scene8,
 };
 
-const AMBIENT_COLORS = ['#C8A340', '#7c3aed', '#8b5cf6', '#7c3aed', '#C8A340', '#7c3aed'];
-const BLOB1_SIZE_W = ['40vw', '60vw', '50vw', '30vw', '80vw', '50vw'];
-const BLOB1_SIZE_H = ['40vh', '60vh', '50vh', '30vh', '80vh', '50vh'];
-const BLOB1_LEFT  = ['-10vw', '50vw', '80vw', '10vw', '-20vw', '25vw'];
-const BLOB1_TOP   = ['-10vh', '-20vh', '50vh', '70vh', '40vh', '25vh'];
-const BLOB1_OP    = [0.15, 0.1, 0.2, 0.15, 0.2, 0.1];
-const BLOB2_SIZE_W = ['30vw', '40vw', '70vw', '50vw', '60vw', '40vw'];
-const BLOB2_SIZE_H = ['30vh', '40vh', '70vh', '50vh', '60vh', '40vh'];
-const BLOB2_RIGHT  = ['-5vw', '10vw', '-10vw', '60vw', '-10vw', '30vw'];
-const BLOB2_BOTTOM = ['-5vh', '60vh', '-10vh', '10vh', '-20vh', '30vh'];
-const BLOB2_COLORS = ['#7c3aed', '#C8A340', '#0d0f1a', '#C8A340', '#7c3aed', '#C8A340'];
-const BLOB2_OP     = [0.1, 0.15, 0.05, 0.2, 0.1, 0.15];
+// 9 values — one per scene
+const AMBIENT_COLORS = ['#1a1030', '#C8A340', '#7c3aed', '#3b0000', '#7c3aed', '#C8A340', '#C8A340', '#7c3aed', '#7c3aed'];
+const BLOB1_SIZE_W   = ['15vw', '40vw', '60vw', '25vw', '50vw', '30vw', '80vw', '45vw', '50vw'];
+const BLOB1_SIZE_H   = ['15vh', '40vh', '60vh', '25vh', '50vh', '30vh', '80vh', '45vh', '50vh'];
+const BLOB1_LEFT     = ['42vw', '-10vw', '50vw', '5vw',  '10vw', '-20vw', '-20vw', '20vw', '25vw'];
+const BLOB1_TOP      = ['42vh', '-10vh', '-20vh', '5vh', '70vh',  '40vh',  '40vh', '20vh', '25vh'];
+const BLOB1_OP       = [0.04,   0.15,    0.1,    0.1,   0.15,    0.2,     0.25,   0.12,   0.1];
+const BLOB2_SIZE_W   = ['12vw', '30vw', '40vw', '35vw', '50vw', '60vw', '55vw', '40vw', '40vw'];
+const BLOB2_SIZE_H   = ['12vh', '30vh', '40vh', '35vh', '50vh', '60vh', '55vh', '40vh', '40vh'];
+const BLOB2_RIGHT    = ['42vw', '-5vw', '10vw', '45vw', '60vw', '-10vw', '-5vw', '25vw', '30vw'];
+const BLOB2_BOTTOM   = ['42vh', '-5vh', '60vh', '55vh', '10vh',  '-20vh', '-5vh', '25vh', '30vh'];
+const BLOB2_COLORS   = ['#0d0f1a', '#7c3aed', '#C8A340', '#1a0000', '#C8A340', '#7c3aed', '#C8A340', '#7c3aed', '#C8A340'];
+const BLOB2_OP       = [0.02, 0.1, 0.15, 0.06, 0.2, 0.1, 0.15, 0.12, 0.15];
 
 export default function VideoTemplate({
   durations = SCENE_DURATIONS,
@@ -115,6 +125,10 @@ export default function VideoTemplate({
           {SceneComponent && <SceneComponent key={currentSceneKey} />}
         </AnimatePresence>
       </div>
+
+      {/* Cinematic letterbox bars — 2.39:1 aspect */}
+      <div className="absolute top-0 left-0 right-0 z-[60] pointer-events-none bg-black" style={{ height: '12%' }} />
+      <div className="absolute bottom-0 left-0 right-0 z-[60] pointer-events-none bg-black" style={{ height: '12%' }} />
     </div>
   );
 }
