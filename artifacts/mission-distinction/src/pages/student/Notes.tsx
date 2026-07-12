@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, startTransition, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -257,6 +257,13 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
   const [repeatedProgress, setRepeatedProgress] = useState<{ completed: number; total: number } | null>(null);
   const [repeatedData, setRepeatedData] = useState<{ chapters: { chapter: string; importance: "high" | "medium" | "low"; repeatedQuestions: { question: string; timesSeen: number; yearsSeen: string[] }[] }[]; summary: string; warning?: string } | null>(null);
 
+  // Tab state — tracked explicitly so we can lazy-mount the PDF iframe
+  const [activeTabValue, setActiveTabValue] = useState("preview");
+
+  // Throttle refs — prevent rapid SSE progress events from hammering setState
+  const searchProgressThrottle = useRef(0);
+  const repeatProgressThrottle = useRef(0);
+
   const open = () => {
     trackPYQRead(pyq.id);
     setViewing(true);
@@ -304,8 +311,13 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
     setSearchResults(null);
     try {
       await streamPyqAi(`/api/pyqs/${pyq.id}/search-topic`, { topic }, (evt) => {
-        if (evt.type === "progress") setSearchProgress({ completed: evt.completed, total: evt.total });
-        else if (evt.type === "done") setSearchResults(evt);
+        if (evt.type === "progress") {
+          const now = Date.now();
+          if (now - searchProgressThrottle.current > 400) {
+            searchProgressThrottle.current = now;
+            startTransition(() => setSearchProgress({ completed: evt.completed, total: evt.total }));
+          }
+        } else if (evt.type === "done") setSearchResults(evt);
         else if (evt.type === "error") toast.error(evt.message || "Failed to search topic");
       });
     } catch (err: any) {
@@ -323,8 +335,13 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
     setRepeatedData(null);
     try {
       await streamPyqAi(`/api/pyqs/${pyq.id}/repeated-questions`, {}, (evt) => {
-        if (evt.type === "progress") setRepeatedProgress({ completed: evt.completed, total: evt.total });
-        else if (evt.type === "synthesizing") setAnalyzingPhase("synthesizing");
+        if (evt.type === "progress") {
+          const now = Date.now();
+          if (now - repeatProgressThrottle.current > 400) {
+            repeatProgressThrottle.current = now;
+            startTransition(() => setRepeatedProgress({ completed: evt.completed, total: evt.total }));
+          }
+        } else if (evt.type === "synthesizing") startTransition(() => setAnalyzingPhase("synthesizing"));
         else if (evt.type === "done") setRepeatedData(evt);
         else if (evt.type === "error") toast.error(evt.message || "Failed to analyze repeated questions");
       });
@@ -382,7 +399,7 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
               </Button>
             </DialogHeader>
 
-            <Tabs defaultValue="preview" className="flex-1 flex flex-col min-h-0">
+            <Tabs value={activeTabValue} onValueChange={setActiveTabValue} className="flex-1 flex flex-col min-h-0">
               <div className="px-6 border-b border-border/50 bg-muted/20">
                 <TabsList className="h-10 bg-transparent border-0 gap-4">
                   <TabsTrigger value="preview" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 h-10 text-xs">
@@ -417,7 +434,7 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
                     </div>
                     <p className="text-xs text-muted-foreground">Preview unavailable — tap "Open in Browser" to read.</p>
                   </div>
-                ) : (
+                ) : activeTabValue === "preview" ? (
                   <iframe
                     src={embedUrl}
                     className="w-full h-full rounded border-0"
@@ -426,7 +443,7 @@ function PYQCard({ pyq }: { pyq: PYQ }) {
                     allow="autoplay"
                     onError={() => setEmbedFailed(true)}
                   />
-                )}
+                ) : null}
               </TabsContent>
 
               <TabsContent value="search" className="flex-1 m-0 overflow-hidden flex flex-col p-6 gap-4">
