@@ -1,166 +1,120 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { WordReveal } from '../WordReveal';
+import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
 
 // SCENE 2 — THE REALIZATION
-// Lecture hall. Hundreds of students. All struggling.
-// "I am not the only one struggling."
 export function Scene1() {
   const [phase, setPhase] = useState(0);
+
+  useSceneSpeech([
+    { atPhase: 2, text: 'Some hide their anxiety behind smiles. Some desperately copy notes. Some search Telegram groups for PDFs.' },
+    { atPhase: 3, text: 'Everyone is studying. Yet everyone seems lost.' },
+    { atPhase: 4, text: 'I am not the only one struggling.' },
+    { atPhase: 5, text: 'Different colleges. Different cities.' },
+    { atPhase: 6, text: 'Same battle. Same dream.' },
+  ], phase);
 
   useEffect(() => {
     const timers = [
       setTimeout(() => setPhase(1), 500),
       setTimeout(() => setPhase(2), 2200),
-      setTimeout(() => setPhase(3), 5000),
-      setTimeout(() => setPhase(4), 8500),
-      setTimeout(() => setPhase(5), 11500),
-      setTimeout(() => setPhase(6), 15000),
-      setTimeout(() => setPhase(7), 17500),
+      setTimeout(() => setPhase(3), 6000),
+      setTimeout(() => setPhase(4), 9000),
+      setTimeout(() => setPhase(5), 12500),
+      setTimeout(() => setPhase(6), 15500),
     ];
-    return () => timers.forEach(t => clearTimeout(t));
+    return () => timers.forEach(clearTimeout);
   }, []);
 
   return (
-    <motion.div
-      className="absolute inset-0 overflow-hidden bg-black"
-      initial={{ filter: 'brightness(3)' }}
-      animate={{ filter: 'brightness(1)' }}
-      exit={{ x: '-5%', opacity: 0 }}
-      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-    >
-      {/* Background — lecture hall, crowd */}
-      <motion.div
-        className="absolute inset-0 z-0"
-        initial={{ scale: 1.1 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 12, ease: 'easeOut' }}
-      >
-        <img
-          src={`${import.meta.env.BASE_URL}images/group_coldopen.png`}
-          className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.3) contrast(1.15) brightness(0.38)' }}
-          alt=""
-        />
-      </motion.div>
+    <motion.div className="absolute inset-0 overflow-hidden bg-black"
+      initial={{ filter: 'brightness(3)' }} animate={{ filter: 'brightness(1)' }}
+      exit={{ x: '-5%', opacity: 0 }} transition={{ duration: 0.8 }}>
 
+      <motion.div className="absolute inset-0 z-0"
+        initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 12, ease: 'easeOut' }}>
+        <img src={`${import.meta.env.BASE_URL}images/group_coldopen.png`}
+          className="w-full h-full object-cover object-center"
+          style={{ filter: 'saturate(0.3) contrast(1.15) brightness(0.38)' }} alt="" />
+      </motion.div>
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'linear-gradient(to top, rgba(4,3,16,0.98) 0%, rgba(4,3,16,0.42) 50%, rgba(4,3,16,0.25) 100%)' }} />
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.72) 100%)' }} />
 
-      {/* Content */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-[10vw]">
 
-        {/* Morning location */}
-        <motion.p
-          className="font-mono mb-[4vw]"
-          style={{ fontSize: '0.9vw', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.2)' }}
-          initial={{ opacity: 0 }}
-          animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 1.5 }}>
-          MORNING · VIMSAR LECTURE HALL · HUNDREDS OF STUDENTS
+        {/* Stamp */}
+        <motion.p className="font-mono mb-[4vw]"
+          style={{ fontSize: '0.85vw', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.2)' }}
+          initial={{ opacity: 0 }} animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }} transition={{ duration: 1.5 }}>
+          MORNING · VIMSAR LECTURE HALL
         </motion.p>
 
-        {/* What they all do — three lines cycling in */}
-        <motion.div
-          className="mb-[3.5vw] space-y-[0.8vw]"
-          initial={{ opacity: 0 }}
-          animate={phase >= 2 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 1.5 }}>
-          {[
-            { text: 'Some hide their anxiety behind smiles.', delay: 0 },
-            { text: 'Some desperately copy notes.', delay: 0.4 },
-            { text: 'Some search Telegram groups for PDFs.', delay: 0.8 },
-          ].map(({ text, delay }) => (
-            <motion.p
-              key={text}
-              style={{ fontSize: '1.8vw', fontWeight: 100, fontStyle: 'italic', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.32)' }}
-              initial={{ opacity: 0, x: -16 }}
-              animate={phase >= 2 ? { opacity: 1, x: 0 } : { opacity: 0, x: -16 }}
-              transition={{ delay, duration: 1 }}>
-              {text}
-            </motion.p>
-          ))}
-        </motion.div>
+        {/* Three student types */}
+        {phase >= 2 && (
+          <div className="mb-[3.5vw] space-y-[0.8vw]">
+            {[
+              { t: 'Some hide their anxiety behind smiles.', d: 0 },
+              { t: 'Some desperately copy notes.', d: 0.7 },
+              { t: 'Some search Telegram groups for PDFs.', d: 1.3 },
+            ].map(({ t, d }) => (
+              <div key={t} style={{ fontSize: '1.9vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.38)', letterSpacing: '0.08em' }}>
+                <WordReveal text={t} startDelay={d} wordInterval={0.08} />
+              </div>
+            ))}
+          </div>
+        )}
 
-        {/* "Everyone is studying. Yet everyone seems lost." */}
-        <motion.div
-          className="mb-[3.5vw]"
-          initial={{ opacity: 0 }}
-          animate={phase >= 3 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 1.5 }}>
-          <p style={{ fontSize: '2.4vw', fontWeight: 100, fontStyle: 'italic', color: 'rgba(255,255,255,0.42)', letterSpacing: '0.08em' }}>
-            Everyone is studying.
-          </p>
-          <p style={{ fontSize: '2.4vw', fontWeight: 700, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.04em', marginTop: '0.4vw' }}>
-            Yet everyone seems lost.
-          </p>
-        </motion.div>
+        {/* "Everyone studying. Yet lost." */}
+        {phase >= 3 && (
+          <div className="mb-[3.5vw]">
+            <div style={{ fontSize: '2.4vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.42)', letterSpacing: '0.06em', lineHeight: 2 }}>
+              <WordReveal text="Everyone is studying." startDelay={0} wordInterval={0.1} style={{ display: 'block' }} />
+              <WordReveal text="Yet everyone seems lost." startDelay={0.8} wordInterval={0.1}
+                style={{ display: 'block', fontWeight: 700, color: 'rgba(255,255,255,0.65)' }} />
+            </div>
+          </div>
+        )}
 
-        {/* The realization — massive */}
-        <div className="overflow-hidden mb-[0.5vw]">
-          <motion.h1
-            className="font-display text-white leading-none"
-            style={{ fontSize: '4.5vw', letterSpacing: '-0.01em', textShadow: '0 4px 50px rgba(0,0,0,0.95)' }}
-            initial={{ y: '110%' }}
-            animate={phase >= 4 ? { y: 0 } : { y: '110%' }}
-            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}>
-            "I am not
-          </motion.h1>
-        </div>
-        <div className="overflow-hidden mb-[0.5vw]">
-          <motion.h1
-            className="font-display text-white leading-none"
-            style={{ fontSize: '4.5vw', letterSpacing: '-0.01em', textShadow: '0 4px 50px rgba(0,0,0,0.95)' }}
-            initial={{ y: '110%' }}
-            animate={phase >= 4 ? { y: 0 } : { y: '110%' }}
-            transition={{ duration: 1, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}>
-            the only one
-          </motion.h1>
-        </div>
-        <div className="overflow-hidden">
-          <motion.h1
-            className="font-display leading-none"
-            style={{ fontSize: '4.5vw', color: '#C8A340', letterSpacing: '-0.01em', textShadow: '0 4px 50px rgba(0,0,0,0.95)' }}
-            initial={{ y: '110%' }}
-            animate={phase >= 4 ? { y: 0 } : { y: '110%' }}
-            transition={{ duration: 1, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}>
-            struggling."
-          </motion.h1>
-        </div>
+        {/* THE REALIZATION */}
+        {phase >= 4 && (
+          <div className="mb-[2.5vw]">
+            <div style={{
+              fontSize: '4.8vw',
+              fontFamily: 'var(--font-display, serif)',
+              lineHeight: 1.15,
+              textShadow: '0 4px 50px rgba(0,0,0,0.95)',
+            }}>
+              <WordReveal text='"I am not' startDelay={0} wordInterval={0.15}
+                style={{ display: 'block', color: '#fff' }} />
+              <WordReveal text='the only one' startDelay={0.55} wordInterval={0.15}
+                style={{ display: 'block', color: '#fff' }} />
+              <WordReveal text='struggling."' startDelay={1.1} wordInterval={0.15}
+                style={{ display: 'block', color: '#C8A340' }} />
+            </div>
+          </div>
+        )}
 
         {/* "Different colleges. Different cities." */}
-        <motion.div
-          className="mt-[3.5vw] space-y-[0.5vw]"
-          initial={{ opacity: 0 }}
-          animate={phase >= 5 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 1.5 }}>
-          <p style={{ fontSize: '1.9vw', fontWeight: 100, fontStyle: 'italic', color: 'rgba(255,255,255,0.32)', letterSpacing: '0.15em' }}>
-            Different colleges. Different cities.
-          </p>
-        </motion.div>
+        {phase >= 5 && (
+          <div className="mt-[2vw]" style={{ fontSize: '2vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.14em' }}>
+            <WordReveal text="Different colleges. Different cities." startDelay={0} wordInterval={0.1} />
+          </div>
+        )}
 
-        {/* "Same battle. Same dream." — the emotional peak */}
-        <div className="overflow-hidden mt-[1.5vw]">
-          <motion.h2
-            className="font-display"
-            style={{ fontSize: '6.5vw', color: '#ffffff', letterSpacing: '-0.015em', textShadow: '0 4px 60px rgba(0,0,0,0.95)' }}
-            initial={{ y: '110%' }}
-            animate={phase >= 6 ? { y: 0 } : { y: '110%' }}
-            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>
-            Same battle.
-          </motion.h2>
-        </div>
-        <div className="overflow-hidden">
-          <motion.h2
-            className="font-display"
-            style={{ fontSize: '6.5vw', color: '#C8A340', letterSpacing: '-0.015em', textShadow: '0 0 50px rgba(200,163,64,0.3)' }}
-            initial={{ y: '110%' }}
-            animate={phase >= 6 ? { y: 0 } : { y: '110%' }}
-            transition={{ duration: 0.9, delay: 0.07, ease: [0.16, 1, 0.3, 1] }}>
-            Same dream.
-          </motion.h2>
-        </div>
+        {/* "Same battle. Same dream." */}
+        {phase >= 6 && (
+          <div className="mt-[1.8vw]">
+            <div style={{ fontFamily: 'var(--font-display, serif)', lineHeight: 1.1 }}>
+              <WordReveal text="Same battle." startDelay={0} wordInterval={0.2}
+                style={{ display: 'block', fontSize: '6.5vw', color: '#fff', letterSpacing: '-0.015em' }} />
+              <WordReveal text="Same dream." startDelay={0.5} wordInterval={0.2}
+                style={{ display: 'block', fontSize: '6.5vw', color: '#C8A340', letterSpacing: '-0.015em' }} />
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   );
