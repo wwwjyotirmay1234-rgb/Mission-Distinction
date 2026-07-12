@@ -23,32 +23,17 @@ export function Scene0() {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.12 }}
     >
-      {/* Full group — cinematic cold open */}
+      {/* Full group — cinematic cold open, single background */}
       <motion.div
         className="absolute inset-0 z-0"
         initial={{ scale: 1.08 }}
         animate={{ scale: 1 }}
-        transition={{ duration: 6, ease: 'easeOut' }}
+        transition={{ duration: 8, ease: 'easeOut' }}
       >
         <img
           src={`${import.meta.env.BASE_URL}images/group_coldopen.png`}
           className="w-full h-full object-cover object-center"
           style={{ filter: 'saturate(0.4) contrast(1.18) brightness(0.48)' }}
-          alt=""
-        />
-      </motion.div>
-
-      {/* Close-up face fades in over group photo for personal anchor */}
-      <motion.div
-        className="absolute inset-0 z-0"
-        initial={{ opacity: 0 }}
-        animate={phase >= 3 ? { opacity: 0.55 } : { opacity: 0 }}
-        transition={{ duration: 2.5, ease: 'easeIn' }}
-      >
-        <img
-          src={`${import.meta.env.BASE_URL}images/face_male_determined.png`}
-          className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.3) contrast(1.2) brightness(0.4)' }}
           alt=""
         />
       </motion.div>
@@ -87,7 +72,7 @@ export function Scene0() {
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-[8vw]">
         <div className="text-center" style={{ marginTop: '5vw' }}>
 
-          {/* Thin whisper line first */}
+          {/* Thin whisper line */}
           <div className="overflow-hidden mb-[1.2vw]">
             <motion.p
               className="text-center"
@@ -118,7 +103,7 @@ export function Scene0() {
             </motion.h1>
           </div>
 
-          {/* Breathing space — just a thin line */}
+          {/* Divider */}
           <motion.div
             className="mx-auto my-[2vw]"
             style={{ height: '1px', backgroundColor: 'rgba(255,255,255,0.1)' }}
@@ -127,7 +112,7 @@ export function Scene0() {
             transition={{ duration: 0.8 }}
           />
 
-          {/* Specific earned copy — replaces "SO THEY BUILT SOMETHING" */}
+          {/* Thin whisper */}
           <div className="overflow-hidden mb-[0.4vw]">
             <motion.p
               className="text-center"
@@ -144,6 +129,8 @@ export function Scene0() {
               so they stayed up every night
             </motion.p>
           </div>
+
+          {/* Gold payoff */}
           <div className="overflow-hidden">
             <motion.h2
               className="font-display text-center"

@@ -22,45 +22,30 @@ export function Scene2() {
       exit={{ x: '-100%', opacity: 0 }}
       transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
     >
-      {/* Hands on anatomy book — intimate close-up */}
+      {/* Single background — group coding, no crossfade */}
       <motion.div
         className="absolute inset-0 z-0"
-        initial={{ scale: 1.12 }}
+        initial={{ scale: 1.1 }}
         animate={{ scale: 1 }}
         transition={{ duration: 9, ease: 'easeOut' }}
       >
         <img
-          src={`${import.meta.env.BASE_URL}images/hands_on_book.png`}
-          className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.35) contrast(1.15) brightness(0.42)' }}
-          alt=""
-        />
-      </motion.div>
-
-      {/* Group coding fades in over hands — scale transition */}
-      <motion.div
-        className="absolute inset-0 z-0"
-        initial={{ opacity: 0 }}
-        animate={phase >= 2 ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 2.5, ease: 'easeIn' }}
-      >
-        <img
           src={`${import.meta.env.BASE_URL}images/group_coding.png`}
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.4) contrast(1.1) brightness(0.4)' }}
+          style={{ filter: 'saturate(0.35) contrast(1.15) brightness(0.38)' }}
           alt=""
         />
       </motion.div>
 
       {/* Overlays */}
       <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.85) 100%)' }} />
+        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.88) 100%)' }} />
       <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%)' }} />
+        style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.72) 100%)' }} />
       <div className="absolute inset-0 z-1 pointer-events-none mix-blend-color"
         style={{ backgroundColor: 'rgba(80,40,140,0.18)' }} />
 
-      {/* SINGLE POWERFUL VISUAL + ONE LINE — no cards */}
+      {/* SINGLE POWERFUL VISUAL + ONE LINE — no cards, no crossfades */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-[10vw]">
 
         {/* Thin whisper — sets up the tension */}
@@ -97,37 +82,35 @@ export function Scene2() {
           </motion.h1>
         </div>
 
-        {/* Thin earned detail — specific, not generic */}
+        {/* Thin earned detail */}
         <motion.div
-          className="mt-[3.5vw]"
+          className="mt-[3.5vw] flex items-center justify-center gap-[2vw]"
           initial={{ opacity: 0, y: 16 }}
           animate={phase >= 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
           transition={{ duration: 1.2 }}>
-          <div className="flex items-center justify-center gap-[1.5vw]">
-            {(['72 nights', 'no blueprint', 'no guarantee'] as const).map((item, i) => (
-              <span key={item} className="flex items-center gap-[1.5vw]">
-                {i > 0 && (
-                  <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '1.3vw' }}>·</span>
-                )}
-                <motion.span
-                  style={{
-                    fontSize: '1.3vw',
-                    fontWeight: 100,
-                    letterSpacing: '0.3em',
-                    color: 'rgba(200,163,64,0.6)',
-                    fontStyle: 'italic',
-                  }}
-                  initial={{ opacity: 0 }}
-                  animate={phase >= 3 ? { opacity: 1 } : { opacity: 0 }}
-                  transition={{ duration: 0.8, delay: i * 0.25 }}>
-                  {item}
-                </motion.span>
-              </span>
-            ))}
-          </div>
+          {(['72 nights', 'no blueprint', 'no guarantee'] as const).map((item, i) => (
+            <span key={item} className="flex items-center gap-[2vw]">
+              {i > 0 && (
+                <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '1.3vw' }}>·</span>
+              )}
+              <motion.span
+                style={{
+                  fontSize: '1.3vw',
+                  fontWeight: 100,
+                  letterSpacing: '0.3em',
+                  color: 'rgba(200,163,64,0.6)',
+                  fontStyle: 'italic',
+                }}
+                initial={{ opacity: 0 }}
+                animate={phase >= 3 ? { opacity: 1 } : { opacity: 0 }}
+                transition={{ duration: 0.8, delay: i * 0.25 }}>
+                {item}
+              </motion.span>
+            </span>
+          ))}
         </motion.div>
 
-        {/* Date stamp — whisper quiet */}
+        {/* Date stamp */}
         <motion.p
           className="font-mono mt-[2.5vw]"
           style={{ fontSize: '0.9vw', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.18)' }}

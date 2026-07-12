@@ -6,13 +6,10 @@ export function Scene4() {
 
   useEffect(() => {
     const timers = [
-      // BREATHING ROOM — 2.5 seconds of pure silence before anything appears
-      setTimeout(() => setPhase(1), 2500),
-      setTimeout(() => setPhase(2), 4200),
-      setTimeout(() => setPhase(3), 7200),
-      setTimeout(() => setPhase(4), 9500),
-      // Match-cut prep — "72" scales up to fill screen
-      setTimeout(() => setPhase(5), 10200),
+      setTimeout(() => setPhase(1), 800),   // whisper label
+      setTimeout(() => setPhase(2), 2000),  // counter animates to 72
+      setTimeout(() => setPhase(3), 5000),  // earned copy
+      setTimeout(() => setPhase(4), 7500),  // feature list
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
@@ -56,9 +53,7 @@ export function Scene4() {
       <div className="absolute inset-0 pointer-events-none mix-blend-color" style={{ zIndex: 1,
         backgroundColor: 'rgba(80,40,140,0.16)' }} />
 
-      {/* PHASE 0-1: Silence — just the photo. Nothing. Breathing room. */}
-
-      {/* Content appears only after the breathing room */}
+      {/* Content */}
       <div className="relative text-center flex flex-col items-center" style={{ zIndex: 10 }}>
 
         {/* Thin whisper label */}
@@ -77,17 +72,12 @@ export function Scene4() {
           days of building
         </motion.p>
 
-        {/* The massive counter — match-cut anchor */}
+        {/* Massive counter */}
         <motion.div
           className="flex items-baseline justify-center"
           initial={{ scale: 0.6, opacity: 0 }}
-          animate={phase >= 2 ? {
-            scale: phase >= 5 ? 6 : phase >= 3 ? 1.08 : 1,
-            opacity: phase >= 5 ? 0 : 1,
-          } : { scale: 0.6, opacity: 0 }}
-          transition={phase >= 5
-            ? { duration: 0.7, ease: [0.55, 0, 1, 0.45] }
-            : { duration: 0.9, type: 'spring', stiffness: 180, damping: 22 }}
+          animate={phase >= 2 ? { scale: phase >= 3 ? 1.06 : 1, opacity: 1 } : { scale: 0.6, opacity: 0 }}
+          transition={{ duration: 0.9, type: 'spring', stiffness: 180, damping: 22 }}
         >
           <motion.span
             className="font-display text-white leading-none tracking-tighter"
@@ -96,7 +86,7 @@ export function Scene4() {
           </motion.span>
         </motion.div>
 
-        {/* Earned copy — specific */}
+        {/* Earned copy */}
         <motion.p
           style={{
             fontSize: '2.2vw',
@@ -112,7 +102,7 @@ export function Scene4() {
           late nights. no guarantee.
         </motion.p>
 
-        {/* Features — whisper quiet */}
+        {/* Feature whispers */}
         <motion.div
           className="mt-[2.5vw] flex gap-[2.5vw]"
           initial={{ opacity: 0, y: 16 }}

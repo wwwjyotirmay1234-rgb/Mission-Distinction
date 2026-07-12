@@ -22,7 +22,7 @@ export function Scene1() {
       exit={{ scale: 1.08, opacity: 0, filter: 'blur(16px)' }}
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
     >
-      {/* Group silhouette — all 5 facing a glowing screen */}
+      {/* Group silhouette — single background, no overlays */}
       <motion.div
         className="absolute inset-0 z-0"
         initial={{ scale: 1.12 }}
@@ -37,21 +37,6 @@ export function Scene1() {
         />
       </motion.div>
 
-      {/* Male close-up face fades in — gives one face to follow */}
-      <motion.div
-        className="absolute inset-0 z-0"
-        initial={{ opacity: 0 }}
-        animate={phase >= 3 ? { opacity: 0.5 } : { opacity: 0 }}
-        transition={{ duration: 2.5, ease: 'easeIn' }}
-      >
-        <img
-          src={`${import.meta.env.BASE_URL}images/face_male_determined.png`}
-          className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.3) contrast(1.18) brightness(0.38)' }}
-          alt=""
-        />
-      </motion.div>
-
       {/* Cinematic overlays */}
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'linear-gradient(to top, rgba(10,8,25,0.97) 0%, rgba(10,8,25,0.42) 45%, rgba(10,8,25,0.22) 100%)' }} />
@@ -60,7 +45,7 @@ export function Scene1() {
       <div className="absolute inset-0 z-1 pointer-events-none mix-blend-color"
         style={{ backgroundColor: 'rgba(150,90,20,0.14)' }} />
 
-      {/* Content — typography contrast: thin sets up, bold lands */}
+      {/* Content — typography contrast */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-12 text-center">
         <div className="relative">
           <motion.div
@@ -89,15 +74,11 @@ export function Scene1() {
             </motion.p>
           </div>
 
-          {/* Massive bold — the weight contrast */}
+          {/* Massive bold */}
           <div className="overflow-hidden">
             <motion.h1
               className="font-display text-white leading-none"
-              style={{
-                fontSize: '8.5vw',
-                letterSpacing: '-0.025em',
-                textShadow: '0 4px 60px rgba(0,0,0,0.95)',
-              }}
+              style={{ fontSize: '8.5vw', letterSpacing: '-0.025em', textShadow: '0 4px 60px rgba(0,0,0,0.95)' }}
               initial={{ y: '100%' }}
               animate={phase >= 2 ? { y: 0 } : { y: '100%' }}
               transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}>
@@ -107,12 +88,7 @@ export function Scene1() {
           <div className="overflow-hidden">
             <motion.h1
               className="font-display leading-none"
-              style={{
-                fontSize: '8.5vw',
-                letterSpacing: '-0.025em',
-                color: '#C8A340',
-                textShadow: '0 4px 60px rgba(0,0,0,0.95)',
-              }}
+              style={{ fontSize: '8.5vw', letterSpacing: '-0.025em', color: '#C8A340', textShadow: '0 4px 60px rgba(0,0,0,0.95)' }}
               initial={{ y: '100%' }}
               animate={phase >= 2 ? { y: 0 } : { y: '100%' }}
               transition={{ duration: 1, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}>
@@ -122,7 +98,7 @@ export function Scene1() {
         </div>
       </div>
 
-      {/* Location stamp — bottom left */}
+      {/* Location stamp */}
       <motion.div
         className="absolute bottom-[8%] left-[5%] z-20"
         initial={{ opacity: 0, y: 10 }}
@@ -137,16 +113,10 @@ export function Scene1() {
         </p>
       </motion.div>
 
-      {/* Earned bottom-right line — specific not generic */}
+      {/* Bottom-right line */}
       <motion.p
         className="absolute bottom-[8%] right-[5%] z-20"
-        style={{
-          fontSize: '1vw',
-          fontWeight: 100,
-          fontStyle: 'italic',
-          color: 'rgba(255,255,255,0.28)',
-          letterSpacing: '0.08em',
-        }}
+        style={{ fontSize: '1vw', fontWeight: 100, fontStyle: 'italic', color: 'rgba(255,255,255,0.28)', letterSpacing: '0.08em' }}
         initial={{ opacity: 0 }}
         animate={phase >= 4 ? { opacity: 1 } : { opacity: 0 }}
         transition={{ duration: 1.2 }}>
