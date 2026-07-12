@@ -103,24 +103,26 @@ export function Scene2() {
           initial={{ opacity: 0, y: 16 }}
           animate={phase >= 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
           transition={{ duration: 1.2 }}>
-          <div className="flex items-center justify-center gap-[2.5vw]">
-            {['72 nights', 'no blueprint', 'no guarantee'].map((item, i) => (
-              <motion.span
-                key={item}
-                style={{
-                  fontSize: '1.3vw',
-                  fontWeight: 100,
-                  letterSpacing: '0.3em',
-                  color: 'rgba(200,163,64,0.6)',
-                  fontStyle: 'italic',
-                  textTransform: 'lowercase',
-                }}
-                initial={{ opacity: 0 }}
-                animate={phase >= 3 ? { opacity: 1 } : { opacity: 0 }}
-                transition={{ duration: 0.8, delay: i * 0.25 }}>
-                {i > 0 && <span style={{ marginRight: '2.5vw', color: 'rgba(255,255,255,0.12)' }}>·</span>}
-                {item}
-              </motion.span>
+          <div className="flex items-center justify-center gap-[1.5vw]">
+            {(['72 nights', 'no blueprint', 'no guarantee'] as const).map((item, i) => (
+              <span key={item} className="flex items-center gap-[1.5vw]">
+                {i > 0 && (
+                  <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '1.3vw' }}>·</span>
+                )}
+                <motion.span
+                  style={{
+                    fontSize: '1.3vw',
+                    fontWeight: 100,
+                    letterSpacing: '0.3em',
+                    color: 'rgba(200,163,64,0.6)',
+                    fontStyle: 'italic',
+                  }}
+                  initial={{ opacity: 0 }}
+                  animate={phase >= 3 ? { opacity: 1 } : { opacity: 0 }}
+                  transition={{ duration: 0.8, delay: i * 0.25 }}>
+                  {item}
+                </motion.span>
+              </span>
             ))}
           </div>
         </motion.div>

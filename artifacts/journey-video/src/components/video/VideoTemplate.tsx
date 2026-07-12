@@ -12,11 +12,11 @@ import { Scene7 } from './video_scenes/Scene7';
 import { Scene8 } from './video_scenes/Scene8';
 
 export const SCENE_DURATIONS: Record<string, number> = {
-  s0_coldopen:  5000,
+  s0_coldopen:  8000,
   s1_beginning: 8000,
   s2_building:  8000,
   s3_darknight: 9000,
-  s4_progress:  10000,
+  s4_progress:  12000,
   s5_launch:    9000,
   s6_climb:     9000,
   s7_foryou:    11000,

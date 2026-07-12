@@ -6,10 +6,10 @@ export function Scene0() {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 700),
-      setTimeout(() => setPhase(2), 2000),
-      setTimeout(() => setPhase(3), 3600),
-      setTimeout(() => setPhase(4), 5200),
+      setTimeout(() => setPhase(1), 600),
+      setTimeout(() => setPhase(2), 1800),
+      setTimeout(() => setPhase(3), 3200),
+      setTimeout(() => setPhase(4), 4200),
       setTimeout(() => setPhase(5), 7200),
     ];
     return () => timers.forEach(t => clearTimeout(t));

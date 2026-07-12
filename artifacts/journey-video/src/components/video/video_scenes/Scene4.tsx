@@ -12,7 +12,7 @@ export function Scene4() {
       setTimeout(() => setPhase(3), 7200),
       setTimeout(() => setPhase(4), 9500),
       // Match-cut prep — "72" scales up to fill screen
-      setTimeout(() => setPhase(5), 10800),
+      setTimeout(() => setPhase(5), 10200),
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
