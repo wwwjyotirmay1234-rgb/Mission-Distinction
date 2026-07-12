@@ -56,9 +56,9 @@ export function Scene5() {
 
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.08 }} animate={phase >= 8 ? { scale: 1.03 } : { scale: 1 }} transition={{ duration: 10, ease: 'easeOut' }}>
-        <img src={`${import.meta.env.BASE_URL}images/student_launch.png`}
+        <img src={`${import.meta.env.BASE_URL}images/ai_scene8.png`}
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.35) contrast(1.12) brightness(0.35)' }} alt="" />
+          style={{ filter: 'saturate(0.6) contrast(1.08) brightness(0.35)' }} alt="" />
       </motion.div>
       <motion.div className="absolute inset-0 pointer-events-none z-1"
         animate={phase >= 8

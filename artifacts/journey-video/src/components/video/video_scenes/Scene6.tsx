@@ -44,9 +44,9 @@ export function Scene6() {
 
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 14, ease: 'easeOut' }}>
-        <img src={`${import.meta.env.BASE_URL}images/student_hope.png`}
+        <img src={`${import.meta.env.BASE_URL}images/ai_scene9.png`}
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.32) contrast(1.15) brightness(0.35)' }} alt="" />
+          style={{ filter: 'saturate(0.6) contrast(1.08) brightness(0.35)' }} alt="" />
       </motion.div>
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.28) 48%, rgba(0,0,0,0.9) 100%)' }} />

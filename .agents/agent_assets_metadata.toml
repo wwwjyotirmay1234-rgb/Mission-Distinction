@@ -156,6 +156,66 @@ uri = "file://attached_assets/generated_images/hands_on_book.png"
 type = "image"
 title = "student hands on medical book"
 
+[[generated]]
+id = "OeOCtruU0KQJ2PBywQNuh"
+uri = "file://artifacts/journey-video/public/images/ai_scene1.png"
+type = "image"
+title = "MBBS student studying 2am hostel"
+
+[[generated]]
+id = "FfUj8H6fFt5r1FhjjTUQw"
+uri = "file://artifacts/journey-video/public/images/ai_scene2.png"
+type = "image"
+title = "medical lecture hall students struggling"
+
+[[generated]]
+id = "io_hnJ_wtVKT2dz5pXL44"
+uri = "file://artifacts/journey-video/public/images/ai_scene3.png"
+type = "image"
+title = "five students team brainstorming hostel"
+
+[[generated]]
+id = "jeDZgFucqizfQzY3Lx58w"
+uri = "file://artifacts/journey-video/public/images/ai_scene4.png"
+type = "image"
+title = "students building study resources montage"
+
+[[generated]]
+id = "4ThB9llYIGcXDOooWhNq9"
+uri = "file://artifacts/journey-video/public/images/ai_scene5.png"
+type = "image"
+title = "students coding night glowing screens"
+
+[[generated]]
+id = "xVnPRGZDQOGofkpGLgQMG"
+uri = "file://artifacts/journey-video/public/images/ai_scene6.png"
+type = "image"
+title = "error screen students devastated dark"
+
+[[generated]]
+id = "OERnkJ1x1F9TfMx5oWIf2"
+uri = "file://artifacts/journey-video/public/images/ai_scene7.png"
+type = "image"
+title = "student motivating team sunrise determination"
+
+[[generated]]
+id = "S5-ejc-eiFCPRZKZPFN1i"
+uri = "file://artifacts/journey-video/public/images/ai_scene8.png"
+type = "image"
+title = "app launch button celebration students"
+
+[[generated]]
+id = "G9lfsSwNer_x3h370Oz2V"
+uri = "file://artifacts/journey-video/public/images/ai_scene9.png"
+type = "image"
+title = "students across Odisha studying connected"
+
+[[generated]]
+id = "27URVIu3i69iGeKzVp5uT"
+uri = "file://artifacts/journey-video/public/images/ai_scene10.png"
+type = "image"
+title = "founders rooftop sunset 500 milestone"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
@@ -167,3 +227,63 @@ id = "MwtIUlho0ig_lWo5q7bSM"
 uri = "file://attached_assets/screenshots/dashboard_android_mobile.jpg"
 type = "image"
 title = "Dashboard — Android mobile view"
+
+[[outputs]]
+id = "FqlN3M55uQqGiw_Uo3N_V"
+uri = "file://artifacts/journey-video/public/images/ai_scene1.png"
+type = "image"
+title = "Scene 1 — The Struggle (2AM hostel)"
+
+[[outputs]]
+id = "zpUQbMjrEuN8_NKKNCa28"
+uri = "file://artifacts/journey-video/public/images/ai_scene2.png"
+type = "image"
+title = "Scene 2 — Realization (lecture hall)"
+
+[[outputs]]
+id = "kz5N0VSaiF32hJtHPxs1g"
+uri = "file://artifacts/journey-video/public/images/ai_scene3.png"
+type = "image"
+title = "Scene 3 — Formation (5 students)"
+
+[[outputs]]
+id = "GObv98sgeuYnLMJPrp3FC"
+uri = "file://artifacts/journey-video/public/images/ai_scene4.png"
+type = "image"
+title = "Scene 4 — Building Resources"
+
+[[outputs]]
+id = "nc76WXzDQR9AWLXwCQ55u"
+uri = "file://artifacts/journey-video/public/images/ai_scene5.png"
+type = "image"
+title = "Scene 5 — Coding Night"
+
+[[outputs]]
+id = "qEN0_cnCMlOTpPvRGA6yV"
+uri = "file://artifacts/journey-video/public/images/ai_scene6.png"
+type = "image"
+title = "Scene 6 — The Failure (error)"
+
+[[outputs]]
+id = "iazV142tbP4G9zhZa6vnV"
+uri = "file://artifacts/journey-video/public/images/ai_scene7.png"
+type = "image"
+title = "Scene 7 — Never Giving Up (sunrise)"
+
+[[outputs]]
+id = "H2M3z4IzYV4ZNlEZX3ydu"
+uri = "file://artifacts/journey-video/public/images/ai_scene8.png"
+type = "image"
+title = "Scene 8 — Launch Day"
+
+[[outputs]]
+id = "JpxMidIFYdotnB7Is2Kq3"
+uri = "file://artifacts/journey-video/public/images/ai_scene9.png"
+type = "image"
+title = "Scene 9 — Ripple Across Odisha"
+
+[[outputs]]
+id = "EChASJZLLRbYyIA3UcKCI"
+uri = "file://artifacts/journey-video/public/images/ai_scene10.png"
+type = "image"
+title = "Scene 10 — 500 Downloads Finale (rooftop)"
