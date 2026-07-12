@@ -22,7 +22,7 @@ export function Scene1() {
       exit={{ scale: 1.08, opacity: 0, filter: 'blur(16px)' }}
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
     >
-      {/* ── AI student overhead desk photo ── */}
+      {/* ── Group silhouette — all 6 facing a glowing screen ── */}
       <motion.div
         className="absolute inset-0 z-0"
         initial={{ scale: 1.12 }}
@@ -30,19 +30,18 @@ export function Scene1() {
         transition={{ duration: 8, ease: 'easeOut' }}
       >
         <img
-          src={`${import.meta.env.BASE_URL}images/student_desk_overhead.png`}
-          className="w-full h-full object-cover"
-          style={{ filter: 'saturate(0.5) contrast(1.1) brightness(0.6)' }}
+          src={`${import.meta.env.BASE_URL}images/group_silhouette.png`}
+          className="w-full h-full object-cover object-center"
+          style={{ filter: 'saturate(0.4) contrast(1.1) brightness(0.55)' }}
           alt=""
         />
       </motion.div>
 
       {/* Cinematic overlays */}
       <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'linear-gradient(to top, rgba(10,8,25,0.95) 0%, rgba(10,8,25,0.5) 40%, rgba(10,8,25,0.3) 100%)' }} />
+        style={{ background: 'linear-gradient(to top, rgba(10,8,25,0.96) 0%, rgba(10,8,25,0.45) 45%, rgba(10,8,25,0.25) 100%)' }} />
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.65) 100%)' }} />
-      {/* Amber tint */}
       <div className="absolute inset-0 z-1 pointer-events-none mix-blend-color"
         style={{ backgroundColor: 'rgba(150,90,20,0.15)' }} />
 

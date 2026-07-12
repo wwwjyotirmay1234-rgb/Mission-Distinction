@@ -22,7 +22,7 @@ export function Scene0() {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.12 }}
     >
-      {/* ── AI student photo — cinematic base ── */}
+      {/* ── Full group — cinematic cold open ── */}
       <motion.div
         className="absolute inset-0 z-0"
         initial={{ scale: 1.08 }}
@@ -30,28 +30,22 @@ export function Scene0() {
         transition={{ duration: 5, ease: 'easeOut' }}
       >
         <img
-          src={`${import.meta.env.BASE_URL}images/student_coldopen.png`}
-          className="w-full h-full object-cover"
-          style={{ filter: 'saturate(0.45) contrast(1.15) brightness(0.55)' }}
+          src={`${import.meta.env.BASE_URL}images/group_coldopen.png`}
+          className="w-full h-full object-cover object-center"
+          style={{ filter: 'saturate(0.45) contrast(1.15) brightness(0.52)' }}
           alt=""
         />
       </motion.div>
 
-      {/* Cinematic overlays — heavy bottom vignette, top fade */}
-      <div
-        className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.18) 40%, rgba(0,0,0,0.55) 75%, rgba(0,0,0,0.92) 100%)' }}
-      />
-      {/* Subtle warm tint overlay — Odisha amber */}
-      <div
-        className="absolute inset-0 z-1 pointer-events-none mix-blend-color"
-        style={{ backgroundColor: 'rgba(180,120,40,0.18)' }}
-      />
-      {/* Film grain */}
-      <div
-        className="absolute inset-0 z-1 pointer-events-none opacity-[0.04] mix-blend-overlay"
-        style={{ backgroundImage: 'url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48ZmlsdGVyIGlkPSJuIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC43NSIgbnVtT2N0YXZlcz0iNCIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWx0ZXI9InVybCgjbikiIG9wYWNpdHk9IjEiLz48L3N2Zz4=")' }}
-      />
+      {/* Bottom-heavy vignette + top fade */}
+      <div className="absolute inset-0 z-1 pointer-events-none"
+        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.12) 35%, rgba(0,0,0,0.5) 72%, rgba(0,0,0,0.93) 100%)' }} />
+      {/* Radial vignette */}
+      <div className="absolute inset-0 z-1 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at center, transparent 42%, rgba(0,0,0,0.6) 100%)' }} />
+      {/* Warm amber tint */}
+      <div className="absolute inset-0 z-1 pointer-events-none mix-blend-color"
+        style={{ backgroundColor: 'rgba(180,120,40,0.18)' }} />
 
       {/* Location stamp */}
       <motion.div
@@ -71,11 +65,11 @@ export function Scene0() {
           initial={{ opacity: 0 }}
           animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }}
           transition={{ duration: 2, delay: 0.6 }}>
-          18 APRIL 2026
+          18 APRIL 2026 · 6 STUDENTS · 1 MISSION
         </motion.p>
       </motion.div>
 
-      {/* TITLE — fills frame */}
+      {/* TITLE */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-[8vw]">
         <div className="text-center" style={{ marginTop: '6vw' }}>
           <div className="overflow-hidden">

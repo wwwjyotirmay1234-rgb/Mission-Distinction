@@ -23,7 +23,7 @@ export function Scene2() {
       exit={{ x: '-100%', opacity: 0 }}
       transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
     >
-      {/* ── AI team photo — slow zoom ── */}
+      {/* ── Group portrait — all faces looking at camera ── */}
       <motion.div
         className="absolute inset-0 z-0"
         initial={{ scale: 1.1 }}
@@ -31,19 +31,18 @@ export function Scene2() {
         transition={{ duration: 8, ease: 'easeOut' }}
       >
         <img
-          src={`${import.meta.env.BASE_URL}images/student_team.png`}
-          className="w-full h-full object-cover"
-          style={{ filter: 'saturate(0.5) contrast(1.05) brightness(0.5)' }}
+          src={`${import.meta.env.BASE_URL}images/group_portrait.png`}
+          className="w-full h-full object-cover object-center"
+          style={{ filter: 'saturate(0.5) contrast(1.05) brightness(0.48)' }}
           alt=""
         />
       </motion.div>
 
       {/* Overlay layers */}
       <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'linear-gradient(to right, rgba(10,8,30,0.92) 0%, rgba(10,8,30,0.55) 55%, rgba(10,8,30,0.35) 100%)' }} />
+        style={{ background: 'linear-gradient(to right, rgba(10,8,30,0.93) 0%, rgba(10,8,30,0.55) 55%, rgba(10,8,30,0.3) 100%)' }} />
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'linear-gradient(to top, rgba(10,8,30,0.9) 0%, transparent 50%)' }} />
-      {/* Purple tint */}
       <div className="absolute inset-0 z-1 pointer-events-none mix-blend-color"
         style={{ backgroundColor: 'rgba(80,40,140,0.2)' }} />
 

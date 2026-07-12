@@ -108,6 +108,24 @@ uri = "file://attached_assets/generated_images/student_desk_overhead.png"
 type = "image"
 title = "student overhead desk books"
 
+[[generated]]
+id = "RUPJW7tACvbguDUysGxIE"
+uri = "file://attached_assets/generated_images/group_coldopen.png"
+type = "image"
+title = "group cold open all students"
+
+[[generated]]
+id = "mNxYYEKVQ_BDGD9aLGzoq"
+uri = "file://attached_assets/generated_images/group_silhouette.png"
+type = "image"
+title = "group silhouette blue screen dramatic"
+
+[[generated]]
+id = "Es1KTHevQvsq2CCg3iSH0"
+uri = "file://attached_assets/generated_images/group_portrait.png"
+type = "image"
+title = "group portrait looking at camera"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
