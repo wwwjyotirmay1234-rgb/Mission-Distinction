@@ -52,12 +52,12 @@ export function Scene5() {
         </motion.div>
 
         <motion.h1
-          className="text-[7vw] font-display text-white uppercase leading-none"
+          className="text-[6vw] font-display text-white uppercase leading-none"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={phase >= 2 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
         >
-          GLOBAL IMPACT
+          IMPACT ALL OVER ODISHA
         </motion.h1>
 
         <div className="flex gap-[6vw] mt-[4vw]">
