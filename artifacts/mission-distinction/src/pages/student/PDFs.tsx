@@ -310,7 +310,7 @@ export default function StudentPDFs() {
         <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
           <FileText size={16} className="text-primary" /> All PDFs
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 xl:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 lg:gap-6">
           {isLoading ? (
             Array(8).fill(0).map((_, i) => <Skeleton key={i} className="aspect-[3/4] w-full rounded-xl" />)
           ) : isError ? (
@@ -347,36 +347,36 @@ export default function StudentPDFs() {
                 </button>
 
                 {/* Info */}
-                <div className="mt-2 flex-1 flex flex-col">
+                <div className="mt-3 flex-1 flex flex-col">
                   <h3
-                    className="font-semibold text-xs sm:text-sm line-clamp-2 group-hover:text-primary transition-colors leading-snug cursor-pointer"
+                    className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors leading-snug cursor-pointer"
                     onClick={() => setViewingPdf(pdf as Pdf)}
                   >
                     {pdf.title}
                   </h3>
-                  <div className="flex items-center gap-1.5 mt-1 mb-2">
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-card border-border/50 shrink-0">
+                  <div className="flex items-center gap-2 mt-1.5 mb-3">
+                    <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-card border-border/50 shrink-0">
                       {pdf.subject}
                     </Badge>
                     {pdf.pages && (
-                      <span className="text-[10px] text-muted-foreground truncate">{pdf.pages}p</span>
+                      <span className="text-xs text-muted-foreground truncate">{pdf.pages} pages</span>
                     )}
                   </div>
 
                   {/* Actions: Read + Download (external link available inside modal) */}
-                  <div className="flex gap-1.5 mt-auto">
+                  <div className="flex gap-2 mt-auto">
                     <Button
                       size="sm"
-                      className="flex-1 h-8 text-xs gap-1 min-w-0"
+                      className="flex-1 h-9 text-sm gap-1.5 min-w-0"
                       onClick={() => setViewingPdf(pdf as Pdf)}
                     >
-                      <BookOpen size={11} />
+                      <BookOpen size={13} />
                       <span className="truncate">Read</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-8 w-8 p-0 shrink-0"
+                      className="h-9 w-9 p-0 shrink-0"
                       title="Download"
                       onClick={() => {
                         const isTouchDevice =
