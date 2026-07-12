@@ -97,6 +97,18 @@ export function Scene6() {
             The Journey Has Just Begun
           </p>
         </motion.div>
+
+        {/* Copyright notice — fades in at the very end */}
+        <motion.div
+          className="absolute bottom-[6%] text-center w-full"
+          initial={{ opacity: 0 }}
+          animate={phase >= 5 ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 1.5, delay: 0.8 }}
+        >
+          <p className="text-[1vw] font-sans text-white/30 tracking-[0.2em] uppercase">
+            © {new Date().getFullYear()} Mission Distinction · All Rights Reserved · missiondistinction.in
+          </p>
+        </motion.div>
       </div>
     </motion.div>
   );
