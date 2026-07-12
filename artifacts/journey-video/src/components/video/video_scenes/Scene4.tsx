@@ -6,15 +6,18 @@ export function Scene4() {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 400),
-      setTimeout(() => setPhase(2), 1800),
-      setTimeout(() => setPhase(3), 5500),
-      setTimeout(() => setPhase(4), 8000),
+      // BREATHING ROOM — 2.5 seconds of pure silence before anything appears
+      setTimeout(() => setPhase(1), 2500),
+      setTimeout(() => setPhase(2), 4200),
+      setTimeout(() => setPhase(3), 7200),
+      setTimeout(() => setPhase(4), 9500),
+      // Match-cut prep — "72" scales up to fill screen
+      setTimeout(() => setPhase(5), 10800),
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
-  const count = useSpring(0, { stiffness: 35, damping: 18 });
+  const count = useSpring(0, { stiffness: 28, damping: 16 });
   const displayCount = useTransform(count, Math.round);
 
   useEffect(() => {
@@ -26,116 +29,112 @@ export function Scene4() {
       className="absolute inset-0 overflow-hidden flex items-center justify-center"
       initial={{ clipPath: 'circle(0% at 50% 50%)' }}
       animate={{ clipPath: 'circle(150% at 50% 50%)' }}
-      exit={{ y: '100%', opacity: 0 }}
+      exit={{ opacity: 0 }}
       transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
     >
-      {/* ── Group coding photo ── */}
+      {/* Group coding photo */}
       <motion.div
         className="absolute inset-0"
         style={{ zIndex: 0 }}
         initial={{ scale: 1.08 }}
         animate={{ scale: 1 }}
-        transition={{ duration: 8, ease: 'easeOut' }}
+        transition={{ duration: 10, ease: 'easeOut' }}
       >
         <img
           src={`${import.meta.env.BASE_URL}images/group_coding.png`}
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.4) contrast(1.1) brightness(0.45)' }}
+          style={{ filter: 'saturate(0.35) contrast(1.12) brightness(0.38)' }}
           alt=""
         />
       </motion.div>
 
       {/* Overlays */}
       <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1,
-        background: 'radial-gradient(ellipse at center, rgba(10,8,30,0.55) 0%, rgba(10,8,30,0.92) 100%)' }} />
+        background: 'radial-gradient(ellipse at center, rgba(10,8,30,0.5) 0%, rgba(10,8,30,0.92) 100%)' }} />
       <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1,
-        background: 'linear-gradient(to bottom, rgba(10,8,30,0.7) 0%, transparent 30%, transparent 70%, rgba(10,8,30,0.85) 100%)' }} />
-      {/* Purple tint */}
-      <div className="absolute inset-0 pointer-events-none mix-blend-color" style={{ zIndex: 1, backgroundColor: 'rgba(80,40,140,0.18)' }} />
+        background: 'linear-gradient(to bottom, rgba(10,8,30,0.75) 0%, transparent 35%, transparent 65%, rgba(10,8,30,0.9) 100%)' }} />
+      <div className="absolute inset-0 pointer-events-none mix-blend-color" style={{ zIndex: 1,
+        backgroundColor: 'rgba(80,40,140,0.16)' }} />
 
-      {/* Orbiting dots */}
-      {phase >= 1 && Array.from({ length: 12 }).map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-[4px] h-[4px] bg-brand-gold rounded-full"
-          style={{ zIndex: 5 }}
-          initial={{ top: '50%', left: '50%', scale: 0 }}
-          animate={{
-            top: `${50 + Math.sin(i * 30 * Math.PI / 180) * 38}%`,
-            left: `${50 + Math.cos(i * 30 * Math.PI / 180) * 38}%`,
-            scale: [0, 1, 0],
-          }}
-          transition={{ duration: 3, delay: i * 0.1, repeat: Infinity }}
-        />
-      ))}
+      {/* PHASE 0-1: Silence — just the photo. Nothing. Breathing room. */}
 
+      {/* Content appears only after the breathing room */}
       <div className="relative text-center flex flex-col items-center" style={{ zIndex: 10 }}>
-        <motion.div
-          className="text-[1.2vw] font-mono tracking-[0.4em] text-brand-purpleLight/60 mb-[1vw]"
+
+        {/* Thin whisper label */}
+        <motion.p
+          style={{
+            fontSize: '1.1vw',
+            fontWeight: 100,
+            letterSpacing: '0.45em',
+            color: 'rgba(255,255,255,0.3)',
+            fontStyle: 'italic',
+            marginBottom: '1.2vw',
+          }}
           initial={{ opacity: 0 }}
           animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          18 APR → 29 JUN 2026
-        </motion.div>
+          transition={{ duration: 1.2 }}>
+          days of building
+        </motion.p>
 
-        <motion.h3
-          className="text-[2.5vw] font-sans font-medium text-brand-purpleLight mb-[2vw]"
-          initial={{ opacity: 0, y: 20 }}
-          animate={phase >= 1 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.8 }}
-        >
-          DAYS OF BUILDING
-        </motion.h3>
-
+        {/* The massive counter — match-cut anchor */}
         <motion.div
           className="flex items-baseline justify-center"
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={phase >= 2 ? { scale: phase >= 3 ? 1.15 : 1, opacity: 1 } : { scale: 0.5, opacity: 0 }}
-          transition={{ duration: 0.8, type: 'spring', stiffness: 200, damping: 20 }}
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={phase >= 2 ? {
+            scale: phase >= 5 ? 6 : phase >= 3 ? 1.08 : 1,
+            opacity: phase >= 5 ? 0 : 1,
+          } : { scale: 0.6, opacity: 0 }}
+          transition={phase >= 5
+            ? { duration: 0.7, ease: [0.55, 0, 1, 0.45] }
+            : { duration: 0.9, type: 'spring', stiffness: 180, damping: 22 }}
         >
-          <motion.span className="text-[18vw] font-display text-white leading-none tracking-tighter">
+          <motion.span
+            className="font-display text-white leading-none tracking-tighter"
+            style={{ fontSize: '18vw', textShadow: '0 0 80px rgba(255,255,255,0.08)' }}>
             {displayCount}
           </motion.span>
         </motion.div>
 
-        <motion.div
-          className="text-[2.5vw] font-sans text-white/60 mt-[1vw]"
+        {/* Earned copy — specific */}
+        <motion.p
+          style={{
+            fontSize: '2.2vw',
+            fontWeight: 100,
+            fontStyle: 'italic',
+            color: 'rgba(255,255,255,0.5)',
+            marginTop: '0.8vw',
+            letterSpacing: '0.08em',
+          }}
           initial={{ opacity: 0 }}
           animate={phase >= 3 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          Late nights. No guarantee.
-        </motion.div>
+          transition={{ duration: 1 }}>
+          late nights. no guarantee.
+        </motion.p>
 
+        {/* Features — whisper quiet */}
         <motion.div
-          className="mt-[3vw] flex gap-[3vw]"
-          initial={{ opacity: 0, y: 20 }}
-          animate={phase >= 4 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.8 }}
-        >
+          className="mt-[2.5vw] flex gap-[2.5vw]"
+          initial={{ opacity: 0, y: 16 }}
+          animate={phase >= 4 ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+          transition={{ duration: 1 }}>
           {['Quizzes', 'Notes', 'Community', 'Clinical AI', 'Viva Prep'].map((f, i) => (
             <motion.span
               key={f}
-              className="text-[1.1vw] font-sans px-3 py-1 rounded-full border border-brand-purple/40 text-brand-purpleLight/70"
-              style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(10,8,30,0.4)' }}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={phase >= 4 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-              transition={{ delay: i * 0.1, duration: 0.4 }}
-            >
+              style={{
+                fontSize: '1vw',
+                fontWeight: 100,
+                letterSpacing: '0.25em',
+                color: 'rgba(200,163,64,0.55)',
+                fontStyle: 'italic',
+              }}
+              initial={{ opacity: 0 }}
+              animate={phase >= 4 ? { opacity: 1 } : { opacity: 0 }}
+              transition={{ delay: i * 0.12, duration: 0.6 }}>
               {f}
             </motion.span>
           ))}
         </motion.div>
-
-        <motion.p
-          className="mt-[2.5vw] text-[1.5vw] font-sans text-brand-gold/80 tracking-[0.2em]"
-          initial={{ opacity: 0 }}
-          animate={phase >= 4 ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.8, delay: 0.5 }}
-        >
-          READY FOR LAUNCH
-        </motion.p>
       </div>
     </motion.div>
   );

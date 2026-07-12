@@ -138,6 +138,24 @@ uri = "file://attached_assets/generated_images/group_celebration.png"
 type = "image"
 title = "5 students celebration phone"
 
+[[generated]]
+id = "PZ-rKvJtA45zZi7TrwTDX"
+uri = "file://attached_assets/generated_images/face_male_determined.png"
+type = "image"
+title = "male student close-up determined"
+
+[[generated]]
+id = "XzHkVCOdPRya7ddqkA9mW"
+uri = "file://attached_assets/generated_images/face_female_focused.png"
+type = "image"
+title = "female student close-up focused"
+
+[[generated]]
+id = "u-j_DzIsf5iYpJCsX9HVC"
+uri = "file://attached_assets/generated_images/hands_on_book.png"
+type = "image"
+title = "student hands on medical book"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
