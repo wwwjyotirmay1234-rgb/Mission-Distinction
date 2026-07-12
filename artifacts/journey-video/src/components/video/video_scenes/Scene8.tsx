@@ -50,9 +50,11 @@ export function Scene8() {
 
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.05, y: '3%' }} animate={{ scale: 1, y: '0%' }} transition={{ duration: 18, ease: 'easeOut' }}>
-        <img src={`${import.meta.env.BASE_URL}images/ai_scene10.png`}
+        <video autoPlay loop muted playsInline
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.55) contrast(1.08) brightness(0.38)' }} alt="" />
+          style={{ filter: 'saturate(0.6) contrast(1.08) brightness(0.4)' }}>
+          <source src={`${import.meta.env.BASE_URL}videos/scene10_500_milestone_finale.mp4`} type="video/mp4" />
+        </video>
       </motion.div>
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.3) 35%, rgba(0,0,0,0.82) 82%, rgba(0,0,0,0.99) 100%)' }} />

@@ -34,9 +34,11 @@ export function Scene1() {
 
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 12, ease: 'easeOut' }}>
-        <img src={`${import.meta.env.BASE_URL}images/ai_scene2.png`}
+        <video autoPlay loop muted playsInline
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.55) contrast(1.08) brightness(0.38)' }} alt="" />
+          style={{ filter: 'saturate(0.65) contrast(1.08) brightness(0.42)' }}>
+          <source src={`${import.meta.env.BASE_URL}videos/scene2_realization_lecture_hall.mp4`} type="video/mp4" />
+        </video>
       </motion.div>
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'linear-gradient(to top, rgba(4,3,16,0.98) 0%, rgba(4,3,16,0.42) 50%, rgba(4,3,16,0.25) 100%)' }} />

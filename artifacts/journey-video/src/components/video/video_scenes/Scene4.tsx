@@ -43,9 +43,11 @@ export function Scene4() {
 
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.06 }} animate={{ scale: 1 }} transition={{ duration: 14, ease: 'easeOut' }}>
-        <img src={`${import.meta.env.BASE_URL}images/ai_scene6.png`}
+        <video autoPlay loop muted playsInline
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.45) contrast(1.15) brightness(0.32)' }} alt="" />
+          style={{ filter: 'saturate(0.5) contrast(1.15) brightness(0.35)' }}>
+          <source src={`${import.meta.env.BASE_URL}videos/scene6_failure_error_screen.mp4`} type="video/mp4" />
+        </video>
       </motion.div>
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at center, rgba(2,1,6,0.6) 0%, rgba(2,1,6,0.95) 100%)' }} />

@@ -48,9 +48,11 @@ export function Scene7() {
 
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.06 }} animate={phase >= 4 ? { scale: 1.02 } : { scale: 1 }} transition={{ duration: 10, ease: 'easeOut' }}>
-        <img src={`${import.meta.env.BASE_URL}images/ai_scene10.png`}
+        <video autoPlay loop muted playsInline
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.62) contrast(1.08) brightness(0.35)' }} alt="" />
+          style={{ filter: 'saturate(0.65) contrast(1.08) brightness(0.38)' }}>
+          <source src={`${import.meta.env.BASE_URL}videos/scene10_500_milestone_finale.mp4`} type="video/mp4" />
+        </video>
       </motion.div>
       <motion.div className="absolute inset-0 pointer-events-none z-1"
         animate={phase >= 4

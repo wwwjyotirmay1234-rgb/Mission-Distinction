@@ -40,9 +40,11 @@ export function Scene0() {
         initial={{ opacity: 0, scale: 1.08 }}
         animate={phase >= 1 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.08 }}
         transition={{ duration: 3.5, ease: 'easeOut' }}>
-        <img src={`${import.meta.env.BASE_URL}images/ai_scene1.png`}
+        <video autoPlay loop muted playsInline
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.55) contrast(1.1) brightness(0.38)' }} alt="" />
+          style={{ filter: 'saturate(0.65) contrast(1.1) brightness(0.42)' }}>
+          <source src={`${import.meta.env.BASE_URL}videos/scene1_struggle_2am_hostel.mp4`} type="video/mp4" />
+        </video>
       </motion.div>
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at 62% 45%, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.9) 100%)' }} />

@@ -51,9 +51,11 @@ export function Scene3() {
 
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 14, ease: 'easeOut' }}>
-        <img src={`${import.meta.env.BASE_URL}images/ai_scene5.png`}
+        <video autoPlay loop muted playsInline
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.6) contrast(1.08) brightness(0.35)' }} alt="" />
+          style={{ filter: 'saturate(0.65) contrast(1.08) brightness(0.38)' }}>
+          <source src={`${import.meta.env.BASE_URL}videos/scene5_coding_night_session.mp4`} type="video/mp4" />
+        </video>
       </motion.div>
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.94) 100%)' }} />

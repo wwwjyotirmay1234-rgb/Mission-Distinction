@@ -37,9 +37,11 @@ export function Scene2() {
 
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.09 }} animate={{ scale: 1 }} transition={{ duration: 12, ease: 'easeOut' }}>
-        <img src={`${import.meta.env.BASE_URL}images/ai_scene3.png`}
+        <video autoPlay loop muted playsInline
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.6) contrast(1.08) brightness(0.38)' }} alt="" />
+          style={{ filter: 'saturate(0.65) contrast(1.08) brightness(0.4)' }}>
+          <source src={`${import.meta.env.BASE_URL}videos/scene3_team_formation_hostel.mp4`} type="video/mp4" />
+        </video>
       </motion.div>
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.28) 45%, rgba(0,0,0,0.9) 100%)' }} />
