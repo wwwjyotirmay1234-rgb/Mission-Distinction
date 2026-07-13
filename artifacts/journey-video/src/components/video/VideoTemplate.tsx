@@ -4,7 +4,7 @@ import { useVideoPlayer } from '@/lib/video';
 import { Scene0 } from './video_scenes/Scene0';
 import { Scene1 } from './video_scenes/Scene1';
 import { Scene2 } from './video_scenes/Scene2';
-import { Scene3 } from './video_scenes/Scene3';
+import { SceneFall } from './video_scenes/SceneFall';
 import { Scene4 } from './video_scenes/Scene4';
 import { Scene5 } from './video_scenes/Scene5';
 import { Scene6 } from './video_scenes/Scene6';
@@ -17,7 +17,7 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s1_beginning:   10000,  // The Realization — lecture hall, not alone
   s2_building:    12000,  // The Spark — 5 students, the whiteboard
   s2_workbegins:  15000,  // The Work Begins — fast montage 10 frames
-  s3_darknight:   10000,  // The Journey — crash + sunrise
+  s3_darknight:   31100,  // Scene 5 — The Fall (10 frames × 2.5–5s)
   s4_progress:    10000,  // The Lowest Point — determination
   s5_launch:      10000,  // Launch Day — button, counter rising
   s6_climb:       10000,  // The Ripple Effect — across Odisha
@@ -30,7 +30,7 @@ const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
   s1_beginning:   Scene1,
   s2_building:    Scene2,
   s2_workbegins:  SceneWorkBegins,
-  s3_darknight:   Scene3,
+  s3_darknight:   SceneFall,
   s4_progress:    Scene4,
   s5_launch:      Scene5,
   s6_climb:       Scene6,
