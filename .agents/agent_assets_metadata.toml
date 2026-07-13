@@ -322,43 +322,43 @@ title = "Scene0 shot_h"
 id = "0lvDIwpUm5K_vFpc31EYj"
 uri = "file://artifacts/journey-video/public/images/s1_shot_c_corridor.png"
 type = "image"
-title = "Scene1 s1_shot_c"
+title = "S1 realistic s1_shot_c"
 
 [[generated]]
 id = "kAGQ6Y8q-PlyJVO1crbNb"
 uri = "file://artifacts/journey-video/public/images/s1_shot_b_face_walking.png"
 type = "image"
-title = "Scene1 s1_shot_b"
+title = "S1 realistic s1_shot_b"
 
 [[generated]]
 id = "pQQr7IwJCPMg1OjQz38Iw"
 uri = "file://artifacts/journey-video/public/images/s1_shot_a_hostel.png"
 type = "image"
-title = "Scene1 s1_shot_a"
+title = "S1 realistic s1_shot_a"
 
 [[generated]]
 id = "09fpYbpHrT9kbjgjb55Ad"
 uri = "file://artifacts/journey-video/public/images/s1_shot_d_students_struggling.png"
 type = "image"
-title = "Scene1 s1_shot_d"
+title = "Fix s1_shot_d"
 
 [[generated]]
 id = "sMUvLr0VvkDDq4h7om_k1"
 uri = "file://artifacts/journey-video/public/images/s1_shot_e_realization_eyes.png"
 type = "image"
-title = "Scene1 s1_shot_e"
+title = "S1 realistic s1_shot_e"
 
 [[generated]]
 id = "Ux-_GYMewpdhwd28FmYA6"
 uri = "file://artifacts/journey-video/public/images/s1_shot_f_lecture_hall_wide.png"
 type = "image"
-title = "Scene1 s1_shot_f"
+title = "S1 realistic s1_shot_f"
 
 [[generated]]
 id = "pqTNc8-GD8iL4BKhhDErS"
 uri = "file://artifacts/journey-video/public/images/s1_shot_g_determination.png"
 type = "image"
-title = "Scene1 s1_shot_g"
+title = "Fix s1_shot_g"
 
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
