@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { WordReveal } from '../WordReveal';
 import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
 
-// SCENE 4 — THE JOURNEY
 const MONTAGE = [
   'Pages being scanned.',
   'PDFs being organized.',
@@ -49,28 +48,48 @@ export function Scene3() {
     <motion.div className="absolute inset-0 overflow-hidden bg-black"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 1.03 }} transition={{ duration: 0.7 }}>
 
+      {/* ── CINEMATIC CODING MONTAGE ILLUSTRATION ── */}
       <motion.div className="absolute inset-0 z-0"
-        initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 14, ease: 'easeOut' }}>
-        <video autoPlay loop muted playsInline
+        initial={{ scale: 1.08 }} animate={{ scale: 1 }} transition={{ duration: 20, ease: 'easeOut' }}>
+        <img
+          src={`${import.meta.env.BASE_URL}images/scene3_journey_montage.png`}
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.65) contrast(1.08) brightness(0.38)' }}>
-          <source src={`${import.meta.env.BASE_URL}videos/scene5_coding_night_session.mp4`} type="video/mp4" />
-        </video>
+          style={{ filter: 'brightness(0.62) contrast(1.1) saturate(0.8)' }}
+          alt=""
+        />
       </motion.div>
-      <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.94) 100%)' }} />
-      <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.9) 100%)' }} />
 
-      <motion.p className="absolute font-mono z-10"
-        style={{ top: '18%', left: '50%', transform: 'translateX(-50%)', fontSize: '0.8vw', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.16)', whiteSpace: 'nowrap' }}
+      {/* Cinematic bars */}
+      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
+
+      {/* Vignette overlay */}
+      <div className="absolute inset-0 z-1 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.88) 100%)' }} />
+      <div className="absolute inset-0 z-1 pointer-events-none"
+        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.12) 50%, rgba(0,0,0,0.88) 100%)' }} />
+
+      {/* Red ERROR glow pulse — from the montage panel */}
+      {phase >= 2 && (
+        <motion.div className="absolute pointer-events-none z-2"
+          style={{
+            left: '18%', bottom: '18%',
+            width: '22%', height: '30%',
+            background: 'radial-gradient(ellipse at 30% 70%, rgba(220,30,30,0.15) 0%, transparent 60%)',
+          }}
+          animate={{ opacity: [0.6, 1, 0.6, 1, 0.7] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      )}
+
+      <motion.p className="absolute font-mono z-20"
+        style={{ top: '9%', left: '50%', transform: 'translateX(-50%)', fontSize: '0.8vw', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.18)', whiteSpace: 'nowrap' }}
         initial={{ opacity: 0 }} animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }} transition={{ duration: 1.5 }}>
         THE JOURNEY · VIMSAR · MAR — JUN 2026
       </motion.p>
 
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-[10vw]">
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-[10vw]">
 
-        {/* Rapid montage */}
         {phase >= 2 && phase < 3 && (
           <motion.div key={mIdx} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}>
             <p style={{ fontSize: '5vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.72)', letterSpacing: '0.06em' }}>

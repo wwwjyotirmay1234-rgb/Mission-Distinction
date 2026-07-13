@@ -3,13 +3,20 @@ import { motion } from 'framer-motion';
 import { WordReveal } from '../WordReveal';
 import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
 
-// SCENE 7 — THE RIPPLE EFFECT
 const VIGNETTES = [
   { line: 'A student studies in a hostel room.', detail: 'VIMSAR · BURLA' },
   { line: 'Another studies on a bus.', detail: 'SAMBALPUR → CUTTACK' },
   { line: 'Another revises before an exam.', detail: 'SCB MEDICAL COLLEGE' },
   { line: 'Another finally understands a difficult topic.', detail: 'MKCG · BERHAMPUR' },
 ];
+
+// Animated light dots spreading across Odisha map
+const MAP_DOTS = Array.from({ length: 32 }, (_, i) => ({
+  x: 20 + (i * 1.97 + Math.sin(i) * 12) % 62,
+  y: 22 + (i * 2.31 + Math.cos(i) * 10) % 55,
+  delay: 0.3 + (i * 0.18),
+  size: 3 + (i % 4),
+}));
 
 export function Scene6() {
   const [phase, setPhase] = useState(0);
@@ -42,28 +49,64 @@ export function Scene6() {
     <motion.div className="absolute inset-0 overflow-hidden bg-black"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: '5%' }} transition={{ duration: 0.9 }}>
 
+      {/* ── CINEMATIC ODISHA MAP ILLUSTRATION ── */}
       <motion.div className="absolute inset-0 z-0"
-        initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 14, ease: 'easeOut' }}>
-        <video autoPlay loop muted playsInline
+        initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 20, ease: 'easeOut' }}>
+        <img
+          src={`${import.meta.env.BASE_URL}images/scene6_ripple_odisha.png`}
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.65) contrast(1.08) brightness(0.38)' }}>
-          <source src={`${import.meta.env.BASE_URL}videos/scene9_ripple_across_odisha.mp4`} type="video/mp4" />
-        </video>
+          style={{ filter: 'brightness(0.7) saturate(0.9)' }}
+          alt=""
+        />
       </motion.div>
-      <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.28) 48%, rgba(0,0,0,0.9) 100%)' }} />
-      <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.75) 100%)' }} />
 
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-[10vw]">
+      {/* Cinematic bars */}
+      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
+
+      {/* Gradient overlays */}
+      <div className="absolute inset-0 z-1 pointer-events-none"
+        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.2) 48%, rgba(0,0,0,0.88) 100%)' }} />
+      <div className="absolute inset-0 z-1 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.65) 100%)' }} />
+
+      {/* Animated gold pulse rings from center of map */}
+      {phase >= 1 && [1, 2, 3].map(ring => (
+        <motion.div key={ring} className="absolute pointer-events-none z-2 rounded-full"
+          style={{
+            left: '50%', top: '50%',
+            border: '1px solid rgba(200,163,64,0.4)',
+            transform: 'translate(-50%, -50%)',
+          }}
+          initial={{ width: 0, height: 0, opacity: 0.8 }}
+          animate={{ width: '80vw', height: '80vw', opacity: 0 }}
+          transition={{ duration: 4, delay: ring * 1.3, repeat: Infinity, ease: 'easeOut' }}
+        />
+      ))}
+
+      {/* Spreading light dots over the map */}
+      {phase >= 2 && MAP_DOTS.map((dot, i) => (
+        <motion.div key={i} className="absolute rounded-full pointer-events-none z-3"
+          style={{
+            left: `${dot.x}%`, top: `${dot.y}%`,
+            width: dot.size, height: dot.size,
+            background: 'radial-gradient(circle, rgba(255,200,80,0.95) 0%, rgba(255,160,40,0.6) 100%)',
+            boxShadow: `0 0 ${dot.size * 3}px rgba(255,180,50,0.7)`,
+          }}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: [0, 1, 0.8], scale: [0, 1.5, 1] }}
+          transition={{ duration: 0.5, delay: dot.delay, ease: 'easeOut' }}
+        />
+      ))}
+
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-[10vw]">
 
         <motion.p className="font-mono mb-[5vw]"
           style={{ fontSize: '0.85vw', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.18)' }}
           initial={{ opacity: 0 }} animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }} transition={{ duration: 1.5 }}>
-          THE CAMERA TRAVELS ACROSS ODISHA
+          THE RIPPLE SPREADS ACROSS ODISHA
         </motion.p>
 
-        {/* Vignette cycling */}
         {phase >= 2 && phase < 3 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }}>
             <motion.div key={vigIdx} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>

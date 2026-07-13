@@ -216,6 +216,60 @@ uri = "file://artifacts/journey-video/public/images/ai_scene10.png"
 type = "image"
 title = "founders rooftop sunset 500 milestone"
 
+[[generated]]
+id = "1qeEVIMH2HMY3c3nkpZYe"
+uri = "file://artifacts/journey-video/public/images/scene0_desk_illustration.png"
+type = "image"
+title = "scene0 hostel desk night study"
+
+[[generated]]
+id = "CH3ybrqDFhO18t2UKLOl3"
+uri = "file://artifacts/journey-video/public/images/scene1_lecture_hall.png"
+type = "image"
+title = "scene1 lecture hall students"
+
+[[generated]]
+id = "C_mtSZsQBk2dj8mcJiaoR"
+uri = "file://artifacts/journey-video/public/images/scene2_whiteboard_team.png"
+type = "image"
+title = "scene2 team whiteboard hostel"
+
+[[generated]]
+id = "PB2XFKxpi5RIBK04j5bqj"
+uri = "file://artifacts/journey-video/public/images/scene3_journey_montage.png"
+type = "image"
+title = "scene3 coding night montage"
+
+[[generated]]
+id = "DZ9OhNFlYEB_25vAmo9kv"
+uri = "file://artifacts/journey-video/public/images/scene4_error_crash.png"
+type = "image"
+title = "scene4 error crash failure"
+
+[[generated]]
+id = "-jEu0sNG9fVFiNHX_L1Wd"
+uri = "file://artifacts/journey-video/public/images/scene5_launch_day.png"
+type = "image"
+title = "scene5 launch day sunrise"
+
+[[generated]]
+id = "UXmFRo4m1aFf_7heD6P5T"
+uri = "file://artifacts/journey-video/public/images/scene6_ripple_odisha.png"
+type = "image"
+title = "scene6 ripple across odisha"
+
+[[generated]]
+id = "vPOyV0L4vOM0sLjovJAVR"
+uri = "file://artifacts/journey-video/public/images/scene7_500_milestone.png"
+type = "image"
+title = "scene7 500 downloads milestone"
+
+[[generated]]
+id = "mrhe7HwWgZGRLUVaFvg4T"
+uri = "file://artifacts/journey-video/public/images/scene8_outro_desk.png"
+type = "image"
+title = "scene8 outro empty desk lamp"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"

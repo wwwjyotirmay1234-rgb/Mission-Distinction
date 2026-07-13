@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { WordReveal } from '../WordReveal';
 import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
-import { LectureHallScene } from '../LectureHallScene';
 
 export function Scene1() {
   const [phase, setPhase] = useState(0);
@@ -33,17 +32,43 @@ export function Scene1() {
       initial={{ filter: 'brightness(3)' }} animate={{ filter: 'brightness(1)' }}
       exit={{ x: '-5%', opacity: 0 }} transition={{ duration: 0.8 }}>
 
-      {/* Illustrated lecture hall — rows of student silhouettes */}
-      <LectureHallScene phase={phase} />
+      {/* ── CINEMATIC LECTURE HALL ILLUSTRATION ── */}
+      <motion.div className="absolute inset-0 z-0"
+        initial={{ scale: 1.05 }} animate={{ scale: 1 }} transition={{ duration: 18, ease: 'easeOut' }}>
+        <img
+          src={`${import.meta.env.BASE_URL}images/scene1_lecture_hall.png`}
+          className="w-full h-full object-cover object-center"
+          style={{ filter: 'brightness(0.75) saturate(0.85)' }}
+          alt=""
+        />
+      </motion.div>
 
-      {/* Dim overlay so text reads clearly */}
-      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 5,
-        background: 'linear-gradient(to top, rgba(5,7,20,0.97) 0%, rgba(5,7,20,0.55) 38%, rgba(5,7,20,0.18) 65%, rgba(5,7,20,0.62) 100%)' }} />
+      {/* Cinematic bars */}
+      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
 
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-[10vw]">
+      {/* Dark vignette for text legibility */}
+      <div className="absolute inset-0 z-1 pointer-events-none"
+        style={{ background: 'linear-gradient(to top, rgba(5,7,20,0.97) 0%, rgba(5,7,20,0.5) 38%, rgba(5,7,20,0.1) 60%, rgba(5,7,20,0.55) 100%)' }} />
+
+      {/* Dust mote particles — light streaming through windows */}
+      {phase >= 1 && Array.from({ length: 14 }, (_, i) => (
+        <motion.div key={i} className="absolute rounded-full pointer-events-none z-2"
+          style={{
+            left: `${15 + (i * 5.5) % 40}%`,
+            top: `${10 + (i * 7) % 55}%`,
+            width: 2, height: 2,
+            background: 'rgba(255,240,180,0.35)',
+          }}
+          animate={{ y: [0, -18, 0], opacity: [0.15, 0.45, 0.15] }}
+          transition={{ duration: 3.5 + (i % 4), delay: i * 0.28, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      ))}
+
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-[10vw]">
 
         <motion.p className="font-mono mb-[4vw]"
-          style={{ fontSize: '0.85vw', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.2)' }}
+          style={{ fontSize: '0.85vw', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.22)' }}
           initial={{ opacity: 0 }} animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }} transition={{ duration: 1.5 }}>
           MORNING · VIMSAR LECTURE HALL
         </motion.p>
@@ -55,7 +80,7 @@ export function Scene1() {
               { t: 'Some desperately copy notes.', d: 0.7 },
               { t: 'Some search Telegram groups for PDFs.', d: 1.3 },
             ].map(({ t, d }) => (
-              <div key={t} style={{ fontSize: '1.9vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.38)', letterSpacing: '0.08em' }}>
+              <div key={t} style={{ fontSize: '1.9vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>
                 <WordReveal text={t} startDelay={d} wordInterval={0.08} />
               </div>
             ))}
@@ -67,7 +92,7 @@ export function Scene1() {
             <div style={{ fontSize: '2.4vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.42)', letterSpacing: '0.06em', lineHeight: 2 }}>
               <WordReveal text="Everyone is studying." startDelay={0} wordInterval={0.1} style={{ display: 'block' }} />
               <WordReveal text="Yet everyone seems lost." startDelay={0.8} wordInterval={0.1}
-                style={{ display: 'block', fontWeight: 700, color: 'rgba(255,255,255,0.65)' }} />
+                style={{ display: 'block', fontWeight: 700, color: 'rgba(255,255,255,0.68)' }} />
             </div>
           </div>
         )}

@@ -3,7 +3,6 @@ import { motion, useSpring, useTransform } from 'framer-motion';
 import { WordReveal } from '../WordReveal';
 import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
 
-// SCENE 8 — THE MILESTONE
 export function Scene7() {
   const [phase, setPhase] = useState(0);
   const [goldFlash, setGoldFlash] = useState(false);
@@ -46,28 +45,54 @@ export function Scene7() {
       style={{ backgroundColor: '#020206' }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1 }}>
 
+      {/* ── CINEMATIC 500 MILESTONE ILLUSTRATION ── */}
       <motion.div className="absolute inset-0 z-0"
-        initial={{ scale: 1.06 }} animate={phase >= 4 ? { scale: 1.02 } : { scale: 1 }} transition={{ duration: 10, ease: 'easeOut' }}>
-        <video autoPlay loop muted playsInline
+        initial={{ scale: 1.06 }} animate={phase >= 4 ? { scale: 1.02 } : { scale: 1 }} transition={{ duration: 14, ease: 'easeOut' }}>
+        <img
+          src={`${import.meta.env.BASE_URL}images/scene7_500_milestone.png`}
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.65) contrast(1.08) brightness(0.38)' }}>
-          <source src={`${import.meta.env.BASE_URL}videos/scene10_500_milestone_finale.mp4`} type="video/mp4" />
-        </video>
+          style={{ filter: 'brightness(0.55) saturate(0.85)' }}
+          alt=""
+        />
       </motion.div>
+
+      {/* Cinematic bars */}
+      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
+
+      {/* Gold halo glow expanding on milestone reveal */}
       <motion.div className="absolute inset-0 pointer-events-none z-1"
         animate={phase >= 4
-          ? { background: 'radial-gradient(ellipse at center, rgba(200,163,64,0.2) 0%, rgba(0,0,0,0.9) 65%)' }
-          : { background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.92) 65%)' }}
-        transition={{ duration: 2 }} />
+          ? { background: 'radial-gradient(ellipse at 50% 55%, rgba(200,163,64,0.28) 0%, rgba(0,0,0,0.88) 65%)' }
+          : { background: 'radial-gradient(ellipse at 50% 55%, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.92) 65%)' }}
+        transition={{ duration: 2.5 }} />
       <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.92) 100%)' }} />
+        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.92) 0%, transparent 28%, transparent 68%, rgba(0,0,0,0.95) 100%)' }} />
 
+      {/* Gold flash */}
       <motion.div className="absolute inset-0 pointer-events-none z-50"
         style={{ backgroundColor: 'rgba(200,163,64,0.35)' }}
         animate={goldFlash ? { opacity: [0, 1, 0] } : { opacity: 0 }}
         transition={{ duration: 0.65 }} />
 
-      <motion.div className="relative text-center flex flex-col items-center z-10"
+      {/* Confetti on milestone */}
+      {phase >= 4 && Array.from({ length: 30 }).map((_, i) => (
+        <motion.div key={i} className="absolute pointer-events-none z-5"
+          style={{
+            left: `${20 + (i * 2.1) % 60}%`,
+            top: '0%',
+            width: 4 + (i % 3),
+            height: 4 + (i % 3),
+            borderRadius: i % 2 === 0 ? '50%' : '1px',
+            backgroundColor: i % 3 === 0 ? '#C8A340' : i % 3 === 1 ? '#fff' : '#a78bfa',
+            rotate: i * 17,
+          }}
+          animate={{ y: ['0vh', '110vh'], rotate: [i * 17, i * 17 + 360], opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 3 + (i % 4) * 0.5, delay: (i % 6) * 0.15, ease: 'easeIn' }}
+        />
+      ))}
+
+      <motion.div className="relative text-center flex flex-col items-center z-20"
         animate={shake ? { x: [-12, 12, -8, 8, -4, 4, 0] } : { x: 0 }}
         transition={shake ? { duration: 0.45 } : { duration: 0 }}>
 
@@ -83,12 +108,12 @@ export function Scene7() {
           </div>
         )}
 
-        {/* Counter */}
+        {/* Giant counter */}
         <motion.span className="font-display leading-none tracking-tighter block"
           style={{
             fontSize: '22vw',
             color: phase >= 4 ? '#C8A340' : 'rgba(255,255,255,0.88)',
-            textShadow: phase >= 4 ? '0 0 120px rgba(200,163,64,0.45)' : '0 0 80px rgba(255,255,255,0.05)',
+            textShadow: phase >= 4 ? '0 0 120px rgba(200,163,64,0.5)' : '0 0 80px rgba(255,255,255,0.05)',
             transition: 'color 0.9s ease, text-shadow 0.9s ease',
           }}
           initial={{ scale: 0.7, opacity: 0 }}

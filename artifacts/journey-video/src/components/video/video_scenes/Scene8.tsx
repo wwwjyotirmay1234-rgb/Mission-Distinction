@@ -48,18 +48,36 @@ export function Scene8() {
     <motion.div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#000' }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 2 }}>
 
+      {/* ── CINEMATIC OUTRO ILLUSTRATION ── */}
       <motion.div className="absolute inset-0 z-0"
-        initial={{ scale: 1.05, y: '3%' }} animate={{ scale: 1, y: '0%' }} transition={{ duration: 18, ease: 'easeOut' }}>
-        <video autoPlay loop muted playsInline
+        initial={{ scale: 1.05, y: '3%' }} animate={{ scale: 1, y: '0%' }} transition={{ duration: 22, ease: 'easeOut' }}>
+        <img
+          src={`${import.meta.env.BASE_URL}images/scene8_outro_desk.png`}
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.6) contrast(1.08) brightness(0.4)' }}>
-          <source src={`${import.meta.env.BASE_URL}videos/scene10_500_milestone_finale.mp4`} type="video/mp4" />
-        </video>
+          style={{ filter: 'brightness(0.55) saturate(0.75)' }}
+          alt=""
+        />
       </motion.div>
+
+      {/* Cinematic bars */}
+      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
+
       <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.3) 35%, rgba(0,0,0,0.82) 82%, rgba(0,0,0,0.99) 100%)' }} />
+        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.28) 35%, rgba(0,0,0,0.85) 82%, rgba(0,0,0,0.99) 100%)' }} />
       <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at center, transparent 42%, rgba(0,0,0,0.65) 100%)' }} />
+        style={{ background: 'radial-gradient(ellipse at center, transparent 42%, rgba(0,0,0,0.62) 100%)' }} />
+
+      {/* Warm lamp glow pulse */}
+      <motion.div className="absolute pointer-events-none z-2"
+        style={{
+          left: '18%', top: '15%',
+          width: '35%', height: '50%',
+          background: 'radial-gradient(ellipse at 28% 28%, rgba(255,180,60,0.1) 0%, transparent 60%)',
+        }}
+        animate={{ opacity: [0.7, 1, 0.8, 1, 0.7] }}
+        transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+      />
 
       {/* Constellation dots */}
       {phase >= 1 && Array.from({ length: 40 }).map((_, i) => (

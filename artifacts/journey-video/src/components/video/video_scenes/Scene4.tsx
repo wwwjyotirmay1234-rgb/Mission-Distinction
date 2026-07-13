@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { WordReveal } from '../WordReveal';
 import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
 
-// SCENE 5 — THE LOWEST POINT
 export function Scene4() {
   const [phase, setPhase] = useState(0);
   const [redFlash, setRedFlash] = useState(false);
@@ -41,23 +40,39 @@ export function Scene4() {
     <motion.div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#020106' }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.8 }}>
 
+      {/* ── CINEMATIC ERROR CRASH ILLUSTRATION ── */}
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.06 }} animate={{ scale: 1 }} transition={{ duration: 14, ease: 'easeOut' }}>
-        <video autoPlay loop muted playsInline
+        <img
+          src={`${import.meta.env.BASE_URL}images/scene4_error_crash.png`}
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.5) contrast(1.15) brightness(0.35)' }}>
-          <source src={`${import.meta.env.BASE_URL}videos/scene6_failure_error_screen.mp4`} type="video/mp4" />
-        </video>
+          style={{ filter: 'brightness(0.55) saturate(0.7) contrast(1.1)' }}
+          alt=""
+        />
       </motion.div>
-      <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at center, rgba(2,1,6,0.6) 0%, rgba(2,1,6,0.95) 100%)' }} />
 
+      {/* Cinematic bars */}
+      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
+
+      {/* Deep vignette */}
+      <div className="absolute inset-0 z-1 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at center, rgba(2,1,6,0.45) 0%, rgba(2,1,6,0.92) 100%)' }} />
+
+      {/* Red glow from screen */}
+      <motion.div className="absolute inset-0 pointer-events-none z-2"
+        style={{ background: 'radial-gradient(ellipse at 50% 68%, rgba(220,38,38,0.18) 0%, transparent 55%)' }}
+        animate={{ opacity: [0.6, 1, 0.7, 1, 0.6] }}
+        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      {/* Red flash on error moment */}
       <motion.div className="absolute inset-0 pointer-events-none z-40"
         style={{ backgroundColor: 'rgba(220,38,38,0.45)' }}
         animate={redFlash ? { opacity: [0, 1, 0.6, 1, 0] } : { opacity: 0 }}
         transition={{ duration: 0.7 }} />
 
-      <motion.div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-[10vw]"
+      <motion.div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-[10vw]"
         animate={shake ? { x: [-14, 14, -9, 9, -5, 5, 0] } : { x: 0 }}
         transition={shake ? { duration: 0.5 } : { duration: 0 }}>
 
@@ -67,7 +82,6 @@ export function Scene4() {
           MAY 2026 · 02:47 AM
         </motion.p>
 
-        {/* Error card */}
         {phase >= 2 && (
           <motion.div className="mb-[3.5vw] border rounded-md" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}
             style={{ backgroundColor: 'rgba(220,38,38,0.08)', borderColor: 'rgba(220,38,38,0.35)', padding: '1.2vw 2.5vw' }}>
@@ -107,14 +121,12 @@ export function Scene4() {
             <WordReveal text="The dream appears to be over." startDelay={0} wordInterval={0.14} />
           </div>
         )}
-
-        {/* THE TURN */}
         {phase >= 7 && (
           <div style={{ lineHeight: 1.15, marginBottom: '3.5vw' }}>
             <div style={{ fontFamily: 'var(--font-display, serif)', textShadow: '0 0 60px rgba(200,163,64,0.42)' }}>
-              <WordReveal text={"\u201CWe didn\u2019t come this far"} startDelay={0} wordInterval={0.16}
+              <WordReveal text={'\u201CWe didn\u2019t come this far'} startDelay={0} wordInterval={0.16}
                 style={{ display: 'block', fontSize: '5vw', color: '#C8A340', letterSpacing: '-0.01em' }} />
-              <WordReveal text={"to stop here.\u201D"} startDelay={1.0} wordInterval={0.22}
+              <WordReveal text={'to stop here.\u201D'} startDelay={1.0} wordInterval={0.22}
                 style={{ display: 'block', fontSize: '5vw', color: '#C8A340', letterSpacing: '-0.01em' }} />
             </div>
           </div>

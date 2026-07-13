@@ -3,7 +3,6 @@ import { motion, useSpring, useTransform } from 'framer-motion';
 import { WordReveal } from '../WordReveal';
 import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
 
-// SCENE 6 — LAUNCH DAY
 const MESSAGES = ['"Thank you."', '"This helped me."', '"I finally found everything in one place."'];
 
 export function Scene5() {
@@ -54,27 +53,37 @@ export function Scene5() {
     <motion.div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#030210' }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ scale: 1.05, opacity: 0 }} transition={{ duration: 0.8 }}>
 
+      {/* ── CINEMATIC LAUNCH DAY ILLUSTRATION ── */}
       <motion.div className="absolute inset-0 z-0"
-        initial={{ scale: 1.08 }} animate={phase >= 8 ? { scale: 1.03 } : { scale: 1 }} transition={{ duration: 10, ease: 'easeOut' }}>
-        <video autoPlay loop muted playsInline
+        initial={{ scale: 1.08 }} animate={phase >= 8 ? { scale: 1.03 } : { scale: 1 }} transition={{ duration: 18, ease: 'easeOut' }}>
+        <img
+          src={`${import.meta.env.BASE_URL}images/scene5_launch_day.png`}
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.65) contrast(1.08) brightness(0.38)' }}>
-          <source src={`${import.meta.env.BASE_URL}videos/scene8_launch_day_celebration.mp4`} type="video/mp4" />
-        </video>
+          style={{ filter: 'brightness(0.72) saturate(0.9)' }}
+          alt=""
+        />
       </motion.div>
+
+      {/* Cinematic bars */}
+      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
+
+      {/* Golden sunrise glow that intensifies at launch */}
       <motion.div className="absolute inset-0 pointer-events-none z-1"
         animate={phase >= 8
-          ? { background: 'radial-gradient(ellipse at center, rgba(200,163,64,0.15) 0%, rgba(0,0,0,0.88) 65%)' }
-          : { background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.9) 65%)' }}
-        transition={{ duration: 1.5 }} />
+          ? { background: 'radial-gradient(ellipse at 25% 30%, rgba(200,163,64,0.22) 0%, rgba(0,0,0,0.82) 65%)' }
+          : { background: 'radial-gradient(ellipse at 25% 30%, rgba(255,160,40,0.10) 0%, rgba(0,0,0,0.88) 65%)' }}
+        transition={{ duration: 2 }} />
       <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.9) 100%)' }} />
+        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.88) 100%)' }} />
 
+      {/* Gold flash on launch moment */}
       <motion.div className="absolute inset-0 pointer-events-none z-50"
         style={{ backgroundColor: 'rgba(200,163,64,0.3)' }}
         animate={goldFlash ? { opacity: [0, 1, 0] } : { opacity: 0 }}
         transition={{ duration: 0.65 }} />
 
+      {/* Confetti particles on joy */}
       {phase >= 8 && Array.from({ length: 24 }).map((_, i) => (
         <motion.div key={i} className="absolute rounded-full pointer-events-none"
           style={{ left: '50%', top: '50%', zIndex: 5, width: 3 + (i % 3), height: 3 + (i % 3),
@@ -86,7 +95,7 @@ export function Scene5() {
           transition={{ duration: 2.5, delay: (i % 5) * 0.06, ease: 'easeOut' }} />
       ))}
 
-      <motion.div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-[10vw]"
+      <motion.div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-[10vw]"
         animate={shake ? { x: [-12, 12, -8, 8, -4, 4, 0] } : { x: 0 }}
         transition={shake ? { duration: 0.45 } : { duration: 0 }}>
 
