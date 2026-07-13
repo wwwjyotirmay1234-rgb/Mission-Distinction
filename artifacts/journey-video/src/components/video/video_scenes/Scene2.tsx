@@ -13,7 +13,7 @@ type Shot = {
   cutType: 'flash' | 'dissolve';
   showGolden: boolean;   // warm golden shimmer (lecture hall / sunset shots)
   showDust: boolean;     // dust motes (hostel room shots)
-  emotion?: string;      // Hollywood-style single-word overlay
+  faceInsert?: 'male' | 'female'; // Hollywood close-up face insert
 };
 
 const SHOTS: Shot[] = [
@@ -39,7 +39,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.05, y: '1%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 3.0, ease: 'easeOut' },
-    cutType: 'dissolve', showGolden: true, showDust: false, emotion: 'WHAT IF?',
+    cutType: 'dissolve', showGolden: true, showDust: false,
   },
   {
     // D — five students crowd into hostel room  [Unity]
@@ -55,7 +55,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.1 },
     animate: { scale: 1.0 },
     transition: { duration: 2.5, ease: [0.16, 1, 0.3, 1] },
-    cutType: 'flash', showGolden: false, showDust: true, emotion: 'ALIVE',
+    cutType: 'flash', showGolden: false, showDust: true,
   },
   {
     // F — FLASH CUT to whiteboard moment, THE founding question  [Vision]
@@ -71,7 +71,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.0, x: '-0.3%' },
     animate: { scale: 1.05, x: '0%' },
     transition: { duration: 2.8, ease: 'easeIn' },
-    cutType: 'dissolve', showGolden: false, showDust: false, emotion: 'HOPE',
+    cutType: 'dissolve', showGolden: false, showDust: false, faceInsert: 'female',
   },
   {
     // H — overhead, five hands together over books + laptop  [Commitment]
@@ -212,30 +212,29 @@ export function Scene2() {
         ))}
       </motion.div>
 
-      {/* ── EMOTION FLASH — Hollywood-style single word per shot ── */}
+      {/* ── FACE INSERT — Hollywood close-up reaction shot ── */}
       <AnimatePresence>
-        {currentShot.emotion && (
-          <motion.p
-            key={`emotion-${shotIndex}`}
-            className="absolute z-15 pointer-events-none"
-            style={{
-              top: '14%', left: '7vw',
-              fontFamily: 'var(--font-display, serif)',
-              fontSize: 'clamp(0.65rem, 1.8vw, 1.35rem)',
-              letterSpacing: '0.38em',
-              fontWeight: 200,
-              fontStyle: 'italic',
-              color: 'rgba(255,255,255,0.5)',
-              textShadow: '0 1px 24px rgba(0,0,0,0.95)',
-              textTransform: 'uppercase',
-              whiteSpace: 'nowrap',
-            }}
-            initial={{ opacity: 0, y: -3 }}
-            animate={{ opacity: [0, 0.6, 0.6, 0] }}
+        {currentShot.faceInsert && (
+          <motion.div
+            key={`face-${shotIndex}`}
+            className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.9, 0.9, 0] }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 2.5, times: [0, 0.15, 0.65, 1.0], ease: 'easeInOut' }}>
-            {currentShot.emotion}
-          </motion.p>
+            transition={{ duration: 2.8, times: [0, 0.18, 0.72, 1.0], ease: 'easeInOut' }}>
+            <img
+              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert === 'male' ? 'face_male_determined.png' : 'face_female_focused.png'}`}
+              alt=""
+              style={{
+                height: '76%',
+                width: 'auto',
+                objectFit: 'cover',
+                maskImage: 'radial-gradient(ellipse 55% 62% at 50% 50%, black 28%, transparent 86%)',
+                WebkitMaskImage: 'radial-gradient(ellipse 55% 62% at 50% 50%, black 28%, transparent 86%)',
+                filter: 'contrast(1.12) saturate(0.78) brightness(0.9)',
+              }}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
 

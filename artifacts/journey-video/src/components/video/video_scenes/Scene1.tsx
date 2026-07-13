@@ -13,7 +13,7 @@ type Shot = {
   cutType: 'flash' | 'dissolve';
   showDust: boolean;       // floating dust motes (indoor corridor / hall)
   showSunrise: boolean;    // warm golden lens shimmer (outdoor sunrise shots)
-  emotion?: string;        // Hollywood-style single-word overlay
+  faceInsert?: 'male' | 'female'; // Hollywood close-up face insert
 };
 
 const SHOTS: Shot[] = [
@@ -23,7 +23,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.06, y: '1.5%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 3, ease: 'easeOut' },
-    cutType: 'flash', showDust: false, showSunrise: true, emotion: 'EXHAUSTED',
+    cutType: 'flash', showDust: false, showSunrise: true, faceInsert: 'male',
   },
   {
     // B — close-up tired face, sunrise hitting cheek  [Frustrated]
@@ -31,7 +31,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.0, x: '-0.8%' },
     animate: { scale: 1.05, x: '0%' },
     transition: { duration: 2.5, ease: 'easeIn' },
-    cutType: 'dissolve', showDust: false, showSunrise: true, emotion: 'DESPERATE',
+    cutType: 'dissolve', showDust: false, showSunrise: true, faceInsert: 'male',
   },
   {
     // C — corridor, anatomy hall sign, dozens studying on floor  [Curious]
@@ -47,7 +47,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.04, x: '1%' },
     animate: { scale: 1.0, x: '0%' },
     transition: { duration: 2.4, ease: 'linear' },
-    cutType: 'dissolve', showDust: false, showSunrise: false, emotion: 'NOT ALONE',
+    cutType: 'dissolve', showDust: false, showSunrise: false,
   },
   {
     // E — FLASH CUT to wide realization eyes  [Realization]
@@ -55,7 +55,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.12 },
     animate: { scale: 1.0 },
     transition: { duration: 2.0, ease: [0.16, 1, 0.3, 1] },
-    cutType: 'flash', showDust: false, showSunrise: false, emotion: 'WAIT —',
+    cutType: 'flash', showDust: false, showSunrise: false,
   },
   {
     // F — aerial lecture hall, lone figure in center  [Empathy] — THE hero shot
@@ -178,30 +178,29 @@ export function Scene1() {
         ))}
       </motion.div>
 
-      {/* ── EMOTION FLASH — Hollywood-style single word per shot ── */}
+      {/* ── FACE INSERT — Hollywood close-up reaction shot ── */}
       <AnimatePresence>
-        {currentShot.emotion && (
-          <motion.p
-            key={`emotion-${shotIndex}`}
-            className="absolute z-15 pointer-events-none"
-            style={{
-              top: '14%', left: '7vw',
-              fontFamily: 'var(--font-display, serif)',
-              fontSize: 'clamp(0.65rem, 1.8vw, 1.35rem)',
-              letterSpacing: '0.38em',
-              fontWeight: 200,
-              fontStyle: 'italic',
-              color: 'rgba(255,255,255,0.5)',
-              textShadow: '0 1px 24px rgba(0,0,0,0.95)',
-              textTransform: 'uppercase',
-              whiteSpace: 'nowrap',
-            }}
-            initial={{ opacity: 0, y: -3 }}
-            animate={{ opacity: [0, 0.6, 0.6, 0] }}
+        {currentShot.faceInsert && (
+          <motion.div
+            key={`face-${shotIndex}`}
+            className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.9, 0.9, 0] }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 2.5, times: [0, 0.15, 0.65, 1.0], ease: 'easeInOut' }}>
-            {currentShot.emotion}
-          </motion.p>
+            transition={{ duration: 2.8, times: [0, 0.18, 0.72, 1.0], ease: 'easeInOut' }}>
+            <img
+              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert === 'male' ? 'face_male_determined.png' : 'face_female_focused.png'}`}
+              alt=""
+              style={{
+                height: '76%',
+                width: 'auto',
+                objectFit: 'cover',
+                maskImage: 'radial-gradient(ellipse 55% 62% at 50% 50%, black 28%, transparent 86%)',
+                WebkitMaskImage: 'radial-gradient(ellipse 55% 62% at 50% 50%, black 28%, transparent 86%)',
+                filter: 'contrast(1.12) saturate(0.78) brightness(0.9)',
+              }}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
 
