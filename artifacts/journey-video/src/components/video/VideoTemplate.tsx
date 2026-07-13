@@ -12,6 +12,7 @@ import { SceneLegacy } from './video_scenes/SceneLegacy';
 import { SceneWorkBegins } from './video_scenes/SceneWorkBegins';
 import { SceneDoctorDream } from './video_scenes/SceneDoctorDream';
 import { SceneNextDreamer } from './video_scenes/SceneNextDreamer';
+import { ScenePromise } from './video_scenes/ScenePromise';
 
 export const SCENE_DURATIONS: Record<string, number> = {
   s0_coldopen:    15000,  // Opening — 3 shots × 5s: clock → student alone → phone
@@ -25,6 +26,7 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s7_foryou:      30000,  // Scene 9 — The Legacy (10 frames)
   s8_outro:       30500,  // Scene 10 — The Doctor They Dreamed To Be (10 frames)
   s9_nextdreamer: 30500,  // Scene 11 — The Next Dreamer (post-credit, cinematic circle)
+  s10_promise:    31000,  // Scene 12 — The Promise (true closing chapter)
 };
 
 const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
@@ -39,21 +41,22 @@ const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
   s7_foryou:      SceneLegacy,
   s8_outro:       SceneDoctorDream,
   s9_nextdreamer: SceneNextDreamer,
+  s10_promise:    ScenePromise,
 };
 
-// 11 values — one per scene (s2_workbegins inserted at index 3; s9_nextdreamer at index 10)
-const AMBIENT_COLORS = ['#1a1030', '#C8A340', '#7c3aed', '#C8A340', '#3b0000', '#7c3aed', '#C8A340', '#C8A340', '#7c3aed', '#7c3aed', '#0d0f20'];
-const BLOB1_SIZE_W   = ['15vw', '40vw', '60vw', '50vw', '25vw', '50vw', '30vw', '80vw', '45vw', '50vw', '18vw'];
-const BLOB1_SIZE_H   = ['15vh', '40vh', '60vh', '50vh', '25vh', '50vh', '30vh', '80vh', '45vh', '50vh', '18vh'];
-const BLOB1_LEFT     = ['42vw', '-10vw', '50vw', '20vw', '5vw',  '10vw', '-20vw', '-20vw', '20vw', '25vw', '40vw'];
-const BLOB1_TOP      = ['42vh', '-10vh', '-20vh', '-5vh', '5vh', '70vh',  '40vh',  '40vh', '20vh', '25vh', '40vh'];
-const BLOB1_OP       = [0.04,   0.15,    0.1,    0.16,   0.1,   0.15,    0.2,     0.25,   0.12,   0.1,    0.05];
-const BLOB2_SIZE_W   = ['12vw', '30vw', '40vw', '40vw', '35vw', '50vw', '60vw', '55vw', '40vw', '40vw', '14vw'];
-const BLOB2_SIZE_H   = ['12vh', '30vh', '40vh', '40vh', '35vh', '50vh', '60vh', '55vh', '40vh', '40vh', '14vh'];
-const BLOB2_RIGHT    = ['42vw', '-5vw', '10vw', '-8vw', '45vw', '60vw', '-10vw', '-5vw', '25vw', '30vw', '40vw'];
-const BLOB2_BOTTOM   = ['42vh', '-5vh', '60vh', '25vh', '55vh', '10vh',  '-20vh', '-5vh', '25vh', '30vh', '40vh'];
-const BLOB2_COLORS   = ['#0d0f1a', '#7c3aed', '#C8A340', '#7c3aed', '#1a0000', '#C8A340', '#7c3aed', '#C8A340', '#7c3aed', '#C8A340', '#0d1020'];
-const BLOB2_OP       = [0.02, 0.1, 0.15, 0.1, 0.06, 0.2, 0.1, 0.15, 0.12, 0.15, 0.03];
+// 12 values — one per scene (s2_workbegins at index 3; s9_nextdreamer at 10; s10_promise at 11)
+const AMBIENT_COLORS = ['#1a1030', '#C8A340', '#7c3aed', '#C8A340', '#3b0000', '#7c3aed', '#C8A340', '#C8A340', '#7c3aed', '#7c3aed', '#0d0f20', '#C8A340'];
+const BLOB1_SIZE_W   = ['15vw', '40vw', '60vw', '50vw', '25vw', '50vw', '30vw', '80vw', '45vw', '50vw', '18vw', '55vw'];
+const BLOB1_SIZE_H   = ['15vh', '40vh', '60vh', '50vh', '25vh', '50vh', '30vh', '80vh', '45vh', '50vh', '18vh', '55vh'];
+const BLOB1_LEFT     = ['42vw', '-10vw', '50vw', '20vw', '5vw',  '10vw', '-20vw', '-20vw', '20vw', '25vw', '40vw', '-15vw'];
+const BLOB1_TOP      = ['42vh', '-10vh', '-20vh', '-5vh', '5vh', '70vh',  '40vh',  '40vh', '20vh', '25vh', '40vh', '-10vh'];
+const BLOB1_OP       = [0.04,   0.15,    0.1,    0.16,   0.1,   0.15,    0.2,     0.25,   0.12,   0.1,    0.05,   0.18];
+const BLOB2_SIZE_W   = ['12vw', '30vw', '40vw', '40vw', '35vw', '50vw', '60vw', '55vw', '40vw', '40vw', '14vw', '45vw'];
+const BLOB2_SIZE_H   = ['12vh', '30vh', '40vh', '40vh', '35vh', '50vh', '60vh', '55vh', '40vh', '40vh', '14vh', '45vh'];
+const BLOB2_RIGHT    = ['42vw', '-5vw', '10vw', '-8vw', '45vw', '60vw', '-10vw', '-5vw', '25vw', '30vw', '40vw', '-8vw'];
+const BLOB2_BOTTOM   = ['42vh', '-5vh', '60vh', '25vh', '55vh', '10vh',  '-20vh', '-5vh', '25vh', '30vh', '40vh', '-5vh'];
+const BLOB2_COLORS   = ['#0d0f1a', '#7c3aed', '#C8A340', '#7c3aed', '#1a0000', '#C8A340', '#7c3aed', '#C8A340', '#7c3aed', '#C8A340', '#0d1020', '#7c3aed'];
+const BLOB2_OP       = [0.02, 0.1, 0.15, 0.1, 0.06, 0.2, 0.1, 0.15, 0.12, 0.15, 0.03, 0.12];
 
 export default function VideoTemplate({
   durations = SCENE_DURATIONS,
