@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { WordReveal } from '../WordReveal';
 import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
+import { RainWindow } from '../RainWindow';
+import { HostelDeskScene } from '../HostelDeskScene';
 
-// OPENING SCENE — 2:17 AM. Word-by-word anime reveal + TTS narration.
 export function Scene0() {
   const [phase, setPhase] = useState(0);
   const [tick, setTick] = useState(false);
@@ -32,77 +33,170 @@ export function Scene0() {
   }, []);
 
   return (
-    <motion.div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#000' }}
+    <motion.div className="absolute inset-0 overflow-hidden"
+      style={{ backgroundColor: '#07091a' }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
 
-      {/* Background */}
-      <motion.div className="absolute inset-0 z-0"
-        initial={{ opacity: 0, scale: 1.08 }}
-        animate={phase >= 1 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.08 }}
-        transition={{ duration: 3.5, ease: 'easeOut' }}>
-        <video autoPlay loop muted playsInline
-          className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(0.65) contrast(1.1) brightness(0.42)' }}>
-          <source src={`${import.meta.env.BASE_URL}videos/scene1_struggle_2am_hostel.mp4`} type="video/mp4" />
-        </video>
-      </motion.div>
-      <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at 62% 45%, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.9) 100%)' }} />
-      <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.22) 45%, rgba(0,0,0,0.78) 82%, rgba(0,0,0,0.97) 100%)' }} />
+      {/* Dark gradient background — no video, pure illustrated scene */}
+      <div className="absolute inset-0"
+        style={{ background: 'radial-gradient(ellipse at 30% 60%, rgba(18,22,55,0.95) 0%, rgba(4,5,16,1) 100%)' }} />
 
-      {/* 2:17 AM clock stamp */}
-      <motion.div className="absolute z-10 w-full flex flex-col items-center" style={{ top: '17%' }}
-        initial={{ opacity: 0 }} animate={phase >= 2 ? { opacity: 1 } : { opacity: 0 }} transition={{ duration: 1.5 }}>
+      {/* Subtle floor/wall texture lines */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: 'repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(255,255,255,0.012) 60px)' }} />
+
+      {/* ── ILLUSTRATED SCENE ELEMENTS ─────────────── */}
+      {/* Rain window — top right */}
+      <RainWindow visible={phase >= 1} />
+
+      {/* Anime boy at hostel desk — bottom left/center */}
+      <HostelDeskScene phase={phase} />
+
+      {/* Scattered paper on floor — bottom area */}
+      {phase >= 1 && (
+        <>
+          {/* Paper 1 */}
+          <motion.div
+            initial={{ opacity: 0, rotate: -22, y: 15 }}
+            animate={{ opacity: 0.55, rotate: -19, y: 0 }}
+            transition={{ duration: 2, delay: 0.4 }}
+            style={{
+              position: 'absolute', bottom: '6%', left: '8%',
+              width: '9%', height: '6.5%',
+              background: 'rgba(235,230,200,0.08)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: '2px',
+              zIndex: 3,
+            }}
+          >
+            <div style={{ position: 'absolute', top: '22%', left: '10%', right: '10%', height: '3px', background: 'rgba(255,215,60,0.3)', borderRadius: '2px' }} />
+            <div style={{ position: 'absolute', top: '46%', left: '10%', right: '25%', height: '2.5px', background: 'rgba(255,215,60,0.18)', borderRadius: '2px' }} />
+            <div style={{ position: 'absolute', top: '68%', left: '10%', right: '15%', height: '2.5px', background: 'rgba(100,175,255,0.18)', borderRadius: '2px' }} />
+          </motion.div>
+          {/* Paper 2 */}
+          <motion.div
+            initial={{ opacity: 0, rotate: 12, y: 10 }}
+            animate={{ opacity: 0.45, rotate: 10, y: 0 }}
+            transition={{ duration: 2, delay: 0.7 }}
+            style={{
+              position: 'absolute', bottom: '8%', left: '18%',
+              width: '8%', height: '5.5%',
+              background: 'rgba(235,230,200,0.07)',
+              border: '1px solid rgba(255,255,255,0.04)',
+              borderRadius: '2px',
+              zIndex: 3,
+            }}
+          >
+            <div style={{ position: 'absolute', top: '30%', left: '8%', right: '8%', height: '2.5px', background: 'rgba(255,215,60,0.22)', borderRadius: '2px' }} />
+            <div style={{ position: 'absolute', top: '60%', left: '8%', right: '20%', height: '2.5px', background: 'rgba(255,215,60,0.14)', borderRadius: '2px' }} />
+          </motion.div>
+          {/* Open book on right edge */}
+          <motion.div
+            initial={{ opacity: 0, rotate: -6 }}
+            animate={{ opacity: 0.5, rotate: -5 }}
+            transition={{ duration: 2, delay: 0.5 }}
+            style={{
+              position: 'absolute', bottom: '18%', right: '32%',
+              width: '12%', height: '5%',
+              background: 'rgba(235,230,200,0.09)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '2px',
+              zIndex: 3,
+            }}
+          >
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: '1px', background: 'rgba(255,255,255,0.08)' }} />
+            <div style={{ position: 'absolute', top: '25%', left: '5%', width: '40%', height: '2px', background: 'rgba(255,215,60,0.28)', borderRadius: '2px' }} />
+            <div style={{ position: 'absolute', top: '50%', left: '5%', width: '38%', height: '2px', background: 'rgba(255,215,60,0.18)', borderRadius: '2px' }} />
+            <div style={{ position: 'absolute', top: '25%', right: '5%', width: '38%', height: '2px', background: 'rgba(100,175,255,0.22)', borderRadius: '2px' }} />
+          </motion.div>
+        </>
+      )}
+
+      {/* Books highlight glow when "Books scattered everywhere" line appears */}
+      {phase >= 3 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 0.6, 0.3] }}
+          transition={{ duration: 1.5 }}
+          style={{
+            position: 'absolute',
+            bottom: '16%', left: '4%',
+            width: '28%', height: '30%',
+            background: 'radial-gradient(ellipse at 20% 80%, rgba(255,180,50,0.12) 0%, transparent 70%)',
+            pointerEvents: 'none',
+            zIndex: 3,
+          }}
+        />
+      )}
+
+      {/* Rain glow on window when "rain taps against window" appears */}
+      {phase >= 4 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.5 }}
+          style={{
+            position: 'absolute',
+            right: '3%', top: '5%',
+            width: '30%', height: '62%',
+            background: 'radial-gradient(ellipse at 50% 30%, rgba(100,150,255,0.10) 0%, transparent 70%)',
+            pointerEvents: 'none',
+            zIndex: 3,
+          }}
+        />
+      )}
+
+      {/* ── 2:17 AM CLOCK ─────────────────────────── */}
+      <motion.div className="absolute z-10 w-full flex flex-col items-center" style={{ top: '8%' }}
+        initial={{ opacity: 0 }}
+        animate={phase >= 2 ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ duration: 1.5 }}>
         <div className="flex items-center gap-[1.5vw]">
           <motion.div className="w-[5px] h-[5px] rounded-full bg-white/20"
             animate={tick ? { scale: 2, opacity: 0.55 } : { scale: 1, opacity: 0.2 }} transition={{ duration: 0.1 }} />
-          <p className="font-mono" style={{ fontSize: '2.2vw', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.22)' }}>
+          <p className="font-mono"
+            style={{ fontSize: '2.2vw', letterSpacing: '0.4em', color: 'rgba(255,255,255,0.22)' }}>
             {`2${tick ? ':' : ' '}17 AM`}
           </p>
           <motion.div className="w-[5px] h-[5px] rounded-full bg-white/20"
             animate={tick ? { scale: 2, opacity: 0.55 } : { scale: 1, opacity: 0.2 }} transition={{ duration: 0.1 }} />
         </div>
-        <p className="font-mono mt-2" style={{ fontSize: '0.75vw', letterSpacing: '0.55em', color: 'rgba(255,255,255,0.13)' }}>
+        <p className="font-mono mt-2"
+          style={{ fontSize: '0.75vw', letterSpacing: '0.55em', color: 'rgba(255,255,255,0.13)' }}>
           VIMSAR · BURLA, SAMBALPUR · HOSTEL ROOM
         </p>
       </motion.div>
 
-      {/* Text content — word-by-word */}
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-[10vw]">
-        <div className="text-center">
+      {/* ── TEXT OVERLAYS ──────────────────────────── */}
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-end pb-[12%] px-[10vw]">
+        <div className="text-center w-full">
 
-          {/* Prose block 1 */}
           {phase >= 3 && (
-            <div className="mb-[3.5vw]">
-              <div style={{ fontSize: '2vw', fontWeight: 100, fontStyle: 'italic', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.5)', lineHeight: 2.1 }}>
-                <WordReveal text="Books scattered everywhere." startDelay={0} wordInterval={0.1}
-                  style={{ display: 'block' }} />
-                <WordReveal text="Highlighters dried out. Notes incomplete." startDelay={0.8} wordInterval={0.09}
-                  style={{ display: 'block' }} />
-                <WordReveal text="The syllabus feels endless." startDelay={1.8} wordInterval={0.1}
-                  style={{ display: 'block' }} />
+            <div className="mb-[2.5vw]">
+              <div style={{ fontSize: '1.9vw', fontWeight: 100, fontStyle: 'italic', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.48)', lineHeight: 2.1 }}>
+                <WordReveal text="Books scattered everywhere." startDelay={0} wordInterval={0.1} style={{ display: 'block' }} />
+                <WordReveal text="Highlighters dried out. Notes incomplete." startDelay={0.8} wordInterval={0.09} style={{ display: 'block' }} />
+                <WordReveal text="The syllabus feels endless." startDelay={1.8} wordInterval={0.1} style={{ display: 'block' }} />
               </div>
             </div>
           )}
 
-          {/* "Outside, rain..." */}
           {phase >= 4 && (
-            <p className="mb-[3vw]" style={{ fontSize: '2.1vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.42)', letterSpacing: '0.12em' }}>
+            <p className="mb-[2vw]"
+              style={{ fontSize: '2vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(160,200,255,0.55)', letterSpacing: '0.12em' }}>
               <WordReveal text="Outside, rain taps against the window." startDelay={0} wordInterval={0.1} />
             </p>
           )}
 
-          {/* "He stares..." */}
           {phase >= 5 && (
-            <p className="mb-[3.5vw]" style={{ fontSize: '2.1vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.1em' }}>
+            <p className="mb-[2.5vw]"
+              style={{ fontSize: '2vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.42)', letterSpacing: '0.1em' }}>
               <WordReveal text="He stares at a blank page." startDelay={0} wordInterval={0.11} />
             </p>
           )}
 
-          {/* "Exhaustion. Doubt. Fear." */}
           {phase >= 6 && (
-            <div className="flex items-center justify-center gap-[3vw] mb-[3.5vw]">
+            <div className="flex items-center justify-center gap-[3vw] mb-[2.5vw]">
               {['Exhaustion.', 'Doubt.', 'Fear.'].map((word, i) => (
                 <WordReveal key={word} text={word} startDelay={i * 0.35} wordInterval={0.1}
                   style={{ fontSize: '3vw', fontWeight: 700, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.06em' }} />
@@ -110,23 +204,18 @@ export function Scene0() {
             </div>
           )}
 
-          {/* "What if I fail?" — the haunting question */}
           {phase >= 7 && (
             <div className="overflow-visible">
-              <WordReveal
-                text='"What if I fail?"'
-                startDelay={0.1}
-                wordInterval={0.18}
+              <WordReveal text='"What if I fail?"' startDelay={0.1} wordInterval={0.18}
                 style={{
-                  fontSize: '8vw',
+                  fontSize: '7.5vw',
                   fontFamily: 'var(--font-display, serif)',
                   color: '#C8A340',
                   letterSpacing: '-0.02em',
                   textShadow: '0 0 80px rgba(200,163,64,0.45)',
                   lineHeight: 1,
                   display: 'block',
-                }}
-              />
+                }} />
             </div>
           )}
         </div>
