@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   StarField, VolumetricLight, DustMotes, Bokeh,
-  FilmGrain, CinemaBars, Vignette, BottomGrad, AnimeText, ChapterTitle
+  FilmGrain, CinemaBars, Vignette, BottomGrad, AnimeText, ChapterTitle,
+  CinematicCamera, RainDepth,
 } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -429,6 +430,12 @@ export function Scene0() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 1.4 }}>
 
+      {/* CINEMATIC CAMERA — slow push-in toward student's face */}
+      <CinematicCamera zoom={[1.0, 1.07]} origin="58% 42%" duration={14}>
+
+      {/* 3-layer parallax rain against the window */}
+      <RainDepth show={true} />
+
       {/* ── Sky / wall background ── */}
       <div className="absolute inset-0" style={{
         background: 'linear-gradient(160deg,#020210 0%,#05061a 45%,#03040e 100%)'
@@ -491,7 +498,9 @@ export function Scene0() {
       {/* ── Dust motes in lamplight ── */}
       <DustMotes active={phase >= 2} cx={80} width={22} />
 
-      {/* ── Vignette, bottom, grain, bars ── */}
+      </CinematicCamera>
+
+      {/* ── OVERLAYS stay outside camera ── */}
       <Vignette strength={0.82} />
       <BottomGrad color="2,2,10" strength={0.95} />
       <FilmGrain opacity={0.32} />

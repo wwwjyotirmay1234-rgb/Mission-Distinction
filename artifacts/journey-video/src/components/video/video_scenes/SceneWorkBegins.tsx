@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FilmGrain, CinemaBars, Vignette, BottomGrad,
-  ChapterTitle, VolumetricLight, DustMotes, StarField, Bokeh
+  ChapterTitle, VolumetricLight, DustMotes, StarField, Bokeh, CinematicCamera
 } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -107,14 +107,13 @@ function MultiDesk({ phase }: { phase: number }) {
 }
 
 export function SceneWorkBegins() {
-  const [phase, setPhase] = useState(0);
+  const [phase, setPhase] = useState(1);
   const built = useRef(false);
   useEffect(() => {
     if (built.current) return; built.current = true;
     const ts = [
-      setTimeout(() => setPhase(1), 2000),
-      setTimeout(() => setPhase(2), 6000),
-      setTimeout(() => setPhase(3), 11000),
+      setTimeout(() => setPhase(2), 4000),
+      setTimeout(() => setPhase(3), 10000),
     ];
     return () => ts.forEach(clearTimeout);
   }, []);
@@ -124,42 +123,97 @@ export function SceneWorkBegins() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.9 }}>
 
-      {/* Midnight blue — lab / shared office */}
-      <div className="absolute inset-0" style={{
-        background: 'linear-gradient(160deg,#010814 0%,#030f24 50%,#01080e 100%)'
-      }} />
+      {/* CINEMATIC CAMERA — slow pan left across the three workstations */}
+      <CinematicCamera zoom={[1.03, 1.07]} panX={['1.5%', '-1.5%']} origin="50% 55%" duration={14}>
 
-      <StarField count={50} show={true} />
-      <Bokeh count={8} active={phase >= 1} />
+        {/* Midnight blue — late-night lab */}
+        <div className="absolute inset-0" style={{
+          background: 'linear-gradient(160deg,#010814 0%,#030f24 50%,#01080e 100%)'
+        }} />
 
-      {/* Room ceiling with overhead light */}
-      <VolumetricLight x={50} y={0} angle={50} length={60}
-        color="rgba(40,80,200,0.14)" show={phase >= 1} />
+        <StarField count={50} show={true} />
+        <Bokeh count={8} active={phase >= 1} />
+
+        {/* Room ceiling with overhead light */}
+        <VolumetricLight x={50} y={0} angle={50} length={60}
+          color="rgba(40,80,200,0.14)" show={phase >= 1} />
 
       {/* Multi-desk setup */}
       <MultiDesk phase={phase} />
 
-      {/* Student silhouettes at screens — 3 hunched figures */}
-      {[20, 50, 80].map((x, i) => (
+      {/* Pixar-style developers — 3 focused students at laptops */}
+      {[
+        { x: 20, skin: '#c8805a', hair: '#1c0f06', shirt: '#1e2f4a', mood: 'focused'     },
+        { x: 50, skin: '#7a4a28', hair: '#0e0804', shirt: '#2a1e3a', mood: 'intense'     },
+        { x: 80, skin: '#b87040', hair: '#160c04', shirt: '#1a2818', mood: 'determined'  },
+      ].map((dev, i) => (
         <AnimatePresence key={i}>
           {phase >= 1 && (
             <motion.div className="absolute pointer-events-none z-[11]"
-              style={{ left: `${x - 8}%`, bottom: '30%', width: '16%', height: '36%' }}
+              style={{ left: `${dev.x - 9}%`, bottom: '31%', width: '18%', height: '38%' }}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              transition={{ delay: i * 0.15, duration: 0.8 }}>
-              <svg viewBox="0 0 140 220" width="100%" height="100%">
-                {/* Head */}
-                <ellipse cx="70" cy="48" rx="25" ry="30" fill="rgba(6,5,14,0.90)" />
-                <ellipse cx="70" cy="30" rx="25" ry="18" fill="rgba(4,3,10,0.90)" />
-                {/* Body */}
-                <path d="M44,72 Q54,65 86,72 L90,130 Q70,140 50,130 Z" fill="rgba(6,5,14,0.90)" />
-                {/* Arms forward */}
-                <path d="M48,90 Q36,130 30,155" stroke="rgba(6,5,14,0.90)" strokeWidth="20"
-                  fill="none" strokeLinecap="round"/>
-                <path d="M92,90 Q104,130 110,155" stroke="rgba(6,5,14,0.90)" strokeWidth="20"
-                  fill="none" strokeLinecap="round"/>
-                {/* Screen glow on face */}
-                <ellipse cx="70" cy="70" rx="30" ry="25" fill="rgba(40,80,200,0.15)" />
+              transition={{ delay: i * 0.18, duration: 0.9 }}>
+              <svg viewBox="0 0 160 240" width="100%" height="100%">
+                {/* Body — hunched forward slightly */}
+                <path d="M46,88 Q58,78 102,88 L106,155 Q80,166 54,155 Z" fill={dev.shirt}/>
+                {/* Arms reaching forward to keyboard */}
+                <path d="M52,110 Q36,148 28,178" stroke={dev.skin} strokeWidth="20" fill="none" strokeLinecap="round"/>
+                <path d="M108,110 Q124,148 132,178" stroke={dev.skin} strokeWidth="20" fill="none" strokeLinecap="round"/>
+                {/* Hands on keyboard */}
+                <ellipse cx="27" cy="184" rx="13" ry="9" fill={dev.skin}/>
+                <ellipse cx="133" cy="184" rx="13" ry="9" fill={dev.skin}/>
+                {/* Neck */}
+                <rect x="73" y="78" width="14" height="14" rx="5" fill={dev.skin}/>
+                {/* HEAD (tilted ~8° forward toward screen — focused posture) */}
+                <g transform="rotate(8, 80, 64)">
+                  {/* Skull */}
+                  <ellipse cx="80" cy="58" rx="26" ry="28" fill={dev.skin}/>
+                  {/* Jaw */}
+                  <path d="M56,68 Q64,84 80,85 Q96,84 104,68" fill={dev.skin}/>
+                  {/* Hair */}
+                  <ellipse cx="80" cy="38" rx="26" ry="16" fill={dev.hair}/>
+                  <path d="M55,46 Q52,58 54,68" stroke={dev.hair} strokeWidth="11" fill="none" strokeLinecap="round"/>
+                  <path d="M105,46 Q108,58 106,68" stroke={dev.hair} strokeWidth="11" fill="none" strokeLinecap="round"/>
+                  {/* Characteristic hair strand */}
+                  <path d="M72,38 Q68,52 66,64" stroke={dev.hair} strokeWidth="4.5" fill="none" strokeLinecap="round"/>
+                  {/* BLUE SCREEN GLOW on face — this is the money shot */}
+                  <ellipse cx="80" cy="62" rx="34" ry="30" fill="rgba(40,80,220,0.22)"/>
+                  {/* LEFT EYE — squinted with focus/concentration */}
+                  <ellipse cx="68" cy="58" rx="9" ry="6.5" fill="rgba(228,210,190,0.90)"/>
+                  {/* Eyelid (focus squint — lid closed ~40%) */}
+                  <path d="M59,55 Q68,51 77,55 Q74,62 62,61 Z" fill={dev.skin}/>
+                  {/* Lower lid slightly raised (squint) */}
+                  <path d="M59,61 Q68,65 77,61" stroke={dev.skin} strokeWidth="3.5" fill="none"/>
+                  {/* Iris */}
+                  <ellipse cx="68" cy="59" rx="5" ry="4" fill={dev.mood === 'intense' ? '#1a2a5a' : '#2a1508'}/>
+                  <ellipse cx="69" cy="59.5" rx="2.8" ry="2.2" fill="#050a14"/>
+                  {/* Screen catchlight (bright blue-white) */}
+                  <ellipse cx="70" cy="57.5" rx="2.0" ry="1.4" fill="rgba(140,180,255,0.85)"/>
+                  {/* RIGHT EYE */}
+                  <ellipse cx="92" cy="58" rx="9" ry="6.5" fill="rgba(228,210,190,0.90)"/>
+                  <path d="M83,55 Q92,51 101,55 Q98,62 86,61 Z" fill={dev.skin}/>
+                  <path d="M83,61 Q92,65 101,61" stroke={dev.skin} strokeWidth="3.5" fill="none"/>
+                  <ellipse cx="92" cy="59" rx="5" ry="4" fill={dev.mood === 'intense' ? '#1a2a5a' : '#2a1508'}/>
+                  <ellipse cx="93" cy="59.5" rx="2.8" ry="2.2" fill="#050a14"/>
+                  <ellipse cx="94" cy="57.5" rx="2.0" ry="1.4" fill="rgba(140,180,255,0.85)"/>
+                  {/* Brow — furrowed in concentration (inner brows lowered) */}
+                  <path d="M59,51 Q68,47 77,50" stroke={dev.hair} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                  <path d="M83,50 Q92,47 101,51" stroke={dev.hair} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                  {/* Inner brow crease (furrowed) */}
+                  <path d="M74,50 Q77,52 80,50 Q83,52 86,50" stroke="rgba(80,40,15,0.45)" strokeWidth="1.4" fill="none"/>
+                  {/* Nose */}
+                  <path d="M77,70 Q80,76 83,74 Q87,72 89,69" stroke="rgba(155,72,32,0.50)" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+                  {/* Mouth — closed, set in concentration / slight determined press */}
+                  <path d="M68,78 Q74,75 80,77 Q86,75 92,78" fill="rgba(150,60,28,0.80)"/>
+                  {dev.mood === 'determined' && (
+                    <path d="M68,79 Q80,83 92,79" fill="rgba(115,46,20,0.65)"/>
+                  )}
+                  {/* Undereye circles — tired but focused */}
+                  <ellipse cx="68" cy="65" rx="8" ry="3" fill="rgba(30,15,6,0.30)"/>
+                  <ellipse cx="92" cy="65" rx="8" ry="3" fill="rgba(30,15,6,0.25)"/>
+                </g>
+                {/* Subtle energy drink can glow from desk below */}
+                <ellipse cx="80" cy="180" rx="55" ry="10" fill="rgba(40,80,200,0.10)"/>
               </svg>
             </motion.div>
           )}
@@ -169,7 +223,7 @@ export function SceneWorkBegins() {
       <DustMotes active={phase >= 2} cx={50} width={60} />
       <FastClock active={phase >= 2} />
 
-      {/* Timestamp cycle */}
+      {/* Timestamp */}
       <AnimatePresence>
         {phase >= 1 && (
           <motion.p className="absolute pointer-events-none z-[15]"
@@ -182,8 +236,10 @@ export function SceneWorkBegins() {
         )}
       </AnimatePresence>
 
-      <ChapterTitle chapter="Chapter III" title="The Work Begins" show={phase >= 3} />
+      </CinematicCamera>
 
+      {/* ── OVERLAYS outside camera ── */}
+      <ChapterTitle chapter="Chapter III" title="The Work Begins" show={phase >= 3} />
       <Vignette strength={0.80} />
       <BottomGrad color="1,4,14" />
       <FilmGrain opacity={0.32} />

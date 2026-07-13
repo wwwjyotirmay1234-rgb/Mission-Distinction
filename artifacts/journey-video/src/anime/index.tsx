@@ -459,6 +459,95 @@ export function NodeMap({ show, phaseCount }: { show: boolean; phaseCount: numbe
   );
 }
 
+// ─── CINEMATIC CAMERA (Ken Burns / dolly zoom — the Hollywood move) ───
+// Wraps any scene in a slow pan + zoom, making static SVG feel like film
+export function CinematicCamera({
+  children,
+  zoom = [1.04, 1.0] as [number, number],
+  panX = ['0%', '0%'] as [string, string],
+  panY = ['0%', '0%'] as [string, string],
+  origin = '50% 55%',
+  duration = 15,
+  ease = 'linear' as string,
+}: {
+  children: React.ReactNode;
+  zoom?: [number, number];
+  panX?: [string, string];
+  panY?: [string, string];
+  origin?: string;
+  duration?: number;
+  ease?: string;
+}) {
+  return (
+    <motion.div
+      style={{ position: 'absolute', inset: 0, transformOrigin: origin, overflow: 'hidden' }}
+      initial={{ scale: zoom[0], x: panX[0], y: panY[0] }}
+      animate={{ scale: zoom[1], x: panX[1], y: panY[1] }}
+      transition={{ duration, ease }}>
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── RAIN DEPTH (3-layer parallax rain — far/mid/near) ─────────────────
+export function RainDepth({ show = true }: { show?: boolean }) {
+  const far  = useMemo(() => Array.from({ length: 28 }, (_, i) => ({
+    id: i, x: Math.random() * 112 - 6, delay: Math.random() * 1.6,
+    dur: 1.4 + Math.random() * 0.5, len: 5 + Math.random() * 4, op: 0.11 + Math.random() * 0.09,
+  })), []);
+  const mid  = useMemo(() => Array.from({ length: 18 }, (_, i) => ({
+    id: i, x: Math.random() * 112 - 6, delay: Math.random() * 1.2,
+    dur: 0.75 + Math.random() * 0.3, len: 12 + Math.random() * 8, op: 0.22 + Math.random() * 0.12,
+  })), []);
+  const near = useMemo(() => Array.from({ length: 10 }, (_, i) => ({
+    id: i, x: Math.random() * 112 - 6, delay: Math.random() * 0.8,
+    dur: 0.35 + Math.random() * 0.15, len: 24 + Math.random() * 14, op: 0.38 + Math.random() * 0.18,
+  })), []);
+  if (!show) return null;
+  const renderLayer = (drops: typeof far, blur: string, width: string, offset: number) => (
+    <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
+      {drops.map(d => (
+        <motion.line key={d.id} x1={`${d.x}%`} y1="-4%" x2={`${d.x - offset}%`} y2={`${d.len - 4}%`}
+          stroke="rgba(160,200,240,0.50)" strokeWidth={width} opacity={d.op}
+          initial={{ y: '-100%' }} animate={{ y: '120%' }}
+          transition={{ delay: d.delay, duration: d.dur, repeat: Infinity, ease: 'linear' }} />
+      ))}
+    </svg>
+  );
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-[8]">
+      {/* Far — tiny, slow, faint */}
+      <div style={{ position: 'absolute', inset: 0, filter: 'blur(0.6px)' }}>
+        {renderLayer(far, '0.35', '0.35', 0.8)}
+      </div>
+      {/* Mid */}
+      <div style={{ position: 'absolute', inset: 0 }}>
+        {renderLayer(mid, '0.60', '0.60', 1.4)}
+      </div>
+      {/* Near — large, fast, opaque */}
+      <div style={{ position: 'absolute', inset: 0 }}>
+        {renderLayer(near, '0.95', '0.95', 2.0)}
+      </div>
+    </div>
+  );
+}
+
+// ─── LAMP FLICKER (realistic light flicker animation) ──────────────────
+export function LampFlicker({ show = true, children }: { show?: boolean; children: React.ReactNode }) {
+  return (
+    <motion.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+      animate={show ? {
+        opacity: [1, 0.88, 1, 0.94, 0.82, 1, 0.96, 1],
+      } : { opacity: 0 }}
+      transition={show ? {
+        duration: 8, times: [0, 0.05, 0.12, 0.30, 0.38, 0.42, 0.72, 1],
+        repeat: Infinity, repeatDelay: 6, ease: 'easeInOut',
+      } : { duration: 1.8 }}>
+      {children}
+    </motion.div>
+  );
+}
+
 // ─── VIGNETTE ──────────────────────────────────────────────────────────
 export function Vignette({ strength = 0.72 }: { strength?: number }) {
   return (

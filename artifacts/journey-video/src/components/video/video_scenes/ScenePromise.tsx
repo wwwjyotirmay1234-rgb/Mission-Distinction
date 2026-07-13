@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FilmGrain, CinemaBars, Vignette, BottomGrad,
-  VolumetricLight, FloatingParticles, SpeedLines, RisingSun
+  VolumetricLight, FloatingParticles, SpeedLines, RisingSun, CinematicCamera
 } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -112,6 +112,9 @@ export function ScenePromise() {
       transition={{ duration: 1.2 }}>
 
       {/* Epic sunrise sky */}
+      {/* CINEMATIC CAMERA — slow push-in as the promise is made */}
+      <CinematicCamera zoom={[1.0, 1.08]} origin="50% 48%" duration={28}>
+
       <motion.div className="absolute inset-0"
         animate={{ background: phase >= 4
           ? 'linear-gradient(180deg,#0c0220 0%,#3a0e00 22%,#8a3000 46%,#d06000 68%,#ff9800 84%,#ffc840 100%)'
@@ -205,6 +208,9 @@ export function ScenePromise() {
         )}
       </AnimatePresence>
 
+      </CinematicCamera>
+
+      {/* ── OVERLAYS outside camera ── */}
       <Vignette strength={0.68} />
       <BottomGrad color="6,2,0" />
       <FilmGrain opacity={0.28} />

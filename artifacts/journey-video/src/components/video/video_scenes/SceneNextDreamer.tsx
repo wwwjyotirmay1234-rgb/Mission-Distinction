@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FilmGrain, CinemaBars, Vignette, BottomGrad,
-  ChapterTitle, StarField, RisingSun, CityLights, FloatingParticles
+  ChapterTitle, StarField, RisingSun, CityLights, FloatingParticles, CinematicCamera
 } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -188,6 +188,9 @@ export function SceneNextDreamer() {
       transition={{ duration: 1.0 }}>
 
       {/* Night to pre-dawn */}
+      {/* CINEMATIC CAMERA — slow push toward the torch-passing moment */}
+      <CinematicCamera zoom={[1.0, 1.06]} origin="50% 55%" duration={28}>
+
       <motion.div className="absolute inset-0"
         animate={{ background: phase >= 4
           ? 'linear-gradient(180deg,#080218 0%,#280a00 35%,#6a2800 62%,#c06000 82%,#ff9500 100%)'
@@ -225,6 +228,9 @@ export function SceneNextDreamer() {
       <FloatingParticles count={18} color="#ff9000" active={phase >= 3} />
       <FloatingParticles count={10} color="#ffd700" active={phase >= 4} />
 
+      </CinematicCamera>
+
+      {/* ── OVERLAYS outside camera ── */}
       <ChapterTitle chapter="Chapter X" title="The Next Dreamer" show={phase >= 5} />
 
       <Vignette strength={0.78} />

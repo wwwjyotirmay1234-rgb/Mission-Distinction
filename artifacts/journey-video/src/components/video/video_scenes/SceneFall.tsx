@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FilmGrain, CinemaBars, Vignette, BottomGrad, ChapterTitle, Rain, Lightning } from '../../../anime/index';
+import { FilmGrain, CinemaBars, Vignette, BottomGrad, ChapterTitle, Rain, Lightning, CinematicCamera, RainDepth } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
 //  SCENE: THE FALL   (31 100 ms)
@@ -48,38 +48,89 @@ function ErrorScreen({ show }: { show: boolean }) {
   );
 }
 
-// Dejected founder — sitting on floor, back to wall
+// Dejected founder — Pixar-quality seated figure, head dropped, defeated expression
 function DejectedFigure({ show }: { show: boolean }) {
   return (
     <AnimatePresence>
       {show && (
         <motion.div className="absolute pointer-events-none z-[13]"
-          style={{ left: '30%', bottom: '18%', width: '16%', height: '42%' }}
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}>
-          <svg viewBox="0 0 160 280" width="100%" height="100%">
-            {/* Wall behind */}
-            <rect x="0" y="0" width="160" height="280" fill="rgba(8,5,14,0.0)" />
-            {/* Seated body against wall */}
-            {/* Legs stretched out */}
-            <path d="M30,200 Q40,250 120,260 Q130,262 135,255 Q140,248 120,248 Q52,238 48,196 Z"
-              fill="rgba(6,4,12,0.90)" />
-            {/* Torso slumped */}
-            <path d="M45,120 Q50,105 80,102 Q110,105 115,120 L118,200 Q80,210 42,200 Z"
-              fill="rgba(6,4,12,0.90)" />
-            {/* Head dropped — chin on chest */}
-            <ellipse cx="80" cy="88" rx="26" ry="30" fill="rgba(6,4,12,0.90)" />
-            <ellipse cx="80" cy="70" rx="26" ry="20" fill="rgba(4,3,8,0.90)" />
-            {/* Arms hanging */}
-            <path d="M50,145 Q28,178 22,220" stroke="rgba(6,4,12,0.90)" strokeWidth="22"
-              fill="none" strokeLinecap="round"/>
-            <path d="M110,145 Q132,178 138,215" stroke="rgba(6,4,12,0.90)" strokeWidth="22"
-              fill="none" strokeLinecap="round"/>
-            {/* Phone face down on floor */}
-            <rect x="100" y="250" width="40" height="24" rx="4"
-              fill="rgba(18,14,26,0.85)" style={{ transform: 'rotate(15deg)', transformOrigin: '120px 262px' }} />
-            <rect x="102" y="252" width="36" height="20" rx="3"
-              fill="rgba(30,22,40,0.80)" style={{ transform: 'rotate(15deg)', transformOrigin: '120px 262px' }} />
+          style={{ left: '22%', bottom: '16%', width: '22%', height: '52%' }}
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}>
+          <svg viewBox="0 0 200 320" width="100%" height="100%">
+            {/* === BODY === */}
+            {/* Legs stretched left */}
+            <path d="M40,220 Q55,278 165,282 Q178,284 180,270 Q181,258 162,262 Q72,255 68,217 Z"
+              fill="#12101e"/>
+            {/* Torso — dark navy hoodie, slumped */}
+            <path d="M55,130 Q62,112 96,109 Q130,112 135,130 L138,218 Q96,228 56,218 Z"
+              fill="#171424"/>
+            {/* Hoodie pocket seam */}
+            <path d="M68,175 Q96,168 124,175" stroke="rgba(50,40,70,0.60)" strokeWidth="1.8" fill="none"/>
+            {/* Left arm limp */}
+            <path d="M60,158 Q42,200 38,242" stroke="#c8805a" strokeWidth="20" fill="none" strokeLinecap="round"/>
+            {/* Right arm limp */}
+            <path d="M132,158 Q150,200 155,238" stroke="#c8805a" strokeWidth="20" fill="none" strokeLinecap="round"/>
+            {/* Hands on floor */}
+            <ellipse cx="37" cy="248" rx="13" ry="10" fill="#c8805a"/>
+            <ellipse cx="156" cy="244" rx="13" ry="10" fill="#c8805a"/>
+            {/* Phone face-down (dead) */}
+            <g transform="rotate(14, 148, 274)">
+              <rect x="122" y="260" width="52" height="30" rx="6" fill="#14101c"/>
+              <rect x="124" y="262" width="48" height="26" rx="4" fill="#0e0b14"/>
+            </g>
+            {/* MD enamel pin */}
+            <circle cx="118" cy="162" r="5.5" fill="rgba(180,40,40,0.70)" stroke="rgba(220,80,80,0.45)" strokeWidth="0.8"/>
+            <text x="118" y="165.5" textAnchor="middle" fontSize="4.5" fontWeight="900" fill="white" fontFamily="serif">MD</text>
+            {/* Neck */}
+            <rect x="87" y="102" width="18" height="14" rx="5" fill="#c8805a"/>
+            {/* === HEAD — tilted 18° forward, chin to chest === */}
+            <g transform="rotate(18, 100, 88)">
+              {/* Skull */}
+              <ellipse cx="100" cy="78" rx="28" ry="30" fill="#c8805a"/>
+              {/* Jaw / chin */}
+              <path d="M73,90 Q80,110 100,112 Q120,110 127,90" fill="#c8805a"/>
+              {/* Hair — dark, messy (been awake all night) */}
+              <ellipse cx="100" cy="57" rx="28" ry="18" fill="#1c0f06"/>
+              <path d="M73,65 Q70,78 72,88" stroke="#1c0f06" strokeWidth="12" fill="none" strokeLinecap="round"/>
+              <path d="M127,65 Q130,78 128,88" stroke="#1c0f06" strokeWidth="12" fill="none" strokeLinecap="round"/>
+              {/* Disheveled strands falling over forehead */}
+              <path d="M84,57 Q79,72 77,82" stroke="#1c0f06" strokeWidth="5" fill="none" strokeLinecap="round"/>
+              <path d="M93,55 Q90,67 89,79" stroke="#1c0f06" strokeWidth="4" fill="none" strokeLinecap="round"/>
+              <path d="M102,55 Q101,64 100,74" stroke="#1c0f06" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
+              {/* Deep dark undereye bags — extreme exhaustion */}
+              <ellipse cx="87" cy="83" rx="11" ry="5" fill="rgba(30,15,6,0.60)"/>
+              <ellipse cx="113" cy="83" rx="10" ry="4.5" fill="rgba(30,15,6,0.50)"/>
+              {/* LEFT EYE — barely open, extremely heavy lids */}
+              <ellipse cx="87" cy="79" rx="10.5" ry="7" fill="rgba(228,210,190,0.85)"/>
+              {/* Upper eyelid crushing down */}
+              <path d="M76.5,75 Q87,70 97.5,75 Q94,83 80,83 Z" fill="#c8805a"/>
+              {/* Iris — peeking under lid, looking down */}
+              <ellipse cx="87" cy="81" rx="5" ry="3.8" fill="#2a1508"/>
+              <ellipse cx="88" cy="81.5" rx="2.8" ry="2.2" fill="#0a0502"/>
+              {/* Faint catchlight — barely visible, matching the dim room */}
+              <ellipse cx="90" cy="79.5" rx="1.3" ry="1.0" fill="rgba(255,255,255,0.40)"/>
+              {/* RIGHT EYE */}
+              <ellipse cx="113" cy="79" rx="9.5" ry="6.5" fill="rgba(228,210,190,0.80)"/>
+              <path d="M103.5,75 Q113,70 122.5,75 Q119,82 106,82 Z" fill="#c8805a"/>
+              <ellipse cx="113" cy="80.5" rx="4.5" ry="3.5" fill="#2a1508"/>
+              <ellipse cx="114" cy="81" rx="2.5" ry="2.0" fill="#0a0502"/>
+              <ellipse cx="116" cy="79" rx="1.1" ry="0.9" fill="rgba(255,255,255,0.35)"/>
+              {/* Nose (simple, side angle) */}
+              <path d="M96,90 Q100,98 104,96 Q109,94 112,90" stroke="rgba(155,72,32,0.55)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+              {/* Mouth — downturned corners: the universal expression of defeat */}
+              <path d="M83,104 Q91,101 100,103 Q109,101 117,104" fill="rgba(155,62,28,0.85)"/>
+              <path d="M82,105 Q91,111 100,110 Q109,111 118,105" fill="rgba(120,48,22,0.72)"/>
+              {/* Corner pulls down */}
+              <path d="M82,105 Q80,109 79,112" stroke="rgba(90,35,15,0.75)" strokeWidth="2.0" fill="none" strokeLinecap="round"/>
+              <path d="M118,105 Q120,109 121,112" stroke="rgba(90,35,15,0.75)" strokeWidth="2.0" fill="none" strokeLinecap="round"/>
+              {/* Stubble — 2-day growth */}
+              {[80,86,92,98,104,110,83,89,95,101,107].map((cx, k) => (
+                <ellipse key={k} cx={cx} cy={k < 6 ? 108 : 113} rx="0.9" ry="0.7" fill="rgba(50,25,10,0.38)"/>
+              ))}
+              {/* Error glow — red from the laptop screen */}
+              <ellipse cx="100" cy="82" rx="38" ry="32" fill="rgba(180,35,35,0.09)"/>
+            </g>
           </svg>
         </motion.div>
       )}
@@ -115,21 +166,19 @@ function StormWindow({ show }: { show: boolean }) {
 }
 
 export function SceneFall() {
-  const [phase, setPhase] = useState(0);
+  const [phase, setPhase] = useState(2);
   const [lightning, setLightning] = useState(false);
   const built = useRef(false);
   useEffect(() => {
     if (built.current) return; built.current = true;
     const ts: ReturnType<typeof setTimeout>[] = [];
-    ts.push(setTimeout(() => setPhase(1), 2000));
-    ts.push(setTimeout(() => setPhase(2), 6000));
+    ts.push(setTimeout(() => setPhase(3), 3000));
     // Lightning flashes
-    [5000, 8500, 13500, 19000].forEach(t =>
-      ts.push(setTimeout(() => { setLightning(true); setTimeout(() => setLightning(false), 150); }, t))
+    [2500, 6000, 11000, 17000].forEach(t =>
+      ts.push(setTimeout(() => { setLightning(true); setTimeout(() => setLightning(false), 160); }, t))
     );
-    ts.push(setTimeout(() => setPhase(3), 12000));
-    ts.push(setTimeout(() => setPhase(4), 18000));
-    ts.push(setTimeout(() => setPhase(5), 25000));
+    ts.push(setTimeout(() => setPhase(4), 14000));
+    ts.push(setTimeout(() => setPhase(5), 22000));
     return () => ts.forEach(clearTimeout);
   }, []);
 
@@ -138,45 +187,50 @@ export function SceneFall() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.9 }}>
 
-      {/* Deep purple-grey storm */}
-      <motion.div className="absolute inset-0"
-        animate={{ background: phase >= 4
-          ? 'linear-gradient(175deg,#020104 0%,#05030c 50%,#020104 100%)'
-          : 'linear-gradient(175deg,#0a0616 0%,#140a22 40%,#0c0818 100%)' }}
-        transition={{ duration: 2.5 }} />
+      {/* CINEMATIC CAMERA — slow push down into the fallen figure */}
+      <CinematicCamera zoom={[1.0, 1.09]} origin="38% 68%" duration={28}>
 
-      {/* Storm rain */}
-      <Rain intensity={65} show={phase >= 1 && phase < 5} />
+        {/* Deep purple-grey storm atmosphere */}
+        <motion.div className="absolute inset-0"
+          animate={{ background: phase >= 4
+            ? 'linear-gradient(175deg,#020104 0%,#05030c 50%,#020104 100%)'
+            : 'linear-gradient(175deg,#0a0616 0%,#140a22 40%,#0c0818 100%)' }}
+          transition={{ duration: 2.5 }} />
 
-      {/* Lightning */}
-      <Lightning flash={lightning} />
+        {/* 3-layer parallax storm rain */}
+        <RainDepth show={phase >= 2 && phase < 5} />
 
-      {/* Storm window */}
-      <StormWindow show={phase >= 1} />
+        {/* Lightning flash */}
+        <Lightning flash={lightning} />
 
-      {/* Error screen */}
-      <ErrorScreen show={phase >= 2 && phase < 4} />
+        {/* Storm window */}
+        <StormWindow show={phase >= 2} />
 
-      {/* Dejected figure */}
-      <DejectedFigure show={phase >= 3} />
+        {/* Error screen glow */}
+        <ErrorScreen show={phase >= 2 && phase < 4} />
 
-      {/* Single lamp glow — the only light */}
-      <AnimatePresence>
-        {phase >= 4 && (
-          <motion.div className="absolute pointer-events-none z-[6]"
-            style={{ bottom: '35%', left: '20%', width: 'clamp(60px,10vw,120px)', height: 'clamp(60px,10vw,120px)',
-              background: 'radial-gradient(circle,rgba(200,120,30,0.30) 0%,rgba(180,90,20,0.08) 55%,transparent 80%)',
-              filter: 'blur(8px)' }}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 2.2 }} />
-        )}
-      </AnimatePresence>
+        {/* Dejected figure — visible from phase 2 (immediately) */}
+        <DejectedFigure show={phase >= 2} />
 
+        {/* Lamp glow — sole warm light in darkness */}
+        <AnimatePresence>
+          {phase >= 4 && (
+            <motion.div className="absolute pointer-events-none z-[6]"
+              style={{ bottom: '35%', left: '20%', width: 'clamp(70px,12vw,140px)', height: 'clamp(70px,12vw,140px)',
+                background: 'radial-gradient(circle,rgba(200,120,30,0.35) 0%,rgba(180,90,20,0.10) 55%,transparent 80%)',
+                filter: 'blur(10px)' }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 2.4 }} />
+          )}
+        </AnimatePresence>
+
+      </CinematicCamera>
+
+      {/* ── OVERLAYS stay outside camera (don't zoom) ── */}
       <ChapterTitle chapter="Chapter IV" title="The Fall" show={phase >= 5} />
-
-      <Vignette strength={0.85} />
+      <Vignette strength={0.88} />
       <BottomGrad color="2,1,6" />
-      <FilmGrain opacity={0.35} />
+      <FilmGrain opacity={0.38} />
       <CinemaBars />
     </motion.div>
   );

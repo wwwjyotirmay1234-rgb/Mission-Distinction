@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FilmGrain, CinemaBars, Vignette, BottomGrad,
-  ChapterTitle, VolumetricLight, FloatingParticles, SpeedLines
+  ChapterTitle, VolumetricLight, FloatingParticles, SpeedLines, CinematicCamera
 } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -166,6 +166,9 @@ export function SceneDoctorDream() {
       transition={{ duration: 1.0 }}>
 
       {/* Ceremonial deep blue */}
+      {/* CINEMATIC CAMERA — slow push toward the stage */}
+      <CinematicCamera zoom={[1.0, 1.07]} origin="50% 52%" duration={28}>
+
       <motion.div className="absolute inset-0"
         animate={{ background: phase >= 2
           ? 'linear-gradient(165deg,#030a20 0%,#060e2e 40%,#040a1c 100%)'
@@ -202,6 +205,10 @@ export function SceneDoctorDream() {
       ))}
 
       <SpeedLines active={phase >= 4} color="rgba(200,163,64,0.60)" count={28} cx={50} cy={46} />
+
+      </CinematicCamera>
+
+      {/* ── OVERLAYS outside camera ── */}
       <ChapterTitle chapter="Chapter IX" title="The Dream" show={phase >= 4} />
 
       <Vignette strength={0.78} />

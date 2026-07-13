@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FilmGrain, CinemaBars, Vignette, BottomGrad,
-  FloatingParticles, SpeedLines, RisingSun
+  FloatingParticles, SpeedLines, RisingSun, CinematicCamera
 } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -124,6 +124,9 @@ export function SceneResponsibility() {
       transition={{ duration: 0.9 }}>
 
       {/* Tech blue → warm sunrise for final push */}
+      {/* CINEMATIC CAMERA — slow push toward the epilogue */}
+      <CinematicCamera zoom={[1.0, 1.05]} origin="50% 50%" duration={28}>
+
       <motion.div className="absolute inset-0"
         animate={{ background: phase >= 3
           ? 'linear-gradient(155deg,#0a0420 0%,#2a0c00 32%,#6a2400 60%,#c05800 80%,#ff9000 100%)'
@@ -253,6 +256,9 @@ export function SceneResponsibility() {
         )}
       </AnimatePresence>
 
+      </CinematicCamera>
+
+      {/* ── OVERLAYS outside camera ── */}
       <Vignette strength={0.70} />
       <BottomGrad color="2,5,16" />
       <FilmGrain opacity={0.28} />

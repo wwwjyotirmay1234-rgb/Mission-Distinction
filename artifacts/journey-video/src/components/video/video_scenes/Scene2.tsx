@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FilmGrain, CinemaBars, Vignette, BottomGrad,
-  ChapterTitle, VolumetricLight, FloatingParticles, SpeedLines
+  ChapterTitle, VolumetricLight, FloatingParticles, SpeedLines, CinematicCamera
 } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -262,6 +262,9 @@ export function Scene2() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.9 }}>
 
+      {/* CINEMATIC CAMERA — slow pull-back revealing all 5 founders */}
+      <CinematicCamera zoom={[1.07, 1.0]} origin="50% 58%" duration={12}>
+
       {/* Hostel room — dark, late night */}
       <motion.div className="absolute inset-0"
         animate={{ background: phase >= 2
@@ -300,6 +303,9 @@ export function Scene2() {
       <FloatingParticles count={10} color="#ff8c00" active={phase >= 3} />
       <SpeedLines active={phase >= 4} color="rgba(255,200,50,0.65)" count={28} cx={50} cy={20} />
 
+      </CinematicCamera>
+
+      {/* ── OVERLAYS outside camera ── */}
       <ChapterTitle chapter="Chapter II" title="The Spark" show={phase >= 4} />
 
       {/* White flash */}

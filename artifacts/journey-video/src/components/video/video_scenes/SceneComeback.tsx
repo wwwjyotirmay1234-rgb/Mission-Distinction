@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FilmGrain, CinemaBars, Vignette, BottomGrad,
-  ChapterTitle, RisingSun, FloatingParticles, SpeedLines, StarField, CityLights
+  ChapterTitle, RisingSun, FloatingParticles, SpeedLines, StarField, CityLights, CinematicCamera
 } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -200,6 +200,9 @@ export function SceneComeback() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 1.0 }}>
 
+      {/* CINEMATIC CAMERA — slow push toward horizon as sun rises */}
+      <CinematicCamera zoom={[1.0, 1.06]} panY={['0%', '-1.2%']} origin="50% 70%" duration={28}>
+
       {/* Sky — shifts from near-black to pre-dawn indigo to amber */}
       <motion.div className="absolute inset-0"
         animate={{ background: phase >= 4
@@ -248,6 +251,9 @@ export function SceneComeback() {
       <FloatingParticles count={10} color="#ffd700" active={phase >= 4} />
       <SpeedLines active={phase >= 5} color="rgba(255,160,30,0.65)" count={30} cx={50} cy={55} />
 
+      </CinematicCamera>
+
+      {/* ── OVERLAYS outside camera ── */}
       <ChapterTitle chapter="Chapter V" title="The Rise" show={phase >= 5} />
 
       <Vignette strength={0.70} />

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FilmGrain, CinemaBars, Vignette, BottomGrad,
-  ChapterTitle, NodeMap, FloatingParticles, SpeedLines
+  ChapterTitle, NodeMap, FloatingParticles, SpeedLines, CinematicCamera
 } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -134,6 +134,9 @@ export function SceneMovement() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 1.0 }}>
 
+      {/* CINEMATIC CAMERA — slow pan revealing the spreading map */}
+      <CinematicCamera zoom={[1.0, 1.05]} panX={['-1%', '1%']} origin="50% 50%" duration={28}>
+
       {/* Deep strategic blue — command room feel */}
       <motion.div className="absolute inset-0"
         animate={{ background: phase >= 3
@@ -187,6 +190,9 @@ export function SceneMovement() {
       <FloatingParticles count={16} color="rgba(200,163,64,0.85)" active={phase >= 3} />
       <SpeedLines active={phase >= 4} color="rgba(200,163,64,0.60)" count={26} cx={50} cy={48} />
 
+      </CinematicCamera>
+
+      {/* ── OVERLAYS outside camera ── */}
       <ChapterTitle chapter="Chapter VII" title="The Movement" show={phase >= 4} />
 
       <Vignette strength={0.75} />

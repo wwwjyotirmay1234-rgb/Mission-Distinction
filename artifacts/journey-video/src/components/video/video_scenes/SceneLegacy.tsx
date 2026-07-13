@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FilmGrain, CinemaBars, Vignette, BottomGrad,
-  ChapterTitle, FloatingParticles, VolumetricLight
+  ChapterTitle, FloatingParticles, VolumetricLight, CinematicCamera
 } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -127,6 +127,9 @@ export function SceneLegacy() {
       transition={{ duration: 1.0 }}>
 
       {/* Warm mahogany library */}
+      {/* CINEMATIC CAMERA — slow push through the library */}
+      <CinematicCamera zoom={[1.0, 1.06]} panX={['1%', '-1%']} origin="50% 55%" duration={28}>
+
       <motion.div className="absolute inset-0"
         animate={{ background: phase >= 2
           ? 'linear-gradient(175deg,#0e0600 0%,#1c0e00 40%,#140a00 100%)'
@@ -177,6 +180,9 @@ export function SceneLegacy() {
 
       <FloatingParticles count={16} color="#C8A340" active={phase >= 2} />
 
+      </CinematicCamera>
+
+      {/* ── OVERLAYS outside camera ── */}
       <ChapterTitle chapter="Chapter VIII" title="The Legacy" show={phase >= 4} />
 
       <Vignette strength={0.78} />

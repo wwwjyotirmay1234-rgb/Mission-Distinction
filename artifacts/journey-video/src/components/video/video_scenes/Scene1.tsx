@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FilmGrain, CinemaBars, Vignette, BottomGrad, ChapterTitle, VolumetricLight, SpeedLines } from '../../../anime/index';
+import { FilmGrain, CinemaBars, Vignette, BottomGrad, ChapterTitle, VolumetricLight, SpeedLines, CinematicCamera } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
 //  SCENE 1 — THE REALIZATION   (10 000 ms)
@@ -96,6 +96,9 @@ export function Scene1() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 1.0 }}>
 
+      {/* CINEMATIC CAMERA — slow pan across lecture hall seats */}
+      <CinematicCamera zoom={[1.02, 1.06]} panX={['1.5%', '-1.5%']} origin="50% 60%" duration={10}>
+
       {/* Lecture hall walls — warm dark wood */}
       <div className="absolute inset-0" style={{
         background: 'linear-gradient(175deg,#080508 0%,#0e0810 40%,#120a16 70%,#080508 100%)'
@@ -145,6 +148,9 @@ export function Scene1() {
 
       <SpeedLines active={phase >= 3} color="rgba(200,163,64,0.55)" count={22} cx={47} cy={72} />
 
+      </CinematicCamera>
+
+      {/* ── OVERLAYS outside camera ── */}
       <ChapterTitle chapter="Chapter I" title="The Realization" show={phase >= 3} />
 
       <Vignette strength={0.82} />

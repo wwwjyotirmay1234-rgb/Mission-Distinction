@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FilmGrain, CinemaBars, Vignette, BottomGrad,
-  ChapterTitle, FloatingParticles, SpeedLines
+  ChapterTitle, FloatingParticles, SpeedLines, CinematicCamera
 } from '../../../anime/index';
 
 // ════════════════════════════════════════════════════════════════════════
@@ -76,37 +76,104 @@ function PhonePlayStore({ show, phase }: { show: boolean; phase: number }) {
   );
 }
 
-// 5 founders gathered — watching the screen with growing excitement
-function FoundersWatching({ show }: { show: boolean }) {
-  const positions = [-36, -18, 0, 18, 36];
+// 5 founders — Pixar faces, phone-screen lit, ELATED expressions
+function FoundersWatching({ show, phase }: { show: boolean; phase: number }) {
+  // Each founder: position offset, skin tone, hair, shirt color, expression mood
+  const founders = [
+    { dx: -36, skin: '#c07848', hair: '#1c0d04', shirt: '#2a3a28', mood: 'amazed'   },
+    { dx: -18, skin: '#7a4a28', hair: '#0e0804', shirt: '#1e3048', mood: 'grinning' },
+    { dx:   0, skin: '#c89060', hair: '#1a0d06', shirt: '#1e2f4a', mood: 'shock'    },
+    { dx:  18, skin: '#b06830', hair: '#160c04', shirt: '#2a2818', mood: 'jump'     },
+    { dx:  36, skin: '#c07040', hair: '#180b04', shirt: '#342018', mood: 'laugh'    },
+  ];
   return (
     <AnimatePresence>
       {show && (
         <div className="absolute pointer-events-none z-[10]"
-          style={{ left: 0, right: 0, bottom: '16%', height: '32%' }}>
-          {positions.map((dx, i) => (
-            <motion.div key={i} className="absolute"
-              style={{ left: `calc(50% + ${dx}%)`, bottom: 0,
-                width: 'clamp(28px,5vw,60px)', height: 'clamp(70px,12vw,140px)',
-                transform: 'translateX(-50%)' }}
-              initial={{ opacity: 0, y: 16, scale: 0.85 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: i * 0.10, duration: 0.80, ease: [0.16, 1, 0.3, 1] }}>
-              <svg viewBox="0 0 60 140" width="100%" height="100%">
-                <ellipse cx="30" cy="26" rx="17" ry="20" fill="rgba(6,4,12,0.92)" />
-                <ellipse cx="30" cy="14" rx="17" ry="12" fill="rgba(4,3,8,0.92)" />
-                <path d="M14,44 Q22,38 46,44 L48,95 Q30,104 12,95 Z" fill="rgba(6,4,12,0.92)" />
-                <path d="M16,55 Q5,76 2,100" stroke="rgba(6,4,12,0.92)" strokeWidth="14"
-                  fill="none" strokeLinecap="round"/>
-                <path d="M44,55 Q55,76 58,100" stroke="rgba(6,4,12,0.92)" strokeWidth="14"
-                  fill="none" strokeLinecap="round"/>
-                <path d="M16,95 L12,140" stroke="rgba(6,4,12,0.90)" strokeWidth="10" strokeLinecap="round"/>
-                <path d="M44,95 L48,140" stroke="rgba(6,4,12,0.90)" strokeWidth="10" strokeLinecap="round"/>
-                {/* Phone light reflected */}
-                <ellipse cx="30" cy="50" rx="20" ry="16" fill="rgba(200,163,64,0.12)" />
-              </svg>
-            </motion.div>
-          ))}
+          style={{ left: 0, right: 0, bottom: '14%', height: '34%' }}>
+          {founders.map((f, i) => {
+            const isCenter = i === 2;
+            const armUp = f.mood === 'jump' || f.mood === 'amazed';
+            return (
+              <motion.div key={i} className="absolute"
+                style={{ left: `calc(50% + ${f.dx}%)`, bottom: 0,
+                  width: 'clamp(30px,5.5vw,66px)', height: 'clamp(75px,13vw,150px)',
+                  transform: 'translateX(-50%)' }}
+                initial={{ opacity: 0, y: 20, scale: 0.80 }}
+                animate={{ opacity: 1, y: isCenter ? -4 : 0, scale: isCenter ? 1.06 : 1.0 }}
+                transition={{ delay: i * 0.10, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}>
+                <svg viewBox="0 0 66 150" width="100%" height="100%">
+                  {/* === BODY === */}
+                  <path d="M16,48 Q24,42 50,48 L52,102 Q33,112 14,102 Z" fill={f.shirt}/>
+                  {/* === ARMS (raised if excited) === */}
+                  <path d={armUp
+                    ? `M18,58 Q6,44 2,30`
+                    : `M18,58 Q6,78 3,104`}
+                    stroke={f.skin} strokeWidth="14" fill="none" strokeLinecap="round"/>
+                  <path d={f.mood === 'grinning' || f.mood === 'laugh'
+                    ? `M48,58 Q60,44 62,30`
+                    : `M48,58 Q60,78 63,104`}
+                    stroke={f.skin} strokeWidth="14" fill="none" strokeLinecap="round"/>
+                  {/* === LEGS === */}
+                  <path d="M18,102 L14,150" stroke={f.shirt} strokeWidth="11" strokeLinecap="round" fill="none"/>
+                  <path d="M48,102 L52,150" stroke={f.shirt} strokeWidth="11" strokeLinecap="round" fill="none"/>
+                  {/* === NECK === */}
+                  <rect x="26" y="40" width="14" height="11" rx="5" fill={f.skin}/>
+                  {/* === HEAD === */}
+                  {/* Skull */}
+                  <ellipse cx="33" cy="27" rx="18" ry="19" fill={f.skin}/>
+                  {/* Jaw */}
+                  <path d="M16,32 Q22,44 33,45 Q44,44 50,32" fill={f.skin}/>
+                  {/* Hair */}
+                  <ellipse cx="33" cy="14" rx="18" ry="11" fill={f.hair}/>
+                  <path d="M16,22 Q15,13 20,10" stroke={f.hair} strokeWidth="8" fill="none" strokeLinecap="round"/>
+                  <path d="M50,22 Q51,13 46,10" stroke={f.hair} strokeWidth="8" fill="none" strokeLinecap="round"/>
+                  {/* Phone glow on face — warm gold */}
+                  <ellipse cx="33" cy="27" rx="18" ry="18" fill="rgba(200,163,64,0.18)"/>
+                  {/* === LEFT EYE (wide open — EXCITED) === */}
+                  <ellipse cx="25" cy="25" rx="5.5" ry="6" fill="white" opacity="0.95"/>
+                  <ellipse cx="25" cy="26" rx="3.8" ry="3.8" fill={f.mood === 'grinning' ? '#5a3010' : '#1e1008'}/>
+                  <ellipse cx="26.5" cy="24" rx="1.5" ry="1.5" fill="white" opacity="0.85"/>
+                  {/* Raised brow left */}
+                  <path d="M19,18 Q25,15 31,17" stroke={f.hair} strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+                  {/* === RIGHT EYE === */}
+                  <ellipse cx="41" cy="25" rx="5.5" ry="6" fill="white" opacity="0.95"/>
+                  <ellipse cx="41" cy="26" rx="3.8" ry="3.8" fill={f.mood === 'grinning' ? '#5a3010' : '#1e1008'}/>
+                  <ellipse cx="42.5" cy="24" rx="1.5" ry="1.5" fill="white" opacity="0.85"/>
+                  {/* Raised brow right */}
+                  <path d="M35,18 Q41,15 47,17" stroke={f.hair} strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+                  {/* === MOUTH (by mood) === */}
+                  {(f.mood === 'grinning' || f.mood === 'jump') && (
+                    <>
+                      <path d="M22,36 Q33,44 44,36" fill="rgba(160,60,25,0.90)"/>
+                      <path d="M23,36 Q33,42 43,36" fill="rgba(220,100,50,0.80)"/>
+                      {/* Teeth row */}
+                      <path d="M24,36 Q33,42 42,36" fill="rgba(240,230,220,0.75)" clipPath="none"/>
+                    </>
+                  )}
+                  {(f.mood === 'shock' || f.mood === 'amazed') && (
+                    <>
+                      <ellipse cx="33" cy="38" rx="7" ry="6" fill="rgba(50,18,8,0.90)"/>
+                      <ellipse cx="33" cy="37" rx="5" ry="4" fill="rgba(240,230,220,0.45)"/>
+                    </>
+                  )}
+                  {f.mood === 'laugh' && (
+                    <>
+                      <path d="M20,35 Q33,46 46,35 Q33,42 20,35 Z" fill="rgba(150,55,22,0.90)"/>
+                      <path d="M22,36 Q33,43 44,36" fill="rgba(240,225,210,0.60)"/>
+                    </>
+                  )}
+                  {/* Cheek blush (joy) */}
+                  <ellipse cx="20" cy="33" rx="5" ry="3.5" fill="rgba(220,100,60,0.18)"/>
+                  <ellipse cx="46" cy="33" rx="5" ry="3.5" fill="rgba(220,100,60,0.18)"/>
+                  {/* Phase 2+ glow intensifies */}
+                  {phase >= 2 && (
+                    <ellipse cx="33" cy="27" rx="20" ry="20" fill="rgba(200,163,64,0.14)"/>
+                  )}
+                </svg>
+              </motion.div>
+            );
+          })}
         </div>
       )}
     </AnimatePresence>
@@ -141,6 +208,9 @@ export function SceneLaunchDay() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.9 }}>
 
+      {/* CINEMATIC CAMERA — slow push toward the phone + founders */}
+      <CinematicCamera zoom={[1.05, 1.0]} origin="50% 60%" duration={28}>
+
       {/* Dark prestige — midnight launch */}
       <motion.div className="absolute inset-0"
         animate={{ background: phase >= 2
@@ -159,7 +229,7 @@ export function SceneLaunchDay() {
       ))}
 
       {/* Founders */}
-      <FoundersWatching show={phase >= 1} />
+      <FoundersWatching show={phase >= 1} phase={phase} />
 
       {/* Phone */}
       <PhonePlayStore show={phase >= 1} phase={phase} />
@@ -199,6 +269,9 @@ export function SceneLaunchDay() {
       <FloatingParticles count={15} color="#ff8c00" active={phase >= 3} />
       <SpeedLines active={phase >= 4} color="rgba(200,163,64,0.68)" count={32} cx={50} cy={45} />
 
+      </CinematicCamera>
+
+      {/* ── OVERLAYS outside camera ── */}
       <ChapterTitle chapter="Chapter VI" title="Launch Day" show={phase >= 4} />
 
       <Vignette strength={0.75} />
