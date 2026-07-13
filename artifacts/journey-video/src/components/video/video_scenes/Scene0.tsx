@@ -54,12 +54,12 @@ const SHOTS: Shot[] = [
     cutType: 'dissolve', showRain: false, showSyllabus: true,
   },
   {
-    // character face close-up — dark room, exhausted determination
-    src: 'student_darknight.png', dur: 2500,
-    initial: { scale: 1.05, y: '1.5%' },
-    animate: { scale: 1.0, y: '0%' },
-    transition: { duration: 3.0, ease: 'easeOut' },
-    cutType: 'dissolve', showRain: false, showSyllabus: false,
+    // rainy window profile — rain overlay active
+    src: 's0_shot_f_window.png', dur: 2500,
+    initial: { scale: 1.03, x: '0.5%' },
+    animate: { scale: 1.0, x: '0%' },
+    transition: { duration: 2.8, ease: 'easeOut' },
+    cutType: 'dissolve', showRain: true, showSyllabus: false,
   },
   {
     // extreme eye close-up — flash cut
@@ -70,11 +70,11 @@ const SHOTS: Shot[] = [
     cutType: 'flash', showRain: false, showSyllabus: false,
   },
   {
-    // head slumped on desk — "Will I fail in exam?" appears here
-    src: 's0_shot_h_slumped.png', dur: 4000,
+    // exhausted face, awake — "Will I fail?" appears here
+    src: 'student_darknight.png', dur: 4000,
     initial: { scale: 1.04, y: '-1%' },
-    animate: { scale: 1.0, y: '1.5%' },
-    transition: { duration: 4.5, ease: 'easeIn' },
+    animate: { scale: 1.0, y: '1%' },
+    transition: { duration: 4.5, ease: 'easeOut' },
     cutType: 'dissolve', showRain: false, showSyllabus: false,
   },
 ];
@@ -179,6 +179,16 @@ export function Scene0() {
         transition={{ duration: 0.6 }}
       />
 
+      {/* Shots C / D / E — warm amber glow on the books area (lower frame) */}
+      <motion.div className="absolute pointer-events-none z-3"
+        style={{
+          left: '0%', bottom: '12%', width: '100%', height: '45%',
+          background: 'radial-gradient(ellipse at 50% 80%, rgba(200,163,64,0.22) 0%, rgba(200,130,30,0.1) 35%, transparent 70%)',
+        }}
+        animate={{ opacity: currentShot.showSyllabus ? 1 : 0 }}
+        transition={{ duration: 0.7 }}
+      />
+
       {/* ── RAIN — only on shots where window is visible ── */}
       <motion.div className="absolute inset-0 z-4 pointer-events-none overflow-hidden"
         animate={{ opacity: currentShot.showRain ? 1 : 0 }}
@@ -204,11 +214,11 @@ export function Scene0() {
         className="absolute z-15 w-full text-center pointer-events-none font-mono"
         style={{
           bottom: '16%',
-          fontSize: 'clamp(0.65rem, 1.3vw, 1.05rem)',
-          letterSpacing: '0.22em',
-          color: 'rgba(255,255,255,0.38)',
+          fontSize: 'clamp(0.7rem, 1.4vw, 1.1rem)',
+          letterSpacing: '0.26em',
+          color: 'rgba(200,163,64,0.72)',
           fontStyle: 'italic',
-          textShadow: '0 2px 20px rgba(0,0,0,0.95)',
+          textShadow: '0 2px 28px rgba(0,0,0,0.98), 0 0 40px rgba(200,163,64,0.3)',
         }}
         animate={{ opacity: currentShot.showSyllabus ? 1 : 0 }}
         transition={{ duration: 0.9 }}
