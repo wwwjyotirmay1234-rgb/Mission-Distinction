@@ -274,7 +274,7 @@ title = "scene8 outro empty desk lamp"
 id = "yeZtphCpr0hrOdE4LFdvF"
 uri = "file://artifacts/journey-video/public/images/s0_shot_b_wide.png"
 type = "image"
-title = "Fixing s0_shot_b_wide.png"
+title = "UE5 char s0_shot_b_wide.png"
 
 [[generated]]
 id = "wLk3tGm7lG01wJMIE1X5U"
@@ -292,7 +292,7 @@ title = "Scene0 shot_c"
 id = "7jRfKe-SRFkVwXsh5JQHP"
 uri = "file://artifacts/journey-video/public/images/s0_shot_d_face_down.png"
 type = "image"
-title = "Fixing s0_shot_d_face_down.png"
+title = "UE5 char s0_shot_d_face_down.png"
 
 [[generated]]
 id = "msjs6iFo8o_99oqF7YJUO"
@@ -310,13 +310,13 @@ title = "Scene0 shot_f"
 id = "70Yn7ci-k9KdsGoneh4B9"
 uri = "file://artifacts/journey-video/public/images/s0_shot_g_eye.png"
 type = "image"
-title = "Fixing s0_shot_g_eye.png"
+title = "UE5 char s0_shot_g_eye.png"
 
 [[generated]]
 id = "ykWmatxZPppbK9Ng8_8KT"
 uri = "file://artifacts/journey-video/public/images/s0_shot_h_slumped.png"
 type = "image"
-title = "Fixing s0_shot_h_slumped.png"
+title = "UE5 char s0_shot_h_slumped.png"
 
 [[generated]]
 id = "0lvDIwpUm5K_vFpc31EYj"
@@ -328,13 +328,13 @@ title = "S1 realistic s1_shot_c"
 id = "kAGQ6Y8q-PlyJVO1crbNb"
 uri = "file://artifacts/journey-video/public/images/s1_shot_b_face_walking.png"
 type = "image"
-title = "Fixing s1_shot_b_face_walking.png"
+title = "UE5 char s1_shot_b_face_walking.png"
 
 [[generated]]
 id = "pQQr7IwJCPMg1OjQz38Iw"
 uri = "file://artifacts/journey-video/public/images/s1_shot_a_hostel.png"
 type = "image"
-title = "Fixing s1_shot_a_hostel.png"
+title = "UE5 char s1_shot_a_hostel.png"
 
 [[generated]]
 id = "09fpYbpHrT9kbjgjb55Ad"
@@ -346,7 +346,7 @@ title = "Shot D v4 — overhead angle, hands+books focus, cinematic"
 id = "sMUvLr0VvkDDq4h7om_k1"
 uri = "file://artifacts/journey-video/public/images/s1_shot_e_realization_eyes.png"
 type = "image"
-title = "Fixing s1_shot_e_realization_eyes.png"
+title = "UE5 char s1_shot_e_realization_eyes.png"
 
 [[generated]]
 id = "Ux-_GYMewpdhwd28FmYA6"
@@ -358,7 +358,7 @@ title = "S1 realistic s1_shot_f"
 id = "pqTNc8-GD8iL4BKhhDErS"
 uri = "file://artifacts/journey-video/public/images/s1_shot_g_determination.png"
 type = "image"
-title = "Fixing s1_shot_g_determination.png"
+title = "UE5 char s1_shot_g_determination.png"
 
 [[generated]]
 id = "QKaB5YAeaJcQakMzJ0oML"
@@ -419,6 +419,54 @@ id = "G87dIZvH1lH1CP4sbvuWI"
 uri = "file://artifacts/journey-video/public/images/s3_shot_j_destiny_pull.png"
 type = "image"
 title = "Scene 2 ref-match s3_shot_j_destiny_pull.png"
+
+[[generated]]
+id = "RTF0QzTyu1NJd39pASKp-"
+uri = "file://artifacts/journey-video/public/images/s4_shot_b_error_screen.png"
+type = "image"
+title = "Scene3 s4_shot_b_error_screen.png"
+
+[[generated]]
+id = "FCdWVi4nw1tUehw3yQp_g"
+uri = "file://artifacts/journey-video/public/images/s4_shot_c_exhausted_3am.png"
+type = "image"
+title = "Scene3 s4_shot_c_exhausted_3am.png"
+
+[[generated]]
+id = "ZDqrmq8A3xWQ5RV1HIjPK"
+uri = "file://artifacts/journey-video/public/images/s4_shot_a_late_night_coding.png"
+type = "image"
+title = "Scene3 s4_shot_a_late_night_coding.png"
+
+[[generated]]
+id = "d-udRGPiABJpPaRih5339"
+uri = "file://artifacts/journey-video/public/images/s4_shot_e_months_later.png"
+type = "image"
+title = "Scene3 s4_shot_e_months_later.png"
+
+[[generated]]
+id = "7_mWOFpKeFIxnoxerC5iB"
+uri = "file://artifacts/journey-video/public/images/s4_shot_f_almost_giving_up.png"
+type = "image"
+title = "Scene3 s4_shot_f_almost_giving_up.png"
+
+[[generated]]
+id = "ynAplvQgBk_U3L4VSSZBN"
+uri = "file://artifacts/journey-video/public/images/s4_shot_d_sunrise_window.png"
+type = "image"
+title = "Scene3 s4_shot_d_sunrise_window.png"
+
+[[generated]]
+id = "vPJiQzBmhV0ISNb8GC-jF"
+uri = "file://artifacts/journey-video/public/images/s4_shot_g_remembering_why.png"
+type = "image"
+title = "Scene3 s4_shot_g_remembering_why.png"
+
+[[generated]]
+id = "_jWyJI7TtLS0N9bVh2EfT"
+uri = "file://artifacts/journey-video/public/images/s4_shot_h_team_still_going.png"
+type = "image"
+title = "Scene3 s4_shot_h_team_still_going.png"
 
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
