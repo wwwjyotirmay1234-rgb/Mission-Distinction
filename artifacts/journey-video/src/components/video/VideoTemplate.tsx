@@ -8,7 +8,7 @@ import { SceneFall } from './video_scenes/SceneFall';
 import { SceneComeback } from './video_scenes/SceneComeback';
 import { SceneLaunchDay } from './video_scenes/SceneLaunchDay';
 import { SceneMovement } from './video_scenes/SceneMovement';
-import { Scene7 } from './video_scenes/Scene7';
+import { SceneLegacy } from './video_scenes/SceneLegacy';
 import { SceneWorkBegins } from './video_scenes/SceneWorkBegins';
 import { SceneEpicFinal } from './video_scenes/SceneEpicFinal';
 
@@ -21,7 +21,7 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s4_progress:    29600,  // Scene 6 — The Comeback (10 frames)
   s5_launch:      30000,  // Scene 7 — Launch Day (10 frames)
   s6_climb:       30500,  // Scene 8 — The Movement (10 frames)
-  s7_foryou:       8000,  // The Milestone — 500, silence
+  s7_foryou:      30000,  // Scene 9 — The Legacy (10 frames)
   s8_outro:       12000,  // EPIC FINAL — golden network over Odisha
 };
 
@@ -34,7 +34,7 @@ const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
   s4_progress:    SceneComeback,
   s5_launch:      SceneLaunchDay,
   s6_climb:       SceneMovement,
-  s7_foryou:      Scene7,
+  s7_foryou:      SceneLegacy,
   s8_outro:       SceneEpicFinal,
 };
 
