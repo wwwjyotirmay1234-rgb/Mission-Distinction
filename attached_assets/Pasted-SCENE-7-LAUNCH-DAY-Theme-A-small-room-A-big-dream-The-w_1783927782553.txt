@@ -1,0 +1,125 @@
+SCENE 7 — LAUNCH DAY
+
+Theme
+
+A small room. A big dream. The world starts responding.
+
+This should be the most emotional and energetic scene so far.
+
+⸻
+
+Frame 1 — The Click
+
+Prompt
+
+Unreal Engine 5 cinematic realism, founder presses the glowing LAUNCH button on laptop, teammates holding their breath, complete silence in room, dramatic cinematic lighting, Oscar-winning movie quality, realistic Indian MBBS students, no glasses.
+
+⸻
+
+Frame 2 — Waiting
+
+Prompt
+
+Five founders staring at laptop screen anxiously, nobody speaking, tension visible on faces, room illuminated only by monitor glow, cinematic suspense.
+
+⸻
+
+Frame 3 — First Download
+
+Prompt
+
+Download counter changes from 0 to 1, founders frozen in disbelief, emotional expressions, close-up of screen and faces, Hollywood storytelling.
+
+Counter visible:
+Downloads: 1
+
+⸻
+
+Frame 4 — The First Smile
+
+Prompt
+
+Founder slowly smiles as teammates realize a real student has joined, mixture of relief and happiness, warm cinematic lighting, emotional realism.
+
+⸻
+
+Frame 5 — Notifications Begin
+
+Prompt
+
+Smartphones and laptops lighting up with notifications, new users joining, download counter rapidly increasing, excitement building, cinematic montage.
+
+Counter:
+Downloads: 12
+
+⸻
+
+Frame 6 — Momentum
+
+Prompt
+
+Download graph climbing rapidly, founders exchanging shocked looks, students refreshing screens repeatedly, room energy exploding, Hollywood startup success scene.
+
+Counter:
+Downloads: 50
+
+⸻
+
+Frame 7 — Messages Arrive
+
+Prompt
+
+Close-up of messages from students appearing on screen, founders reading them emotionally, gratitude and disbelief, cinematic depth of field.
+
+Messages:
+“Thank you.”
+“This helps a lot.”
+“Exactly what we needed.”
+
+⸻
+
+Frame 8 — 150 Downloads
+
+Prompt
+
+Giant laptop screen displaying 150 downloads within first 24 hours, founders erupting in celebration, standing, cheering, emotional victory, Oscar-winning cinematography.
+
+Counter:
+Downloads: 150
+
+⸻
+
+Frame 9 — Across Odisha
+
+Prompt
+
+Students across Odisha using Mission Distinction in hostel rooms, libraries, buses, dormitories and study tables, app spreading everywhere, beautiful cinematic montage, Unreal Engine realism.
+
+⸻
+
+Frame 10 — End Scene
+
+Prompt
+
+Five founders standing on hostel rooftop at night, city lights glowing below, looking toward the horizon, knowing their mission has begun, cinematic masterpiece, golden atmosphere, Oscar-level ending shot.
+
+⸻
+
+Emotion Arc
+
+⏳ Suspense
+😰 Anxiety
+😮 First Success
+🙂 Relief
+📈 Growth
+🚀 Momentum
+❤️ Gratitude
+🎉 Celebration
+🌍 Impact
+✨ Purpose
+
+Character Lock
+
+Add to every prompt:
+
+Same five Indian MBBS male students from previous scenes, no glasses, no female characters, founder with curly black hair, consistent faces and hairstyles, Unreal Engine 5 cinematic realism, Oscar-winning animated film quality, warm cinematic lighting.

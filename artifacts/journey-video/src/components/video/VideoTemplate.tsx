@@ -6,7 +6,7 @@ import { Scene1 } from './video_scenes/Scene1';
 import { Scene2 } from './video_scenes/Scene2';
 import { SceneFall } from './video_scenes/SceneFall';
 import { SceneComeback } from './video_scenes/SceneComeback';
-import { Scene5 } from './video_scenes/Scene5';
+import { SceneLaunchDay } from './video_scenes/SceneLaunchDay';
 import { Scene6 } from './video_scenes/Scene6';
 import { Scene7 } from './video_scenes/Scene7';
 import { SceneWorkBegins } from './video_scenes/SceneWorkBegins';
@@ -19,7 +19,7 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s2_workbegins:  15000,  // The Work Begins — fast montage 10 frames
   s3_darknight:   31100,  // Scene 5 — The Fall (10 frames × 2.5–5s)
   s4_progress:    29600,  // Scene 6 — The Comeback (10 frames)
-  s5_launch:      10000,  // Launch Day — button, counter rising
+  s5_launch:      30000,  // Scene 7 — Launch Day (10 frames)
   s6_climb:       10000,  // The Ripple Effect — across Odisha
   s7_foryou:       8000,  // The Milestone — 500, silence
   s8_outro:       12000,  // EPIC FINAL — golden network over Odisha
@@ -32,7 +32,7 @@ const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
   s2_workbegins:  SceneWorkBegins,
   s3_darknight:   SceneFall,
   s4_progress:    SceneComeback,
-  s5_launch:      Scene5,
+  s5_launch:      SceneLaunchDay,
   s6_climb:       Scene6,
   s7_foryou:      Scene7,
   s8_outro:       SceneEpicFinal,
