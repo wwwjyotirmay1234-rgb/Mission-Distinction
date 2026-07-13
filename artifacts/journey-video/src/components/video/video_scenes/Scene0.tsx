@@ -1,206 +1,85 @@
-import { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence, type Transition } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { StarField, SpeedLines, CityLights, Silhouette, AnimeText, Vignette, BottomGrad } from '../../../anime/index';
 
-type Shot = {
-  src: string;
-  dur: number;
-  initial: Record<string, number | string>;
-  animate: Record<string, number | string>;
-  transition: Transition;
-  cutType: 'flash' | 'dissolve';
-  showRain: boolean;
-  showPhone: boolean;
-};
-
-// ── Your original 3-shot Scene 0 ─────────────────────────────────────────────
-const SHOTS: Shot[] = [
-  {
-    // Shot 1 — Extreme close-up clock 2:17 AM. Slow cinematic zoom. Rain sounds.
-    src: 's0_shot_a_clock.png', dur: 5000,
-    initial: { scale: 1.10, x: '1%', y: '-1%' },
-    animate: { scale: 1.0, x: '0%', y: '0%' },
-    transition: { duration: 5.5, ease: 'easeOut' },
-    cutType: 'flash', showRain: true, showPhone: false,
-  },
-  {
-    // Shot 2 — MBBS student alone surrounded by books. Exhausted. Camera orbit.
-    src: 'char_s0_desk_alone.png', dur: 5000,
-    initial: { scale: 1.06, y: '-1.5%' },
-    animate: { scale: 1.0, y: '0%' },
-    transition: { duration: 5.5, ease: 'easeOut' },
-    cutType: 'dissolve', showRain: true, showPhone: false,
-  },
-  {
-    // Shot 3 — Student opens phone, searches for study material, finds nothing.
-    src: 'char_s0_phone_frustrated.png', dur: 5000,
-    initial: { scale: 1.05, y: '-1%' },
-    animate: { scale: 1.0, y: '0.5%' },
-    transition: { duration: 5.5, ease: 'easeOut' },
-    cutType: 'dissolve', showRain: false, showPhone: true,
-  },
-];
-
-// Heavy rain — 70 drops, fast, clearly visible
-const RAIN_DROPS = Array.from({ length: 70 }, (_, i) => ({
-  left: `${(i * 1.44 + (i % 7) * 1.2) % 100}%`,
-  height: `${60 + (i % 7) * 22}px`,
-  width: i % 5 === 0 ? '2px' : '1.5px',
-  duration: 0.32 + (i % 8) * 0.06,
-  delay: (i * 0.09) % 1.8,
-  opacity: 0.18 + (i % 5) * 0.09,
-  blur: i % 6 === 0 ? 'blur(0.5px)' : 'none',
-}));
-
+// ── SCENE 0: COLD OPEN — Night, a dream forming in silence ───────────
 export function Scene0() {
-  const [shotIndex, setShotIndex] = useState(0);
-  const [flashActive, setFlashActive] = useState(false);
-  const [tick, setTick] = useState(false);
-  const builtTimers = useRef(false);
-
-  const currentShot = SHOTS[shotIndex];
-
+  const [phase, setPhase] = useState(0);
+  const built = useRef(false);
   useEffect(() => {
-    if (builtTimers.current) return;
-    builtTimers.current = true;
-
-    const tickInterval = setInterval(() => setTick(t => !t), 900);
-
-    let cursor = 0;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    SHOTS.forEach((shot, i) => {
-      const t = cursor;
-      if (i > 0) {
-        if (shot.cutType === 'flash') {
-          timers.push(setTimeout(() => {
-            setFlashActive(true);
-            setTimeout(() => { setFlashActive(false); setShotIndex(i); }, 90);
-          }, t));
-        } else {
-          timers.push(setTimeout(() => setShotIndex(i), t));
-        }
-      }
-      cursor += shot.dur;
-    });
-
-    return () => { timers.forEach(clearTimeout); clearInterval(tickInterval); };
+    if (built.current) return; built.current = true;
+    const ts = [
+      setTimeout(() => setPhase(1), 3000),
+      setTimeout(() => setPhase(2), 7500),
+      setTimeout(() => setPhase(3), 12000),
+    ];
+    return () => ts.forEach(clearTimeout);
   }, []);
 
   return (
-    <motion.div className="absolute inset-0 overflow-hidden bg-black"
+    <motion.div className="absolute inset-0 overflow-hidden"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      transition={{ duration: 0.6 }}>
+      transition={{ duration: 1.0 }}>
 
-      {/* ── ALL SHOTS — stacked, crossfading ── */}
-      {SHOTS.map((shot, i) => (
-        <motion.div key={i} className="absolute inset-0 z-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: shotIndex === i ? 1 : 0 }}
-          transition={{ duration: shot.cutType === 'flash' ? 0.08 : 0.55, ease: 'easeInOut' }}>
-          <motion.div className="absolute inset-0"
-            initial={shot.initial}
-            animate={shotIndex === i ? shot.animate : shot.initial}
-            transition={shotIndex === i ? shot.transition : { duration: 0 }}>
-            <img
-              src={`${import.meta.env.BASE_URL}images/${shot.src}?v=2`}
-              className="w-full h-full object-cover object-center"
-              style={{ filter: 'brightness(0.88) contrast(1.05) saturate(0.93)' }}
-              alt=""
-            />
-          </motion.div>
-        </motion.div>
-      ))}
+      {/* Deep night gradient */}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(160deg,#02020e 0%,#080825 50%,#0a0620 100%)' }} />
 
-      {/* ── SHOT 1 — red clock glow pulse ── */}
+      <StarField count={110} />
+      <CityLights count={55} opacity={0.50} />
+
+      {/* Lamp warm glow */}
       <motion.div className="absolute pointer-events-none z-[3]"
-        style={{
-          left: '30%', bottom: '20%', width: '20%', height: '22%',
-          background: 'radial-gradient(ellipse, rgba(255,20,0,0.22) 0%, transparent 70%)',
-        }}
-        animate={{ opacity: shotIndex === 0 ? (tick ? 0.9 : 0.3) : 0 }}
-        transition={{ duration: 0.15 }}
-      />
-
-      {/* ── SHOT 3 — phone screen glow ── */}
-      <motion.div className="absolute pointer-events-none z-[4]"
-        style={{
-          left: '30%', top: '38%', width: '40%', height: '38%',
-          background: 'radial-gradient(ellipse at 50% 60%, rgba(80,130,230,0.18) 0%, rgba(60,100,200,0.07) 55%, transparent 80%)',
-          borderRadius: '8%',
-        }}
-        animate={{ opacity: currentShot.showPhone ? [0, 1, 0.7, 1, 0.6, 0] : 0 }}
-        transition={currentShot.showPhone
-          ? { duration: 4.0, times: [0, 0.15, 0.4, 0.65, 0.85, 1.0], ease: 'easeInOut' }
-          : { duration: 0.3 }}
-      />
-      {/* "no useful resources found" on phone screen */}
-      <AnimatePresence>
-        {currentShot.showPhone && (
-          <motion.p key="phone-text"
-            className="absolute pointer-events-none z-[5] text-center font-mono"
-            style={{
-              left: '0', right: '0', top: '49%',
-              fontSize: 'clamp(0.45rem, 0.9vw, 0.7rem)',
-              letterSpacing: '0.3em',
-              color: 'rgba(140,170,255,0.65)',
-              textTransform: 'uppercase',
-              textShadow: '0 0 12px rgba(100,140,255,0.5)',
-            }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0, 1, 1, 0] }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 4.0, times: [0, 0.25, 0.4, 0.75, 1.0] }}>
-            no useful resources found
-          </motion.p>
-        )}
-      </AnimatePresence>
-
-      {/* ── RAIN — shots 1 & 2 (window visible) ── */}
-      <motion.div className="absolute inset-0 z-[4] pointer-events-none overflow-hidden"
-        animate={{ opacity: currentShot.showRain ? 1 : 0 }}
-        transition={{ duration: 0.4 }}>
-        {RAIN_DROPS.map((drop, i) => (
-          <motion.div key={i} className="absolute"
-            style={{
-              left: drop.left, top: '-5%',
-              width: drop.width, height: drop.height,
-              background: 'linear-gradient(to bottom, transparent 0%, rgba(160,200,255,0.9) 60%, rgba(200,230,255,1) 100%)',
-              borderRadius: '1px',
-              opacity: drop.opacity,
-              filter: drop.blur,
-            }}
-            animate={{ y: ['0vh', '110vh'] }}
-            transition={{ duration: drop.duration, delay: drop.delay, repeat: Infinity, ease: 'linear' }}
-          />
-        ))}
+        style={{ bottom: '26%', left: '50%', transform: 'translateX(-50%)' }}
+        animate={{ opacity: phase >= 1 ? 1 : 0 }} transition={{ duration: 1.6 }}>
+        <div style={{ width: 'clamp(160px,26vw,320px)', height: 'clamp(160px,26vw,320px)',
+          background: 'radial-gradient(circle,rgba(255,200,70,0.24) 0%,rgba(255,150,30,0.08) 45%,transparent 72%)',
+          borderRadius: '50%' }} />
       </motion.div>
 
-      {/* ── ESTABLISHING CAPTION — shot 1 (clock) only ── */}
-      <motion.p className="absolute font-mono z-[20] pointer-events-none w-full text-center"
-        style={{
-          top: '15%',
-          fontSize: 'clamp(0.5rem, 0.9vw, 0.75rem)',
-          letterSpacing: '0.55em',
-          color: 'rgba(200,163,64,0.65)',
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          textShadow: '0 0 20px rgba(200,163,64,0.3)',
-        }}
-        animate={{ opacity: shotIndex === 0 ? 1 : 0 }}
-        transition={{ duration: 1.6, delay: shotIndex === 0 ? 1.0 : 0 }}>
-        Odisha · MBBS First Year · 2026
-      </motion.p>
-
-      {/* ── CINEMATIC VIGNETTE ── */}
-      <div className="absolute inset-0 z-[6] pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)' }}
+      {/* Desk + student */}
+      <motion.div className="absolute pointer-events-none z-[7]"
+        style={{ bottom: '25%', left: '34%', width: '32%', height: '5px', background: '#060615', borderRadius: '2px' }}
+        animate={{ scaleX: phase >= 1 ? 1 : 0 }} transition={{ delay: 0.1, duration: 0.5 }}
       />
+      <Silhouette x={50} y={66} scale={1.5} fill="#040412" variant="hunched" show={phase >= 1} delay={0.4} />
 
-      {/* ── FLASH FRAME ── */}
-      <motion.div className="absolute inset-0 bg-white pointer-events-none z-[20]"
-        animate={{ opacity: flashActive ? 0.85 : 0 }}
-        transition={{ duration: 0.05 }}
-      />
+      {/* Laptop blue glow */}
+      <motion.div className="absolute pointer-events-none z-[6]"
+        style={{ bottom: '29%', left: '48%' }}
+        animate={{ opacity: phase >= 1 ? 1 : 0 }} transition={{ delay: 0.6, duration: 0.9 }}>
+        <div style={{ width: 'clamp(55px,9vw,100px)', height: 'clamp(38px,6vh,65px)',
+          background: 'linear-gradient(to bottom,rgba(55,115,255,0.55),rgba(35,75,200,0.22))',
+          borderRadius: '3px 3px 0 0', boxShadow: '0 0 22px rgba(60,120,255,0.38)' }} />
+      </motion.div>
+
+      {/* Spinning clock */}
+      <motion.div className="absolute pointer-events-none z-[8]"
+        style={{ top: '13%', right: '10%' }}
+        animate={{ opacity: phase >= 2 ? 1 : 0 }} transition={{ duration: 0.5 }}>
+        <svg width="clamp(52px,8vw,88px)" height="clamp(52px,8vw,88px)" viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="27" fill="none" stroke="rgba(200,160,55,0.28)" strokeWidth="1.8"/>
+          {[0,5,10,15,20,25,30,35,40,45,50,55].map(m => {
+            const a = (m/60)*Math.PI*2 - Math.PI/2;
+            return <circle key={m} cx={30+22*Math.cos(a)} cy={30+22*Math.sin(a)} r="1" fill="rgba(200,160,55,0.40)"/>;
+          })}
+          <motion.line x1="30" y1="30" x2="30" y2="9" stroke="rgba(200,160,55,0.80)" strokeWidth="2" strokeLinecap="round"
+            style={{ transformOrigin:'30px 30px' }}
+            animate={{ rotate: phase >= 2 ? 3600 : 0 }}
+            transition={{ duration: 4, ease:'linear', repeat: phase >= 2 ? Infinity : 0 }} />
+          <motion.line x1="30" y1="30" x2="30" y2="14" stroke="rgba(200,160,55,0.55)" strokeWidth="1.4" strokeLinecap="round"
+            style={{ transformOrigin:'30px 30px' }}
+            animate={{ rotate: phase >= 2 ? 300 : 0 }}
+            transition={{ duration: 4, ease:'linear', repeat: phase >= 2 ? Infinity : 0 }} />
+        </svg>
+      </motion.div>
+
+      {/* Speed burst + title */}
+      <SpeedLines active={phase >= 3} color="rgba(200,163,64,0.60)" count={32} cx={50} cy={46} />
+      <AnimeText lines={['MISSION DISTINCTION','From a Dream to 500 Downloads']}
+        show={phase >= 3} accent="#C8A340" bottom="16%" />
+
+      <Vignette strength={0.70} />
+      <BottomGrad />
     </motion.div>
   );
 }

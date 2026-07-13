@@ -1,338 +1,90 @@
-import { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence, type Transition } from 'framer-motion';
-import { WordReveal } from '../WordReveal';
-import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Silhouette, SpeedLines, FloatingParticles, AnimeText, Vignette, BottomGrad } from '../../../anime/index';
 
-// Emotion arc: Reflection → Inspiration → Initiative → Unity → Excitement → Vision → Hope → Commitment → Planning → Destiny
-type Shot = {
-  src: string;
-  dur: number;
-  initial: Record<string, number | string>;
-  animate: Record<string, number | string>;
-  transition: Transition;
-  cutType: 'flash' | 'dissolve';
-  showGolden: boolean;    // warm golden shimmer (lecture hall / sunset shots)
-  showDust: boolean;      // dust motes (hostel room shots)
-  showChalkText?: boolean; // "There has to be a better way." — whiteboard shot only
-};
-
-const SHOTS: Shot[] = [
-  {
-    // A — lone student in empty lecture hall at golden hour  [Reflection]
-    src: 's3_shot_a_silent_observation.png', dur: 3500,
-    initial: { scale: 1.08, y: '-1.5%' },
-    animate: { scale: 1.0, y: '0%' },
-    transition: { duration: 4.5, ease: 'easeOut' },
-    cutType: 'dissolve', showGolden: true, showDust: true,
-  },
-  {
-    // B — notebook close-up, pen stops, idea sparks  [Inspiration]
-    src: 's3_shot_b_idea_begins.png', dur: 2500,
-    initial: { scale: 1.0, x: '-0.5%' },
-    animate: { scale: 1.06, x: '0%' },
-    transition: { duration: 2.8, ease: 'easeIn' },
-    cutType: 'dissolve', showGolden: true, showDust: false,
-  },
-  {
-    // C — hostel room, phone call, determination growing  [Initiative]
-    src: 's3_shot_c_calling_friends.png', dur: 2500,
-    initial: { scale: 1.05, y: '1%' },
-    animate: { scale: 1.0, y: '0%' },
-    transition: { duration: 3.0, ease: 'easeOut' },
-    cutType: 'dissolve', showGolden: true, showDust: false,
-  },
-  {
-    // D — five students crowd into hostel room  [Unity]
-    src: 's3_shot_d_gathering_team.png', dur: 2500,
-    initial: { scale: 1.06, x: '1%' },
-    animate: { scale: 1.0, x: '0%' },
-    transition: { duration: 3.0, ease: 'easeOut' },
-    cutType: 'dissolve', showGolden: false, showDust: true,
-  },
-  {
-    // E — FLASH CUT to brainstorm energy  [Excitement]
-    src: 's3_shot_e_brainstorm.png', dur: 2500,
-    initial: { scale: 1.1 },
-    animate: { scale: 1.0 },
-    transition: { duration: 2.5, ease: [0.16, 1, 0.3, 1] },
-    cutType: 'flash', showGolden: false, showDust: true,
-  },
-  {
-    // F — FLASH CUT to whiteboard moment, THE founding question  [Vision]
-    src: 'char_s2_whiteboard_team.png', dur: 3500,
-    initial: { scale: 1.04, y: '-0.5%' },
-    animate: { scale: 1.0, y: '0%' },
-    transition: { duration: 4.0, ease: 'easeOut' },
-    cutType: 'flash', showGolden: false, showDust: false, showChalkText: true,
-  },
-  {
-    // G — five faces, doubt → hope → excitement  [Hope]
-    src: 's3_shot_g_reactions.png', dur: 2500,
-    initial: { scale: 1.0, x: '-0.3%' },
-    animate: { scale: 1.05, x: '0%' },
-    transition: { duration: 2.8, ease: 'easeIn' },
-    cutType: 'dissolve', showGolden: false, showDust: false,
-  },
-  {
-    // H — overhead, five hands together over books + laptop  [Commitment]
-    src: 's3_shot_h_mission_born.png', dur: 3000,
-    initial: { scale: 1.08, y: '-1%' },
-    animate: { scale: 1.0, y: '0%' },
-    transition: { duration: 3.5, ease: 'easeOut' },
-    cutType: 'dissolve', showGolden: true, showDust: false,
-  },
-  {
-    // I — FLASH CUT to whiteboard full of diagrams and app sketches  [Planning]
-    src: 's3_shot_i_first_plan.png', dur: 2500,
-    initial: { scale: 1.06, x: '-1%' },
-    animate: { scale: 1.0, x: '0%' },
-    transition: { duration: 3.0, ease: 'easeOut' },
-    cutType: 'flash', showGolden: false, showDust: true,
-  },
-  {
-    // J — night exterior, one glowing window, entire campus dark  [Destiny]
-    src: 's3_shot_j_destiny_pull.png', dur: 4000,
-    initial: { scale: 1.1, y: '0%' },
-    animate: { scale: 1.0, y: '0%' },
-    transition: { duration: 5.0, ease: 'easeOut' },
-    cutType: 'dissolve', showGolden: false, showDust: false,
-  },
-];
-
-// Total: 29000ms
-
-const DUST = Array.from({ length: 16 }, (_, i) => ({
-  left: `${8 + (i * 5.7) % 82}%`,
-  top: `${6 + (i * 7.1) % 68}%`,
-  dur: 3.0 + (i % 6) * 0.6,
-  delay: i * 0.28,
-}));
+// ── SCENE 2: THE SPARK — Five friends. One idea. ─────────────────────
+const TABLE_FIGURES = [14, 28, 50, 72, 86];
 
 export function Scene2() {
-  const [shotIndex, setShotIndex] = useState(0);
-  const [phase, setPhase] = useState<'shots' | 'reflection' | 'commitment' | 'destiny' | 'out'>('shots');
-  const [flashActive, setFlashActive] = useState(false);
-  const builtTimers = useRef(false);
-
-  const currentShot = SHOTS[shotIndex];
-
-  useSceneSpeech([
-    { atPhase: 0, text: 'He stayed back.' },
-    { atPhase: 7, text: 'Five of them.' },
-    { atPhase: 9, text: 'This is how it starts.' },
-  ], shotIndex);
-
+  const [phase, setPhase] = useState(0);
+  const [flash, setFlash] = useState(false);
+  const built = useRef(false);
   useEffect(() => {
-    if (builtTimers.current) return;
-    builtTimers.current = true;
-
-    let cursor = 0;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    SHOTS.forEach((shot, i) => {
-      if (i > 0) {
-        const t = cursor;
-        if (shot.cutType === 'flash') {
-          timers.push(setTimeout(() => {
-            setFlashActive(true);
-            setTimeout(() => { setFlashActive(false); setShotIndex(i); }, 80);
-          }, t));
-        } else {
-          timers.push(setTimeout(() => setShotIndex(i), t));
-        }
-      }
-      cursor += shot.dur;
-    });
-
-    // Shot starts (cumulative)
-    const shotStart = SHOTS.reduce<number[]>((acc, s, i) => {
-      acc.push(i === 0 ? 0 : acc[i - 1] + SHOTS[i - 1].dur);
-      return acc;
-    }, []);
-
-    // "He stayed back." — appears 1.2s into shot A, fades before shot B
-    timers.push(setTimeout(() => setPhase('reflection'), shotStart[0] + 1200));
-    timers.push(setTimeout(() => setPhase('shots'), shotStart[1] - 200));
-
-    // "Five of them." — appears 1s into shot H (index 7)
-    timers.push(setTimeout(() => setPhase('commitment'), shotStart[7] + 1000));
-    timers.push(setTimeout(() => setPhase('shots'), shotStart[8] - 200));
-
-    // "This is how it starts." — appears 800ms into shot J (index 9)
-    timers.push(setTimeout(() => setPhase('destiny'), shotStart[9] + 800));
-    timers.push(setTimeout(() => setPhase('out'), shotStart[9] + SHOTS[9].dur - 500));
-
-    return () => timers.forEach(clearTimeout);
+    if (built.current) return; built.current = true;
+    const ts = [
+      setTimeout(() => setPhase(1), 2000),
+      setTimeout(() => { setFlash(true); setTimeout(() => setFlash(false), 200); setPhase(2); }, 4500),
+      setTimeout(() => setPhase(3), 7000),
+      setTimeout(() => setPhase(4), 9000),
+    ];
+    return () => ts.forEach(clearTimeout);
   }, []);
 
   return (
-    <motion.div className="absolute inset-0 overflow-hidden bg-black"
+    <motion.div className="absolute inset-0 overflow-hidden"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.8 }}>
 
-      {/* ── ALL SHOTS stacked, crossfading ── */}
-      {SHOTS.map((shot, i) => (
-        <motion.div key={i} className="absolute inset-0 z-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: shotIndex === i ? 1 : 0 }}
-          transition={{ duration: shot.cutType === 'flash' ? 0.07 : 0.6, ease: 'easeInOut' }}>
-          <motion.div className="absolute inset-0"
-            initial={shot.initial}
-            animate={shotIndex === i ? shot.animate : shot.initial}
-            transition={shotIndex === i ? shot.transition : { duration: 0 }}>
-            <img
-              src={`${import.meta.env.BASE_URL}images/${shot.src}?v=2`}
-              className="w-full h-full object-cover object-center"
-              style={{ filter: 'brightness(0.9) contrast(1.04) saturate(0.95)' }}
-              alt=""
-            />
-          </motion.div>
-        </motion.div>
+      {/* Very dark room → warms on spark */}
+      <motion.div className="absolute inset-0"
+        animate={{ background: phase >= 2
+          ? 'linear-gradient(160deg,#0d0800 0%,#1a0f00 50%,#120900 100%)'
+          : 'linear-gradient(160deg,#040408 0%,#08060e 50%,#040408 100%)' }}
+        transition={{ duration: 1.8 }} />
+
+      {/* Table silhouette */}
+      <motion.div className="absolute pointer-events-none z-[4]"
+        style={{ bottom:'28%', left:'8%', width:'84%', height:'6px', background:'#080614', borderRadius:'3px' }}
+        animate={{ scaleX: phase >= 1 ? 1 : 0 }}
+        transition={{ duration: 0.5 }} />
+
+      {/* Five founders */}
+      {TABLE_FIGURES.map((x, i) => (
+        <Silhouette key={i} x={x} y={58} scale={1.2} fill="#060414" variant="hunched"
+          show={phase >= 1} delay={i * 0.08} />
       ))}
 
-      {/* ── GOLDEN SHIMMER — lecture hall / sunset shots ── */}
-      <motion.div className="absolute pointer-events-none z-3 inset-0"
-        style={{
-          background: 'radial-gradient(ellipse at 80% 90%, rgba(255,160,30,0.16) 0%, rgba(255,120,0,0.05) 40%, transparent 65%)',
-        }}
-        animate={{ opacity: currentShot.showGolden ? 1 : 0 }}
-        transition={{ duration: 1.0 }}
-      />
+      {/* Idea burst — lightbulb SVG */}
+      <AnimatePresence>
+        {phase >= 2 && (
+          <motion.div className="absolute pointer-events-none z-[12]"
+            style={{ top:'22%', left:'50%', transform:'translateX(-50%)' }}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: [0, 1.8, 1.2], opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: [0.16,1,0.3,1] }}>
+            <svg width="clamp(48px,8vw,90px)" height="clamp(60px,10vw,110px)" viewBox="0 0 60 75">
+              <ellipse cx="30" cy="26" rx="18" ry="20" fill="rgba(255,220,60,0.92)"
+                style={{ filter:'drop-shadow(0 0 14px rgba(255,200,0,0.80))' }} />
+              <rect x="21" y="44" width="18" height="5" rx="2" fill="rgba(255,220,60,0.80)" />
+              <rect x="23" y="51" width="14" height="4" rx="2" fill="rgba(255,200,40,0.65)" />
+              <line x1="30" y1="4" x2="30" y2="0" stroke="rgba(255,220,60,0.60)" strokeWidth="2"/>
+              <line x1="48" y1="10" x2="52" y2="6" stroke="rgba(255,220,60,0.60)" strokeWidth="2"/>
+              <line x1="12" y1="10" x2="8" y2="6" stroke="rgba(255,220,60,0.60)" strokeWidth="2"/>
+              <line x1="56" y1="26" x2="60" y2="26" stroke="rgba(255,220,60,0.60)" strokeWidth="2"/>
+              <line x1="4" y1="26" x2="0" y2="26" stroke="rgba(255,220,60,0.60)" strokeWidth="2"/>
+            </svg>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* ── DUST MOTES — hostel room shots ── */}
-      <motion.div className="absolute inset-0 z-3 pointer-events-none"
-        animate={{ opacity: currentShot.showDust ? 1 : 0 }}
-        transition={{ duration: 0.8 }}>
-        {DUST.map((d, i) => (
-          <motion.div key={i} className="absolute rounded-full"
-            style={{ left: d.left, top: d.top, width: 2, height: 2, background: 'rgba(255,220,140,0.4)' }}
-            animate={{ y: [0, -20, 0], opacity: [0.1, 0.45, 0.1] }}
-            transition={{ duration: d.dur, delay: d.delay, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        ))}
-      </motion.div>
+      {/* Warm glow from idea */}
+      <motion.div className="absolute inset-0 pointer-events-none z-[3]"
+        style={{ background:'radial-gradient(ellipse at 50% 35%,rgba(255,200,40,0.28) 0%,rgba(255,140,0,0.10) 40%,transparent 68%)' }}
+        animate={{ opacity: phase >= 2 ? 1 : 0 }} transition={{ duration: 0.8 }} />
 
+      <FloatingParticles count={22} color="#ffd700" active={phase >= 3} />
+      <SpeedLines active={phase >= 3} color="rgba(255,200,50,0.65)" count={26} cx={50} cy={35} />
 
-      {/* Bottom gradient for text legibility */}
-      <motion.div className="absolute inset-0 z-5 pointer-events-none"
-        style={{ background: 'linear-gradient(to top, rgba(4,5,18,0.97) 0%, rgba(4,5,18,0.2) 30%, transparent 55%)' }}
-        animate={{ opacity: (phase === 'reflection' || phase === 'commitment' || phase === 'destiny' || phase === 'out') ? 1 : 0.15 }}
-        transition={{ duration: 1.2 }}
-      />
+      <AnimeText lines={['Five friends. One idea.','And a mission was born.']}
+        show={phase >= 4} accent="#FFD700" bottom="14%" />
 
-      {/* ── FLASH FRAME ── */}
-      <motion.div className="absolute inset-0 bg-white pointer-events-none z-20"
-        animate={{ opacity: flashActive ? 0.88 : 0 }}
-        transition={{ duration: 0.05 }}
-      />
+      {/* White flash on spark */}
+      <motion.div className="absolute inset-0 bg-amber-100 pointer-events-none z-[25]"
+        animate={{ opacity: flash ? 0.85 : 0 }} transition={{ duration: 0.05 }} />
 
-      {/* ── TEXT OVERLAYS ── */}
-      <div className="absolute inset-0 z-15 flex flex-col items-center justify-end pb-[14%] px-[8vw]">
-        <div className="text-center w-full">
-
-          {/* Shot F — "There has to be a better way." — chalk text on whiteboard */}
-          <AnimatePresence>
-            {currentShot.showChalkText && (
-              <motion.div key="chalktext"
-                className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}>
-                <motion.p
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 1.2, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                  style={{
-                    fontFamily: 'var(--font-display, serif)',
-                    fontSize: 'clamp(1.1rem, 3.8vw, 3.2rem)',
-                    color: 'rgba(255,255,255,0.92)',
-                    fontStyle: 'italic',
-                    fontWeight: 300,
-                    letterSpacing: '0.03em',
-                    textShadow: '0 0 40px rgba(255,255,255,0.3), 0 4px 40px rgba(0,0,0,0.9)',
-                    textAlign: 'center',
-                    padding: '0 8vw',
-                    lineHeight: 1.2,
-                  }}>
-                  "There has to be a better way."
-                </motion.p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Shot A — "He stayed back." — context the visual alone can't give */}
-          <AnimatePresence>
-            {phase === 'reflection' && (
-              <motion.div key="reflection"
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}>
-                <p style={{
-                  fontFamily: 'var(--font-display, serif)',
-                  fontSize: 'clamp(1.4rem, 5vw, 4rem)',
-                  color: 'rgba(255,255,255,0.92)',
-                  fontWeight: 700,
-                  letterSpacing: '-0.01em',
-                  textShadow: '0 4px 40px rgba(0,0,0,0.95)',
-                }}>
-                  He stayed back.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Shot H — "Five of them." — callback to Scene 1's "All of them." */}
-          <AnimatePresence>
-            {phase === 'commitment' && (
-              <motion.div key="commitment"
-                initial={{ opacity: 0, scale: 0.94 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.3, ease: [0.16, 1, 0.3, 1] }}>
-                <p style={{
-                  fontFamily: 'var(--font-display, serif)',
-                  fontSize: 'clamp(2rem, 8.5vw, 7rem)',
-                  color: 'rgba(255,255,255,0.95)',
-                  letterSpacing: '-0.02em',
-                  lineHeight: 1.0,
-                  textShadow: '0 4px 60px rgba(0,0,0,0.98)',
-                  fontWeight: 800,
-                }}>
-                  Five of them.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Shot J — "This is how it starts." — the arc payoff */}
-          <AnimatePresence>
-            {(phase === 'destiny' || phase === 'out') && (
-              <motion.div key="destiny"
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}>
-                <div style={{ fontFamily: 'var(--font-display, serif)', lineHeight: 1.1, textShadow: '0 4px 40px rgba(0,0,0,0.98)' }}>
-                  <WordReveal text="This is how" startDelay={0} wordInterval={0.3}
-                    style={{ display: 'block', fontSize: 'clamp(2rem, 8vw, 6.5rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.015em' }} />
-                  <WordReveal text="it starts." startDelay={0.9} wordInterval={0.32}
-                    style={{ display: 'block', fontSize: 'clamp(2rem, 8vw, 6.5rem)', fontWeight: 800, color: '#C8A340', letterSpacing: '-0.015em' }} />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-        </div>
-      </div>
-
-      {/* Scene fade-out */}
-      <motion.div className="absolute inset-0 bg-black pointer-events-none z-50"
-        initial={{ opacity: 0 }}
-        animate={phase === 'out' ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 1.0, delay: phase === 'out' ? 0.9 : 0 }}
-      />
+      <Vignette strength={0.72} />
+      <BottomGrad color="6,4,0" />
     </motion.div>
   );
 }

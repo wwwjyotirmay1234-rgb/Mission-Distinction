@@ -1,480 +1,111 @@
-import { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence, type Transition } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SpeedLines, FloatingParticles, Silhouette, AnimeText, Vignette, BottomGrad } from '../../../anime/index';
 
-type Frame = {
-  src: string;
-  dur: number;
-  caption: string;
-  initial: Record<string, number | string>;
-  animate: Record<string, number | string>;
-  transition: Transition;
-  cutType: 'flash' | 'dissolve';
-  screenBlue: boolean;
-  counter: number | null;   // download counter to show
-  showMessages: boolean;
-  celebrate: boolean;
-  isOdisha: boolean;
-};
-
-const FRAMES: Frame[] = [
-  {
-    // 1 — The click — LAUNCH button pressed
-    src: 'char_s5_launch_moment.png', dur: 2000,
-    caption: 'The click.',
-    initial: { scale: 1.10 }, animate: { scale: 1.0 },
-    transition: { duration: 3.0, ease: [0.16, 1, 0.3, 1] },
-    cutType: 'flash', screenBlue: true, counter: null, showMessages: false, celebrate: false, isOdisha: false,
-  },
-  {
-    // 2 — The wait — five founders staring, silence
-    src: 'scene5_launch_day.png', dur: 3000,
-    caption: 'The wait.',
-    initial: { scale: 1.06, y: '-0.5%' }, animate: { scale: 1.0, y: '0.5%' },
-    transition: { duration: 4.0, ease: 'easeOut' },
-    cutType: 'dissolve', screenBlue: true, counter: null, showMessages: false, celebrate: false, isOdisha: false,
-  },
-  {
-    // 3 — First download — counter: 1
-    src: 'char_s5_launch_moment.png', dur: 3000,
-    caption: 'The first download.',
-    initial: { scale: 1.06, y: '0.5%' }, animate: { scale: 1.0, y: '-0.3%' },
-    transition: { duration: 4.0, ease: 'easeOut' },
-    cutType: 'dissolve', screenBlue: true, counter: 1, showMessages: false, celebrate: false, isOdisha: false,
-  },
-  {
-    // 4 — The first smile — relief
-    src: 's4_shot_g_remembering_why.png', dur: 2500,
-    caption: 'The first smile.',
-    initial: { scale: 1.05, x: '-0.5%' }, animate: { scale: 1.0, x: '0.3%' },
-    transition: { duration: 3.5, ease: 'easeOut' },
-    cutType: 'dissolve', screenBlue: false, counter: null, showMessages: false, celebrate: false, isOdisha: false,
-  },
-  {
-    // 5 — Notifications begin — counter: 12
-    src: 'scene5_launch_day.png', dur: 2500,
-    caption: 'Notifications begin.',
-    initial: { scale: 1.06, y: '-0.5%' }, animate: { scale: 1.0, y: '0.5%' },
-    transition: { duration: 3.5, ease: 'easeOut' },
-    cutType: 'dissolve', screenBlue: true, counter: 12, showMessages: false, celebrate: false, isOdisha: false,
-  },
-  {
-    // 6 — Momentum — counter: 50
-    src: 'char_s5_launch_moment.png', dur: 2500,
-    caption: 'Momentum.',
-    initial: { scale: 1.07, x: '0.5%' }, animate: { scale: 1.0, x: '-0.3%' },
-    transition: { duration: 3.5, ease: 'easeOut' },
-    cutType: 'dissolve', screenBlue: true, counter: 50, showMessages: false, celebrate: false, isOdisha: false,
-  },
-  {
-    // 7 — Messages arrive
-    src: 'scene5_launch_day.png', dur: 3000,
-    caption: 'Messages from students.',
-    initial: { scale: 1.05, y: '-0.5%' }, animate: { scale: 1.0, y: '0.5%' },
-    transition: { duration: 4.0, ease: 'easeOut' },
-    cutType: 'dissolve', screenBlue: false, counter: null, showMessages: true, celebrate: false, isOdisha: false,
-  },
-  {
-    // 8 — 150 downloads — celebration
-    src: 'group_celebration.png', dur: 3000,
-    caption: '150 downloads in 24 hours!',
-    initial: { scale: 1.06, y: '0.5%' }, animate: { scale: 1.0, y: '-0.5%' },
-    transition: { duration: 3.5, ease: 'easeOut' },
-    cutType: 'flash', screenBlue: false, counter: 150, showMessages: false, celebrate: true, isOdisha: false,
-  },
-  {
-    // 9 — Across Odisha — students everywhere
-    src: 'char_s6_odisha_students.png', dur: 3000,
-    caption: '',
-    initial: { scale: 1.05, x: '-0.5%' }, animate: { scale: 1.0, x: '0.5%' },
-    transition: { duration: 4.0, ease: 'easeOut' },
-    cutType: 'dissolve', screenBlue: false, counter: null, showMessages: false, celebrate: false, isOdisha: true,
-  },
-  {
-    // 10 — Rooftop — city lights, final text
-    src: 'group_silhouette.png', dur: 5500,
-    caption: '',
-    initial: { scale: 1.08, y: '0.8%' }, animate: { scale: 1.0, y: '-0.5%' },
-    transition: { duration: 7.0, ease: 'easeOut' },
-    cutType: 'dissolve', screenBlue: false, counter: null, showMessages: false, celebrate: false, isOdisha: false,
-  },
-];
-
-const MESSAGES = [
-  { text: 'Thank you so much!', time: '11:24 PM' },
-  { text: 'This helps a lot.',   time: '11:25 PM' },
-  { text: 'Exactly what we needed.', time: '11:26 PM' },
-];
-
+// ── SCENE: LAUNCH DAY — 500 Downloads. Day One. ──────────────────────
 export function SceneLaunchDay() {
-  const [frameIndex, setFrameIndex]       = useState(0);
-  const [flashActive, setFlashActive]     = useState(false);
-  const [showCaption, setShowCaption]     = useState(true);
-  const [visibleMessages, setVisibleMessages] = useState<number[]>([]);
-  const [showFinalText, setShowFinalText] = useState(false);
-  const [counterVal, setCounterVal]       = useState<number | null>(null);
-  const builtTimers = useRef(false);
-
-  const current = FRAMES[frameIndex];
-  const isLast  = frameIndex === FRAMES.length - 1;
-
+  const [phase, setPhase] = useState(0);
+  const [counter, setCounter] = useState(0);
+  const built = useRef(false);
   useEffect(() => {
-    if (builtTimers.current) return;
-    builtTimers.current = true;
-
-    let cursor = 0;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    FRAMES.forEach((frame, i) => {
-      const t = cursor;
-
-      if (i > 0) {
-        if (frame.cutType === 'flash') {
-          timers.push(setTimeout(() => {
-            setFlashActive(true);
-            setShowCaption(false);
-            setVisibleMessages([]);
-            setTimeout(() => {
-              setFlashActive(false);
-              setFrameIndex(i);
-              setCounterVal(frame.counter);
-              setTimeout(() => setShowCaption(true), 80);
-            }, 110);
-          }, t));
-        } else {
-          timers.push(setTimeout(() => {
-            setShowCaption(false);
-            setVisibleMessages([]);
-            setTimeout(() => {
-              setFrameIndex(i);
-              setCounterVal(frame.counter);
-              setTimeout(() => setShowCaption(true), 120);
-            }, 200);
-          }, t));
-        }
-      } else {
-        setCounterVal(frame.counter);
-      }
-
-      // Stagger message reveals for frame 7 (messages)
-      if (frame.showMessages) {
-        MESSAGES.forEach((_, mi) => {
-          timers.push(setTimeout(() => {
-            setVisibleMessages(prev => [...prev, mi]);
-          }, t + 400 + mi * 700));
-        });
-      }
-
-      cursor += frame.dur;
-    });
-
-    // Final text 2s into last frame
-    const lastStart = FRAMES.slice(0, FRAMES.length - 1).reduce((s, f) => s + f.dur, 0);
-    timers.push(setTimeout(() => setShowFinalText(true), lastStart + 2000));
-
-    return () => timers.forEach(clearTimeout);
+    if (built.current) return; built.current = true;
+    const ts = [
+      setTimeout(() => setPhase(1), 2000),
+      setTimeout(() => setPhase(2), 6000),
+      setTimeout(() => setPhase(3), 12000),
+      setTimeout(() => setPhase(4), 22000),
+    ];
+    // Counter animation
+    let n = 0;
+    const tick = setInterval(() => {
+      n = Math.min(n + Math.ceil(Math.random() * 18 + 4), 500);
+      setCounter(n);
+      if (n >= 500) clearInterval(tick);
+    }, 55);
+    ts.push(tick as unknown as ReturnType<typeof setTimeout>);
+    return () => ts.forEach(clearTimeout);
   }, []);
 
   return (
-    <motion.div className="absolute inset-0 overflow-hidden bg-black"
+    <motion.div className="absolute inset-0 overflow-hidden"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      transition={{ duration: 0.7 }}>
+      transition={{ duration: 0.8 }}>
 
-      {/* ── ALL FRAMES ── */}
-      {FRAMES.map((frame, i) => (
-        <motion.div key={i} className="absolute inset-0 z-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: frameIndex === i ? 1 : 0 }}
-          transition={{ duration: frame.cutType === 'flash' ? 0.08 : 0.65, ease: 'easeInOut' }}>
-          <motion.div className="absolute inset-0"
-            initial={frame.initial}
-            animate={frameIndex === i ? frame.animate : frame.initial}
-            transition={frameIndex === i ? frame.transition : { duration: 0 }}>
-            <img
-              src={`${import.meta.env.BASE_URL}images/${frame.src}?v=2`}
-              className="w-full h-full object-cover object-center"
-              style={{
-                filter: i <= 1
-                  ? 'brightness(0.78) contrast(1.10) saturate(0.80)'   // launch tension — dark
-                  : i >= 7
-                    ? 'brightness(0.90) contrast(1.04) saturate(1.00)' // celebration/rooftop — warm
-                    : 'brightness(0.84) contrast(1.06) saturate(0.90)',
-              }}
-              alt=""
-            />
-          </motion.div>
-        </motion.div>
+      {/* Electric gold / orange energy */}
+      <motion.div className="absolute inset-0"
+        animate={{ background: phase >= 2
+          ? 'linear-gradient(145deg,#1a0800 0%,#3a1200 30%,#6a2200 60%,#1a0800 100%)'
+          : 'linear-gradient(145deg,#080402 0%,#14080a 50%,#080402 100%)' }}
+        transition={{ duration: 1.5 }} />
+
+      {/* Energy pulse rings */}
+      {phase >= 2 && [0,1,2].map(i => (
+        <motion.div key={i} className="absolute rounded-full pointer-events-none z-[3]"
+          style={{ border:`2px solid rgba(255,${140+i*30},0,${0.35-i*0.1})`,
+            top:'50%', left:'50%', transform:'translate(-50%,-50%)' }}
+          initial={{ width:0, height:0, opacity:0.8 }}
+          animate={{ width:'clamp(100px,40vw,500px)', height:'clamp(100px,40vw,500px)', opacity:0 }}
+          transition={{ delay: i * 0.5, duration: 2.5, repeat: Infinity, ease:'easeOut' }}
+        />
       ))}
 
-      {/* ── SCREEN BLUE GLOW — launch tension (frames 1-3, 5-6) ── */}
-      <motion.div className="absolute inset-0 pointer-events-none z-[3]"
-        style={{
-          background: 'radial-gradient(ellipse at 50% 55%, rgba(40,90,220,0.20) 0%, rgba(20,55,180,0.08) 48%, transparent 72%)',
-        }}
-        animate={{ opacity: current.screenBlue ? 1 : 0 }}
-        transition={{ duration: 0.7 }}
-      />
-
-      {/* ── DOWNLOAD COUNTER ── */}
-      <AnimatePresence mode="wait">
-        {counterVal !== null && (
-          <motion.div
-            key={`counter-${counterVal}`}
-            className="absolute pointer-events-none z-[15]"
-            style={{ top: '17%', right: '7%', textAlign: 'right' }}
-            initial={{ opacity: 0, scale: 0.85, y: -8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}>
-            <p style={{
-              fontSize: 'clamp(0.5rem, 1vw, 0.75rem)',
-              letterSpacing: '0.3em',
-              color: 'rgba(140,170,255,0.7)',
-              textTransform: 'uppercase',
-              fontFamily: 'monospace',
-              textShadow: '0 0 16px rgba(80,120,255,0.5)',
-            }}>Downloads</p>
-            <motion.p
-              key={`num-${counterVal}`}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.6 }}
-              style={{
-                fontSize: counterVal >= 100
-                  ? 'clamp(2.4rem, 7vw, 5.5rem)'
-                  : 'clamp(2.8rem, 8.5vw, 6.5rem)',
-                fontFamily: 'monospace',
-                fontWeight: 800,
-                color: counterVal >= 100 ? 'rgba(80,220,120,0.95)' : 'rgba(100,180,255,0.95)',
-                lineHeight: 1,
-                textShadow: counterVal >= 100
-                  ? '0 0 40px rgba(60,200,100,0.6), 0 2px 30px rgba(0,0,0,0.95)'
-                  : '0 0 40px rgba(60,120,255,0.6), 0 2px 30px rgba(0,0,0,0.95)',
-              }}>
-              {counterVal}
-            </motion.p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── MESSAGE BUBBLES — frame 7 ── */}
+      {/* App icon — MD circle */}
       <AnimatePresence>
-        {current.showMessages && (
-          <motion.div
-            key="messages"
-            className="absolute pointer-events-none z-[15]"
-            style={{ top: '18%', left: '6%' }}>
-            {MESSAGES.map((msg, i) => (
-              visibleMessages.includes(i) && (
-                <motion.div
-                  key={i}
-                  className="mb-2"
-                  initial={{ opacity: 0, x: -14, y: 4 }}
-                  animate={{ opacity: 1, x: 0, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.55, ease: 'easeOut' }}>
-                  <div style={{
-                    background: 'rgba(20,30,60,0.88)',
-                    backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(80,120,255,0.25)',
-                    borderRadius: '10px 10px 10px 2px',
-                    padding: 'clamp(6px,1.2vw,10px) clamp(10px,1.8vw,16px)',
-                    display: 'inline-block',
-                    maxWidth: 'clamp(160px, 28vw, 240px)',
-                  }}>
-                    <p style={{
-                      fontSize: 'clamp(0.7rem, 1.3vw, 1.0rem)',
-                      color: 'rgba(220,230,255,0.92)',
-                      fontWeight: 400,
-                      margin: 0,
-                      textShadow: 'none',
-                    }}>{msg.text}</p>
-                    <p style={{
-                      fontSize: 'clamp(0.5rem, 0.85vw, 0.65rem)',
-                      color: 'rgba(140,160,210,0.65)',
-                      margin: '3px 0 0',
-                      textAlign: 'right',
-                    }}>{msg.time}</p>
-                  </div>
-                </motion.div>
-              )
-            ))}
+        {phase >= 2 && (
+          <motion.div className="absolute pointer-events-none z-[10]"
+            style={{ top:'28%', left:'50%', transform:'translateX(-50%)' }}
+            initial={{ scale:0, rotate:-180, opacity:0 }}
+            animate={{ scale:1, rotate:0, opacity:1 }}
+            exit={{ scale:0, opacity:0 }}
+            transition={{ duration:0.7, ease:[0.16,1,0.3,1] }}>
+            <motion.div
+              animate={{ rotate: phase >= 3 ? 0 : [0,5,-5,0] }}
+              transition={{ duration:0.4, delay:0.3 }}>
+              <svg width="clamp(60px,10vw,120px)" height="clamp(60px,10vw,120px)" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="36" fill="rgba(200,163,64,0.92)"
+                  style={{ filter:'drop-shadow(0 0 18px rgba(200,163,64,0.70))' }} />
+                <text x="40" y="48" textAnchor="middle" fontSize="26" fontWeight="900"
+                  fill="#0a0502" fontFamily="serif">MD</text>
+              </svg>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── CELEBRATION GLOW — frame 8 ── */}
-      <motion.div className="absolute inset-0 pointer-events-none z-[3]"
-        style={{
-          background: 'radial-gradient(ellipse at 50% 40%, rgba(255,200,60,0.20) 0%, rgba(255,140,30,0.08) 45%, transparent 70%)',
-        }}
-        animate={{ opacity: current.celebrate ? 1 : 0 }}
-        transition={{ duration: 0.8 }}
-      />
+      {/* 5 founders huddled */}
+      {[-30,-15,0,15,30].map((dx, i) => (
+        <Silhouette key={i} x={50+dx} y={70} scale={1.1} fill="#100600" variant="standing"
+          show={phase >= 1} delay={i*0.10} />
+      ))}
 
-      {/* ── ACROSS ODISHA — location labels — frame 9 ── */}
+      {/* Notification burst particles */}
+      <FloatingParticles count={35} color="#ffd700" active={phase >= 3} />
+      <FloatingParticles count={18} color="#ff8c00" active={phase >= 3} />
+
+      <SpeedLines active={phase >= 3} color="rgba(200,163,64,0.70)" count={32} cx={50} cy={50} />
+
+      {/* Counter */}
       <AnimatePresence>
-        {current.isOdisha && (
-          <motion.div key="odisha-labels"
-            className="absolute pointer-events-none z-[15]"
-            style={{ bottom: '16%', left: 0, right: 0 }}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 'clamp(12px, 3vw, 28px)',
-              flexWrap: 'wrap',
-            }}>
-              {['Hostels', 'Libraries', 'Buses', 'Study Rooms', 'Dormitories', 'Everywhere in Odisha'].map((label, i) => (
-                <motion.span key={label}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.12, duration: 0.4 }}
-                  style={{
-                    fontSize: 'clamp(0.55rem, 1.0vw, 0.8rem)',
-                    color: i === 5 ? 'rgba(200,163,64,0.85)' : 'rgba(180,200,240,0.70)',
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase',
-                    fontFamily: 'monospace',
-                    textShadow: '0 0 14px rgba(0,0,0,0.95)',
-                    fontWeight: i === 5 ? 700 : 400,
-                  }}>
-                  {label}
-                </motion.span>
-              ))}
-            </div>
+        {phase >= 3 && (
+          <motion.div className="absolute pointer-events-none z-[15]"
+            style={{ top:'14%', right:'8%', textAlign:'right' }}
+            initial={{ opacity:0, x:12 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0 }}
+            transition={{ duration:0.6 }}>
+            <p style={{ fontSize:'clamp(0.42rem,0.75vw,0.60rem)', letterSpacing:'0.28em',
+              color:'rgba(200,163,64,0.62)', fontFamily:'monospace', textTransform:'uppercase' }}>Downloads</p>
+            <p style={{ fontSize:'clamp(2.5rem,8vw,6.5rem)', fontFamily:'monospace', fontWeight:900,
+              color:'#C8A340', lineHeight:0.9,
+              textShadow:'0 0 55px rgba(200,163,64,0.55),0 2px 30px rgba(0,0,0,0.98)' }}>
+              {counter.toLocaleString()}
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── CINEMATIC GRADIENT ── */}
-      <div className="absolute inset-0 z-[6] pointer-events-none"
-        style={{ background: 'linear-gradient(to top, rgba(2,3,12,0.92) 0%, rgba(2,3,12,0.14) 22%, transparent 44%)' }}
-      />
+      <AnimeText lines={['500 Downloads.','Day One.']} show={phase >= 4} accent="#C8A340" bottom="14%" />
 
-      {/* ── PER-FRAME CAPTION ── */}
-      <AnimatePresence mode="wait">
-        {showCaption && current.caption && !isLast && (
-          <motion.p
-            key={`caption-${frameIndex}`}
-            className="absolute pointer-events-none z-[20] font-serif italic"
-            style={{
-              bottom: '15%',
-              left: '7%',
-              fontSize: 'clamp(0.85rem, 1.8vw, 1.4rem)',
-              color: 'rgba(220,200,150,0.82)',
-              letterSpacing: '0.04em',
-              textShadow: '0 2px 24px rgba(0,0,0,0.95)',
-            }}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.55, ease: 'easeOut' }}>
-            {current.caption}
-          </motion.p>
-        )}
-      </AnimatePresence>
-
-      {/* ── FINAL TEXT — frame 10 (rooftop) ── */}
-      <AnimatePresence>
-        {showFinalText && (
-          <motion.div key="final" className="absolute z-[20] pointer-events-none"
-            style={{ bottom: '16%', left: '7%' }}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}>
-            {/* Line 1 */}
-            <p style={{
-              fontSize: 'clamp(0.9rem, 2.1vw, 1.7rem)',
-              fontFamily: 'var(--font-display, serif)',
-              fontWeight: 300,
-              fontStyle: 'italic',
-              color: 'rgba(230,215,175,0.90)',
-              lineHeight: 1.55,
-              textShadow: '0 2px 36px rgba(0,0,0,0.98)',
-            }}>We didn&apos;t just build an app.</p>
-            {/* Line 2 — "movement" in gold */}
-            <motion.p
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              transition={{ delay: 0.55, duration: 1.0 }}
-              style={{
-                fontSize: 'clamp(0.9rem, 2.1vw, 1.7rem)',
-                fontFamily: 'var(--font-display, serif)',
-                fontWeight: 300,
-                fontStyle: 'italic',
-                color: 'rgba(230,215,175,0.90)',
-                lineHeight: 1.55,
-                textShadow: '0 2px 36px rgba(0,0,0,0.98)',
-              }}>
-              We started a{' '}
-              <span style={{ color: '#C8A340', fontWeight: 600, textShadow: '0 0 24px rgba(200,163,64,0.5), 0 2px 36px rgba(0,0,0,0.98)' }}>
-                movement.
-              </span>
-            </motion.p>
-            {/* Line 3 — "beginning" in blue */}
-            <motion.p
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              transition={{ delay: 1.1, duration: 1.0 }}
-              style={{
-                fontSize: 'clamp(0.9rem, 2.1vw, 1.7rem)',
-                fontFamily: 'var(--font-display, serif)',
-                fontWeight: 300,
-                fontStyle: 'italic',
-                color: 'rgba(230,215,175,0.90)',
-                lineHeight: 1.55,
-                textShadow: '0 2px 36px rgba(0,0,0,0.98)',
-              }}>
-              This is just the{' '}
-              <span style={{ color: 'rgba(100,180,255,0.95)', fontWeight: 600, textShadow: '0 0 24px rgba(80,150,255,0.5), 0 2px 36px rgba(0,0,0,0.98)' }}>
-                beginning.
-              </span>
-            </motion.p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── MD LOGO + TAGLINE — frame 10 bottom-right ── */}
-      <AnimatePresence>
-        {showFinalText && (
-          <motion.div key="md-logo" className="absolute z-[20] pointer-events-none"
-            style={{ bottom: '16%', right: '7%', textAlign: 'right' }}
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ delay: 1.4, duration: 1.2, ease: 'easeOut' }}>
-            <p style={{
-              fontSize: 'clamp(1.3rem, 3.0vw, 2.4rem)',
-              fontFamily: 'var(--font-display, serif)',
-              fontWeight: 800,
-              color: 'rgba(200,163,64,0.95)',
-              letterSpacing: '0.06em',
-              textShadow: '0 0 30px rgba(200,163,64,0.4), 0 2px 30px rgba(0,0,0,0.95)',
-              lineHeight: 1.1,
-            }}>MISSION DISTINCTION</p>
-            <p style={{
-              fontSize: 'clamp(0.5rem, 1.0vw, 0.8rem)',
-              color: 'rgba(180,200,240,0.65)',
-              letterSpacing: '0.22em',
-              textTransform: 'uppercase',
-              fontStyle: 'italic',
-              marginTop: '4px',
-              textShadow: '0 2px 20px rgba(0,0,0,0.9)',
-            }}>Together, we learn. Together, we rise.</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── VIGNETTE ── */}
-      <div className="absolute inset-0 z-[5] pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at 50% 50%, transparent 52%, rgba(0,0,0,0.60) 100%)' }}
-      />
-
-      {/* ── FLASH FRAME ── */}
-      <motion.div className="absolute inset-0 bg-white pointer-events-none z-[25]"
-        animate={{ opacity: flashActive ? 0.92 : 0 }}
-        transition={{ duration: 0.05 }}
-      />
+      <Vignette strength={0.68} />
+      <BottomGrad color="10,4,0" />
     </motion.div>
   );
 }
