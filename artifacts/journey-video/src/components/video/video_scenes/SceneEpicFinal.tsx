@@ -80,14 +80,14 @@ export function SceneEpicFinal() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 1.2 }}>
 
-      {/* ── BACKGROUND: rooftop silhouette fades to dark sky ── */}
+      {/* ── BACKGROUND: abstract deep space fades to pure dark sky ── */}
       <motion.div className="absolute inset-0 z-0"
-        animate={{ opacity: phase === 'bg' ? 0.85 : 0.15 }}
+        animate={{ opacity: phase === 'bg' ? 0.6 : 0.08 }}
         transition={{ duration: 3.0, ease: 'easeInOut' }}>
         <img
-          src={`${import.meta.env.BASE_URL}images/group_silhouette.png`}
+          src={`${import.meta.env.BASE_URL}images/abstract-bg.png`}
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'brightness(0.45) saturate(0.5)' }}
+          style={{ filter: 'brightness(0.3) saturate(0.4) hue-rotate(200deg)' }}
           alt=""
         />
       </motion.div>

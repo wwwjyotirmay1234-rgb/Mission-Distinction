@@ -67,7 +67,7 @@ const SHOTS: Shot[] = [
   },
   {
     // G — five faces, doubt → hope → excitement  [Hope]
-    src: 'group_portrait.png', dur: 2500,
+    src: 's3_shot_g_reactions.png', dur: 2500,
     initial: { scale: 1.0, x: '-0.3%' },
     animate: { scale: 1.05, x: '0%' },
     transition: { duration: 2.8, ease: 'easeIn' },

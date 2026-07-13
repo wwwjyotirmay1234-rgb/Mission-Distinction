@@ -34,7 +34,7 @@ const SHOTS: Shot[] = [
   },
   {
     // C — character face, dark room 3 AM breaking point  [Breaking]
-    src: 'student_darknight.png', dur: 2500,
+    src: 's4_shot_c_exhausted_3am.png', dur: 2500,
     initial: { scale: 1.04, x: '0.5%' },
     animate: { scale: 1.0, x: '0%' },
     transition: { duration: 2.8, ease: 'easeOut' },
@@ -42,7 +42,7 @@ const SHOTS: Shot[] = [
   },
   {
     // D — character face, hope and dawn expression  [Dawn]
-    src: 'student_hope.png', dur: 2000,
+    src: 's4_shot_d_sunrise_window.png', dur: 2000,
     initial: { scale: 1.06, y: '1%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 2.5, ease: 'easeOut' },

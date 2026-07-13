@@ -32,7 +32,7 @@ const SHOTS: Shot[] = [
   },
   {
     // Shot 3 — student searches phone for study material, finds nothing
-    src: 'student_desk_overhead.png', dur: 3500,
+    src: 'scene0_desk_illustration.png', dur: 3500,
     initial: { scale: 1.05, y: '-1%' },
     animate: { scale: 1.0, y: '0.5%' },
     transition: { duration: 4, ease: 'easeOut' },
@@ -79,8 +79,8 @@ const SHOTS: Shot[] = [
     cutType: 'flash', showRain: false, showSyllabus: false, showPhone: false,
   },
   {
-    // exhausted face, awake — "Will I fail?" appears here (index 8)
-    src: 'student_darknight.png', dur: 4000,
+    // "Will I fail?" — wide empty room, alone at 2 AM
+    src: 's0_shot_f_window.png', dur: 4000,
     initial: { scale: 1.04, y: '-1%' },
     animate: { scale: 1.0, y: '1%' },
     transition: { duration: 4.5, ease: 'easeOut' },

@@ -18,7 +18,7 @@ type Shot = {
 const SHOTS: Shot[] = [
   {
     // A — character face, golden sunrise light [Exhausted]
-    src: 'student_coldopen.png', dur: 2500,
+    src: 's1_shot_a_hostel.png', dur: 2500,
     initial: { scale: 1.06, y: '1.5%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 3, ease: 'easeOut' },
@@ -26,7 +26,7 @@ const SHOTS: Shot[] = [
   },
   {
     // B — overhead desk angle, tired morning [Frustrated]
-    src: 'student_desk_overhead.png', dur: 2200,
+    src: 's1_shot_b_face_walking.png', dur: 2200,
     initial: { scale: 1.08, y: '-1%' },
     animate: { scale: 1.0, y: '1%' },
     transition: { duration: 2.5, ease: 'easeIn' },
