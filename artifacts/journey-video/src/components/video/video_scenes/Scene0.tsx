@@ -17,74 +17,44 @@ type Shot = {
 
 const SHOTS: Shot[] = [
   {
-    src: 's0_shot_a_clock.png', dur: 2200,
+    // 0 — extreme close-up clock 2:17 AM, rain on window behind
+    src: 's0_shot_a_clock.png', dur: 2800,
     initial: { scale: 1.08, x: '1%', y: '-1%' },
     animate: { scale: 1.0, x: '0%', y: '0%' },
-    transition: { duration: 2.5, ease: 'easeOut' },
+    transition: { duration: 3.0, ease: 'easeOut' },
     cutType: 'flash', showRain: true, showSyllabus: false, showPhone: false,
   },
   {
-    src: 'char_s0_desk_alone.png', dur: 2600,
+    // 1 — student alone at desk, amber lamp, rain on window [Shot 2]
+    src: 'char_s0_desk_alone.png', dur: 3200,
     initial: { scale: 1.06, y: '-1.5%' },
     animate: { scale: 1.0, y: '0%' },
-    transition: { duration: 3, ease: 'easeOut' },
+    transition: { duration: 3.5, ease: 'easeOut' },
     cutType: 'dissolve', showRain: true, showSyllabus: false, showPhone: false,
   },
   {
-    // Shot 3 — student searches phone for study material, finds nothing
-    src: 'char_s0_phone_frustrated.png', dur: 3500,
+    // 2 — phone search: no useful resources found [Shot 3]
+    src: 'char_s0_phone_frustrated.png', dur: 3800,
     initial: { scale: 1.05, y: '-1%' },
     animate: { scale: 1.0, y: '0.5%' },
-    transition: { duration: 4, ease: 'easeOut' },
+    transition: { duration: 4.2, ease: 'easeOut' },
     cutType: 'dissolve', showRain: false, showSyllabus: false, showPhone: true,
   },
   {
-    // writing hand — "So much syllabus to cover..." starts here
-    src: 's0_shot_c_writing.png', dur: 2200,
-    initial: { scale: 1.05, x: '-1.5%' },
-    animate: { scale: 1.02, x: '1.5%' },
-    transition: { duration: 2.4, ease: 'linear' },
-    cutType: 'dissolve', showRain: false, showSyllabus: true, showPhone: false,
-  },
-  {
-    // exhausted face close-up
-    src: 's0_shot_d_face_down.png', dur: 2500,
-    initial: { scale: 1.0, y: '1%' },
-    animate: { scale: 1.06, y: '0%' },
-    transition: { duration: 2.8, ease: 'easeIn' },
-    cutType: 'dissolve', showRain: false, showSyllabus: true, showPhone: false,
-  },
-  {
-    // anatomy notebook
-    src: 's0_shot_e_notebook.png', dur: 2000,
-    initial: { scale: 1.04, x: '1%', y: '1%' },
-    animate: { scale: 1.0, x: '-1%', y: '0%' },
-    transition: { duration: 2.2, ease: 'linear' },
-    cutType: 'dissolve', showRain: false, showSyllabus: true, showPhone: false,
-  },
-  {
-    // rainy window profile — rain overlay active
-    src: 's0_shot_f_window.png', dur: 2500,
-    initial: { scale: 1.03, x: '0.5%' },
-    animate: { scale: 1.0, x: '0%' },
-    transition: { duration: 2.8, ease: 'easeOut' },
-    cutType: 'dissolve', showRain: true, showSyllabus: false, showPhone: false,
-  },
-  {
-    // extreme eye close-up — flash cut
-    src: 's0_shot_g_eye.png', dur: 2000,
+    // 3 — FLASH CUT: extreme eye close-up, fear
+    src: 's0_shot_g_eye.png', dur: 1800,
     initial: { scale: 1.14 },
     animate: { scale: 1.0 },
-    transition: { duration: 2.2, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 2.0, ease: [0.16, 1, 0.3, 1] },
     cutType: 'flash', showRain: false, showSyllabus: false, showPhone: false,
   },
   {
-    // "Will I fail?" — wide empty room, alone at 2 AM
-    src: 's0_shot_f_window.png', dur: 4000,
-    initial: { scale: 1.04, y: '-1%' },
-    animate: { scale: 1.0, y: '1%' },
-    transition: { duration: 4.5, ease: 'easeOut' },
-    cutType: 'dissolve', showRain: false, showSyllabus: false, showPhone: false,
+    // 4 — student alone at desk again, "Will I fail?" fades in
+    src: 'char_s0_desk_alone.png', dur: 4500,
+    initial: { scale: 1.04, y: '0.5%' },
+    animate: { scale: 1.0, y: '-0.5%' },
+    transition: { duration: 5.0, ease: 'easeOut' },
+    cutType: 'dissolve', showRain: true, showSyllabus: false, showPhone: false,
   },
 ];
 
@@ -109,7 +79,7 @@ export function Scene0() {
   const currentShot = SHOTS[shotIndex];
 
   useSceneSpeech([
-    { atPhase: 8, text: 'Will I fail?' },
+    { atPhase: 4, text: 'Will I fail?' },
   ], shotIndex);
 
   useEffect(() => {
@@ -136,8 +106,8 @@ export function Scene0() {
       cursor += shot.dur;
     });
 
-    // "Will I fail in exam?" fades in 1.5s after slump shot starts (student_darknight, index 8)
-    const slumpStart = SHOTS.slice(0, 8).reduce((s, sh) => s + sh.dur, 0);
+    // "Will I fail?" fades in 1.5s after desk-alone shot (index 4) starts
+    const slumpStart = SHOTS.slice(0, 4).reduce((s, sh) => s + sh.dur, 0);
     timers.push(setTimeout(() => setPhase('question'), slumpStart + 1500));
     // 'out' removed — AnimatePresence handles scene exit; question stays visible until scene ends
 
@@ -187,7 +157,7 @@ export function Scene0() {
           left: '5%', top: '5%', width: '42%', height: '50%',
           background: 'radial-gradient(ellipse at 15% 12%, rgba(255,180,60,0.1) 0%, transparent 65%)',
         }}
-        animate={{ opacity: (shotIndex === 4 || shotIndex === 7) ? 1 : 0 }}
+        animate={{ opacity: shotIndex === 3 ? 1 : 0 }}
         transition={{ duration: 0.6 }}
       />
 
