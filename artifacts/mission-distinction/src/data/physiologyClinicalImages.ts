@@ -14,9 +14,9 @@ export const PHYSIOLOGY_CLINICAL_IMAGES: PhysiologyClinicalImage[] = [
   },
   {
     topic: "Spirometry / lung volumes",
-    src: "/images/physiology-clinical/spirometry-volumes.png",
-    caption: "Spirogram showing lung volumes and capacities — identify each labelled segment.",
-    displayCaption: "Identify what is shown and label each segment.",
+    src: "/images/physiology-clinical/spirometry-volumes.svg",
+    caption: "Unlabeled spirogram showing lung volumes and capacities (IRV, VT, ERV, RV, VC, FRC, TLC) — student must identify what type of tracing this is, name each zone/segment, state the normal values, and explain what the deep breath maneuver in the middle of the trace represents.",
+    displayCaption: "Identify what is shown, name each zone/segment, state normal values, and explain the deep breath maneuver in the middle.",
   },
   {
     topic: "Blood pressure measurement",
