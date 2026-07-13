@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { WordReveal } from '../WordReveal';
 import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
@@ -10,6 +10,7 @@ export function Scene5() {
   const [msgIdx, setMsgIdx] = useState(0);
   const [goldFlash, setGoldFlash] = useState(false);
   const [shake, setShake] = useState(false);
+  const builtTimers = useRef(false);
 
   useSceneSpeech([
     { atPhase: 2, text: 'The final button hovers on the screen.' },
@@ -23,6 +24,8 @@ export function Scene5() {
   ], phase);
 
   useEffect(() => {
+    if (builtTimers.current) return;
+    builtTimers.current = true;
     const timers = [
       setTimeout(() => setPhase(1), 600),
       setTimeout(() => setPhase(2), 2000),
@@ -45,7 +48,7 @@ export function Scene5() {
     return () => { timers.forEach(clearTimeout); clearInterval(mt); clearTimeout(st); };
   }, []);
 
-  const count = useSpring(0, { stiffness: 18, damping: 12 });
+  const count = useSpring(0, { stiffness: 80, damping: 22 });
   const displayCount = useTransform(count, Math.round);
   useEffect(() => { if (phase >= 6) count.set(150); }, [phase, count]);
 
@@ -57,16 +60,12 @@ export function Scene5() {
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.08 }} animate={phase >= 8 ? { scale: 1.03 } : { scale: 1 }} transition={{ duration: 18, ease: 'easeOut' }}>
         <img
-          src={`${import.meta.env.BASE_URL}images/scene5_launch_day.png`}
+          src={`${import.meta.env.BASE_URL}images/scene5_launch_day.png?v=2`}
           className="w-full h-full object-cover object-center"
           style={{ filter: 'brightness(0.72) saturate(0.9)' }}
           alt=""
         />
       </motion.div>
-
-      {/* Cinematic bars */}
-      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
 
       {/* Golden sunrise glow that intensifies at launch */}
       <motion.div className="absolute inset-0 pointer-events-none z-1"

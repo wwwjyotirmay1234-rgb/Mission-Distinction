@@ -127,7 +127,7 @@ export function Scene0() {
     // "Will I fail in exam?" fades in 1.5s after slump shot starts (shot 7, index 7)
     const slumpStart = SHOTS.slice(0, 7).reduce((s, sh) => s + sh.dur, 0);
     timers.push(setTimeout(() => setPhase('question'), slumpStart + 1500));
-    timers.push(setTimeout(() => setPhase('out'), slumpStart + 5500));
+    // 'out' removed — AnimatePresence handles scene exit; question stays visible until scene ends
 
     return () => { timers.forEach(clearTimeout); clearInterval(tickInterval); };
   }, []);
@@ -198,9 +198,20 @@ export function Scene0() {
         ))}
       </motion.div>
 
-      {/* ── CINEMATIC BARS ── */}
-      <div className="absolute inset-x-0 top-0 h-[5%] bg-black z-10 pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-[5%] bg-black z-10 pointer-events-none" />
+      {/* Syllabus caption — shots C, D, E (showSyllabus: true) */}
+      <motion.p
+        className="absolute z-[15] w-full text-center pointer-events-none font-mono"
+        style={{
+          top: '14%',
+          fontSize: 'clamp(0.6rem, 1.2vw, 1rem)',
+          letterSpacing: '0.22em',
+          color: 'rgba(255,255,255,0.25)',
+        }}
+        animate={{ opacity: currentShot.showSyllabus ? 1 : 0 }}
+        transition={{ duration: 0.9 }}
+      >
+        So much syllabus to cover.
+      </motion.p>
 
       {/* Gradient for text legibility during question phase */}
       <motion.div className="absolute inset-0 z-5 pointer-events-none"
@@ -223,7 +234,7 @@ export function Scene0() {
           <motion.div
             key="question"
             className="absolute z-15 w-full flex justify-center"
-            style={{ bottom: '12%' }}
+            style={{ bottom: '14%' }}
             initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}

@@ -177,10 +177,6 @@ export function Scene1() {
         ))}
       </motion.div>
 
-      {/* ── CINEMATIC BARS ── */}
-      <div className="absolute inset-x-0 top-0 h-[5%] bg-black z-10 pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-[5%] bg-black z-10 pointer-events-none" />
-
       {/* Bottom gradient for text */}
       <motion.div className="absolute inset-0 z-5 pointer-events-none"
         style={{ background: 'linear-gradient(to top, rgba(4,5,18,0.97) 0%, rgba(4,5,18,0.25) 28%, transparent 55%)' }}
@@ -195,7 +191,7 @@ export function Scene1() {
       />
 
       {/* ── TEXT OVERLAYS ── */}
-      <div className="absolute inset-0 z-15 flex flex-col items-center justify-end pb-[10%] px-[8vw]">
+      <div className="absolute inset-0 z-15 flex flex-col items-center justify-end pb-[14%] px-[8vw]">
         <div className="text-center w-full">
 
           {/* Shot F — aerial hall — two words that the visual alone cannot say */}

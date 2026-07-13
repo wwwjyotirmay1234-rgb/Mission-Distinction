@@ -219,13 +219,9 @@ export function Scene3() {
         ))}
       </motion.div>
 
-      {/* ── CINEMATIC BARS ── */}
-      <div className="absolute inset-x-0 top-0 h-[5%] bg-black z-10 pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-[5%] bg-black z-10 pointer-events-none" />
-
       {/* Date stamp — top center */}
       <motion.p className="absolute font-mono z-20"
-        style={{ top: '8%', left: '50%', transform: 'translateX(-50%)', fontSize: '0.75vw', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.16)', whiteSpace: 'nowrap' }}
+        style={{ top: '14%', left: '50%', transform: 'translateX(-50%)', fontSize: 'clamp(0.55rem, 1vw, 0.85rem)', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.16)', whiteSpace: 'nowrap' }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 2, delay: 0.5 }}>
@@ -246,7 +242,7 @@ export function Scene3() {
       />
 
       {/* ── TEXT OVERLAYS ── */}
-      <div className="absolute inset-0 z-15 flex flex-col items-center justify-end pb-[10%] px-[8vw]">
+      <div className="absolute inset-0 z-15 flex flex-col items-center justify-end pb-[14%] px-[8vw]">
         <div className="text-center w-full">
 
           {/* Shot A — "Sleepless nights." */}

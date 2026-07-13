@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { WordReveal } from '../WordReveal';
 import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
@@ -14,6 +14,7 @@ const NARRATOR = [
 
 export function Scene8() {
   const [phase, setPhase] = useState(0);
+  const builtTimers = useRef(false);
 
   useSceneSpeech([
     { atPhase: 2, text: 'Great stories do not begin with success.' },
@@ -28,6 +29,8 @@ export function Scene8() {
   ], phase);
 
   useEffect(() => {
+    if (builtTimers.current) return;
+    builtTimers.current = true;
     const timers = [
       setTimeout(() => setPhase(1), 1000),
       setTimeout(() => setPhase(2), 3000),
@@ -39,7 +42,7 @@ export function Scene8() {
       setTimeout(() => setPhase(8), 20000),
       setTimeout(() => setPhase(9), 22500),
       setTimeout(() => setPhase(10), 24200),
-      setTimeout(() => setPhase(11), 26000),
+      setTimeout(() => setPhase(11), 25000),
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
@@ -52,16 +55,12 @@ export function Scene8() {
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.05, y: '3%' }} animate={{ scale: 1, y: '0%' }} transition={{ duration: 22, ease: 'easeOut' }}>
         <img
-          src={`${import.meta.env.BASE_URL}images/scene8_outro_desk.png`}
+          src={`${import.meta.env.BASE_URL}images/scene8_outro_desk.png?v=2`}
           className="w-full h-full object-cover object-center"
           style={{ filter: 'brightness(0.55) saturate(0.75)' }}
           alt=""
         />
       </motion.div>
-
-      {/* Cinematic bars */}
-      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
 
       <div className="absolute inset-0 z-1 pointer-events-none"
         style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.28) 35%, rgba(0,0,0,0.85) 82%, rgba(0,0,0,0.99) 100%)' }} />
@@ -148,7 +147,7 @@ export function Scene8() {
             </div>
             <motion.div className="mt-[2.5vw]"
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.5, delay: 0.6 }}>
-              <img src={`${import.meta.env.BASE_URL}md-logo-new.png`}
+              <img src={`${import.meta.env.BASE_URL}md-logo-new.png?v=2`}
                 alt="Mission Distinction" className="w-[6vw] h-auto object-contain rounded-xl"
                 style={{ boxShadow: '0 0 24px rgba(124,58,237,0.35), 0 0 50px rgba(124,58,237,0.1)' }} />
             </motion.div>

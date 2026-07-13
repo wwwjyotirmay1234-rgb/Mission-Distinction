@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { WordReveal } from '../WordReveal';
 import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
@@ -7,6 +7,7 @@ export function Scene7() {
   const [phase, setPhase] = useState(0);
   const [goldFlash, setGoldFlash] = useState(false);
   const [shake, setShake] = useState(false);
+  const builtTimers = useRef(false);
 
   useSceneSpeech([
     { atPhase: 1, text: 'Three weeks later.' },
@@ -19,6 +20,8 @@ export function Scene7() {
   ], phase);
 
   useEffect(() => {
+    if (builtTimers.current) return;
+    builtTimers.current = true;
     const timers = [
       setTimeout(() => setPhase(1), 800),
       setTimeout(() => setPhase(2), 2200),
@@ -49,16 +52,12 @@ export function Scene7() {
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.06 }} animate={phase >= 4 ? { scale: 1.02 } : { scale: 1 }} transition={{ duration: 14, ease: 'easeOut' }}>
         <img
-          src={`${import.meta.env.BASE_URL}images/scene7_500_milestone.png`}
+          src={`${import.meta.env.BASE_URL}images/scene7_500_milestone.png?v=2`}
           className="w-full h-full object-cover object-center"
           style={{ filter: 'brightness(0.55) saturate(0.85)' }}
           alt=""
         />
       </motion.div>
-
-      {/* Cinematic bars */}
-      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
 
       {/* Gold halo glow expanding on milestone reveal */}
       <motion.div className="absolute inset-0 pointer-events-none z-1"

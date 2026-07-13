@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { WordReveal } from '../WordReveal';
 import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
@@ -21,6 +21,7 @@ const MAP_DOTS = Array.from({ length: 32 }, (_, i) => ({
 export function Scene6() {
   const [phase, setPhase] = useState(0);
   const [vigIdx, setVigIdx] = useState(0);
+  const builtTimers = useRef(false);
 
   useSceneSpeech([
     { atPhase: 2, text: 'A student studies in a hostel room. Another studies on a bus. Another revises before an exam. Another finally understands a difficult topic.' },
@@ -31,6 +32,8 @@ export function Scene6() {
   ], phase);
 
   useEffect(() => {
+    if (builtTimers.current) return;
+    builtTimers.current = true;
     const timers = [
       setTimeout(() => setPhase(1), 500),
       setTimeout(() => setPhase(2), 2200),
@@ -53,16 +56,12 @@ export function Scene6() {
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 20, ease: 'easeOut' }}>
         <img
-          src={`${import.meta.env.BASE_URL}images/scene6_ripple_odisha.png`}
+          src={`${import.meta.env.BASE_URL}images/scene6_ripple_odisha.png?v=2`}
           className="w-full h-full object-cover object-center"
           style={{ filter: 'brightness(0.7) saturate(0.9)' }}
           alt=""
         />
       </motion.div>
-
-      {/* Cinematic bars */}
-      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
 
       {/* Gradient overlays */}
       <div className="absolute inset-0 z-1 pointer-events-none"

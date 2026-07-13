@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { WordReveal } from '../WordReveal';
 import { useSceneSpeech } from '../../../hooks/useSceneSpeech';
@@ -7,6 +7,7 @@ export function Scene4() {
   const [phase, setPhase] = useState(0);
   const [redFlash, setRedFlash] = useState(false);
   const [shake, setShake] = useState(false);
+  const builtTimers = useRef(false);
 
   useSceneSpeech([
     { atPhase: 2, text: 'Something breaks.' },
@@ -18,6 +19,8 @@ export function Scene4() {
   ], phase);
 
   useEffect(() => {
+    if (builtTimers.current) return;
+    builtTimers.current = true;
     const timers = [
       setTimeout(() => setPhase(1), 600),
       setTimeout(() => {
@@ -44,16 +47,12 @@ export function Scene4() {
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.06 }} animate={{ scale: 1 }} transition={{ duration: 14, ease: 'easeOut' }}>
         <img
-          src={`${import.meta.env.BASE_URL}images/scene4_error_crash.png`}
+          src={`${import.meta.env.BASE_URL}images/scene4_error_crash.png?v=2`}
           className="w-full h-full object-cover object-center"
           style={{ filter: 'brightness(0.55) saturate(0.7) contrast(1.1)' }}
           alt=""
         />
       </motion.div>
-
-      {/* Cinematic bars */}
-      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
 
       {/* Deep vignette */}
       <div className="absolute inset-0 z-1 pointer-events-none"
