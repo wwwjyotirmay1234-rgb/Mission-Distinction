@@ -270,6 +270,54 @@ uri = "file://artifacts/journey-video/public/images/scene8_outro_desk.png"
 type = "image"
 title = "scene8 outro empty desk lamp"
 
+[[generated]]
+id = "yeZtphCpr0hrOdE4LFdvF"
+uri = "file://artifacts/journey-video/public/images/s0_shot_b_wide.png"
+type = "image"
+title = "Scene0 shot_b"
+
+[[generated]]
+id = "wLk3tGm7lG01wJMIE1X5U"
+uri = "file://artifacts/journey-video/public/images/s0_shot_a_clock.png"
+type = "image"
+title = "Scene0 shot_a"
+
+[[generated]]
+id = "mcucHFyDyquMkkeedbuw_"
+uri = "file://artifacts/journey-video/public/images/s0_shot_c_writing.png"
+type = "image"
+title = "Scene0 shot_c"
+
+[[generated]]
+id = "7jRfKe-SRFkVwXsh5JQHP"
+uri = "file://artifacts/journey-video/public/images/s0_shot_d_face_down.png"
+type = "image"
+title = "Scene0 shot_d"
+
+[[generated]]
+id = "msjs6iFo8o_99oqF7YJUO"
+uri = "file://artifacts/journey-video/public/images/s0_shot_e_notebook.png"
+type = "image"
+title = "Scene0 shot_e"
+
+[[generated]]
+id = "snaOAu4H2CjE1WZxML93C"
+uri = "file://artifacts/journey-video/public/images/s0_shot_f_window.png"
+type = "image"
+title = "Scene0 shot_f"
+
+[[generated]]
+id = "70Yn7ci-k9KdsGoneh4B9"
+uri = "file://artifacts/journey-video/public/images/s0_shot_g_eye.png"
+type = "image"
+title = "Scene0 shot_g"
+
+[[generated]]
+id = "ykWmatxZPppbK9Ng8_8KT"
+uri = "file://artifacts/journey-video/public/images/s0_shot_h_slumped.png"
+type = "image"
+title = "Scene0 shot_h"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
