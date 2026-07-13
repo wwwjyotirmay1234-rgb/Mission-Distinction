@@ -322,43 +322,43 @@ title = "UE5 char s0_shot_h_slumped.png"
 id = "0lvDIwpUm5K_vFpc31EYj"
 uri = "file://artifacts/journey-video/public/images/s1_shot_c_corridor.png"
 type = "image"
-title = "S1 realistic s1_shot_c"
+title = "Scene1 s1_shot_c_corridor.png"
 
 [[generated]]
 id = "kAGQ6Y8q-PlyJVO1crbNb"
 uri = "file://artifacts/journey-video/public/images/s1_shot_b_face_walking.png"
 type = "image"
-title = "UE5 char s1_shot_b_face_walking.png"
+title = "Scene1 s1_shot_b_face_walking.png"
 
 [[generated]]
 id = "pQQr7IwJCPMg1OjQz38Iw"
 uri = "file://artifacts/journey-video/public/images/s1_shot_a_hostel.png"
 type = "image"
-title = "UE5 char s1_shot_a_hostel.png"
+title = "Scene1 s1_shot_a_hostel.png"
 
 [[generated]]
 id = "09fpYbpHrT9kbjgjb55Ad"
 uri = "file://artifacts/journey-video/public/images/s1_shot_d_students_struggling.png"
 type = "image"
-title = "Shot D v4 — overhead angle, hands+books focus, cinematic"
+title = "Scene1 s1_shot_d_students_struggling.png"
 
 [[generated]]
 id = "sMUvLr0VvkDDq4h7om_k1"
 uri = "file://artifacts/journey-video/public/images/s1_shot_e_realization_eyes.png"
 type = "image"
-title = "UE5 char s1_shot_e_realization_eyes.png"
+title = "Scene1 s1_shot_e_realization_eyes.png"
 
 [[generated]]
 id = "Ux-_GYMewpdhwd28FmYA6"
 uri = "file://artifacts/journey-video/public/images/s1_shot_f_lecture_hall_wide.png"
 type = "image"
-title = "S1 realistic s1_shot_f"
+title = "Scene1 s1_shot_f_lecture_hall_wide.png"
 
 [[generated]]
 id = "pqTNc8-GD8iL4BKhhDErS"
 uri = "file://artifacts/journey-video/public/images/s1_shot_g_determination.png"
 type = "image"
-title = "UE5 char s1_shot_g_determination.png"
+title = "Scene1 s1_shot_g_determination.png"
 
 [[generated]]
 id = "QKaB5YAeaJcQakMzJ0oML"
