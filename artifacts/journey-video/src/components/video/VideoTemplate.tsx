@@ -10,44 +10,47 @@ import { Scene5 } from './video_scenes/Scene5';
 import { Scene6 } from './video_scenes/Scene6';
 import { Scene7 } from './video_scenes/Scene7';
 import { Scene8 } from './video_scenes/Scene8';
+import { SceneWorkBegins } from './video_scenes/SceneWorkBegins';
 
 export const SCENE_DURATIONS: Record<string, number> = {
-  s0_coldopen:  20000,  // Opening — 2:17 AM, ticking clock, the fear
-  s1_beginning: 20000,  // The Realization — lecture hall, not alone
-  s2_building:  29000,  // The Spark — 5 students, the whiteboard
-  s3_darknight: 24000,  // The Journey — montage, days to months
-  s4_progress:  22000,  // The Lowest Point — error screen, "we didn't stop"
-  s5_launch:    24000,  // Launch Day — button, counter, 150 in 24 hrs
-  s6_climb:     22000,  // The Ripple Effect — across Odisha
-  s7_foryou:    24000,  // The Milestone — 500, silence
-  s8_outro:     28000,  // Final Scene — narrator, lights, "By Students. For Students."
+  s0_coldopen:    20000,  // Opening — 2:17 AM, ticking clock, the fear
+  s1_beginning:   20000,  // The Realization — lecture hall, not alone
+  s2_building:    29000,  // The Spark — 5 students, the whiteboard
+  s2_workbegins:  30000,  // The Work Begins — 10 frames, building the dream
+  s3_darknight:   24000,  // The Journey — montage, days to months
+  s4_progress:    22000,  // The Lowest Point — error screen, "we didn't stop"
+  s5_launch:      24000,  // Launch Day — button, counter, 150 in 24 hrs
+  s6_climb:       22000,  // The Ripple Effect — across Odisha
+  s7_foryou:      24000,  // The Milestone — 500, silence
+  s8_outro:       28000,  // Final Scene — narrator, lights, "By Students. For Students."
 };
 
 const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
-  s0_coldopen:  Scene0,
-  s1_beginning: Scene1,
-  s2_building:  Scene2,
-  s3_darknight: Scene3,
-  s4_progress:  Scene4,
-  s5_launch:    Scene5,
-  s6_climb:     Scene6,
-  s7_foryou:    Scene7,
-  s8_outro:     Scene8,
+  s0_coldopen:    Scene0,
+  s1_beginning:   Scene1,
+  s2_building:    Scene2,
+  s2_workbegins:  SceneWorkBegins,
+  s3_darknight:   Scene3,
+  s4_progress:    Scene4,
+  s5_launch:      Scene5,
+  s6_climb:       Scene6,
+  s7_foryou:      Scene7,
+  s8_outro:       Scene8,
 };
 
-// 9 values — one per scene
-const AMBIENT_COLORS = ['#1a1030', '#C8A340', '#7c3aed', '#3b0000', '#7c3aed', '#C8A340', '#C8A340', '#7c3aed', '#7c3aed'];
-const BLOB1_SIZE_W   = ['15vw', '40vw', '60vw', '25vw', '50vw', '30vw', '80vw', '45vw', '50vw'];
-const BLOB1_SIZE_H   = ['15vh', '40vh', '60vh', '25vh', '50vh', '30vh', '80vh', '45vh', '50vh'];
-const BLOB1_LEFT     = ['42vw', '-10vw', '50vw', '5vw',  '10vw', '-20vw', '-20vw', '20vw', '25vw'];
-const BLOB1_TOP      = ['42vh', '-10vh', '-20vh', '5vh', '70vh',  '40vh',  '40vh', '20vh', '25vh'];
-const BLOB1_OP       = [0.04,   0.15,    0.1,    0.1,   0.15,    0.2,     0.25,   0.12,   0.1];
-const BLOB2_SIZE_W   = ['12vw', '30vw', '40vw', '35vw', '50vw', '60vw', '55vw', '40vw', '40vw'];
-const BLOB2_SIZE_H   = ['12vh', '30vh', '40vh', '35vh', '50vh', '60vh', '55vh', '40vh', '40vh'];
-const BLOB2_RIGHT    = ['42vw', '-5vw', '10vw', '45vw', '60vw', '-10vw', '-5vw', '25vw', '30vw'];
-const BLOB2_BOTTOM   = ['42vh', '-5vh', '60vh', '55vh', '10vh',  '-20vh', '-5vh', '25vh', '30vh'];
-const BLOB2_COLORS   = ['#0d0f1a', '#7c3aed', '#C8A340', '#1a0000', '#C8A340', '#7c3aed', '#C8A340', '#7c3aed', '#C8A340'];
-const BLOB2_OP       = [0.02, 0.1, 0.15, 0.06, 0.2, 0.1, 0.15, 0.12, 0.15];
+// 10 values — one per scene (s2_workbegins inserted at index 3)
+const AMBIENT_COLORS = ['#1a1030', '#C8A340', '#7c3aed', '#C8A340', '#3b0000', '#7c3aed', '#C8A340', '#C8A340', '#7c3aed', '#7c3aed'];
+const BLOB1_SIZE_W   = ['15vw', '40vw', '60vw', '50vw', '25vw', '50vw', '30vw', '80vw', '45vw', '50vw'];
+const BLOB1_SIZE_H   = ['15vh', '40vh', '60vh', '50vh', '25vh', '50vh', '30vh', '80vh', '45vh', '50vh'];
+const BLOB1_LEFT     = ['42vw', '-10vw', '50vw', '20vw', '5vw',  '10vw', '-20vw', '-20vw', '20vw', '25vw'];
+const BLOB1_TOP      = ['42vh', '-10vh', '-20vh', '-5vh', '5vh', '70vh',  '40vh',  '40vh', '20vh', '25vh'];
+const BLOB1_OP       = [0.04,   0.15,    0.1,    0.16,   0.1,   0.15,    0.2,     0.25,   0.12,   0.1];
+const BLOB2_SIZE_W   = ['12vw', '30vw', '40vw', '40vw', '35vw', '50vw', '60vw', '55vw', '40vw', '40vw'];
+const BLOB2_SIZE_H   = ['12vh', '30vh', '40vh', '40vh', '35vh', '50vh', '60vh', '55vh', '40vh', '40vh'];
+const BLOB2_RIGHT    = ['42vw', '-5vw', '10vw', '-8vw', '45vw', '60vw', '-10vw', '-5vw', '25vw', '30vw'];
+const BLOB2_BOTTOM   = ['42vh', '-5vh', '60vh', '25vh', '55vh', '10vh',  '-20vh', '-5vh', '25vh', '30vh'];
+const BLOB2_COLORS   = ['#0d0f1a', '#7c3aed', '#C8A340', '#7c3aed', '#1a0000', '#C8A340', '#7c3aed', '#C8A340', '#7c3aed', '#C8A340'];
+const BLOB2_OP       = [0.02, 0.1, 0.15, 0.1, 0.06, 0.2, 0.1, 0.15, 0.12, 0.15];
 
 export default function VideoTemplate({
   durations = SCENE_DURATIONS,
