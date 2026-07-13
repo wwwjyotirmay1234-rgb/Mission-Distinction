@@ -52,7 +52,7 @@ export function Scene7() {
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.06 }} animate={phase >= 4 ? { scale: 1.02 } : { scale: 1 }} transition={{ duration: 14, ease: 'easeOut' }}>
         <img
-          src={`${import.meta.env.BASE_URL}images/scene7_500_milestone.png?v=2`}
+          src={`${import.meta.env.BASE_URL}images/group_celebration.png`}
           className="w-full h-full object-cover object-center"
           style={{ filter: 'brightness(0.55) saturate(0.85)' }}
           alt=""

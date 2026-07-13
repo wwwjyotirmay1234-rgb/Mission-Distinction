@@ -13,7 +13,7 @@ type Shot = {
   cutType: 'flash' | 'dissolve';
   showGolden: boolean;   // warm golden shimmer (lecture hall / sunset shots)
   showDust: boolean;     // dust motes (hostel room shots)
-  faceInsert?: 'male' | 'female'; // Hollywood close-up face insert
+  faceInsert?: string; // UE5 image filename for Hollywood close-up face insert
 };
 
 const SHOTS: Shot[] = [
@@ -71,7 +71,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.0, x: '-0.3%' },
     animate: { scale: 1.05, x: '0%' },
     transition: { duration: 2.8, ease: 'easeIn' },
-    cutType: 'dissolve', showGolden: false, showDust: false, faceInsert: 'female',
+    cutType: 'dissolve', showGolden: false, showDust: false, faceInsert: 'group_portrait.png',
   },
   {
     // H — overhead, five hands together over books + laptop  [Commitment]
@@ -223,7 +223,7 @@ export function Scene2() {
             exit={{ opacity: 0 }}
             transition={{ duration: 2.8, times: [0, 0.18, 0.72, 1.0], ease: 'easeInOut' }}>
             <img
-              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert === 'male' ? 'face_male_determined.png' : 'face_female_focused.png'}`}
+              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert}`}
               alt=""
               style={{
                 height: '76%',

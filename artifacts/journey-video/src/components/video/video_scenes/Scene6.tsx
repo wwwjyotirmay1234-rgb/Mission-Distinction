@@ -56,7 +56,7 @@ export function Scene6() {
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.1 }} animate={{ scale: 1 }} transition={{ duration: 20, ease: 'easeOut' }}>
         <img
-          src={`${import.meta.env.BASE_URL}images/scene6_ripple_odisha.png?v=2`}
+          src={`${import.meta.env.BASE_URL}images/group_silhouette.png`}
           className="w-full h-full object-cover object-center"
           style={{ filter: 'brightness(0.7) saturate(0.9)' }}
           alt=""

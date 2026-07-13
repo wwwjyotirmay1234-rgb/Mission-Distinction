@@ -13,7 +13,7 @@ type Shot = {
   cutType: 'flash' | 'dissolve';
   showBlue: boolean;   // cold blue laptop glow (coding shots)
   showDust: boolean;   // warm dust motes (hostel interior)
-  faceInsert?: 'male' | 'female'; // Hollywood close-up face insert
+  faceInsert?: string; // UE5 image filename for Hollywood close-up face insert
 };
 
 const SHOTS: Shot[] = [
@@ -39,7 +39,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.04, x: '0.5%' },
     animate: { scale: 1.0, x: '0%' },
     transition: { duration: 2.8, ease: 'easeOut' },
-    cutType: 'dissolve', showBlue: false, showDust: false, faceInsert: 'male',
+    cutType: 'dissolve', showBlue: false, showDust: false, faceInsert: 'student_darknight.png',
   },
   {
     // D — sunrise flooding empty hostel desk  [Dawn]
@@ -47,7 +47,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.06, y: '1%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 2.5, ease: 'easeOut' },
-    cutType: 'dissolve', showBlue: false, showDust: true, faceInsert: 'male',
+    cutType: 'dissolve', showBlue: false, showDust: true, faceInsert: 'student_hope.png',
   },
   {
     // E — months of work, wall covered in notes and diagrams  [Months]
@@ -231,7 +231,7 @@ export function Scene3() {
             exit={{ opacity: 0 }}
             transition={{ duration: 2.8, times: [0, 0.18, 0.72, 1.0], ease: 'easeInOut' }}>
             <img
-              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert === 'male' ? 'face_male_determined.png' : 'face_female_focused.png'}`}
+              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert}`}
               alt=""
               style={{
                 height: '76%',

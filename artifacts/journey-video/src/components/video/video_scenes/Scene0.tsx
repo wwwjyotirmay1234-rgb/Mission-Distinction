@@ -12,7 +12,7 @@ type Shot = {
   cutType: 'flash' | 'dissolve';
   showRain: boolean;    // rain only where window is visible
   showSyllabus: boolean; // "So much syllabus..." during reading shots
-  faceInsert?: 'male' | 'female'; // Hollywood close-up face insert
+  faceInsert?: string; // UE5 image filename for Hollywood close-up face insert
 };
 
 const SHOTS: Shot[] = [
@@ -60,7 +60,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.03, x: '0.5%' },
     animate: { scale: 1.0, x: '0%' },
     transition: { duration: 2.8, ease: 'easeOut' },
-    cutType: 'dissolve', showRain: true, showSyllabus: false, faceInsert: 'male',
+    cutType: 'dissolve', showRain: true, showSyllabus: false, faceInsert: 'student_darknight.png',
   },
   {
     // extreme eye close-up — flash cut
@@ -68,7 +68,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.14 },
     animate: { scale: 1.0 },
     transition: { duration: 2.2, ease: [0.16, 1, 0.3, 1] },
-    cutType: 'flash', showRain: false, showSyllabus: false, faceInsert: 'male',
+    cutType: 'flash', showRain: false, showSyllabus: false, faceInsert: 'student_darknight.png',
   },
   {
     // head slumped on desk — "Will I fail in exam?" appears here
@@ -210,7 +210,7 @@ export function Scene0() {
             exit={{ opacity: 0 }}
             transition={{ duration: 2.8, times: [0, 0.18, 0.72, 1.0], ease: 'easeInOut' }}>
             <img
-              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert === 'male' ? 'face_male_determined.png' : 'face_female_focused.png'}`}
+              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert}`}
               alt=""
               style={{
                 height: '76%',

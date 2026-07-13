@@ -13,7 +13,7 @@ type Shot = {
   cutType: 'flash' | 'dissolve';
   showDust: boolean;       // floating dust motes (indoor corridor / hall)
   showSunrise: boolean;    // warm golden lens shimmer (outdoor sunrise shots)
-  faceInsert?: 'male' | 'female'; // Hollywood close-up face insert
+  faceInsert?: string; // UE5 image filename for Hollywood close-up face insert
 };
 
 const SHOTS: Shot[] = [
@@ -23,7 +23,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.06, y: '1.5%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 3, ease: 'easeOut' },
-    cutType: 'flash', showDust: false, showSunrise: true, faceInsert: 'male',
+    cutType: 'flash', showDust: false, showSunrise: true, faceInsert: 'student_coldopen.png',
   },
   {
     // B — close-up tired face, sunrise hitting cheek  [Frustrated]
@@ -31,7 +31,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.0, x: '-0.8%' },
     animate: { scale: 1.05, x: '0%' },
     transition: { duration: 2.5, ease: 'easeIn' },
-    cutType: 'dissolve', showDust: false, showSunrise: true, faceInsert: 'male',
+    cutType: 'dissolve', showDust: false, showSunrise: true, faceInsert: 'student_coldopen.png',
   },
   {
     // C — corridor, anatomy hall sign, dozens studying on floor  [Curious]
@@ -189,7 +189,7 @@ export function Scene1() {
             exit={{ opacity: 0 }}
             transition={{ duration: 2.8, times: [0, 0.18, 0.72, 1.0], ease: 'easeInOut' }}>
             <img
-              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert === 'male' ? 'face_male_determined.png' : 'face_female_focused.png'}`}
+              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert}`}
               alt=""
               style={{
                 height: '76%',

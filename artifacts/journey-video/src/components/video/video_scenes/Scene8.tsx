@@ -55,7 +55,7 @@ export function Scene8() {
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.05, y: '3%' }} animate={{ scale: 1, y: '0%' }} transition={{ duration: 22, ease: 'easeOut' }}>
         <img
-          src={`${import.meta.env.BASE_URL}images/scene8_outro_desk.png?v=2`}
+          src={`${import.meta.env.BASE_URL}images/student_team_outro.png`}
           className="w-full h-full object-cover object-center"
           style={{ filter: 'brightness(0.55) saturate(0.75)' }}
           alt=""
