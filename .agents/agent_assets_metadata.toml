@@ -468,6 +468,54 @@ uri = "file://artifacts/journey-video/public/images/s4_shot_h_team_still_going.p
 type = "image"
 title = "Scene3 s4_shot_h_team_still_going.png"
 
+[[generated]]
+id = "BwrQaO3FLsPb6-Ug3K4X4"
+uri = "file://artifacts/journey-video/public/images/char_s0_desk_alone.png"
+type = "image"
+title = "ue5 student desk alone 2am"
+
+[[generated]]
+id = "w3WhCBhdGiDGPauO5FSUU"
+uri = "file://artifacts/journey-video/public/images/char_s0_phone_frustrated.png"
+type = "image"
+title = "ue5 student phone frustrated"
+
+[[generated]]
+id = "NebMIj-ZOvX4vGMpaDdF6"
+uri = "file://artifacts/journey-video/public/images/char_s1_lecture_hall.png"
+type = "image"
+title = "ue5 lecture hall stressed students"
+
+[[generated]]
+id = "MnDgzwxHRsrZg123W8XB7"
+uri = "file://artifacts/journey-video/public/images/char_s2_whiteboard_team.png"
+type = "image"
+title = "ue5 five students whiteboard team"
+
+[[generated]]
+id = "dzExjTr1xhXk-gTj0vmp_"
+uri = "file://artifacts/journey-video/public/images/char_s3_crash_devastated.png"
+type = "image"
+title = "ue5 team crash devastated"
+
+[[generated]]
+id = "Ikb-TmCHW3GySZvw-1fkS"
+uri = "file://artifacts/journey-video/public/images/char_s3_sunrise_determined.png"
+type = "image"
+title = "ue5 student sunrise determined"
+
+[[generated]]
+id = "GTg7pQZqgFBQ7glz595Ai"
+uri = "file://artifacts/journey-video/public/images/char_s5_launch_moment.png"
+type = "image"
+title = "ue5 launch button press hands"
+
+[[generated]]
+id = "JMKVHafnJLoXxrHGSJzT5"
+uri = "file://artifacts/journey-video/public/images/char_s6_odisha_students.png"
+type = "image"
+title = "ue5 odisha students studying phones"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"

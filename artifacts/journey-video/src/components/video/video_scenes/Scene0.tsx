@@ -24,7 +24,7 @@ const SHOTS: Shot[] = [
     cutType: 'flash', showRain: true, showSyllabus: false, showPhone: false,
   },
   {
-    src: 's0_shot_b_wide.png', dur: 2600,
+    src: 'char_s0_desk_alone.png', dur: 2600,
     initial: { scale: 1.06, y: '-1.5%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 3, ease: 'easeOut' },
@@ -32,7 +32,7 @@ const SHOTS: Shot[] = [
   },
   {
     // Shot 3 — student searches phone for study material, finds nothing
-    src: 'scene0_desk_illustration.png', dur: 3500,
+    src: 'char_s0_phone_frustrated.png', dur: 3500,
     initial: { scale: 1.05, y: '-1%' },
     animate: { scale: 1.0, y: '0.5%' },
     transition: { duration: 4, ease: 'easeOut' },

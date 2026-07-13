@@ -26,7 +26,7 @@ const SHOTS: Shot[] = [
   },
   {
     // B — FLASH CUT: red error message on laptop screen  [Setback]
-    src: 's4_shot_b_error_screen.png', dur: 2000,
+    src: 'char_s3_crash_devastated.png', dur: 2000,
     initial: { scale: 1.12 },
     animate: { scale: 1.0 },
     transition: { duration: 2.2, ease: [0.16, 1, 0.3, 1] },
@@ -42,7 +42,7 @@ const SHOTS: Shot[] = [
   },
   {
     // D — character face, hope and dawn expression  [Dawn]
-    src: 's4_shot_d_sunrise_window.png', dur: 2000,
+    src: 'char_s3_sunrise_determined.png', dur: 2000,
     initial: { scale: 1.06, y: '1%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 2.5, ease: 'easeOut' },

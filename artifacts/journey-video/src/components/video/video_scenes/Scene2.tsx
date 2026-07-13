@@ -59,7 +59,7 @@ const SHOTS: Shot[] = [
   },
   {
     // F — FLASH CUT to whiteboard moment, THE founding question  [Vision]
-    src: 's3_shot_f_whiteboard.png', dur: 3500,
+    src: 'char_s2_whiteboard_team.png', dur: 3500,
     initial: { scale: 1.04, y: '-0.5%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 4.0, ease: 'easeOut' },

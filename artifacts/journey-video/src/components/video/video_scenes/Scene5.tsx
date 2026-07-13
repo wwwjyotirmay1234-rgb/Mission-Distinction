@@ -60,7 +60,7 @@ export function Scene5() {
       <motion.div className="absolute inset-0 z-0"
         initial={{ scale: 1.08 }} animate={phase >= 8 ? { scale: 1.03 } : { scale: 1 }} transition={{ duration: 18, ease: 'easeOut' }}>
         <img
-          src={`${import.meta.env.BASE_URL}images/scene5_launch_day.png`}
+          src={`${import.meta.env.BASE_URL}images/char_s5_launch_moment.png`}
           className="w-full h-full object-cover object-center"
           style={{ filter: 'brightness(0.72) saturate(0.9)' }}
           alt=""

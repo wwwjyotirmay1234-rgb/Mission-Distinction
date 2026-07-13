@@ -58,7 +58,7 @@ const SHOTS: Shot[] = [
   },
   {
     // F — aerial lecture hall, lone figure in center  [Empathy] — THE hero shot
-    src: 's1_shot_f_lecture_hall_wide.png', dur: 3500,
+    src: 'char_s1_lecture_hall.png', dur: 3500,
     initial: { scale: 1.08, y: '-2%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 4.5, ease: 'easeOut' },
