@@ -115,7 +115,7 @@ export function Scene5() {
             style={{ backgroundColor: 'rgba(200,163,64,0.06)', borderColor: 'rgba(200,163,64,0.4)', padding: '1vw 4vw', borderRadius: '0.4vw' }}>
             <div style={{ fontFamily: 'var(--font-display, serif)' }}>
               <WordReveal text="LAUNCH." startDelay={0} wordInterval={0.3}
-                style={{ fontSize: '5.5vw', color: '#C8A340', letterSpacing: '0.15em', textShadow: '0 0 40px rgba(200,163,64,0.5)' }} />
+                style={{ fontSize: '5.5vw', fontWeight: 800, color: '#C8A340', letterSpacing: '0.15em', textShadow: '0 0 40px rgba(200,163,64,0.5)' }} />
             </div>
           </motion.div>
         )}
@@ -172,7 +172,7 @@ export function Scene5() {
           <motion.div initial={{ opacity: 0, scale: 0.88 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}>
             <div style={{ fontFamily: 'var(--font-display, serif)' }}>
               <WordReveal text="150 STUDENTS JOIN." startDelay={0} wordInterval={0.22}
-                style={{ fontSize: '9vw', color: '#C8A340', letterSpacing: '-0.02em', textShadow: '0 0 80px rgba(200,163,64,0.45)' }} />
+                style={{ fontSize: '9vw', fontWeight: 800, color: '#C8A340', letterSpacing: '-0.02em', textShadow: '0 0 80px rgba(200,163,64,0.45)' }} />
             </div>
             <div className="mt-[1.5vw]" style={{ fontSize: '2.1vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.38)', letterSpacing: '0.1em' }}>
               <WordReveal text="The dream is no longer theirs alone." startDelay={0.9} wordInterval={0.1} />

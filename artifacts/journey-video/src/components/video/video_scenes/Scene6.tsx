@@ -134,7 +134,7 @@ export function Scene6() {
         {phase >= 5 && phase < 6 && (
           <div style={{ fontFamily: 'var(--font-display, serif)', textShadow: '0 4px 50px rgba(0,0,0,0.95)' }}>
             <WordReveal text="Students helping students." startDelay={0} wordInterval={0.2}
-              style={{ fontSize: '5.5vw', color: '#fff', letterSpacing: '-0.01em' }} />
+              style={{ fontSize: '5.5vw', fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }} />
           </div>
         )}
 
@@ -142,9 +142,9 @@ export function Scene6() {
           <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}>
             <div style={{ fontFamily: 'var(--font-display, serif)', lineHeight: 1.1 }}>
               <WordReveal text="ACROSS ODISHA." startDelay={0} wordInterval={0.28}
-                style={{ display: 'block', fontSize: '8.5vw', color: '#fff', letterSpacing: '-0.02em', textShadow: '0 4px 70px rgba(0,0,0,0.95)' }} />
+                style={{ display: 'block', fontSize: '8.5vw', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', textShadow: '0 4px 70px rgba(0,0,0,0.95)' }} />
               <WordReveal text="ONE MISSION." startDelay={0.7} wordInterval={0.3}
-                style={{ display: 'block', fontSize: '8.5vw', color: '#C8A340', letterSpacing: '-0.02em', textShadow: '0 0 60px rgba(200,163,64,0.35)' }} />
+                style={{ display: 'block', fontSize: '8.5vw', fontWeight: 800, color: '#C8A340', letterSpacing: '-0.02em', textShadow: '0 0 60px rgba(200,163,64,0.35)' }} />
             </div>
           </motion.div>
         )}

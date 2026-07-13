@@ -257,10 +257,9 @@ export function Scene3() {
                 <p style={{
                   fontFamily: 'var(--font-display, serif)',
                   fontSize: 'clamp(1.6rem, 6vw, 5rem)',
-                  color: 'rgba(255,255,255,0.65)',
-                  fontStyle: 'italic',
-                  fontWeight: 300,
-                  letterSpacing: '0.04em',
+                  color: 'rgba(255,255,255,0.92)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.01em',
                   textShadow: '0 4px 40px rgba(0,0,0,0.95)',
                 }}>
                   Sleepless nights.
@@ -279,9 +278,9 @@ export function Scene3() {
                 transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}>
                 <div style={{ fontFamily: 'var(--font-display, serif)', lineHeight: 1.05 }}>
                   <WordReveal text="DAYS BECOME WEEKS." startDelay={0} wordInterval={0.18}
-                    style={{ display: 'block', fontSize: 'clamp(1.8rem, 6.5vw, 5.5rem)', color: '#fff', letterSpacing: '-0.02em' }} />
+                    style={{ display: 'block', fontSize: 'clamp(1.8rem, 6.5vw, 5.5rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }} />
                   <WordReveal text="WEEKS BECOME MONTHS." startDelay={0.9} wordInterval={0.18}
-                    style={{ display: 'block', fontSize: 'clamp(1.8rem, 6.5vw, 5.5rem)', color: 'rgba(255,255,255,0.32)', letterSpacing: '-0.02em' }} />
+                    style={{ display: 'block', fontSize: 'clamp(1.8rem, 6.5vw, 5.5rem)', fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: '-0.02em' }} />
                 </div>
               </motion.div>
             )}

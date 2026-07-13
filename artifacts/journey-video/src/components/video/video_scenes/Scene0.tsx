@@ -261,6 +261,22 @@ export function Scene0() {
         So much syllabus to cover.
       </motion.p>
 
+      {/* ── ESTABLISHING CAPTION — shot 0 only (the clock shot) ── */}
+      <motion.p className="absolute font-mono z-20 pointer-events-none w-full text-center"
+        style={{
+          top: '15%',
+          fontSize: 'clamp(0.5rem, 0.9vw, 0.75rem)',
+          letterSpacing: '0.55em',
+          color: 'rgba(200,163,64,0.65)',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          textShadow: '0 0 20px rgba(200,163,64,0.3)',
+        }}
+        animate={{ opacity: shotIndex === 0 ? 1 : 0 }}
+        transition={{ duration: 1.6, delay: shotIndex === 0 ? 1.0 : 0 }}>
+        Odisha · MBBS First Year · 2026
+      </motion.p>
+
       {/* Gradient for text legibility during question phase */}
       <motion.div className="absolute inset-0 z-5 pointer-events-none"
         style={{ background: 'linear-gradient(to top, rgba(2,3,12,0.96) 0%, rgba(2,3,12,0.2) 25%, transparent 55%)' }}
@@ -294,6 +310,7 @@ export function Scene0() {
               style={{
                 fontSize: 'clamp(1.8rem, 8.5vw, 7rem)',
                 fontFamily: 'var(--font-display, serif)',
+                fontWeight: 800,
                 color: '#C8A340',
                 letterSpacing: '-0.02em',
                 textShadow: '0 0 100px rgba(200,163,64,0.5), 0 4px 40px rgba(0,0,0,0.95)',

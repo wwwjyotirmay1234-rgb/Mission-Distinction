@@ -124,7 +124,7 @@ export function Scene7() {
         {phase >= 4 && (
           <div className="mt-[0.8vw] mb-[3vw]" style={{ fontFamily: 'var(--font-display, serif)' }}>
             <WordReveal text="Downloads." startDelay={0} wordInterval={0.28}
-              style={{ fontSize: '3.5vw', color: '#C8A340', letterSpacing: '0.04em', textShadow: '0 2px 30px rgba(0,0,0,0.9)' }} />
+              style={{ fontSize: '3.5vw', fontWeight: 700, color: '#C8A340', letterSpacing: '0.04em', textShadow: '0 2px 30px rgba(0,0,0,0.9)' }} />
           </div>
         )}
 
@@ -146,7 +146,7 @@ export function Scene7() {
         {phase >= 8 && (
           <div className="mt-[2vw]" style={{ fontFamily: 'var(--font-display, serif)', textShadow: '0 0 50px rgba(200,163,64,0.35)' }}>
             <WordReveal text="Only now — that dream belongs to hundreds." startDelay={0} wordInterval={0.14}
-              style={{ fontSize: '4.2vw', color: '#C8A340', letterSpacing: '-0.01em' }} />
+              style={{ fontSize: '4.2vw', fontWeight: 700, color: '#C8A340', letterSpacing: '-0.01em' }} />
           </div>
         )}
       </motion.div>

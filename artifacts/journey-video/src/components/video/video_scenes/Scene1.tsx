@@ -210,8 +210,7 @@ export function Scene1() {
                   letterSpacing: '-0.02em',
                   lineHeight: 1.0,
                   textShadow: '0 4px 60px rgba(0,0,0,0.98)',
-                  fontStyle: 'italic',
-                  fontWeight: 300,
+                  fontWeight: 800,
                 }}>
                   All of them.
                 </p>
@@ -229,9 +228,9 @@ export function Scene1() {
                 transition={{ duration: 1.3, ease: [0.16, 1, 0.3, 1] }}>
                 <div style={{ fontFamily: 'var(--font-display, serif)', lineHeight: 1.0 }}>
                   <WordReveal text="Same battle." startDelay={0} wordInterval={0.28}
-                    style={{ display: 'block', fontSize: 'clamp(2rem, 8vw, 6.5rem)', color: '#fff', letterSpacing: '-0.015em' }} />
+                    style={{ display: 'block', fontSize: 'clamp(2rem, 8vw, 6.5rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.015em' }} />
                   <WordReveal text="Same dream." startDelay={0.6} wordInterval={0.28}
-                    style={{ display: 'block', fontSize: 'clamp(2rem, 8vw, 6.5rem)', color: '#C8A340', letterSpacing: '-0.015em' }} />
+                    style={{ display: 'block', fontSize: 'clamp(2rem, 8vw, 6.5rem)', fontWeight: 800, color: '#C8A340', letterSpacing: '-0.015em' }} />
                 </div>
               </motion.div>
             )}

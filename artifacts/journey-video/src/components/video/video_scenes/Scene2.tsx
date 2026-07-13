@@ -272,10 +272,9 @@ export function Scene2() {
                 <p style={{
                   fontFamily: 'var(--font-display, serif)',
                   fontSize: 'clamp(1.4rem, 5vw, 4rem)',
-                  color: 'rgba(255,255,255,0.72)',
-                  fontStyle: 'italic',
-                  fontWeight: 300,
-                  letterSpacing: '0.04em',
+                  color: 'rgba(255,255,255,0.92)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.01em',
                   textShadow: '0 4px 40px rgba(0,0,0,0.95)',
                 }}>
                   He stayed back.
@@ -295,12 +294,11 @@ export function Scene2() {
                 <p style={{
                   fontFamily: 'var(--font-display, serif)',
                   fontSize: 'clamp(2rem, 8.5vw, 7rem)',
-                  color: 'rgba(255,255,255,0.90)',
+                  color: 'rgba(255,255,255,0.95)',
                   letterSpacing: '-0.02em',
                   lineHeight: 1.0,
                   textShadow: '0 4px 60px rgba(0,0,0,0.98)',
-                  fontStyle: 'italic',
-                  fontWeight: 300,
+                  fontWeight: 800,
                 }}>
                   Five of them.
                 </p>
@@ -318,9 +316,9 @@ export function Scene2() {
                 transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}>
                 <div style={{ fontFamily: 'var(--font-display, serif)', lineHeight: 1.1, textShadow: '0 4px 40px rgba(0,0,0,0.98)' }}>
                   <WordReveal text="This is how" startDelay={0} wordInterval={0.3}
-                    style={{ display: 'block', fontSize: 'clamp(2rem, 8vw, 6.5rem)', color: '#fff', letterSpacing: '-0.015em' }} />
+                    style={{ display: 'block', fontSize: 'clamp(2rem, 8vw, 6.5rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.015em' }} />
                   <WordReveal text="it starts." startDelay={0.9} wordInterval={0.32}
-                    style={{ display: 'block', fontSize: 'clamp(2rem, 8vw, 6.5rem)', color: '#C8A340', letterSpacing: '-0.015em' }} />
+                    style={{ display: 'block', fontSize: 'clamp(2rem, 8vw, 6.5rem)', fontWeight: 800, color: '#C8A340', letterSpacing: '-0.015em' }} />
                 </div>
               </motion.div>
             )}

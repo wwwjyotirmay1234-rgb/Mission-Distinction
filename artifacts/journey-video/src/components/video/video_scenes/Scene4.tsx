@@ -100,7 +100,7 @@ export function Scene4() {
         {phase >= 2 && (
           <div style={{ fontFamily: 'var(--font-display, serif)', letterSpacing: '-0.02em', marginBottom: '2.5vw' }}>
             <WordReveal text="Something breaks." startDelay={0} wordInterval={0.22}
-              style={{ fontSize: '6.5vw', color: '#fff', textShadow: '0 4px 50px rgba(0,0,0,0.95)' }} />
+              style={{ fontSize: '6.5vw', fontWeight: 800, color: '#fff', textShadow: '0 4px 50px rgba(0,0,0,0.95)' }} />
           </div>
         )}
         {phase >= 3 && (
@@ -124,9 +124,9 @@ export function Scene4() {
           <div style={{ lineHeight: 1.15, marginBottom: '3.5vw' }}>
             <div style={{ fontFamily: 'var(--font-display, serif)', textShadow: '0 0 60px rgba(200,163,64,0.42)' }}>
               <WordReveal text={'\u201CWe didn\u2019t come this far'} startDelay={0} wordInterval={0.16}
-                style={{ display: 'block', fontSize: '5vw', color: '#C8A340', letterSpacing: '-0.01em' }} />
+                style={{ display: 'block', fontSize: '5vw', fontWeight: 800, color: '#C8A340', letterSpacing: '-0.01em' }} />
               <WordReveal text={'to stop here.\u201D'} startDelay={1.0} wordInterval={0.22}
-                style={{ display: 'block', fontSize: '5vw', color: '#C8A340', letterSpacing: '-0.01em' }} />
+                style={{ display: 'block', fontSize: '5vw', fontWeight: 800, color: '#C8A340', letterSpacing: '-0.01em' }} />
             </div>
           </div>
         )}
