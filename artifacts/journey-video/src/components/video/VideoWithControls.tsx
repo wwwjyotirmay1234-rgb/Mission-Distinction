@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Repeat } from 'lucide-react';
+import { ChevronDown, ChevronUp, Repeat, Volume2, VolumeX } from 'lucide-react';
 import { useSceneControls } from '@/hooks/useSceneControls';
+import { useVideoAudio } from '@/hooks/useVideoAudio';
 import VideoTemplate, { SCENE_DURATIONS } from './VideoTemplate';
 
 const PROGRESS_TICK_MS = 60;
@@ -55,18 +56,22 @@ interface ControlBarProps {
   visible: boolean;
   collapsed: boolean;
   locked: boolean;
+  muted: boolean;
+  audioStarted: boolean;
   sceneKeys: string[];
   activeIndex: number;
   activeDuration: number;
   tick: number;
   onToggleLock: () => void;
+  onToggleSound: () => void;
   onJumpTo: (index: number) => void;
   onToggleCollapsed: () => void;
 }
 
 function ControlBar({
-  visible, collapsed, locked, sceneKeys, activeIndex, activeDuration, tick,
-  onToggleLock, onJumpTo, onToggleCollapsed,
+  visible, collapsed, locked, muted, audioStarted,
+  sceneKeys, activeIndex, activeDuration, tick,
+  onToggleLock, onToggleSound, onJumpTo, onToggleCollapsed,
 }: ControlBarProps) {
   return (
     <div
@@ -77,6 +82,7 @@ function ControlBar({
       }`}
       aria-hidden={!visible}
     >
+      {/* Loop toggle */}
       <button
         onClick={onToggleLock}
         className={`w-14 h-14 flex items-center justify-center transition-colors rounded-lg shrink-0 ${
@@ -89,6 +95,30 @@ function ControlBar({
         aria-pressed={locked}
       >
         <Repeat className="w-8 h-8" />
+      </button>
+
+      <div className="w-px self-stretch bg-white/15" aria-hidden="true" />
+
+      {/* Sound toggle */}
+      <button
+        onClick={onToggleSound}
+        className={`w-14 h-14 flex items-center justify-center transition-colors rounded-lg shrink-0 relative ${
+          audioStarted && !muted
+            ? 'text-white bg-white/15 hover:bg-white/25'
+            : 'text-white/60 hover:text-white hover:bg-white/10'
+        }`}
+        title={!audioStarted ? 'Start sound' : muted ? 'Unmute' : 'Mute'}
+        aria-label={!audioStarted ? 'Start sound' : muted ? 'Unmute' : 'Mute'}
+        aria-pressed={audioStarted && !muted}
+      >
+        {audioStarted && !muted
+          ? <Volume2 className="w-8 h-8" />
+          : <VolumeX className="w-8 h-8" />
+        }
+        {/* Pulse dot until audio started */}
+        {!audioStarted && (
+          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+        )}
       </button>
 
       <div className="w-px self-stretch bg-white/15" aria-hidden="true" />
@@ -126,6 +156,10 @@ export default function VideoWithControls() {
     durations, activeDuration, onSceneChange, jumpTo, toggleLock,
   } = useSceneControls(SCENE_DURATIONS);
 
+  // Track current scene key for audio
+  const currentSceneKey = sceneKeys[activeIndex] ?? 's0_coldopen';
+  const { started: audioStarted, muted, start: startAudio, toggleMute } = useVideoAudio(currentSceneKey);
+
   const sensorRef = useRef<HTMLDivElement | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [hovering, setHovering] = useState(false);
@@ -147,6 +181,15 @@ export default function VideoWithControls() {
       return !c;
     });
   }, []);
+
+  // Sound button handler: first press starts audio, subsequent presses toggle mute
+  const handleSoundToggle = useCallback(() => {
+    if (!audioStarted) {
+      startAudio();
+    } else {
+      toggleMute();
+    }
+  }, [audioStarted, startAudio, toggleMute]);
 
   useEffect(() => {
     if (!(collapsed && tapPinned)) return;
@@ -184,11 +227,14 @@ export default function VideoWithControls() {
           visible={barVisible}
           collapsed={collapsed}
           locked={locked}
+          muted={muted}
+          audioStarted={audioStarted}
           sceneKeys={sceneKeys}
           activeIndex={activeIndex}
           activeDuration={activeDuration}
           tick={tick}
           onToggleLock={toggleLock}
+          onToggleSound={handleSoundToggle}
           onJumpTo={jumpTo}
           onToggleCollapsed={handleToggleCollapsed}
         />
