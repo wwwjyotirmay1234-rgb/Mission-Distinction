@@ -274,7 +274,7 @@ title = "scene8 outro empty desk lamp"
 id = "yeZtphCpr0hrOdE4LFdvF"
 uri = "file://artifacts/journey-video/public/images/s0_shot_b_wide.png"
 type = "image"
-title = "UE5 char s0_shot_b_wide.png"
+title = "Regenerate s0_shot_b_wide.png"
 
 [[generated]]
 id = "wLk3tGm7lG01wJMIE1X5U"
@@ -304,13 +304,13 @@ title = "Scene0 shot_e"
 id = "snaOAu4H2CjE1WZxML93C"
 uri = "file://artifacts/journey-video/public/images/s0_shot_f_window.png"
 type = "image"
-title = "Scene0 shot_f"
+title = "Regenerate s0_shot_f_window.png"
 
 [[generated]]
 id = "70Yn7ci-k9KdsGoneh4B9"
 uri = "file://artifacts/journey-video/public/images/s0_shot_g_eye.png"
 type = "image"
-title = "UE5 char s0_shot_g_eye.png"
+title = "Regenerate s0_shot_g_eye.png"
 
 [[generated]]
 id = "ykWmatxZPppbK9Ng8_8KT"
@@ -322,19 +322,19 @@ title = "UE5 char s0_shot_h_slumped.png"
 id = "0lvDIwpUm5K_vFpc31EYj"
 uri = "file://artifacts/journey-video/public/images/s1_shot_c_corridor.png"
 type = "image"
-title = "Scene1 s1_shot_c_corridor.png"
+title = "Regenerate s1_shot_c_corridor.png"
 
 [[generated]]
 id = "kAGQ6Y8q-PlyJVO1crbNb"
 uri = "file://artifacts/journey-video/public/images/s1_shot_b_face_walking.png"
 type = "image"
-title = "Scene1 s1_shot_b_face_walking.png"
+title = "Regenerate s1_shot_b_face_walking.png"
 
 [[generated]]
 id = "pQQr7IwJCPMg1OjQz38Iw"
 uri = "file://artifacts/journey-video/public/images/s1_shot_a_hostel.png"
 type = "image"
-title = "Scene1 s1_shot_a_hostel.png"
+title = "Regenerate s1_shot_a_hostel.png"
 
 [[generated]]
 id = "09fpYbpHrT9kbjgjb55Ad"
@@ -346,7 +346,7 @@ title = "Scene1 s1_shot_d_students_struggling.png"
 id = "sMUvLr0VvkDDq4h7om_k1"
 uri = "file://artifacts/journey-video/public/images/s1_shot_e_realization_eyes.png"
 type = "image"
-title = "Scene1 s1_shot_e_realization_eyes.png"
+title = "Regenerate s1_shot_e_realization_eyes.png"
 
 [[generated]]
 id = "Ux-_GYMewpdhwd28FmYA6"
@@ -364,25 +364,25 @@ title = "Scene1 s1_shot_g_determination.png"
 id = "QKaB5YAeaJcQakMzJ0oML"
 uri = "file://artifacts/journey-video/public/images/s3_shot_a_silent_observation.png"
 type = "image"
-title = "UE5 char update s3_shot_a_silent_observation.png"
+title = "Regenerate s3_shot_a_silent_observation.png"
 
 [[generated]]
 id = "_TtnGq1IYMgOj1WXdqEbp"
 uri = "file://artifacts/journey-video/public/images/s3_shot_c_calling_friends.png"
 type = "image"
-title = "UE5 char update s3_shot_c_calling_friends.png"
+title = "Regenerate s3_shot_c_calling_friends.png"
 
 [[generated]]
 id = "H5nHo8KrVchEd5XQ-zV7T"
 uri = "file://artifacts/journey-video/public/images/s3_shot_b_idea_begins.png"
 type = "image"
-title = "UE5 char update s3_shot_b_idea_begins.png"
+title = "Regenerate s3_shot_b_idea_begins.png"
 
 [[generated]]
 id = "j3icTQ4p-pKfgBb1zJMlW"
 uri = "file://artifacts/journey-video/public/images/s3_shot_d_gathering_team.png"
 type = "image"
-title = "Team chars s3_shot_d_gathering_team.png"
+title = "Regenerate s3_shot_d_gathering_team.png"
 
 [[generated]]
 id = "YwkEYJ6a5fPPYtbXSnhVj"
@@ -418,13 +418,13 @@ title = "Scene 2 ref-match s3_shot_i_first_plan.png"
 id = "G87dIZvH1lH1CP4sbvuWI"
 uri = "file://artifacts/journey-video/public/images/s3_shot_j_destiny_pull.png"
 type = "image"
-title = "Scene 2 ref-match s3_shot_j_destiny_pull.png"
+title = "Regenerate s3_shot_j_destiny_pull.png"
 
 [[generated]]
 id = "RTF0QzTyu1NJd39pASKp-"
 uri = "file://artifacts/journey-video/public/images/s4_shot_b_error_screen.png"
 type = "image"
-title = "Scene3 s4_shot_b_error_screen.png"
+title = "Regenerate s4_shot_b_error_screen.png"
 
 [[generated]]
 id = "FCdWVi4nw1tUehw3yQp_g"
@@ -454,7 +454,7 @@ title = "Scene3 s4_shot_f_almost_giving_up.png"
 id = "ynAplvQgBk_U3L4VSSZBN"
 uri = "file://artifacts/journey-video/public/images/s4_shot_d_sunrise_window.png"
 type = "image"
-title = "Scene3 s4_shot_d_sunrise_window.png"
+title = "Regenerate s4_shot_d_sunrise_window.png"
 
 [[generated]]
 id = "vPJiQzBmhV0ISNb8GC-jF"

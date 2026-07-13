@@ -174,7 +174,7 @@ export function Scene3() {
             animate={shotIndex === i ? shot.animate : shot.initial}
             transition={shotIndex === i ? shot.transition : { duration: 0 }}>
             <img
-              src={`${import.meta.env.BASE_URL}images/${shot.src}`}
+              src={`${import.meta.env.BASE_URL}images/${shot.src}?v=2`}
               className="w-full h-full object-cover object-center"
               style={{ filter: 'brightness(0.88) contrast(1.06) saturate(0.9)' }}
               alt=""
