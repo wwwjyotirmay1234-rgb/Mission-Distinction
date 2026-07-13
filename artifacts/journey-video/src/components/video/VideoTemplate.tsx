@@ -10,7 +10,7 @@ import { SceneLaunchDay } from './video_scenes/SceneLaunchDay';
 import { SceneMovement } from './video_scenes/SceneMovement';
 import { SceneLegacy } from './video_scenes/SceneLegacy';
 import { SceneWorkBegins } from './video_scenes/SceneWorkBegins';
-import { SceneEpicFinal } from './video_scenes/SceneEpicFinal';
+import { SceneDoctorDream } from './video_scenes/SceneDoctorDream';
 
 export const SCENE_DURATIONS: Record<string, number> = {
   s0_coldopen:    15000,  // Opening — 3 shots × 5s: clock → student alone → phone
@@ -22,7 +22,7 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s5_launch:      30000,  // Scene 7 — Launch Day (10 frames)
   s6_climb:       30500,  // Scene 8 — The Movement (10 frames)
   s7_foryou:      30000,  // Scene 9 — The Legacy (10 frames)
-  s8_outro:       12000,  // EPIC FINAL — golden network over Odisha
+  s8_outro:       30500,  // Scene 10 — The Doctor They Dreamed To Be (10 frames)
 };
 
 const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
@@ -35,7 +35,7 @@ const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
   s5_launch:      SceneLaunchDay,
   s6_climb:       SceneMovement,
   s7_foryou:      SceneLegacy,
-  s8_outro:       SceneEpicFinal,
+  s8_outro:       SceneDoctorDream,
 };
 
 // 10 values — one per scene (s2_workbegins inserted at index 3)
