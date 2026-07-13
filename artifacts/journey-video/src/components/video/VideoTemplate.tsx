@@ -13,7 +13,7 @@ import { SceneWorkBegins } from './video_scenes/SceneWorkBegins';
 import { SceneEpicFinal } from './video_scenes/SceneEpicFinal';
 
 export const SCENE_DURATIONS: Record<string, number> = {
-  s0_coldopen:    20000,  // Opening — 2:17 AM, ticking clock, the fear
+  s0_coldopen:    15000,  // Opening — 3 shots × 5s: clock → student alone → phone
   s1_beginning:   10000,  // The Realization — lecture hall, not alone
   s2_building:    12000,  // The Spark — 5 students, the whiteboard
   s2_workbegins:  15000,  // The Work Begins — fast montage 10 frames
