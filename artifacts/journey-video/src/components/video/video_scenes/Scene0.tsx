@@ -79,12 +79,15 @@ const SHOTS: Shot[] = [
   },
 ];
 
-const RAIN_DROPS = Array.from({ length: 36 }, (_, i) => ({
-  left: `${(i * 2.78 + (i % 5) * 1.6) % 100}%`,
-  height: `${44 + (i % 5) * 20}px`,
-  duration: 0.48 + (i % 6) * 0.1,
-  delay: (i * 0.15) % 2.2,
-  opacity: 0.04 + (i % 4) * 0.02,
+// Heavy rain — 70 drops, clearly visible, varied weight
+const RAIN_DROPS = Array.from({ length: 70 }, (_, i) => ({
+  left: `${(i * 1.44 + (i % 7) * 1.2) % 100}%`,
+  height: `${60 + (i % 7) * 22}px`,
+  width: i % 5 === 0 ? '2px' : '1.5px',       // occasional thick drop
+  duration: 0.32 + (i % 8) * 0.06,             // fast falling rain
+  delay: (i * 0.09) % 1.8,
+  opacity: 0.18 + (i % 5) * 0.09,              // 0.18–0.54 — clearly visible
+  blur: i % 6 === 0 ? 'blur(0.5px)' : 'none',  // depth variation
 }));
 
 export function Scene0() {
@@ -179,14 +182,31 @@ export function Scene0() {
         transition={{ duration: 0.6 }}
       />
 
-      {/* Shots C / D / E — warm amber glow on the books area (lower frame) */}
+      {/* Shots C / D / E — pulsing amber book glow */}
       <motion.div className="absolute pointer-events-none z-3"
         style={{
-          left: '0%', bottom: '12%', width: '100%', height: '45%',
-          background: 'radial-gradient(ellipse at 50% 80%, rgba(200,163,64,0.22) 0%, rgba(200,130,30,0.1) 35%, transparent 70%)',
+          left: '0%', bottom: '12%', width: '100%', height: '50%',
+          background: 'radial-gradient(ellipse at 50% 85%, rgba(200,163,64,0.35) 0%, rgba(200,130,30,0.16) 38%, transparent 72%)',
         }}
-        animate={{ opacity: currentShot.showSyllabus ? 1 : 0 }}
-        transition={{ duration: 0.7 }}
+        animate={currentShot.showSyllabus
+          ? { opacity: [0, 1, 0.65, 1, 0.7, 1], scale: [0.96, 1, 1.02, 1, 1.01, 1] }
+          : { opacity: 0, scale: 1 }}
+        transition={currentShot.showSyllabus
+          ? { duration: 3.2, ease: 'easeInOut', repeat: Infinity, repeatType: 'mirror' }
+          : { duration: 0.5 }}
+      />
+      {/* Secondary sharper highlight on book spine area */}
+      <motion.div className="absolute pointer-events-none z-3"
+        style={{
+          left: '15%', bottom: '14%', width: '70%', height: '28%',
+          background: 'radial-gradient(ellipse at 50% 90%, rgba(255,200,80,0.18) 0%, transparent 65%)',
+        }}
+        animate={currentShot.showSyllabus
+          ? { opacity: [0, 0.8, 0.4, 0.9, 0.5, 0.8] }
+          : { opacity: 0 }}
+        transition={currentShot.showSyllabus
+          ? { duration: 2.4, ease: 'easeInOut', repeat: Infinity, repeatType: 'mirror', delay: 0.4 }
+          : { duration: 0.4 }}
       />
 
       {/* ── RAIN — only on shots where window is visible ── */}
@@ -196,13 +216,14 @@ export function Scene0() {
         {RAIN_DROPS.map((drop, i) => (
           <motion.div key={i} className="absolute"
             style={{
-              left: drop.left, top: 0,
-              width: '1px', height: drop.height,
-              background: 'linear-gradient(to bottom, transparent, rgba(120,170,255,0.8))',
+              left: drop.left, top: '-5%',
+              width: drop.width, height: drop.height,
+              background: 'linear-gradient(to bottom, transparent 0%, rgba(160,200,255,0.9) 60%, rgba(200,230,255,1) 100%)',
               borderRadius: '1px',
               opacity: drop.opacity,
+              filter: drop.blur,
             }}
-            animate={{ y: ['0vh', '108vh'] }}
+            animate={{ y: ['0vh', '110vh'] }}
             transition={{ duration: drop.duration, delay: drop.delay, repeat: Infinity, ease: 'linear' }}
           />
         ))}
