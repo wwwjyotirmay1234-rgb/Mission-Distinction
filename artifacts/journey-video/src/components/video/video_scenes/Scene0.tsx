@@ -97,8 +97,7 @@ export function Scene0() {
   const currentShot = SHOTS[shotIndex];
 
   useSceneSpeech([
-    { atPhase: 2, text: 'So much syllabus to cover...' },
-    { atPhase: 7, text: 'Will I fail in exam?' },
+    { atPhase: 7, text: 'Will I fail?' },
   ], shotIndex);
 
   useEffect(() => {
@@ -218,34 +217,7 @@ export function Scene0() {
 
       {/* ── TEXT OVERLAYS ── */}
 
-      {/* "So much syllabus to cover..." — thought during reading (shots C, D, E) */}
-      <AnimatePresence>
-        {currentShot.showSyllabus && phase === 'shots' && (
-          <motion.div
-            key="syllabus"
-            className="absolute z-15 w-full flex justify-center"
-            style={{ bottom: '14%' }}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>
-            <p style={{
-              fontFamily: 'var(--font-display, serif)',
-              fontStyle: 'italic',
-              fontWeight: 300,
-              fontSize: 'clamp(1rem, 2.6vw, 2rem)',
-              color: 'rgba(255, 248, 220, 0.72)',
-              letterSpacing: '0.06em',
-              textShadow: '0 2px 20px rgba(0,0,0,0.9)',
-              textAlign: 'center',
-            }}>
-              "So much syllabus to cover..."
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* "Will I fail in exam?" — the BIG question, appears while head is going down */}
+      {/* "Will I fail?" — the BIG question, appears while head slumps on desk */}
       <AnimatePresence>
         {(phase === 'question' || phase === 'out') && (
           <motion.div
@@ -257,11 +229,11 @@ export function Scene0() {
             exit={{ opacity: 0 }}
             transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}>
             <WordReveal
-              text='"Will I fail in exam?"'
+              text='"Will I fail?"'
               startDelay={0.1}
-              wordInterval={0.22}
+              wordInterval={0.28}
               style={{
-                fontSize: 'clamp(1.6rem, 7.5vw, 6rem)',
+                fontSize: 'clamp(1.8rem, 8.5vw, 7rem)',
                 fontFamily: 'var(--font-display, serif)',
                 color: '#C8A340',
                 letterSpacing: '-0.02em',

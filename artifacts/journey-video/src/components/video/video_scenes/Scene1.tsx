@@ -91,7 +91,7 @@ export function Scene1() {
   const currentShot = SHOTS[shotIndex];
 
   useSceneSpeech([
-    { atPhase: 5, text: 'I am not the only one struggling.' },
+    { atPhase: 5, text: 'All of them.' },
     { atPhase: 6, text: 'Same battle. Same dream.' },
   ], shotIndex);
 
@@ -198,22 +198,26 @@ export function Scene1() {
       <div className="absolute inset-0 z-15 flex flex-col items-center justify-end pb-[10%] px-[8vw]">
         <div className="text-center w-full">
 
-          {/* Shot F — aerial hall — "I am not the only one." */}
+          {/* Shot F — aerial hall — two words that the visual alone cannot say */}
           <AnimatePresence>
             {phase === 'realization' && (
               <motion.div key="realization"
-                initial={{ opacity: 0, y: 14 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}>
-                <div style={{ fontFamily: 'var(--font-display, serif)', lineHeight: 1.2, textShadow: '0 4px 40px rgba(0,0,0,0.95)' }}>
-                  <WordReveal text='"I am not' startDelay={0} wordInterval={0.2}
-                    style={{ display: 'block', fontSize: 'clamp(1.4rem, 5.5vw, 4.5rem)', color: '#fff' }} />
-                  <WordReveal text='the only one' startDelay={0.6} wordInterval={0.2}
-                    style={{ display: 'block', fontSize: 'clamp(1.4rem, 5.5vw, 4.5rem)', color: '#fff' }} />
-                  <WordReveal text='struggling."' startDelay={1.2} wordInterval={0.2}
-                    style={{ display: 'block', fontSize: 'clamp(1.4rem, 5.5vw, 4.5rem)', color: '#C8A340' }} />
-                </div>
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.6, ease: [0.16, 1, 0.3, 1] }}>
+                <p style={{
+                  fontFamily: 'var(--font-display, serif)',
+                  fontSize: 'clamp(2.2rem, 9vw, 7.5rem)',
+                  color: 'rgba(255,255,255,0.92)',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.0,
+                  textShadow: '0 4px 60px rgba(0,0,0,0.98)',
+                  fontStyle: 'italic',
+                  fontWeight: 300,
+                }}>
+                  All of them.
+                </p>
               </motion.div>
             )}
           </AnimatePresence>

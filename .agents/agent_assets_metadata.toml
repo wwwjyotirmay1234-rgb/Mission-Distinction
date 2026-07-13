@@ -328,7 +328,7 @@ title = "S1 realistic s1_shot_c"
 id = "kAGQ6Y8q-PlyJVO1crbNb"
 uri = "file://artifacts/journey-video/public/images/s1_shot_b_face_walking.png"
 type = "image"
-title = "S1 realistic s1_shot_b"
+title = "Consistency fix s1_shot_b"
 
 [[generated]]
 id = "pQQr7IwJCPMg1OjQz38Iw"
@@ -346,7 +346,7 @@ title = "Shot D v4 — overhead angle, hands+books focus, cinematic"
 id = "sMUvLr0VvkDDq4h7om_k1"
 uri = "file://artifacts/journey-video/public/images/s1_shot_e_realization_eyes.png"
 type = "image"
-title = "S1 realistic s1_shot_e"
+title = "Consistency fix s1_shot_e"
 
 [[generated]]
 id = "Ux-_GYMewpdhwd28FmYA6"
