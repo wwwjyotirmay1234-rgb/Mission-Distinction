@@ -12,6 +12,7 @@ type Shot = {
   cutType: 'flash' | 'dissolve';
   showRain: boolean;    // rain only where window is visible
   showSyllabus: boolean; // "So much syllabus..." during reading shots
+  emotion?: string;     // Hollywood-style single-word overlay
 };
 
 const SHOTS: Shot[] = [
@@ -43,7 +44,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.0, y: '1%' },
     animate: { scale: 1.06, y: '0%' },
     transition: { duration: 2.8, ease: 'easeIn' },
-    cutType: 'dissolve', showRain: false, showSyllabus: true,
+    cutType: 'dissolve', showRain: false, showSyllabus: true, emotion: 'LOST',
   },
   {
     // anatomy notebook
@@ -59,7 +60,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.03, x: '0.5%' },
     animate: { scale: 1.0, x: '0%' },
     transition: { duration: 2.8, ease: 'easeOut' },
-    cutType: 'dissolve', showRain: true, showSyllabus: false,
+    cutType: 'dissolve', showRain: true, showSyllabus: false, emotion: 'ISOLATION',
   },
   {
     // extreme eye close-up — flash cut
@@ -67,7 +68,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.14 },
     animate: { scale: 1.0 },
     transition: { duration: 2.2, ease: [0.16, 1, 0.3, 1] },
-    cutType: 'flash', showRain: false, showSyllabus: false,
+    cutType: 'flash', showRain: false, showSyllabus: false, emotion: 'PANIC',
   },
   {
     // head slumped on desk — "Will I fail in exam?" appears here
@@ -197,6 +198,33 @@ export function Scene0() {
           />
         ))}
       </motion.div>
+
+      {/* ── EMOTION FLASH — Hollywood-style single word per shot ── */}
+      <AnimatePresence>
+        {currentShot.emotion && (
+          <motion.p
+            key={`emotion-${shotIndex}`}
+            className="absolute z-15 pointer-events-none"
+            style={{
+              top: '14%', left: '7vw',
+              fontFamily: 'var(--font-display, serif)',
+              fontSize: 'clamp(0.65rem, 1.8vw, 1.35rem)',
+              letterSpacing: '0.38em',
+              fontWeight: 200,
+              fontStyle: 'italic',
+              color: 'rgba(255,255,255,0.5)',
+              textShadow: '0 1px 24px rgba(0,0,0,0.95)',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+            }}
+            initial={{ opacity: 0, y: -3 }}
+            animate={{ opacity: [0, 0.6, 0.6, 0] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 2.5, times: [0, 0.15, 0.65, 1.0], ease: 'easeInOut' }}>
+            {currentShot.emotion}
+          </motion.p>
+        )}
+      </AnimatePresence>
 
       {/* Syllabus caption — shots C, D, E (showSyllabus: true) — bottom subtitle position */}
       <motion.p
