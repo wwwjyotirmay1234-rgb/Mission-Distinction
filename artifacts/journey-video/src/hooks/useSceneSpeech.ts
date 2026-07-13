@@ -33,9 +33,13 @@ export function useSceneSpeech(lines: SpeechLine[], currentPhase: number) {
 
     if (window.speechSynthesis.getVoices().length > 0) {
       trySpeak();
+      return () => window.speechSynthesis.cancel();
     } else {
       window.speechSynthesis.addEventListener('voiceschanged', trySpeak);
-      return () => window.speechSynthesis.removeEventListener('voiceschanged', trySpeak);
+      return () => {
+        window.speechSynthesis.removeEventListener('voiceschanged', trySpeak);
+        window.speechSynthesis.cancel();
+      };
     }
   }, [currentPhase]); // eslint-disable-line react-hooks/exhaustive-deps
 
