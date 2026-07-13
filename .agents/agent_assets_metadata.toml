@@ -274,7 +274,7 @@ title = "scene8 outro empty desk lamp"
 id = "yeZtphCpr0hrOdE4LFdvF"
 uri = "file://artifacts/journey-video/public/images/s0_shot_b_wide.png"
 type = "image"
-title = "Scene0 shot_b"
+title = "Fixing s0_shot_b_wide.png"
 
 [[generated]]
 id = "wLk3tGm7lG01wJMIE1X5U"
@@ -292,7 +292,7 @@ title = "Scene0 shot_c"
 id = "7jRfKe-SRFkVwXsh5JQHP"
 uri = "file://artifacts/journey-video/public/images/s0_shot_d_face_down.png"
 type = "image"
-title = "First-year student s0_shot_d_face_down.png"
+title = "Fixing s0_shot_d_face_down.png"
 
 [[generated]]
 id = "msjs6iFo8o_99oqF7YJUO"
@@ -310,13 +310,13 @@ title = "Scene0 shot_f"
 id = "70Yn7ci-k9KdsGoneh4B9"
 uri = "file://artifacts/journey-video/public/images/s0_shot_g_eye.png"
 type = "image"
-title = "First-year student s0_shot_g_eye.png"
+title = "Fixing s0_shot_g_eye.png"
 
 [[generated]]
 id = "ykWmatxZPppbK9Ng8_8KT"
 uri = "file://artifacts/journey-video/public/images/s0_shot_h_slumped.png"
 type = "image"
-title = "First-year student s0_shot_h_slumped.png"
+title = "Fixing s0_shot_h_slumped.png"
 
 [[generated]]
 id = "0lvDIwpUm5K_vFpc31EYj"
@@ -328,13 +328,13 @@ title = "S1 realistic s1_shot_c"
 id = "kAGQ6Y8q-PlyJVO1crbNb"
 uri = "file://artifacts/journey-video/public/images/s1_shot_b_face_walking.png"
 type = "image"
-title = "First-year student s1_shot_b_face_walking.png"
+title = "Fixing s1_shot_b_face_walking.png"
 
 [[generated]]
 id = "pQQr7IwJCPMg1OjQz38Iw"
 uri = "file://artifacts/journey-video/public/images/s1_shot_a_hostel.png"
 type = "image"
-title = "S1 realistic s1_shot_a"
+title = "Fixing s1_shot_a_hostel.png"
 
 [[generated]]
 id = "09fpYbpHrT9kbjgjb55Ad"
@@ -346,7 +346,7 @@ title = "Shot D v4 — overhead angle, hands+books focus, cinematic"
 id = "sMUvLr0VvkDDq4h7om_k1"
 uri = "file://artifacts/journey-video/public/images/s1_shot_e_realization_eyes.png"
 type = "image"
-title = "First-year student s1_shot_e_realization_eyes.png"
+title = "Fixing s1_shot_e_realization_eyes.png"
 
 [[generated]]
 id = "Ux-_GYMewpdhwd28FmYA6"
@@ -358,7 +358,7 @@ title = "S1 realistic s1_shot_f"
 id = "pqTNc8-GD8iL4BKhhDErS"
 uri = "file://artifacts/journey-video/public/images/s1_shot_g_determination.png"
 type = "image"
-title = "First-year student s1_shot_g_determination.png"
+title = "Fixing s1_shot_g_determination.png"
 
 [[generated]]
 id = "QKaB5YAeaJcQakMzJ0oML"
@@ -370,25 +370,25 @@ title = "Scene 3 s3_shot_a_silent_observation.png"
 id = "_TtnGq1IYMgOj1WXdqEbp"
 uri = "file://artifacts/journey-video/public/images/s3_shot_c_calling_friends.png"
 type = "image"
-title = "Scene 3 s3_shot_c_calling_friends.png"
+title = "Fixing s3_shot_c_calling_friends.png"
 
 [[generated]]
 id = "H5nHo8KrVchEd5XQ-zV7T"
 uri = "file://artifacts/journey-video/public/images/s3_shot_b_idea_begins.png"
 type = "image"
-title = "Scene 3 s3_shot_b_idea_begins.png"
+title = "Fixing s3_shot_b_idea_begins.png"
 
 [[generated]]
 id = "j3icTQ4p-pKfgBb1zJMlW"
 uri = "file://artifacts/journey-video/public/images/s3_shot_d_gathering_team.png"
 type = "image"
-title = "Scene 3 s3_shot_d_gathering_team.png"
+title = "Fixing s3_shot_d_gathering_team.png"
 
 [[generated]]
 id = "YwkEYJ6a5fPPYtbXSnhVj"
 uri = "file://artifacts/journey-video/public/images/s3_shot_e_brainstorm.png"
 type = "image"
-title = "Scene 3 s3_shot_e_brainstorm.png"
+title = "Fixing s3_shot_e_brainstorm.png"
 
 [[generated]]
 id = "KVzXzUflEEoAVKRZpJUFZ"
@@ -400,7 +400,7 @@ title = "Scene 3 s3_shot_f_whiteboard.png"
 id = "z0diQj2mIiRsTAFcDONG2"
 uri = "file://artifacts/journey-video/public/images/s3_shot_g_reactions.png"
 type = "image"
-title = "Scene 3 s3_shot_g_reactions.png"
+title = "Fixing s3_shot_g_reactions.png"
 
 [[generated]]
 id = "pY8ju-dMC_tActIHZClz6"
