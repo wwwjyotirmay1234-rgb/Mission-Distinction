@@ -10,73 +10,72 @@ type Shot = {
   animate: Record<string, number | string>;
   transition: Transition;
   cutType: 'flash' | 'dissolve';
+  showRain: boolean;    // rain only where window is visible
+  showSyllabus: boolean; // "So much syllabus..." during reading shots
 };
 
-// ── 8 cinematic shots — clock → wide → writing → face → notebook → window → eye → slumped ──
 const SHOTS: Shot[] = [
   {
-    src: 's0_shot_a_clock.png',
-    dur: 2200,
+    src: 's0_shot_a_clock.png', dur: 2200,
     initial: { scale: 1.08, x: '1%', y: '-1%' },
     animate: { scale: 1.0, x: '0%', y: '0%' },
     transition: { duration: 2.5, ease: 'easeOut' },
-    cutType: 'flash',
+    cutType: 'flash', showRain: true, showSyllabus: false,
   },
   {
-    src: 's0_shot_b_wide.png',
-    dur: 2600,
+    src: 's0_shot_b_wide.png', dur: 2600,
     initial: { scale: 1.06, y: '-1.5%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 3, ease: 'easeOut' },
-    cutType: 'dissolve',
+    cutType: 'dissolve', showRain: true, showSyllabus: false,
   },
   {
-    src: 's0_shot_c_writing.png',
-    dur: 2000,
+    // writing hand — "So much syllabus to cover..." starts here
+    src: 's0_shot_c_writing.png', dur: 2200,
     initial: { scale: 1.05, x: '-1.5%' },
     animate: { scale: 1.02, x: '1.5%' },
-    transition: { duration: 2.2, ease: 'linear' },
-    cutType: 'dissolve',
+    transition: { duration: 2.4, ease: 'linear' },
+    cutType: 'dissolve', showRain: false, showSyllabus: true,
   },
   {
-    src: 's0_shot_d_face_down.png',
-    dur: 2500,
+    // exhausted face close-up
+    src: 's0_shot_d_face_down.png', dur: 2500,
     initial: { scale: 1.0, y: '1%' },
     animate: { scale: 1.06, y: '0%' },
     transition: { duration: 2.8, ease: 'easeIn' },
-    cutType: 'dissolve',
+    cutType: 'dissolve', showRain: false, showSyllabus: true,
   },
   {
-    src: 's0_shot_e_notebook.png',
-    dur: 2000,
+    // anatomy notebook
+    src: 's0_shot_e_notebook.png', dur: 2000,
     initial: { scale: 1.04, x: '1%', y: '1%' },
     animate: { scale: 1.0, x: '-1%', y: '0%' },
     transition: { duration: 2.2, ease: 'linear' },
-    cutType: 'dissolve',
+    cutType: 'dissolve', showRain: false, showSyllabus: true,
   },
   {
-    src: 's0_shot_f_window.png',
-    dur: 2500,
+    // rainy window profile
+    src: 's0_shot_f_window.png', dur: 2500,
     initial: { scale: 1.03, x: '0.5%' },
     animate: { scale: 1.0, x: '0%' },
     transition: { duration: 2.8, ease: 'easeOut' },
-    cutType: 'dissolve',
+    cutType: 'dissolve', showRain: true, showSyllabus: false,
   },
   {
-    src: 's0_shot_g_eye.png',
-    dur: 2000,
+    // extreme eye close-up — flash cut
+    src: 's0_shot_g_eye.png', dur: 2000,
     initial: { scale: 1.14 },
     animate: { scale: 1.0 },
     transition: { duration: 2.2, ease: [0.16, 1, 0.3, 1] },
-    cutType: 'flash',
+    cutType: 'flash', showRain: false, showSyllabus: false,
   },
   {
-    src: 's0_shot_h_slumped.png',
-    dur: 2500,
+    // head slumped on desk — "Will I fail in exam?" appears here
+    src: 's0_shot_h_slumped.png', dur: 4000,
     initial: { scale: 1.04, y: '-1%' },
-    animate: { scale: 1.0, y: '1%' },
-    transition: { duration: 2.8, ease: 'easeIn' },
-    cutType: 'dissolve',
+    animate: { scale: 1.0, y: '1.5%' },
+    transition: { duration: 4.5, ease: 'easeIn' },
+    cutType: 'dissolve', showRain: false, showSyllabus: false,
   },
 ];
 
@@ -90,14 +89,16 @@ const RAIN_DROPS = Array.from({ length: 36 }, (_, i) => ({
 
 export function Scene0() {
   const [shotIndex, setShotIndex] = useState(0);
-  const [phase, setPhase] = useState<'shots' | 'emotion' | 'question' | 'out'>('shots');
+  const [phase, setPhase] = useState<'shots' | 'question' | 'out'>('shots');
   const [flashActive, setFlashActive] = useState(false);
   const [tick, setTick] = useState(false);
   const builtTimers = useRef(false);
 
+  const currentShot = SHOTS[shotIndex];
+
   useSceneSpeech([
-    { atPhase: 8, text: 'Exhaustion. Doubt. Fear.' },
-    { atPhase: 9, text: 'What if I fail?' },
+    { atPhase: 2, text: 'So much syllabus to cover...' },
+    { atPhase: 7, text: 'Will I fail in exam?' },
   ], shotIndex);
 
   useEffect(() => {
@@ -106,7 +107,6 @@ export function Scene0() {
 
     const tickInterval = setInterval(() => setTick(t => !t), 900);
 
-    // Build shot schedule from SHOTS durations
     let cursor = 0;
     const timers: ReturnType<typeof setTimeout>[] = [];
 
@@ -125,10 +125,10 @@ export function Scene0() {
       cursor += shot.dur;
     });
 
-    // After all shots: emotional punches
-    timers.push(setTimeout(() => setPhase('emotion'), cursor));           // ~20.3s
-    timers.push(setTimeout(() => setPhase('question'), cursor + 3500));   // ~23.8s
-    timers.push(setTimeout(() => setPhase('out'), cursor + 7000));        // ~27.3s
+    // "Will I fail in exam?" fades in 1.5s after slump shot starts (shot 7, index 7)
+    const slumpStart = SHOTS.slice(0, 7).reduce((s, sh) => s + sh.dur, 0);
+    timers.push(setTimeout(() => setPhase('question'), slumpStart + 1500));
+    timers.push(setTimeout(() => setPhase('out'), slumpStart + 5500));
 
     return () => { timers.forEach(clearTimeout); clearInterval(tickInterval); };
   }, []);
@@ -138,13 +138,12 @@ export function Scene0() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.6 }}>
 
-      {/* ── ALL SHOTS — stacked, crossfading ─────────────────── */}
+      {/* ── ALL SHOTS — stacked, crossfading ── */}
       {SHOTS.map((shot, i) => (
         <motion.div key={i} className="absolute inset-0 z-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: shotIndex === i ? 1 : 0 }}
           transition={{ duration: shot.cutType === 'flash' ? 0.08 : 0.5, ease: 'easeInOut' }}>
-          {/* Ken Burns per-shot motion */}
           <motion.div className="absolute inset-0"
             initial={shot.initial}
             animate={shotIndex === i ? shot.animate : shot.initial}
@@ -159,7 +158,7 @@ export function Scene0() {
         </motion.div>
       ))}
 
-      {/* ── SHOT-SPECIFIC OVERLAYS ────────────────────────────── */}
+      {/* ── SHOT-SPECIFIC OVERLAYS ── */}
 
       {/* Shot A — red clock glow pulse */}
       <motion.div className="absolute pointer-events-none z-3"
@@ -167,11 +166,11 @@ export function Scene0() {
           left: '30%', bottom: '20%', width: '20%', height: '22%',
           background: 'radial-gradient(ellipse, rgba(255,20,0,0.22) 0%, transparent 70%)',
         }}
-        animate={{ opacity: shotIndex === 0 ? (tick ? 0.9 : 0.35) : 0 }}
+        animate={{ opacity: shotIndex === 0 ? (tick ? 0.9 : 0.3) : 0 }}
         transition={{ duration: 0.15 }}
       />
 
-      {/* Shot D / G — amber lamp glow on face */}
+      {/* Shots D / G — warm amber lamp glow on face */}
       <motion.div className="absolute pointer-events-none z-3"
         style={{
           left: '5%', top: '5%', width: '42%', height: '50%',
@@ -181,8 +180,10 @@ export function Scene0() {
         transition={{ duration: 0.6 }}
       />
 
-      {/* ── RAIN — overlaid on every shot (intensifies from shot 5 onward) ── */}
-      <div className="absolute inset-0 z-4 pointer-events-none overflow-hidden">
+      {/* ── RAIN — only on shots where window is visible ── */}
+      <motion.div className="absolute inset-0 z-4 pointer-events-none overflow-hidden"
+        animate={{ opacity: currentShot.showRain ? 1 : 0 }}
+        transition={{ duration: 0.4 }}>
         {RAIN_DROPS.map((drop, i) => (
           <motion.div key={i} className="absolute"
             style={{
@@ -190,94 +191,95 @@ export function Scene0() {
               width: '1px', height: drop.height,
               background: 'linear-gradient(to bottom, transparent, rgba(120,170,255,0.8))',
               borderRadius: '1px',
+              opacity: drop.opacity,
             }}
-            animate={{
-              y: ['0vh', '108vh'],
-              opacity: drop.opacity * (shotIndex >= 5 ? 2 : 1),
-            }}
+            animate={{ y: ['0vh', '108vh'] }}
             transition={{ duration: drop.duration, delay: drop.delay, repeat: Infinity, ease: 'linear' }}
           />
         ))}
-      </div>
+      </motion.div>
 
-      {/* ── CINEMATIC BARS ────────────────────────────────────── */}
-      <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
+      {/* ── CINEMATIC BARS ── */}
+      <div className="absolute inset-x-0 top-0 h-[5%] bg-black z-10 pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-[5%] bg-black z-10 pointer-events-none" />
 
-      {/* Bottom gradient — only needed during text phases */}
+      {/* Gradient for text legibility during question phase */}
       <motion.div className="absolute inset-0 z-5 pointer-events-none"
-        style={{ background: 'linear-gradient(to top, rgba(2,3,12,0.97) 0%, rgba(2,3,12,0.3) 22%, transparent 50%)' }}
-        animate={{ opacity: phase === 'shots' ? 0.3 : 1 }}
-        transition={{ duration: 1.5 }}
+        style={{ background: 'linear-gradient(to top, rgba(2,3,12,0.96) 0%, rgba(2,3,12,0.2) 25%, transparent 55%)' }}
+        animate={{ opacity: phase === 'shots' ? 0.25 : 1 }}
+        transition={{ duration: 1.2 }}
       />
 
-      {/* ── FLASH FRAME (between shots) ───────────────────────── */}
+      {/* ── FLASH FRAME ── */}
       <motion.div className="absolute inset-0 bg-white pointer-events-none z-20"
         animate={{ opacity: flashActive ? 0.85 : 0 }}
         transition={{ duration: 0.05 }}
       />
 
-      {/* ── EMOTIONAL TEXT OVERLAYS ───────────────────────────── */}
-      <div className="absolute inset-0 z-15 flex flex-col items-center justify-end pb-[10%] px-[10vw]">
-        <div className="text-center w-full">
+      {/* ── TEXT OVERLAYS ── */}
 
-          {/* "Exhaustion.  Doubt.  Fear." */}
-          <AnimatePresence>
-            {phase === 'emotion' && (
-              <motion.div
-                key="emotion"
-                className="flex items-end justify-center gap-[5vw]"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}>
-                {[
-                  { w: 'Exhaustion.', c: 'rgba(255,255,255,0.55)' },
-                  { w: 'Doubt.', c: 'rgba(255,255,255,0.45)' },
-                  { w: 'Fear.', c: 'rgba(220,70,50,0.8)' },
-                ].map(({ w, c }, i) => (
-                  <WordReveal key={w} text={w} startDelay={i * 0.5} wordInterval={0.1}
-                    style={{
-                      fontSize: '3vw', fontWeight: 300,
-                      fontFamily: 'var(--font-display, serif)',
-                      color: c, letterSpacing: '0.12em',
-                      textShadow: '0 2px 24px rgba(0,0,0,0.95)',
-                    }} />
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {/* "So much syllabus to cover..." — thought during reading (shots C, D, E) */}
+      <AnimatePresence>
+        {currentShot.showSyllabus && phase === 'shots' && (
+          <motion.div
+            key="syllabus"
+            className="absolute z-15 w-full flex justify-center"
+            style={{ bottom: '14%' }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>
+            <p style={{
+              fontFamily: 'var(--font-display, serif)',
+              fontStyle: 'italic',
+              fontWeight: 300,
+              fontSize: 'clamp(1rem, 2.6vw, 2rem)',
+              color: 'rgba(255, 248, 220, 0.72)',
+              letterSpacing: '0.06em',
+              textShadow: '0 2px 20px rgba(0,0,0,0.9)',
+              textAlign: 'center',
+            }}>
+              "So much syllabus to cover..."
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-          {/* "What if I fail?" */}
-          <AnimatePresence>
-            {(phase === 'question' || phase === 'out') && (
-              <motion.div
-                key="question"
-                initial={{ opacity: 0, scale: 0.94 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}>
-                <WordReveal text='"What if I fail?"' startDelay={0.1} wordInterval={0.22}
-                  style={{
-                    fontSize: '8.5vw',
-                    fontFamily: 'var(--font-display, serif)',
-                    color: '#C8A340',
-                    letterSpacing: '-0.02em',
-                    textShadow: '0 0 100px rgba(200,163,64,0.55), 0 4px 40px rgba(0,0,0,0.95)',
-                    lineHeight: 1,
-                    display: 'block',
-                  }} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+      {/* "Will I fail in exam?" — the BIG question, appears while head is going down */}
+      <AnimatePresence>
+        {(phase === 'question' || phase === 'out') && (
+          <motion.div
+            key="question"
+            className="absolute z-15 w-full flex justify-center"
+            style={{ bottom: '12%' }}
+            initial={{ opacity: 0, scale: 0.94 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}>
+            <WordReveal
+              text='"Will I fail in exam?"'
+              startDelay={0.1}
+              wordInterval={0.22}
+              style={{
+                fontSize: 'clamp(1.6rem, 7.5vw, 6rem)',
+                fontFamily: 'var(--font-display, serif)',
+                color: '#C8A340',
+                letterSpacing: '-0.02em',
+                textShadow: '0 0 100px rgba(200,163,64,0.5), 0 4px 40px rgba(0,0,0,0.95)',
+                lineHeight: 1.1,
+                display: 'block',
+                textAlign: 'center',
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Scene fade-out */}
       <motion.div className="absolute inset-0 bg-black pointer-events-none z-50"
         initial={{ opacity: 0 }}
         animate={phase === 'out' ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.8, delay: phase === 'out' ? 1.5 : 0 }}
+        transition={{ duration: 0.9, delay: phase === 'out' ? 1.2 : 0 }}
       />
     </motion.div>
   );
