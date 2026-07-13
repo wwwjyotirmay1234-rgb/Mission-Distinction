@@ -191,14 +191,20 @@ export function Scene3() {
       />
 
       {/* ── RED ERROR PULSE — shot B only ── */}
-      <motion.div className="absolute pointer-events-none z-3"
-        style={{
-          left: '20%', top: '25%', width: '60%', height: '50%',
-          background: 'radial-gradient(ellipse, rgba(220,30,30,0.1) 0%, transparent 65%)',
-        }}
-        animate={{ opacity: shotIndex === 1 ? [0.5, 1, 0.5, 1, 0.6] : 0 }}
-        transition={{ duration: 1.6, repeat: shotIndex === 1 ? Infinity : 0, ease: 'easeInOut' }}
-      />
+      <AnimatePresence>
+        {shotIndex === 1 && (
+          <motion.div key="error-pulse" className="absolute pointer-events-none z-3"
+            style={{
+              left: '20%', top: '25%', width: '60%', height: '50%',
+              background: 'radial-gradient(ellipse, rgba(220,30,30,0.1) 0%, transparent 65%)',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── DUST MOTES — hostel interior shots ── */}
       <motion.div className="absolute inset-0 z-3 pointer-events-none"
