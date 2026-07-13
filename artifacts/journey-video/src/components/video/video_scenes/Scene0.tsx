@@ -198,14 +198,16 @@ export function Scene0() {
         ))}
       </motion.div>
 
-      {/* Syllabus caption — shots C, D, E (showSyllabus: true) */}
+      {/* Syllabus caption — shots C, D, E (showSyllabus: true) — bottom subtitle position */}
       <motion.p
-        className="absolute z-[15] w-full text-center pointer-events-none font-mono"
+        className="absolute z-15 w-full text-center pointer-events-none font-mono"
         style={{
-          top: '14%',
-          fontSize: 'clamp(0.6rem, 1.2vw, 1rem)',
+          bottom: '16%',
+          fontSize: 'clamp(0.65rem, 1.3vw, 1.05rem)',
           letterSpacing: '0.22em',
-          color: 'rgba(255,255,255,0.25)',
+          color: 'rgba(255,255,255,0.38)',
+          fontStyle: 'italic',
+          textShadow: '0 2px 20px rgba(0,0,0,0.95)',
         }}
         animate={{ opacity: currentShot.showSyllabus ? 1 : 0 }}
         transition={{ duration: 0.9 }}
