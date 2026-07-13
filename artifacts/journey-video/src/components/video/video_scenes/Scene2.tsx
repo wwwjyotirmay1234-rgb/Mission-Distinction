@@ -7,24 +7,20 @@ export function Scene2() {
   const [phase, setPhase] = useState(0);
 
   useSceneSpeech([
-    { atPhase: 2, text: 'No investors. No office. No fancy equipment. Just laptops. Notebooks. Determination.' },
-    { atPhase: 3, text: 'A whiteboard filled with ideas. One question written in bold.' },
-    { atPhase: 4, text: 'What if we build what we wish existed?' },
-    { atPhase: 5, text: 'Silence.' },
-    { atPhase: 6, text: 'Then nods.' },
-    { atPhase: 8, text: 'The mission begins.' },
+    { atPhase: 2, text: 'What if we build what we wish existed?' },
+    { atPhase: 3, text: 'Silence.' },
+    { atPhase: 4, text: 'Then nods.' },
+    { atPhase: 5, text: 'The mission begins.' },
   ], phase);
 
   useEffect(() => {
     const timers = [
       setTimeout(() => setPhase(1), 600),
-      setTimeout(() => setPhase(2), 2500),
-      setTimeout(() => setPhase(3), 6000),
-      setTimeout(() => setPhase(4), 8500),
-      setTimeout(() => setPhase(5), 12000),
-      setTimeout(() => setPhase(6), 14000),
-      setTimeout(() => setPhase(7), 15500),
-      setTimeout(() => setPhase(8), 17000),
+      // long pause — let them absorb the hostel room / whiteboard scene
+      setTimeout(() => setPhase(2), 5500),   // big question
+      setTimeout(() => setPhase(3), 12000),  // silence
+      setTimeout(() => setPhase(4), 14500),  // nods
+      setTimeout(() => setPhase(5), 16500),  // THE MISSION BEGINS
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
@@ -50,79 +46,62 @@ export function Scene2() {
       <div className="absolute inset-x-0 top-0 h-[6%] bg-black z-10 pointer-events-none" />
       <div className="absolute inset-x-0 bottom-0 h-[6%] bg-black z-10 pointer-events-none" />
 
-      {/* Overlay for text legibility */}
       <div className="absolute inset-0 z-1 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(6,8,23,0.88) 0%, rgba(6,8,23,0.22) 45%, rgba(6,8,23,0.92) 100%)' }} />
+        style={{ background: 'linear-gradient(to bottom, rgba(6,8,23,0.75) 0%, transparent 40%, rgba(6,8,23,0.92) 100%)' }} />
 
-      {/* Whiteboard glow — top-left corner where whiteboard is in illustration */}
+      {/* Whiteboard area soft glow */}
       <motion.div className="absolute pointer-events-none z-2"
         style={{
-          left: '-5%', top: '10%',
-          width: '55%', height: '75%',
+          left: '-5%', top: '10%', width: '55%', height: '75%',
           background: 'radial-gradient(ellipse at 20% 50%, rgba(220,230,255,0.07) 0%, transparent 65%)',
         }}
-        animate={{ opacity: phase >= 3 ? 1 : 0 }}
-        transition={{ duration: 1.2 }}
+        animate={{ opacity: phase >= 2 ? 1 : 0 }}
+        transition={{ duration: 1.5 }}
       />
 
       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-[10vw]">
 
-        <motion.p className="font-mono mb-[3.5vw]"
-          style={{ fontSize: '0.85vw', letterSpacing: '0.5em', color: 'rgba(255,255,255,0.2)' }}
-          initial={{ opacity: 0 }} animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }} transition={{ duration: 1.5 }}>
-          LATE EVENING · A SMALL ROOM · VIMSAR, BURLA
+        {/* Location tag */}
+        <motion.p className="font-mono absolute" style={{ top: '11%', letterSpacing: '0.5em', fontSize: '0.8vw', color: 'rgba(255,255,255,0.18)' }}
+          initial={{ opacity: 0 }} animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }} transition={{ duration: 2 }}>
+          LATE EVENING · VIMSAR, BURLA
         </motion.p>
 
-        {phase >= 2 && (
-          <div className="mb-[3vw]">
-            <div style={{ fontSize: '1.9vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', lineHeight: 2.1 }}>
-              <WordReveal text="No investors. No office. No fancy equipment." startDelay={0} wordInterval={0.08} style={{ display: 'block' }} />
-              <WordReveal text="Just laptops. Notebooks. Determination." startDelay={1.2} wordInterval={0.09} style={{ display: 'block' }} />
+        {/* The founding question — jump straight to it, no preamble */}
+        {phase >= 2 && phase < 3 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.2 }}>
+            <div style={{ fontFamily: 'var(--font-display, serif)', lineHeight: 1.2, textShadow: '0 0 60px rgba(200,163,64,0.4)' }}>
+              <WordReveal text='"What if we build' startDelay={0} wordInterval={0.2}
+                style={{ display: 'block', fontSize: '6vw', color: '#C8A340', letterSpacing: '-0.01em' }} />
+              <WordReveal text='what we wish existed?"' startDelay={1.0} wordInterval={0.2}
+                style={{ display: 'block', fontSize: '6vw', color: '#C8A340', letterSpacing: '-0.01em' }} />
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {phase >= 3 && (
-          <div className="mb-[3vw]">
-            <div style={{ fontSize: '2.1vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', lineHeight: 2 }}>
-              <WordReveal text="A whiteboard filled with ideas." startDelay={0} wordInterval={0.09} style={{ display: 'block' }} />
-              <WordReveal text="One question written in bold:" startDelay={0.9} wordInterval={0.09} style={{ display: 'block' }} />
+        {/* Silence / nods — short single words, dramatic spacing */}
+        {phase >= 3 && phase < 5 && (
+          <motion.div className="flex flex-col items-center gap-[2vw]"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }}>
+            <div style={{ fontSize: '3.2vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.38)', letterSpacing: '0.3em' }}>
+              {phase >= 3 && <WordReveal text="Silence." startDelay={0} wordInterval={0.3} />}
             </div>
-          </div>
+            {phase >= 4 && (
+              <div style={{ fontSize: '3.2vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.52)', letterSpacing: '0.25em' }}>
+                <WordReveal text="Then nods." startDelay={0} wordInterval={0.3} />
+              </div>
+            )}
+          </motion.div>
         )}
 
-        {phase >= 4 && (
-          <div className="mb-[3.5vw]">
-            <div style={{ fontFamily: 'var(--font-display, serif)', lineHeight: 1.15, textShadow: '0 0 60px rgba(200,163,64,0.4)' }}>
-              <WordReveal text='"What if we build' startDelay={0} wordInterval={0.18}
-                style={{ display: 'block', fontSize: '5.5vw', color: '#C8A340', letterSpacing: '-0.01em' }} />
-              <WordReveal text='what we wish existed?"' startDelay={0.9} wordInterval={0.18}
-                style={{ display: 'block', fontSize: '5.5vw', color: '#C8A340', letterSpacing: '-0.01em' }} />
-            </div>
-          </div>
-        )}
-
+        {/* THE MISSION BEGINS — title card */}
         {phase >= 5 && (
-          <div style={{ fontSize: '2.8vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.28em', marginBottom: '0.5vw' }}>
-            <WordReveal text="Silence." startDelay={0} wordInterval={0.25} />
-          </div>
-        )}
-
-        {phase >= 6 && (
-          <div style={{ fontSize: '2.8vw', fontStyle: 'italic', fontWeight: 100, color: 'rgba(255,255,255,0.42)', letterSpacing: '0.22em', marginBottom: '3vw' }}>
-            <WordReveal text="Then nods." startDelay={0} wordInterval={0.25} />
-          </div>
-        )}
-
-        {phase >= 7 && (
-          <motion.div style={{ height: '1px', background: 'rgba(200,163,64,0.22)', margin: '0 auto 2.5vw' }}
-            initial={{ width: 0 }} animate={{ width: '18vw' }} transition={{ duration: 0.9 }} />
-        )}
-        {phase >= 8 && (
-          <div style={{ fontFamily: 'var(--font-display, serif)', textShadow: '0 4px 60px rgba(0,0,0,0.95)' }}>
-            <WordReveal text="THE MISSION BEGINS." startDelay={0} wordInterval={0.22}
-              style={{ fontSize: '7.5vw', color: '#fff', letterSpacing: '-0.02em' }} />
-          </div>
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}>
+            <motion.div style={{ height: '1px', background: 'rgba(200,163,64,0.22)', margin: '0 auto 2.5vw' }}
+              initial={{ width: 0 }} animate={{ width: '20vw' }} transition={{ duration: 0.9 }} />
+            <WordReveal text="THE MISSION BEGINS." startDelay={0.3} wordInterval={0.22}
+              style={{ fontSize: '7.5vw', color: '#fff', fontFamily: 'var(--font-display, serif)', letterSpacing: '-0.02em', display: 'block' }} />
+          </motion.div>
         )}
       </div>
     </motion.div>
