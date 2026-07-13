@@ -11,8 +11,9 @@ type Shot = {
   animate: Record<string, number | string>;
   transition: Transition;
   cutType: 'flash' | 'dissolve';
-  showGolden: boolean;   // warm golden shimmer (lecture hall / sunset shots)
-  showDust: boolean;     // dust motes (hostel room shots)
+  showGolden: boolean;    // warm golden shimmer (lecture hall / sunset shots)
+  showDust: boolean;      // dust motes (hostel room shots)
+  showChalkText?: boolean; // "There has to be a better way." — whiteboard shot only
 };
 
 const SHOTS: Shot[] = [
@@ -62,7 +63,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.04, y: '-0.5%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 4.0, ease: 'easeOut' },
-    cutType: 'flash', showGolden: false, showDust: false,
+    cutType: 'flash', showGolden: false, showDust: false, showChalkText: true,
   },
   {
     // G — five faces, doubt → hope → excitement  [Hope]
@@ -228,6 +229,37 @@ export function Scene2() {
       {/* ── TEXT OVERLAYS ── */}
       <div className="absolute inset-0 z-15 flex flex-col items-center justify-end pb-[14%] px-[8vw]">
         <div className="text-center w-full">
+
+          {/* Shot F — "There has to be a better way." — chalk text on whiteboard */}
+          <AnimatePresence>
+            {currentShot.showChalkText && (
+              <motion.div key="chalktext"
+                className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}>
+                <motion.p
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1.2, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                  style={{
+                    fontFamily: 'var(--font-display, serif)',
+                    fontSize: 'clamp(1.1rem, 3.8vw, 3.2rem)',
+                    color: 'rgba(255,255,255,0.92)',
+                    fontStyle: 'italic',
+                    fontWeight: 300,
+                    letterSpacing: '0.03em',
+                    textShadow: '0 0 40px rgba(255,255,255,0.3), 0 4px 40px rgba(0,0,0,0.9)',
+                    textAlign: 'center',
+                    padding: '0 8vw',
+                    lineHeight: 1.2,
+                  }}>
+                  "There has to be a better way."
+                </motion.p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Shot A — "He stayed back." — context the visual alone can't give */}
           <AnimatePresence>

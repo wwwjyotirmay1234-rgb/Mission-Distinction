@@ -10,8 +10,9 @@ type Shot = {
   animate: Record<string, number | string>;
   transition: Transition;
   cutType: 'flash' | 'dissolve';
-  showRain: boolean;    // rain only where window is visible
+  showRain: boolean;     // rain only where window is visible
   showSyllabus: boolean; // "So much syllabus..." during reading shots
+  showPhone: boolean;    // phone screen glow + "no resources found"
 };
 
 const SHOTS: Shot[] = [
@@ -20,14 +21,22 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.08, x: '1%', y: '-1%' },
     animate: { scale: 1.0, x: '0%', y: '0%' },
     transition: { duration: 2.5, ease: 'easeOut' },
-    cutType: 'flash', showRain: true, showSyllabus: false,
+    cutType: 'flash', showRain: true, showSyllabus: false, showPhone: false,
   },
   {
     src: 's0_shot_b_wide.png', dur: 2600,
     initial: { scale: 1.06, y: '-1.5%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 3, ease: 'easeOut' },
-    cutType: 'dissolve', showRain: true, showSyllabus: false,
+    cutType: 'dissolve', showRain: true, showSyllabus: false, showPhone: false,
+  },
+  {
+    // Shot 3 — student searches phone for study material, finds nothing
+    src: 'student_desk_overhead.png', dur: 3500,
+    initial: { scale: 1.05, y: '-1%' },
+    animate: { scale: 1.0, y: '0.5%' },
+    transition: { duration: 4, ease: 'easeOut' },
+    cutType: 'dissolve', showRain: false, showSyllabus: false, showPhone: true,
   },
   {
     // writing hand — "So much syllabus to cover..." starts here
@@ -35,7 +44,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.05, x: '-1.5%' },
     animate: { scale: 1.02, x: '1.5%' },
     transition: { duration: 2.4, ease: 'linear' },
-    cutType: 'dissolve', showRain: false, showSyllabus: true,
+    cutType: 'dissolve', showRain: false, showSyllabus: true, showPhone: false,
   },
   {
     // exhausted face close-up
@@ -43,7 +52,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.0, y: '1%' },
     animate: { scale: 1.06, y: '0%' },
     transition: { duration: 2.8, ease: 'easeIn' },
-    cutType: 'dissolve', showRain: false, showSyllabus: true,
+    cutType: 'dissolve', showRain: false, showSyllabus: true, showPhone: false,
   },
   {
     // anatomy notebook
@@ -51,7 +60,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.04, x: '1%', y: '1%' },
     animate: { scale: 1.0, x: '-1%', y: '0%' },
     transition: { duration: 2.2, ease: 'linear' },
-    cutType: 'dissolve', showRain: false, showSyllabus: true,
+    cutType: 'dissolve', showRain: false, showSyllabus: true, showPhone: false,
   },
   {
     // rainy window profile — rain overlay active
@@ -59,7 +68,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.03, x: '0.5%' },
     animate: { scale: 1.0, x: '0%' },
     transition: { duration: 2.8, ease: 'easeOut' },
-    cutType: 'dissolve', showRain: true, showSyllabus: false,
+    cutType: 'dissolve', showRain: true, showSyllabus: false, showPhone: false,
   },
   {
     // extreme eye close-up — flash cut
@@ -67,15 +76,15 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.14 },
     animate: { scale: 1.0 },
     transition: { duration: 2.2, ease: [0.16, 1, 0.3, 1] },
-    cutType: 'flash', showRain: false, showSyllabus: false,
+    cutType: 'flash', showRain: false, showSyllabus: false, showPhone: false,
   },
   {
-    // exhausted face, awake — "Will I fail?" appears here
+    // exhausted face, awake — "Will I fail?" appears here (index 8)
     src: 'student_darknight.png', dur: 4000,
     initial: { scale: 1.04, y: '-1%' },
     animate: { scale: 1.0, y: '1%' },
     transition: { duration: 4.5, ease: 'easeOut' },
-    cutType: 'dissolve', showRain: false, showSyllabus: false,
+    cutType: 'dissolve', showRain: false, showSyllabus: false, showPhone: false,
   },
 ];
 
@@ -100,7 +109,7 @@ export function Scene0() {
   const currentShot = SHOTS[shotIndex];
 
   useSceneSpeech([
-    { atPhase: 7, text: 'Will I fail?' },
+    { atPhase: 8, text: 'Will I fail?' },
   ], shotIndex);
 
   useEffect(() => {
@@ -127,8 +136,8 @@ export function Scene0() {
       cursor += shot.dur;
     });
 
-    // "Will I fail in exam?" fades in 1.5s after slump shot starts (shot 7, index 7)
-    const slumpStart = SHOTS.slice(0, 7).reduce((s, sh) => s + sh.dur, 0);
+    // "Will I fail in exam?" fades in 1.5s after slump shot starts (student_darknight, index 8)
+    const slumpStart = SHOTS.slice(0, 8).reduce((s, sh) => s + sh.dur, 0);
     timers.push(setTimeout(() => setPhase('question'), slumpStart + 1500));
     // 'out' removed — AnimatePresence handles scene exit; question stays visible until scene ends
 
@@ -178,7 +187,7 @@ export function Scene0() {
           left: '5%', top: '5%', width: '42%', height: '50%',
           background: 'radial-gradient(ellipse at 15% 12%, rgba(255,180,60,0.1) 0%, transparent 65%)',
         }}
-        animate={{ opacity: (shotIndex === 3 || shotIndex === 6) ? 1 : 0 }}
+        animate={{ opacity: (shotIndex === 4 || shotIndex === 7) ? 1 : 0 }}
         transition={{ duration: 0.6 }}
       />
 
@@ -208,6 +217,41 @@ export function Scene0() {
           ? { duration: 2.4, ease: 'easeInOut', repeat: Infinity, repeatType: 'mirror', delay: 0.4 }
           : { duration: 0.4 }}
       />
+
+      {/* ── PHONE FRUSTRATION OVERLAY — Shot 3 (index 2) ── */}
+      {/* Blue phone-screen glow suggesting student scrolling for study material */}
+      <motion.div className="absolute pointer-events-none z-4"
+        style={{
+          left: '30%', top: '38%', width: '40%', height: '38%',
+          background: 'radial-gradient(ellipse at 50% 60%, rgba(80,130,230,0.18) 0%, rgba(60,100,200,0.07) 55%, transparent 80%)',
+          borderRadius: '8%',
+        }}
+        animate={{ opacity: currentShot.showPhone ? [0, 1, 0.7, 1, 0.6, 0] : 0 }}
+        transition={currentShot.showPhone
+          ? { duration: 3.2, times: [0, 0.15, 0.4, 0.65, 0.85, 1.0], ease: 'easeInOut' }
+          : { duration: 0.3 }}
+      />
+      {/* "No useful resources found" — phone screen text */}
+      <AnimatePresence>
+        {currentShot.showPhone && (
+          <motion.p key="phone-text"
+            className="absolute pointer-events-none z-5 text-center font-mono"
+            style={{
+              left: '0', right: '0', top: '49%',
+              fontSize: 'clamp(0.45rem, 0.9vw, 0.7rem)',
+              letterSpacing: '0.3em',
+              color: 'rgba(140,170,255,0.65)',
+              textTransform: 'uppercase',
+              textShadow: '0 0 12px rgba(100,140,255,0.5)',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0, 1, 1, 0] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 3.0, times: [0, 0.25, 0.4, 0.75, 1.0] }}>
+            no useful resources found
+          </motion.p>
+        )}
+      </AnimatePresence>
 
       {/* ── RAIN — only on shots where window is visible ── */}
       <motion.div className="absolute inset-0 z-4 pointer-events-none overflow-hidden"

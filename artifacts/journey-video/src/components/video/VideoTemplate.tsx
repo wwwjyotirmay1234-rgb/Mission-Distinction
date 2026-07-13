@@ -9,20 +9,20 @@ import { Scene4 } from './video_scenes/Scene4';
 import { Scene5 } from './video_scenes/Scene5';
 import { Scene6 } from './video_scenes/Scene6';
 import { Scene7 } from './video_scenes/Scene7';
-import { Scene8 } from './video_scenes/Scene8';
 import { SceneWorkBegins } from './video_scenes/SceneWorkBegins';
+import { SceneEpicFinal } from './video_scenes/SceneEpicFinal';
 
 export const SCENE_DURATIONS: Record<string, number> = {
   s0_coldopen:    20000,  // Opening — 2:17 AM, ticking clock, the fear
-  s1_beginning:   20000,  // The Realization — lecture hall, not alone
-  s2_building:    29000,  // The Spark — 5 students, the whiteboard
-  s2_workbegins:  30000,  // The Work Begins — 10 frames, building the dream
-  s3_darknight:   24000,  // The Journey — montage, days to months
-  s4_progress:    22000,  // The Lowest Point — error screen, "we didn't stop"
-  s5_launch:      24000,  // Launch Day — button, counter, 150 in 24 hrs
-  s6_climb:       22000,  // The Ripple Effect — across Odisha
-  s7_foryou:      24000,  // The Milestone — 500, silence
-  s8_outro:       28000,  // Final Scene — narrator, lights, "By Students. For Students."
+  s1_beginning:   10000,  // The Realization — lecture hall, not alone
+  s2_building:    12000,  // The Spark — 5 students, the whiteboard
+  s2_workbegins:  15000,  // The Work Begins — fast montage 10 frames
+  s3_darknight:   10000,  // The Journey — crash + sunrise
+  s4_progress:    10000,  // The Lowest Point — determination
+  s5_launch:      10000,  // Launch Day — button, counter rising
+  s6_climb:       10000,  // The Ripple Effect — across Odisha
+  s7_foryou:       8000,  // The Milestone — 500, silence
+  s8_outro:       12000,  // EPIC FINAL — golden network over Odisha
 };
 
 const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
@@ -35,7 +35,7 @@ const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
   s5_launch:      Scene5,
   s6_climb:       Scene6,
   s7_foryou:      Scene7,
-  s8_outro:       Scene8,
+  s8_outro:       SceneEpicFinal,
 };
 
 // 10 values — one per scene (s2_workbegins inserted at index 3)
