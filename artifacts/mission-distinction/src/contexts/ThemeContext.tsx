@@ -30,7 +30,7 @@ function getInitialTheme(): Theme {
     const saved = localStorage.getItem("md_theme");
     if (saved === "light" || saved === "dark") return saved;
   } catch {}
-  return "light";
+  return "dark";
 }
 
 function getInitialFontSize(): FontSize {
