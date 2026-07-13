@@ -13,7 +13,6 @@ type Shot = {
   cutType: 'flash' | 'dissolve';
   showBlue: boolean;   // cold blue laptop glow (coding shots)
   showDust: boolean;   // warm dust motes (hostel interior)
-  faceInsert?: string; // UE5 image filename for Hollywood close-up face insert
 };
 
 const SHOTS: Shot[] = [
@@ -34,20 +33,20 @@ const SHOTS: Shot[] = [
     cutType: 'flash', showBlue: true, showDust: false,
   },
   {
-    // C — exhausted face, hands on head, 3 AM  [Breaking]
-    src: 's4_shot_c_exhausted_3am.png', dur: 2500,
+    // C — character face, dark room 3 AM breaking point  [Breaking]
+    src: 'student_darknight.png', dur: 2500,
     initial: { scale: 1.04, x: '0.5%' },
     animate: { scale: 1.0, x: '0%' },
     transition: { duration: 2.8, ease: 'easeOut' },
-    cutType: 'dissolve', showBlue: false, showDust: false, faceInsert: 'student_darknight.png',
+    cutType: 'dissolve', showBlue: true, showDust: false,
   },
   {
-    // D — sunrise flooding empty hostel desk  [Dawn]
-    src: 's4_shot_d_sunrise_window.png', dur: 2000,
+    // D — character face, hope and dawn expression  [Dawn]
+    src: 'student_hope.png', dur: 2000,
     initial: { scale: 1.06, y: '1%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 2.5, ease: 'easeOut' },
-    cutType: 'dissolve', showBlue: false, showDust: true, faceInsert: 'student_hope.png',
+    cutType: 'dissolve', showBlue: false, showDust: false,
   },
   {
     // E — months of work, wall covered in notes and diagrams  [Months]
@@ -220,31 +219,6 @@ export function Scene3() {
         ))}
       </motion.div>
 
-      {/* ── FACE INSERT — Hollywood close-up reaction shot ── */}
-      <AnimatePresence>
-        {currentShot.faceInsert && (
-          <motion.div
-            key={`face-${shotIndex}`}
-            className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.9, 0.9, 0] }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 2.8, times: [0, 0.18, 0.72, 1.0], ease: 'easeInOut' }}>
-            <img
-              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert}`}
-              alt=""
-              style={{
-                height: '76%',
-                width: 'auto',
-                objectFit: 'cover',
-                maskImage: 'radial-gradient(ellipse 55% 62% at 50% 50%, black 28%, transparent 86%)',
-                WebkitMaskImage: 'radial-gradient(ellipse 55% 62% at 50% 50%, black 28%, transparent 86%)',
-                filter: 'contrast(1.12) saturate(0.78) brightness(0.9)',
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Date stamp — top center */}
       <motion.p className="absolute font-mono z-20"

@@ -12,7 +12,6 @@ type Shot = {
   cutType: 'flash' | 'dissolve';
   showRain: boolean;    // rain only where window is visible
   showSyllabus: boolean; // "So much syllabus..." during reading shots
-  faceInsert?: string; // UE5 image filename for Hollywood close-up face insert
 };
 
 const SHOTS: Shot[] = [
@@ -55,12 +54,12 @@ const SHOTS: Shot[] = [
     cutType: 'dissolve', showRain: false, showSyllabus: true,
   },
   {
-    // rainy window profile
-    src: 's0_shot_f_window.png', dur: 2500,
-    initial: { scale: 1.03, x: '0.5%' },
-    animate: { scale: 1.0, x: '0%' },
-    transition: { duration: 2.8, ease: 'easeOut' },
-    cutType: 'dissolve', showRain: true, showSyllabus: false, faceInsert: 'student_darknight.png',
+    // character face close-up — dark room, exhausted determination
+    src: 'student_darknight.png', dur: 2500,
+    initial: { scale: 1.05, y: '1.5%' },
+    animate: { scale: 1.0, y: '0%' },
+    transition: { duration: 3.0, ease: 'easeOut' },
+    cutType: 'dissolve', showRain: false, showSyllabus: false,
   },
   {
     // extreme eye close-up — flash cut
@@ -68,7 +67,7 @@ const SHOTS: Shot[] = [
     initial: { scale: 1.14 },
     animate: { scale: 1.0 },
     transition: { duration: 2.2, ease: [0.16, 1, 0.3, 1] },
-    cutType: 'flash', showRain: false, showSyllabus: false, faceInsert: 'student_darknight.png',
+    cutType: 'flash', showRain: false, showSyllabus: false,
   },
   {
     // head slumped on desk — "Will I fail in exam?" appears here
@@ -199,31 +198,6 @@ export function Scene0() {
         ))}
       </motion.div>
 
-      {/* ── FACE INSERT — Hollywood close-up reaction shot ── */}
-      <AnimatePresence>
-        {currentShot.faceInsert && (
-          <motion.div
-            key={`face-${shotIndex}`}
-            className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.9, 0.9, 0] }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 2.8, times: [0, 0.18, 0.72, 1.0], ease: 'easeInOut' }}>
-            <img
-              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert}`}
-              alt=""
-              style={{
-                height: '76%',
-                width: 'auto',
-                objectFit: 'cover',
-                maskImage: 'radial-gradient(ellipse 55% 62% at 50% 50%, black 28%, transparent 86%)',
-                WebkitMaskImage: 'radial-gradient(ellipse 55% 62% at 50% 50%, black 28%, transparent 86%)',
-                filter: 'contrast(1.12) saturate(0.78) brightness(0.9)',
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Syllabus caption — shots C, D, E (showSyllabus: true) — bottom subtitle position */}
       <motion.p

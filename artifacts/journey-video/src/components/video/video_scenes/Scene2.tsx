@@ -13,7 +13,6 @@ type Shot = {
   cutType: 'flash' | 'dissolve';
   showGolden: boolean;   // warm golden shimmer (lecture hall / sunset shots)
   showDust: boolean;     // dust motes (hostel room shots)
-  faceInsert?: string; // UE5 image filename for Hollywood close-up face insert
 };
 
 const SHOTS: Shot[] = [
@@ -67,11 +66,11 @@ const SHOTS: Shot[] = [
   },
   {
     // G — five faces, doubt → hope → excitement  [Hope]
-    src: 's3_shot_g_reactions.png', dur: 2500,
+    src: 'group_portrait.png', dur: 2500,
     initial: { scale: 1.0, x: '-0.3%' },
     animate: { scale: 1.05, x: '0%' },
     transition: { duration: 2.8, ease: 'easeIn' },
-    cutType: 'dissolve', showGolden: false, showDust: false, faceInsert: 'group_portrait.png',
+    cutType: 'dissolve', showGolden: false, showDust: false,
   },
   {
     // H — overhead, five hands together over books + laptop  [Commitment]
@@ -212,31 +211,6 @@ export function Scene2() {
         ))}
       </motion.div>
 
-      {/* ── FACE INSERT — Hollywood close-up reaction shot ── */}
-      <AnimatePresence>
-        {currentShot.faceInsert && (
-          <motion.div
-            key={`face-${shotIndex}`}
-            className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.9, 0.9, 0] }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 2.8, times: [0, 0.18, 0.72, 1.0], ease: 'easeInOut' }}>
-            <img
-              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert}`}
-              alt=""
-              style={{
-                height: '76%',
-                width: 'auto',
-                objectFit: 'cover',
-                maskImage: 'radial-gradient(ellipse 55% 62% at 50% 50%, black 28%, transparent 86%)',
-                WebkitMaskImage: 'radial-gradient(ellipse 55% 62% at 50% 50%, black 28%, transparent 86%)',
-                filter: 'contrast(1.12) saturate(0.78) brightness(0.9)',
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Bottom gradient for text legibility */}
       <motion.div className="absolute inset-0 z-5 pointer-events-none"

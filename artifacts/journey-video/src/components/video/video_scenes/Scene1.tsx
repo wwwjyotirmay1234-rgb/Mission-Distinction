@@ -13,25 +13,24 @@ type Shot = {
   cutType: 'flash' | 'dissolve';
   showDust: boolean;       // floating dust motes (indoor corridor / hall)
   showSunrise: boolean;    // warm golden lens shimmer (outdoor sunrise shots)
-  faceInsert?: string; // UE5 image filename for Hollywood close-up face insert
 };
 
 const SHOTS: Shot[] = [
   {
-    // A — rear tracking shot leaving hostel at sunrise  [Exhausted]
-    src: 's1_shot_a_hostel.png', dur: 2500,
+    // A — character face, golden sunrise light [Exhausted]
+    src: 'student_coldopen.png', dur: 2500,
     initial: { scale: 1.06, y: '1.5%' },
     animate: { scale: 1.0, y: '0%' },
     transition: { duration: 3, ease: 'easeOut' },
-    cutType: 'flash', showDust: false, showSunrise: true, faceInsert: 'student_coldopen.png',
+    cutType: 'flash', showDust: false, showSunrise: true,
   },
   {
-    // B — close-up tired face, sunrise hitting cheek  [Frustrated]
-    src: 's1_shot_b_face_walking.png', dur: 2200,
-    initial: { scale: 1.0, x: '-0.8%' },
-    animate: { scale: 1.05, x: '0%' },
+    // B — overhead desk angle, tired morning [Frustrated]
+    src: 'student_desk_overhead.png', dur: 2200,
+    initial: { scale: 1.08, y: '-1%' },
+    animate: { scale: 1.0, y: '1%' },
     transition: { duration: 2.5, ease: 'easeIn' },
-    cutType: 'dissolve', showDust: false, showSunrise: true, faceInsert: 'student_coldopen.png',
+    cutType: 'dissolve', showDust: false, showSunrise: false,
   },
   {
     // C — corridor, anatomy hall sign, dozens studying on floor  [Curious]
@@ -178,31 +177,6 @@ export function Scene1() {
         ))}
       </motion.div>
 
-      {/* ── FACE INSERT — Hollywood close-up reaction shot ── */}
-      <AnimatePresence>
-        {currentShot.faceInsert && (
-          <motion.div
-            key={`face-${shotIndex}`}
-            className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.9, 0.9, 0] }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 2.8, times: [0, 0.18, 0.72, 1.0], ease: 'easeInOut' }}>
-            <img
-              src={`${import.meta.env.BASE_URL}images/${currentShot.faceInsert}`}
-              alt=""
-              style={{
-                height: '76%',
-                width: 'auto',
-                objectFit: 'cover',
-                maskImage: 'radial-gradient(ellipse 55% 62% at 50% 50%, black 28%, transparent 86%)',
-                WebkitMaskImage: 'radial-gradient(ellipse 55% 62% at 50% 50%, black 28%, transparent 86%)',
-                filter: 'contrast(1.12) saturate(0.78) brightness(0.9)',
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Bottom gradient for text */}
       <motion.div className="absolute inset-0 z-5 pointer-events-none"
