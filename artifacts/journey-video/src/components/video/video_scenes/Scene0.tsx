@@ -278,37 +278,133 @@ function Bookshelves({ show }: { show: boolean }) {
   );
 }
 
-// Student studying — detailed silhouette at desk
+// ── PIXAR-STYLE STUDENT at desk — 3/4 view, face visible, expressions ──
 function StudentAtDesk({ show }: { show: boolean }) {
   return (
     <AnimatePresence>
       {show && (
         <motion.div className="absolute pointer-events-none"
-          style={{ left: '38%', bottom: '22%', width: '18%', height: '45%', zIndex: 13 }}
+          style={{ left: '34%', bottom: '20%', width: '22%', height: '52%', zIndex: 13 }}
           initial={{ opacity: 0 }} animate={{ opacity: 1 }}
           transition={{ delay: 0.5, duration: 1.0, ease: [0.16, 1, 0.3, 1] }}>
-          <svg viewBox="0 0 180 320" width="100%" height="100%" overflow="visible">
-            {/* ── Head ── slightly bowed (studying) */}
-            <ellipse cx="90" cy="60" rx="32" ry="38" fill="#050510" />
-            {/* Hair (dark mass on top) */}
-            <ellipse cx="90" cy="40" rx="32" ry="22" fill="#040408" />
-            {/* ── Neck ── */}
-            <rect x="78" y="92" width="24" height="20" rx="4" fill="#050510" />
-            {/* ── Shoulders & upper body — hunched forward ── */}
-            <path d="M30,108 Q44,98 62,108 L70,160 Q90,168 110,160 L118,108 Q136,98 150,108 L152,140 Q90,168 28,140 Z"
-              fill="#050510" />
-            {/* ── Left arm — on desk, extended toward laptop ── */}
-            <path d="M42,130 Q30,155 22,185 Q18,200 30,205 L80,200 Q90,196 85,180 L78,158"
-              fill="#050510" />
-            {/* ── Right arm — on desk, toward right ── */}
-            <path d="M138,130 Q152,155 160,185 Q164,200 152,205 L110,200 Q100,196 105,180 L112,158"
-              fill="#050510" />
-            {/* ── Torso ── */}
-            <path d="M62,155 Q90,170 118,155 L124,270 L56,270 Z" fill="#050510" />
-            {/* Chair back visible behind */}
-            <rect x="52" y="145" width="76" height="8" rx="4" fill="rgba(12,8,20,0.80)" />
-            {/* ── Slight screen glow on face/chest ── */}
-            <ellipse cx="90" cy="100" rx="38" ry="30" fill="rgba(40,80,200,0.10)" />
+          <svg viewBox="0 0 200 340" width="100%" height="100%" overflow="visible">
+            {/* ─── CHAIR BACK ─── */}
+            <rect x="28" y="162" width="144" height="14" rx="9" fill="#12101e" />
+
+            {/* ─── HOODIE BODY ─── */}
+            <path d="M22,130 Q38,116 100,118 Q162,116 178,130 L182,280 Q100,292 18,280 Z"
+              fill="#1e2f4a" />
+            {/* hoodie pocket */}
+            <path d="M58,190 Q100,197 142,190 Q142,214 100,217 Q58,214 58,190 Z"
+              fill="rgba(14,22,38,0.55)" />
+            {/* hoodie strings */}
+            <line x1="92" y1="128" x2="88" y2="194" stroke="rgba(70,90,130,0.40)" strokeWidth="2.2"/>
+            <line x1="108" y1="128" x2="112" y2="194" stroke="rgba(70,90,130,0.40)" strokeWidth="2.2"/>
+
+            {/* ─── NECK ─── */}
+            <path d="M82,106 Q100,112 118,106 L120,130 Q100,138 80,130 Z" fill="#c0784e" />
+
+            {/* ─── HEAD (round, slightly bowed forward) ─── */}
+            <ellipse cx="100" cy="66" rx="38" ry="44" fill="#c8805a" />
+
+            {/* ─── HAIR (dark, slightly messy — 3 AM) ─── */}
+            <path d="M62,44 Q64,14 78,6 Q100,-2 122,6 Q136,14 138,44
+                     Q130,30 118,22 Q100,14 82,22 Q70,30 62,44 Z" fill="#1c0f06" />
+            {/* side tufts */}
+            <path d="M62,44 Q58,56 60,68 Q62,60 66,54 Z" fill="#1c0f06"/>
+            <path d="M138,44 Q142,56 140,68 Q138,60 134,54 Z" fill="#1c0f06"/>
+            {/* unkempt forelock */}
+            <path d="M84,6 Q82,20 78,32 Q84,22 88,10 Z" fill="#221206"/>
+            <path d="M100,4 Q100,18 98,30 Q102,18 104,6 Z" fill="#221206"/>
+
+            {/* ─── EAR (right side) ─── */}
+            <ellipse cx="137" cy="68" rx="6" ry="9" fill="#b07046" />
+            <path d="M133,63 Q138,68 133,75" fill="none" stroke="#956040" strokeWidth="1.5"/>
+
+            {/* ─── FACE FEATURES ─── */}
+
+            {/* Eye bags — hallmark of 3 AM studying */}
+            <ellipse cx="82" cy="73" rx="12" ry="4.5" fill="rgba(130,80,52,0.40)"/>
+            <ellipse cx="116" cy="73" rx="10" ry="3.5" fill="rgba(130,80,52,0.32)"/>
+
+            {/* ── LEFT EYE (near eye, larger, more expressive) ── */}
+            {/* whites */}
+            <ellipse cx="82" cy="64" rx="12" ry="8" fill="rgb(248,240,228)"/>
+            {/* iris — warm brown */}
+            <ellipse cx="80" cy="65" rx="7" ry="7" fill="#5c3820"/>
+            {/* pupil — gazing down-left at screen */}
+            <ellipse cx="79" cy="67" rx="4" ry="4" fill="#0e0806"/>
+            {/* catchlight — makes it ALIVE */}
+            <ellipse cx="77" cy="64" rx="1.5" ry="1.5" fill="rgba(255,248,210,0.90)"/>
+            {/* tiny screen reflection in iris (blue) */}
+            <ellipse cx="83" cy="67" rx="1" ry="1" fill="rgba(70,110,255,0.55)"/>
+            {/* HEAVY drooping upper eyelid — exhausted */}
+            <path d="M70,61 Q82,54 94,61 Q84,70 70,69 Z" fill="#c8805a"/>
+            <path d="M70,61 Q82,54 94,61" stroke="#7a4025" strokeWidth="2.2" fill="none"/>
+            {/* lower lash line */}
+            <path d="M70,69 Q82,73 94,69" stroke="#9a5838" strokeWidth="1.2" fill="none"/>
+
+            {/* ── RIGHT EYE (far eye, 3/4 view — slightly smaller) ── */}
+            <ellipse cx="116" cy="64" rx="9" ry="7" fill="rgb(248,240,228)"/>
+            <ellipse cx="115" cy="65" rx="5.5" ry="5.5" fill="#5c3820"/>
+            <ellipse cx="114" cy="67" rx="3.2" ry="3.2" fill="#0e0806"/>
+            <ellipse cx="112" cy="63" rx="1.2" ry="1.2" fill="rgba(255,248,210,0.85)"/>
+            {/* heavy upper lid */}
+            <path d="M107,61 Q116,54 125,61 Q117,68 107,68 Z" fill="#c8805a"/>
+            <path d="M107,61 Q116,54 125,61" stroke="#7a4025" strokeWidth="2.0" fill="none"/>
+            <path d="M107,68 Q116,72 125,68" stroke="#9a5838" strokeWidth="1.0" fill="none"/>
+
+            {/* ── EYEBROWS — slightly furrowed, inner corners raised (tired/worried) ── */}
+            {/* left brow — arched, inner up = sadness/exhaustion */}
+            <path d="M68,52 Q80,47 92,50" stroke="#241208" strokeWidth="3.5"
+              fill="none" strokeLinecap="round"/>
+            {/* right brow */}
+            <path d="M107,52 Q116,48 124,51" stroke="#241208" strokeWidth="3.0"
+              fill="none" strokeLinecap="round"/>
+
+            {/* ── NOSE — Pixar style: small, rounded ── */}
+            <ellipse cx="94" cy="80" rx="5" ry="3.5" fill="rgba(170,95,58,0.50)"/>
+            <ellipse cx="106" cy="80" rx="5" ry="3.5" fill="rgba(170,95,58,0.40)"/>
+            <path d="M94,76 Q100,82 106,76" stroke="rgba(140,75,45,0.45)" strokeWidth="1.5"
+              fill="none" strokeLinecap="round"/>
+
+            {/* ── MOUTH — slightly open, jaw dropped from exhaustion ── */}
+            <path d="M84,94 Q100,99 116,94" stroke="#904832" strokeWidth="2.2"
+              fill="none" strokeLinecap="round"/>
+            <path d="M86,94 Q100,100 114,94 Q100,107 86,94 Z" fill="rgba(110,52,35,0.70)"/>
+            {/* top lip highlight */}
+            <path d="M88,94 Q100,91 112,94" stroke="rgba(210,140,95,0.45)" strokeWidth="1.2" fill="none"/>
+
+            {/* ── FACE LIGHTING ── */}
+            {/* screen glow — cool blue tint left side */}
+            <path d="M62,44 Q60,100 78,112 L78,56 Z" fill="rgba(50,90,220,0.11)"/>
+            {/* lamp warmth — amber right side */}
+            <path d="M138,44 Q140,100 122,112 L122,56 Z" fill="rgba(255,170,55,0.16)"/>
+            {/* cheek warmth from lamp */}
+            <ellipse cx="130" cy="80" rx="14" ry="10" fill="rgba(255,130,40,0.10)"/>
+
+            {/* ─── ARMS (on desk, forward) ─── */}
+            {/* left arm sleeve */}
+            <path d="M26,148 Q14,184 10,222 Q8,238 26,242 Q64,238 84,228 L82,212
+              Q58,222 30,222 Q20,222 20,214 Q22,188 36,160 Z" fill="#1e2f4a"/>
+            {/* left hand — resting on desk, slightly curled */}
+            <ellipse cx="18" cy="236" rx="16" ry="8" fill="#c0784e"/>
+            {/* finger lines */}
+            <path d="M6,234 Q9,227 14,234" fill="none" stroke="#a06040" strokeWidth="1.3"/>
+            <path d="M14,232 Q17,225 22,232" fill="none" stroke="#a06040" strokeWidth="1.3"/>
+            <path d="M22,232 Q25,225 30,232" fill="none" stroke="#a06040" strokeWidth="1.3"/>
+            <path d="M30,233 Q33,228 36,234" fill="none" stroke="#a06040" strokeWidth="1.3"/>
+
+            {/* right arm sleeve */}
+            <path d="M174,148 Q186,184 190,222 Q192,238 174,242 Q136,238 116,228 L118,212
+              Q142,222 170,222 Q180,222 180,214 Q178,188 164,160 Z" fill="#1e2f4a"/>
+            {/* right hand */}
+            <ellipse cx="182" cy="236" rx="16" ry="8" fill="#c0784e"/>
+
+            {/* ─── TINY MD ENAMEL PIN on hoodie ─── */}
+            <rect x="148" y="145" width="18" height="14" rx="3" fill="#C8A340"/>
+            <text x="157" y="155" textAnchor="middle" fontSize="7" fontWeight="900"
+              fill="#0c0800" fontFamily="serif">MD</text>
           </svg>
         </motion.div>
       )}
@@ -317,15 +413,13 @@ function StudentAtDesk({ show }: { show: boolean }) {
 }
 
 export function Scene0() {
-  const [phase, setPhase] = useState(0);
+  const [phase, setPhase] = useState(2); // start with room + character visible
   const built = useRef(false);
   useEffect(() => {
     if (built.current) return; built.current = true;
     const ts = [
-      setTimeout(() => setPhase(1), 400),    // room appears
-      setTimeout(() => setPhase(2), 3200),   // lamp on, dust, screen
-      setTimeout(() => setPhase(3), 8000),   // clock spins
-      setTimeout(() => setPhase(4), 11000),  // title reveal
+      setTimeout(() => setPhase(3), 6000),   // clock spins
+      setTimeout(() => setPhase(4), 10000),  // title reveal
     ];
     return () => ts.forEach(clearTimeout);
   }, []);

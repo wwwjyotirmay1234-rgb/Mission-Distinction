@@ -10,51 +10,140 @@ import {
 //  They didn't quit. They rebuilt. Dawn breaks.
 // ════════════════════════════════════════════════════════════════════════
 
-// Five founders standing at a rooftop railing watching dawn
+// Five PIXAR-style founders at rooftop — facing sunrise, profile/3-quarter faces visible
 function FoundersAtDawn({ show, phase }: { show: boolean; phase: number }) {
-  const positions = [
-    { x: '22%', delay: 0.10 }, { x: '32%', delay: 0.18 },
-    { x: '50%', delay: 0.00 }, { x: '68%', delay: 0.18 }, { x: '78%', delay: 0.10 },
+  // Each person: position, skin, hair, jacket, facing direction (left toward sunrise = -1, right = 1)
+  const founders = [
+    { x:'22%', skin:'#c07848', hair:'#1c0d04', jacket:'#2a1e3a', face: 1,  isLeader: false, delay:0.12 },
+    { x:'33%', skin:'#7a4a28', hair:'#130a04', jacket:'#1a2838', face: 1,  isLeader: false, delay:0.20 },
+    { x:'50%', skin:'#c89060', hair:'#1a0d06', jacket:'#1e2f4a', face: 0,  isLeader: true,  delay:0.00 },
+    { x:'67%', skin:'#b06830', hair:'#160c04', jacket:'#2a2818', face:-1,  isLeader: false, delay:0.20 },
+    { x:'78%', skin:'#d0a070', hair:'#220e06', jacket:'#3a1828', face:-1,  isLeader: false, delay:0.12 },
   ];
-  // Center figure slightly taller / more prominent
   return (
     <AnimatePresence>
       {show && (
         <div className="absolute pointer-events-none z-[11]">
-          {positions.map((p, i) => (
-            <motion.div key={i} className="absolute"
-              style={{ left: p.x, bottom: '18%',
-                width: i === 2 ? 'clamp(38px,6.5vw,80px)' : 'clamp(30px,5.5vw,66px)',
-                height: i === 2 ? 'clamp(90px,16vw,190px)' : 'clamp(70px,13vw,155px)',
-                transform: 'translateX(-50%)' }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: p.delay + 0.2, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}>
-              <svg viewBox="0 0 70 200" width="100%" height="100%" overflow="visible">
-                {/* Head */}
-                <ellipse cx="35" cy="36" rx={i === 2 ? 20 : 17} ry={i === 2 ? 24 : 20}
-                  fill="rgba(4,3,10,0.92)" />
-                <ellipse cx="35" cy="22" rx={i === 2 ? 20 : 17} ry={i === 2 ? 14 : 12}
-                  fill="rgba(3,2,7,0.92)" />
-                {/* Body */}
-                <path d={`M14,58 Q22,52 48,58 L52,130 Q35,138 18,130 Z`}
-                  fill="rgba(4,3,10,0.92)" />
-                {/* Arms — slightly raised (determined stance) */}
-                <path d={`M18,72 Q8,100 4,118`} stroke="rgba(4,3,10,0.92)" strokeWidth={i===2?18:15}
-                  fill="none" strokeLinecap="round"/>
-                <path d={`M52,72 Q62,100 66,118`} stroke="rgba(4,3,10,0.92)" strokeWidth={i===2?18:15}
-                  fill="none" strokeLinecap="round"/>
-                {/* Legs */}
-                <path d="M22,130 L18,200" stroke="rgba(4,3,10,0.90)" strokeWidth="14" strokeLinecap="round"/>
-                <path d="M48,130 L52,200" stroke="rgba(4,3,10,0.90)" strokeWidth="14" strokeLinecap="round"/>
-                {/* Sunrise reflected — rim light on silhouette edge */}
-                {phase >= 3 && (
-                  <path d="M14,58 Q5,80 4,130 L18,200 L22,130 Z"
-                    fill="rgba(255,120,30,0.18)" />
-                )}
-              </svg>
-            </motion.div>
-          ))}
+          {founders.map((p, i) => {
+            const { skin, hair, jacket, face, isLeader } = p;
+            const W = isLeader ? 80 : 68;
+            const H = isLeader ? 195 : 164;
+            // head center in viewBox 0 0 70 200
+            const hx = 35, hy = 34;
+            const hr = isLeader ? 20 : 17;
+            // eye position depends on face direction
+            const eyeX = face === 0 ? hx : face === 1 ? hx - 4 : hx + 4;
+            const eyeY = hy + 2;
+            // sunrise rim color
+            const rimColor = phase >= 3 ? 'rgba(255,130,30,0.55)' : 'rgba(255,130,30,0.0)';
+            const rimColor2 = phase >= 3 ? 'rgba(255,80,10,0.28)' : 'rgba(255,80,10,0.0)';
+
+            return (
+              <motion.div key={i} className="absolute"
+                style={{ left: p.x, bottom: '18%',
+                  width: `${W}px`, height: `${H}px`,
+                  transform: 'translateX(-50%)' }}
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: p.delay + 0.2, duration: 1.3, ease: [0.16, 1, 0.3, 1] }}>
+                <svg viewBox="0 0 70 200" width="100%" height="100%" overflow="visible">
+
+                  {/* ── JACKET / BODY ── */}
+                  <path d="M12,60 Q18,54 52,60 L56,136 Q35,145 14,136 Z" fill={jacket}/>
+                  {/* Jacket collar detail */}
+                  <path d="M28,58 L35,70 L42,58" fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="1.5"/>
+
+                  {/* ── NECK ── */}
+                  <rect x="29" y="54" width="12" height="10" rx="4" fill={skin}/>
+
+                  {/* ── HEAD ── */}
+                  <ellipse cx={hx} cy={hy} rx={hr} ry={hr+4} fill={skin}/>
+
+                  {/* ── HAIR ── */}
+                  <path d={`M${hx-hr},${hy-6} Q${hx-hr+2},${hy-hr-12} ${hx},${hy-hr-16} Q${hx+hr-2},${hy-hr-12} ${hx+hr},${hy-6}`}
+                    fill={hair}/>
+
+                  {/* ── PROFILE FACE (facing sunrise or viewer) ── */}
+                  {face !== 0 ? (
+                    /* Profile faces (left or right facing) */
+                    <>
+                      {/* Ear on opposite side */}
+                      <ellipse cx={face === 1 ? hx+hr-1 : hx-hr+1} cy={hy+2} rx="3.5" ry="5"
+                        fill={`rgba(${parseInt(skin.slice(1,3),16)},${parseInt(skin.slice(3,5),16)},${parseInt(skin.slice(5,7),16)},0.80)`}/>
+                      {/* Eye (one visible, facing side) */}
+                      <ellipse cx={eyeX} cy={eyeY} rx="6" ry="4.5" fill="rgb(245,236,222)"/>
+                      <ellipse cx={eyeX+(face*0.5)} cy={eyeY+0.5} rx="3.2" ry="3.2" fill="#4a2810"/>
+                      <ellipse cx={eyeX+(face*0.5)} cy={eyeY+0.5} rx="1.8" ry="1.8" fill="#080604"/>
+                      <ellipse cx={eyeX-(face*0.8)} cy={eyeY-1} rx="1" ry="1" fill="rgba(255,248,210,0.88)"/>
+                      {/* eyelid */}
+                      <path d={`M${eyeX-6},${eyeY} Q${eyeX},${eyeY-6} ${eyeX+6},${eyeY}`}
+                        stroke="#552810" strokeWidth="1.8" fill="none"/>
+                      {/* Eyebrow — determined/hopeful */}
+                      <path d={`M${eyeX-7},${eyeY-9} Q${eyeX},${eyeY-13} ${eyeX+6},${eyeY-9}`}
+                        stroke={hair} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                      {/* Nose profile bump */}
+                      <path d={`M${face===1?hx+2:hx-2},${hy+8} Q${face===1?hx+10:hx-10},${hy+12} ${face===1?hx+7:hx-7},${hy+18}`}
+                        stroke={`rgba(0,0,0,0.22)`} strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+                      {/* Mouth — slight hopeful upturn */}
+                      <path d={`M${face===1?hx-3:hx+3},${hy+22} Q${face===1?hx+5:hx-5},${hy+26} ${face===1?hx+10:hx-10},${hy+23}`}
+                        stroke="#7a3820" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+                    </>
+                  ) : (
+                    /* Leader faces viewer — 3/4 frontal, hopeful/determined expression */
+                    <>
+                      {/* Ear */}
+                      <ellipse cx={hx+hr} cy={hy+2} rx="4" ry="6" fill={`rgba(${parseInt(skin.slice(1,3),16)},${parseInt(skin.slice(3,5),16)},${parseInt(skin.slice(5,7),16)},0.80)`}/>
+                      {/* Left eye */}
+                      <ellipse cx={hx-7} cy={hy} rx="7" ry="5" fill="rgb(245,236,222)"/>
+                      <ellipse cx={hx-7.5} cy={hy+0.5} rx="4" ry="4" fill="#4a2810"/>
+                      <ellipse cx={hx-8} cy={hy+0.5} rx="2.2" ry="2.2" fill="#080604"/>
+                      <ellipse cx={hx-9} cy={hy-1.5} rx="1.2" ry="1.2" fill="rgba(255,248,210,0.90)"/>
+                      {/* Right eye */}
+                      <ellipse cx={hx+7} cy={hy} rx="6" ry="4.5" fill="rgb(245,236,222)"/>
+                      <ellipse cx={hx+6.5} cy={hy+0.5} rx="3.5" ry="3.5" fill="#4a2810"/>
+                      <ellipse cx={hx+6} cy={hy+0.5} rx="2" ry="2" fill="#080604"/>
+                      <ellipse cx={hx+5} cy={hy-1.5} rx="1" ry="1" fill="rgba(255,248,210,0.85)"/>
+                      {/* Eyelids */}
+                      <path d={`M${hx-14},${hy} Q${hx-7},${hy-7} ${hx},${hy}`} stroke="#552810" strokeWidth="1.8" fill="none"/>
+                      <path d={`M${hx},${hy} Q${hx+7},${hy-6} ${hx+13},${hy}`} stroke="#552810" strokeWidth="1.6" fill="none"/>
+                      {/* Eyebrows — hopeful, slightly raised inner corners */}
+                      <path d={`M${hx-16},${hy-11} Q${hx-7},${hy-16} ${hx-1},${hy-13}`}
+                        stroke={hair} strokeWidth="2.8" fill="none" strokeLinecap="round"/>
+                      <path d={`M${hx+1},${hy-13} Q${hx+8},${hy-16} ${hx+16},${hy-11}`}
+                        stroke={hair} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                      {/* Nose */}
+                      <ellipse cx={hx-3} cy={hy+10} rx="3.5" ry="2.5" fill="rgba(0,0,0,0.14)"/>
+                      <ellipse cx={hx+3} cy={hy+10} rx="3.5" ry="2.5" fill="rgba(0,0,0,0.11)"/>
+                      {/* Mouth — proud determined smile */}
+                      <path d={`M${hx-10},${hy+18} Q${hx},${hy+24} ${hx+10},${hy+18}`}
+                        stroke="#7a3820" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+                      <path d={`M${hx-8},${hy+18} Q${hx},${hy+22} ${hx+8},${hy+18}`}
+                        stroke="rgba(230,210,190,0.45)" strokeWidth="1.2" fill="none"/>
+                    </>
+                  )}
+
+                  {/* ── SUNRISE RIM LIGHT on face edge ── */}
+                  <motion.path d={`M${hx-(face===1?hr:-hr)},${hy-hr} Q${hx-(face===1?hr+2:-hr-2)},${hy+10} ${hx-(face===1?hr:(-hr))},${hy+hr+4}`}
+                    fill={rimColor} animate={{ fill: rimColor }} transition={{ duration: 1.0 }}/>
+
+                  {/* ── ARMS (slightly raised — hopeful stance) ── */}
+                  <path d="M14,80 Q6,108 4,128" stroke={jacket} strokeWidth="16" fill="none" strokeLinecap="round"/>
+                  <path d="M56,80 Q64,108 66,128" stroke={jacket} strokeWidth="16" fill="none" strokeLinecap="round"/>
+                  {/* Hands */}
+                  <ellipse cx="6" cy="130" rx="8" ry="5" fill={skin}/>
+                  <ellipse cx="64" cy="130" rx="8" ry="5" fill={skin}/>
+
+                  {/* ── LEGS ── */}
+                  <path d="M24,136 L20,200" stroke={jacket} strokeWidth="14" strokeLinecap="round"/>
+                  <path d="M46,136 L50,200" stroke={jacket} strokeWidth="14" strokeLinecap="round"/>
+
+                  {/* Dawn light rim on entire figure */}
+                  <motion.path d="M12,60 Q4,90 4,136 L20,200 L24,136 Z"
+                    fill={rimColor2} animate={{ fill: rimColor2 }} transition={{ duration: 1.2 }}/>
+                </svg>
+              </motion.div>
+            );
+          })}
         </div>
       )}
     </AnimatePresence>
