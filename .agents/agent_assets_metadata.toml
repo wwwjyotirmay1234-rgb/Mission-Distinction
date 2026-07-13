@@ -292,7 +292,7 @@ title = "Scene0 shot_c"
 id = "7jRfKe-SRFkVwXsh5JQHP"
 uri = "file://artifacts/journey-video/public/images/s0_shot_d_face_down.png"
 type = "image"
-title = "Scene0 shot_d"
+title = "First-year student s0_shot_d_face_down.png"
 
 [[generated]]
 id = "msjs6iFo8o_99oqF7YJUO"
@@ -310,13 +310,13 @@ title = "Scene0 shot_f"
 id = "70Yn7ci-k9KdsGoneh4B9"
 uri = "file://artifacts/journey-video/public/images/s0_shot_g_eye.png"
 type = "image"
-title = "Scene0 shot_g"
+title = "First-year student s0_shot_g_eye.png"
 
 [[generated]]
 id = "ykWmatxZPppbK9Ng8_8KT"
 uri = "file://artifacts/journey-video/public/images/s0_shot_h_slumped.png"
 type = "image"
-title = "Scene0 shot_h"
+title = "First-year student s0_shot_h_slumped.png"
 
 [[generated]]
 id = "0lvDIwpUm5K_vFpc31EYj"
@@ -328,7 +328,7 @@ title = "S1 realistic s1_shot_c"
 id = "kAGQ6Y8q-PlyJVO1crbNb"
 uri = "file://artifacts/journey-video/public/images/s1_shot_b_face_walking.png"
 type = "image"
-title = "Consistency fix s1_shot_b"
+title = "First-year student s1_shot_b_face_walking.png"
 
 [[generated]]
 id = "pQQr7IwJCPMg1OjQz38Iw"
@@ -346,7 +346,7 @@ title = "Shot D v4 — overhead angle, hands+books focus, cinematic"
 id = "sMUvLr0VvkDDq4h7om_k1"
 uri = "file://artifacts/journey-video/public/images/s1_shot_e_realization_eyes.png"
 type = "image"
-title = "Consistency fix s1_shot_e"
+title = "First-year student s1_shot_e_realization_eyes.png"
 
 [[generated]]
 id = "Ux-_GYMewpdhwd28FmYA6"
@@ -358,7 +358,7 @@ title = "S1 realistic s1_shot_f"
 id = "pqTNc8-GD8iL4BKhhDErS"
 uri = "file://artifacts/journey-video/public/images/s1_shot_g_determination.png"
 type = "image"
-title = "Fix s1_shot_g"
+title = "First-year student s1_shot_g_determination.png"
 
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
