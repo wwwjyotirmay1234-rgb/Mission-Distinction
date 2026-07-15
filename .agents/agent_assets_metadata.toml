@@ -900,6 +900,18 @@ uri = "file://attached_assets/film/new_s1_n05.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "DAnxbA80WytL_DIBcRJ0E"
+uri = "file://attached_assets/film/new2_s2_01.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "yi5qPecHS9djE08r7cm8m"
+uri = "file://attached_assets/film/new3_s2_01.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
