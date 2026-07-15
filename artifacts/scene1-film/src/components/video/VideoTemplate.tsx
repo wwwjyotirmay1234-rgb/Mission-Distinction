@@ -7,7 +7,8 @@ import { CinematicFrame, BlackScene, TextCard, SilentFrame } from './video_scene
 //  SCENE 1 — THE STRUGGLE    (10 shots, ~56 s)
 //  SCENE 2 — THE DECISION    (7 shots,  ~34 s)
 //  SCENE 3 — THE DISCOVERY   (10 shots, ~69 s)
-//  Total runtime: ~3 min including bridges + endings
+//  SCENE 4 — THE COLLECTION  (11 shots, ~87 s)
+//  Total runtime: ~5 min including bridges + endings
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SCENE_DURATIONS: Record<string, number> = {
@@ -51,8 +52,24 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s3_09:  10000,   // Shot 9 — "MISSION DISTINCTION" written, music rises
   s3_10:   6000,   // Shot 10 — "For Every Student Who Struggles Alone."
 
+  // ── Bridge 3 ────────────────────────────────────────────────────────────
+  bridge3: 4000,   // "AN IDEA MEANS NOTHING WITHOUT WORK."
+
+  // ── Scene 4 — The Collection ─────────────────────────────────────────────
+  s4_01:   5000,   // Blank notebook — Mission Distinction, huge mission, no resources
+  s4_02:   6000,   // Library search — founder photographing pages
+  s4_03:   7000,   // Asking seniors for old notes
+  s4_04:   6000,   // Pen drives, scattered PDFs — knowledge existed, finding it was hard
+  s4_05:   8000,   // Hostel room transforms into workspace
+  s4_06:   8000,   // Three friends sorting: Anatomy / Physiology / Biochemistry / PYQs
+  s4_07:   7000,   // Midnight — 12:43 AM, still working
+  s4_08:   8000,   // The sacrifice — missed everything else
+  s4_09:  10000,   // First resource pack complete — MBBS Resource Pack v1
+  s4_10:   8000,   // The look — exhausted, just relieved
+  s4_11:  10000,   // Final shot — folder close-up, the beginning
+
   // ── Ending ───────────────────────────────────────────────────────────────
-  end_card1: 5000, // "Three Students. One Problem. One Mission."
+  end_card2: 6000, // "The First Resource Was Created." / "Now They Had To Share It."
   end_title: 7000, // "One Idea Changed Everything."
 };
 
@@ -248,13 +265,86 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.05, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
 
+  // ── Bridge 3 ──────────────────────────────────────────────────────────────
+  bridge3: {
+    type: 'textcard',
+    line1: 'AN IDEA MEANS NOTHING WITHOUT WORK.',
+    line2: 'SO THEY GOT TO WORK.',
+  },
+
+  // ── Scene 4 — The Collection ──────────────────────────────────────────────
+
+  s4_01: {
+    type: 'frame',
+    image: 's4_01.png',
+    narration: '"An idea is easy. Building it is not."',
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['-2%', '2%'] },
+  },
+  s4_02: {
+    type: 'silent',
+    image: 's4_02.png',
+    kenBurns: { scale: [1.04, 1.0], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s4_03: {
+    type: 'frame',
+    image: 's4_03.png',
+    narration: '"Not everyone could help. But they kept asking."',
+    kenBurns: { scale: [1.0, 1.06], x: ['1%', '-1%'], y: ['0%', '0%'] },
+  },
+  s4_04: {
+    type: 'frame',
+    image: 's4_04.png',
+    narration: '"The knowledge existed. Finding it was the challenge."',
+    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s4_05: {
+    type: 'silent',
+    image: 's4_05.png',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['2%', '-2%'] },
+  },
+  s4_06: {
+    type: 'silent',
+    image: 's4_06.png',
+    kenBurns: { scale: [1.08, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s4_07: {
+    type: 'frame',
+    image: 's4_07.png',
+    narration: '"Classes ended. The work didn\'t."',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s4_08: {
+    type: 'frame',
+    image: 's4_08.png',
+    narration: '"Every mission costs something."',
+    kenBurns: { scale: [1.04, 1.0], x: ['2%', '-2%'], y: ['0%', '0%'] },
+  },
+  s4_09: {
+    type: 'frame',
+    image: 's4_09.png',
+    narration: '"Done." A whisper in an empty room.',
+    kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s4_10: {
+    type: 'frame',
+    image: 's4_10.png',
+    narration: '"It wasn\'t much. But it was a beginning."',
+    fadeToBlack: true,
+    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s4_11: {
+    type: 'silent',
+    image: 's4_11.png',
+    fadeToBlack: true,
+    kenBurns: { scale: [1.0, 1.12], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+
   // ── Ending ────────────────────────────────────────────────────────────────
 
-  end_card1: {
+  end_card2: {
     type: 'textcard',
-    line1: 'Three Students.',
-    line2: 'One Problem.',
-    line3: 'One Mission.',
+    line1: 'The First Resource Was Created.',
+    line2: 'Now They Had To Share It.',
   },
   end_title: {
     type: 'textcard',
