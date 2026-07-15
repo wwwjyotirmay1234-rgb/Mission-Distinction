@@ -520,13 +520,13 @@ title = "ue5 odisha students studying phones"
 id = "FAgR1QJ4XjR_VMiCleetx"
 uri = "file://attached_assets/film/frame_01.png"
 type = "image"
-title = "frame 1 hostel exterior rain wide"
+title = "shot 1 hostel exterior rain"
 
 [[generated]]
 id = "a4EJ_Tk9U83bXcHTzKEOu"
 uri = "file://attached_assets/film/frame_02.png"
 type = "image"
-title = "shot 5 exhausted eyes no tears"
+title = "shot 5 exhausted eyes"
 
 [[generated]]
 id = "hPC80d5HemWk5CQ4cfpqL"
@@ -544,7 +544,7 @@ title = "frame 4 macro eyes breakdown despair"
 id = "9dA2a0ehshhPWJr7VXVsj"
 uri = "file://attached_assets/film/frame_05.png"
 type = "image"
-title = "frame 5 pen drops hand slow motion"
+title = "shot 7 pen drops hand"
 
 [[generated]]
 id = "Dg_Ff_KAa62N6QsHe2fnR"
@@ -568,13 +568,13 @@ title = "shot 8b dutch angle"
 id = "t1AFwmPZzUd4YOeE4iYLj"
 uri = "file://attached_assets/film/frame_09.png"
 type = "image"
-title = "frame 9 overhead drone student tiny books"
+title = "shot 10 overhead drone"
 
 [[generated]]
 id = "ge4Oy-xrlpC_xLD6lb7-U"
 uri = "file://attached_assets/film/frame_10.png"
 type = "image"
-title = "final shot face"
+title = "final shot split-lit face"
 
 [[generated]]
 id = "Etw---xqRGJKH2eS6rBcb"
@@ -592,13 +592,13 @@ title = "shot 3 side profile curly"
 id = "_kxa6sV_XhTtQAsI9a0gi"
 uri = "file://attached_assets/film/frame_04b.png"
 type = "image"
-title = "frame 4 books anatomy notes close up pan"
+title = "shot 4 books close-up pan"
 
 [[generated]]
 id = "W8fLcgmvg2v4V6EQnGidV"
 uri = "file://attached_assets/film/frame_09b.png"
 type = "image"
-title = "shot 9 phone"
+title = "shot 9 phone screen"
 
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
@@ -676,19 +676,19 @@ title = "Scene 10 — 500 Downloads Finale (rooftop)"
 id = "MyNuvm6547KJ8rWPJPowz"
 uri = "file://attached_assets/film/frame_01.png"
 type = "image"
-title = "Frame 1 — Wide aerial, rain, single lit window"
+title = "Shot 1 — Hostel exterior, rain"
 
 [[outputs]]
 id = "K1Q5gtbV9l7t0-GxFvqpT"
 uri = "file://attached_assets/film/frame_02.png"
 type = "image"
-title = "Shot 5 — Exhausted eyes (no tears)"
+title = "Shot 5 — Exhausted eyes"
 
 [[outputs]]
 id = "NqjZT6c8Rro7R9eSD3mDt"
 uri = "file://attached_assets/film/frame_03.png"
 type = "image"
-title = "Shot 6 — Over-shoulder"
+title = "Shot 6 — Over-shoulder checklist"
 
 [[outputs]]
 id = "y4jSWOfZVXm3Ad8VnTWiV"
@@ -700,7 +700,7 @@ title = "Frame 4 — Macro split diopter, bloodshot eyes"
 id = "tdAJhU1afKNXn-q4xv7uz"
 uri = "file://attached_assets/film/frame_05.png"
 type = "image"
-title = "Frame 5 — Low-angle, pen drops in slow motion"
+title = "Shot 7 — Pen drops"
 
 [[outputs]]
 id = "H4cMlngSHQsBKPIkvoCEl"
@@ -718,13 +718,13 @@ title = "Frame 7 — Rack focus through rain-covered glass"
 id = "nRiTKZG3F96cTfoMLaeVg"
 uri = "file://attached_assets/film/frame_08.png"
 type = "image"
-title = "Shot 8b — Dutch angle"
+title = "Shot 8b — Dutch angle doubt"
 
 [[outputs]]
 id = "F6yYocKTpFlvCBZ7XjP6i"
 uri = "file://attached_assets/film/frame_09.png"
 type = "image"
-title = "Frame 9 — Overhead drone, student vs books"
+title = "Shot 10 — Overhead, student vs books"
 
 [[outputs]]
 id = "ZBMb-iD5c8Djbo1b3Lkey"
@@ -749,3 +749,9 @@ id = "IQqG2B1-62YwlTP0JHc8r"
 uri = "file://attached_assets/film/frame_09b.png"
 type = "image"
 title = "Shot 9 — Phone screen"
+
+[[outputs]]
+id = "rOeEOjBIsQUcEulmoEj2h"
+uri = "file://attached_assets/film/frame_04b.png"
+type = "image"
+title = "Shot 4 — Books close-up pan"
