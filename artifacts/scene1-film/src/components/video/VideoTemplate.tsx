@@ -10,7 +10,8 @@ import { CinematicFrame, BlackScene, TextCard, SilentFrame } from './video_scene
 //  SCENE 4 — THE COLLECTION       (11 shots, ~87 s)
 //  SCENE 5 — THE LIMITS OF PDFs   (11 shots, ~108 s)
 //  SCENE 6 — THE LEAP OF FAITH    (13 shots, ~142 s)
-//  Total runtime: ~9.5 min including bridges + endings
+//  SCENE 7 — THE COLLAPSE         (13 shots, ~158 s)
+//  Total runtime: ~12 min including bridges + endings
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SCENE_DURATIONS: Record<string, number> = {
@@ -104,8 +105,26 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s6_12:  10000,   // Shot 12 — The future: founder face lit by screen glow, reflection
   s6_13:   8000,   // Final   — "Mission Distinction v0.1" blinking cursor
 
-  // ── Ending ───────────────────────────────────────────────────────────────
+  // ── Bridge 6 / Scene 6 End Card ──────────────────────────────────────────
   end_card4: 6000, // "The First Version Was Born." / "Now It Had To Survive."
+
+  // ── Scene 7 — The Collapse ───────────────────────────────────────────────
+  s7_01:  10000,   // Shot 1  — Growing workload: books + code + phone + calendar
+  s7_02:  12000,   // Shot 2  — Pressure: phone messages "When will the app launch?"
+  s7_03:   8000,   // Shot 3  — The bug: app crashes, Application Error on screen
+  s7_04:  10000,   // Shot 4  — Second bug: more errors, build failed
+  s7_05:  12000,   // Shot 5  — Exam week: anatomy textbook vs laptop, impossible balance
+  s7_06:  10000,   // Shot 6  — Empty room: 2:40 AM, founder alone, two empty beds
+  s7_07:  15000,   // Shot 7  — Lowest point: founder face, screen glow, pure emptiness
+  s7_08:  15000,   // Shot 8  — Memory montage: rain, MD notebook, PDF, thank-you message
+  s7_09:  12000,   // Shot 9  — The message: "Your PDFs helped me pass. Thank you."
+  s7_10:  12000,   // Shot 10 — The return: friends walk through doorway silently
+  s7_11:  15000,   // Shot 11 — The choice: three founders working, "one more try"
+  s7_12:  15000,   // Shot 12 — Dawn: sunrise through window, three silhouettes, 5:30 AM
+  s7_13:  12000,   // Final   — Mission Distinction loads successfully, subtle smile
+
+  // ── Ending ───────────────────────────────────────────────────────────────
+  end_card5: 6000, // "Most Projects End Here." / "Mission Distinction Didn't."
   end_title: 7000, // "One Idea Changed Everything."
 };
 
@@ -536,12 +555,97 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
 
-  // ── Ending ────────────────────────────────────────────────────────────────
+  // ── Bridge 6 ─────────────────────────────────────────────────────────────
 
   end_card4: {
     type: 'textcard',
     line1: 'The First Version Was Born.',
     line2: 'Now It Had To Survive.',
+  },
+
+  // ── Scene 7 — The Collapse ────────────────────────────────────────────────
+
+  s7_01: {
+    type: 'frame',
+    image: 's7_01.png',
+    narration: '"The app was finally taking shape."',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s7_02: {
+    type: 'frame',
+    image: 's7_02.png',
+    narration: '"The expectations were growing."',
+    kenBurns: { scale: [1.04, 1.0], x: ['1%', '-1%'], y: ['0%', '0%'] },
+  },
+  s7_03: {
+    type: 'silent',
+    image: 's7_03.png',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s7_04: {
+    type: 'frame',
+    image: 's7_04.png',
+    narration: '"Every solution created another problem."',
+    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s7_05: {
+    type: 'frame',
+    image: 's7_05.png',
+    narration: '"Medicine. And Mission Distinction. At the same time."',
+    kenBurns: { scale: [1.0, 1.07], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s7_06: {
+    type: 'frame',
+    image: 's7_06.png',
+    narration: '"Some nights… the mission felt heavier than the dream."',
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s7_07: {
+    type: 'silent',
+    image: 's7_07.png',
+    kenBurns: { scale: [1.0, 1.04], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s7_08: {
+    type: 'frame',
+    image: 's7_08.png',
+    narration: '"Why did we start?"',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s7_09: {
+    type: 'silent',
+    image: 's7_09.png',
+    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s7_10: {
+    type: 'silent',
+    image: 's7_10.png',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s7_11: {
+    type: 'frame',
+    image: 's7_11.png',
+    narration: '"One more try."',
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s7_12: {
+    type: 'silent',
+    image: 's7_12.png',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s7_13: {
+    type: 'frame',
+    image: 's7_13.png',
+    narration: '"The mission survived."',
+    fadeToBlack: true,
+    kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+
+  // ── Ending ────────────────────────────────────────────────────────────────
+
+  end_card5: {
+    type: 'textcard',
+    line1: 'Most Projects End Here.',
+    line2: 'Mission Distinction Didn\'t.',
   },
   end_title: {
     type: 'textcard',
