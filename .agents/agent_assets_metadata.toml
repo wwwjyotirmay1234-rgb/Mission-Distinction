@@ -526,13 +526,13 @@ title = "frame 1 hostel exterior rain wide"
 id = "a4EJ_Tk9U83bXcHTzKEOu"
 uri = "file://attached_assets/film/frame_02.png"
 type = "image"
-title = "frame 2 extreme closeup despair eyes"
+title = "frame 5 eyes extreme close up"
 
 [[generated]]
 id = "hPC80d5HemWk5CQ4cfpqL"
 uri = "file://attached_assets/film/frame_03.png"
 type = "image"
-title = "frame 3 over shoulder notebook overwhelmed"
+title = "frame 6 over shoulder syllabus"
 
 [[generated]]
 id = "QQvS9gTgiUJq42k7A0WIH"
@@ -550,7 +550,7 @@ title = "frame 5 pen drops hand slow motion"
 id = "Dg_Ff_KAa62N6QsHe2fnR"
 uri = "file://attached_assets/film/frame_06.png"
 type = "image"
-title = "frame 6 low angle student collapsed chair"
+title = "frame 8 leaning back ceiling"
 
 [[generated]]
 id = "RC1VcXr7nZ6t9cp8g1f4D"
@@ -562,7 +562,7 @@ title = "frame 7 through rain window rack focus"
 id = "NujlhG9HOYoJvdodqHMbS"
 uri = "file://attached_assets/film/frame_08.png"
 type = "image"
-title = "frame 8 dutch angle self doubt blank page"
+title = "frame 8 dutch angle doubt"
 
 [[generated]]
 id = "t1AFwmPZzUd4YOeE4iYLj"
@@ -574,19 +574,19 @@ title = "frame 9 overhead drone student tiny books"
 id = "ge4Oy-xrlpC_xLD6lb7-U"
 uri = "file://attached_assets/film/frame_10.png"
 type = "image"
-title = "frame 10 split lit face determination emerging"
+title = "frame 10 split lit final shot"
 
 [[generated]]
 id = "Etw---xqRGJKH2eS6rBcb"
 uri = "file://attached_assets/film/frame_02b.png"
 type = "image"
-title = "frame 2 inside hostel room reveal"
+title = "frame 2b inside hostel room"
 
 [[generated]]
 id = "KB5VBVSoXvxH0mXkXZ6f8"
 uri = "file://attached_assets/film/frame_03b.png"
 type = "image"
-title = "frame 3 side profile student trying to focus"
+title = "frame 3b side profile"
 
 [[generated]]
 id = "_kxa6sV_XhTtQAsI9a0gi"
@@ -598,7 +598,7 @@ title = "frame 4 books anatomy notes close up pan"
 id = "W8fLcgmvg2v4V6EQnGidV"
 uri = "file://attached_assets/film/frame_09b.png"
 type = "image"
-title = "frame 9 phone group chat left behind"
+title = "frame 9b phone group chat"
 
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
@@ -682,13 +682,13 @@ title = "Frame 1 — Wide aerial, rain, single lit window"
 id = "K1Q5gtbV9l7t0-GxFvqpT"
 uri = "file://attached_assets/film/frame_02.png"
 type = "image"
-title = "Frame 2 — Extreme close-up, despair in eyes (DOF)"
+title = "Shot 5 — Close-up eyes"
 
 [[outputs]]
 id = "NqjZT6c8Rro7R9eSD3mDt"
 uri = "file://attached_assets/film/frame_03.png"
 type = "image"
-title = "Frame 3 — Over-shoulder, overwhelmed by syllabus"
+title = "Shot 6 — Over-shoulder"
 
 [[outputs]]
 id = "y4jSWOfZVXm3Ad8VnTWiV"
@@ -706,7 +706,7 @@ title = "Frame 5 — Low-angle, pen drops in slow motion"
 id = "H4cMlngSHQsBKPIkvoCEl"
 uri = "file://attached_assets/film/frame_06.png"
 type = "image"
-title = "Frame 6 — Low-angle wide, collapsed in chair"
+title = "Shot 8 — Leaning back"
 
 [[outputs]]
 id = "tehhy9cBp9UgYcZUh0f-w"
@@ -718,7 +718,7 @@ title = "Frame 7 — Rack focus through rain-covered glass"
 id = "nRiTKZG3F96cTfoMLaeVg"
 uri = "file://attached_assets/film/frame_08.png"
 type = "image"
-title = "Frame 8 — Dutch angle, paralysed by self-doubt"
+title = "Shot 8b — Dutch angle, self-doubt"
 
 [[outputs]]
 id = "F6yYocKTpFlvCBZ7XjP6i"
@@ -730,4 +730,22 @@ title = "Frame 9 — Overhead drone, student vs books"
 id = "ZBMb-iD5c8Djbo1b3Lkey"
 uri = "file://attached_assets/film/frame_10.png"
 type = "image"
-title = "Frame 10 — Split-lit face, determination beginning"
+title = "Final — Split-lit face"
+
+[[outputs]]
+id = "kR3XPx4UzObBMlROe9xeU"
+uri = "file://attached_assets/film/frame_02b.png"
+type = "image"
+title = "Shot 2 — Inside the room"
+
+[[outputs]]
+id = "xQkna52yao152aLNCGUht"
+uri = "file://attached_assets/film/frame_03b.png"
+type = "image"
+title = "Shot 3 — Side profile"
+
+[[outputs]]
+id = "IQqG2B1-62YwlTP0JHc8r"
+uri = "file://attached_assets/film/frame_09b.png"
+type = "image"
+title = "Shot 9 — Phone screen"
