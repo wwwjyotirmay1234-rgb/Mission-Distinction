@@ -1,0 +1,116 @@
+This is a major improvement. The first image is close to what you’d want in a cinematic trailer. The fourth image is where things go off track.
+
+Image 1 (student at desk)
+
+Rating: 8.5/10
+
+What works:
+
+* Rain + warm desk lamp creates good contrast.
+* Books, notes, coffee mug tell the story instantly.
+* Natural posture.
+* Feels like a real MBBS student struggling at night.
+
+What hurts:
+
+* He looks more like a 25–28 year old movie actor than a 1st-year MBBS student.
+* Hair changed from your earlier curly-haired protagonist.
+* Face is a little too polished and model-like.
+
+For future frames add:
+
+20-year-old Indian MBBS student, slightly messy curly black hair, realistic facial imperfections, mild dark circles, tired eyes, not handsome model appearance, authentic hostel student look.
+
+⸻
+
+Image 2 (Gemini screenshot)
+
+Rating: 9/10 for storytelling
+
+This is actually powerful.
+
+The audience immediately understands:
+
+* Huge syllabus
+* Massive information overload
+* Student overwhelmed
+
+You can use similar screens later when showing why students needed Mission Distinction.
+
+⸻
+
+Image 3 (side profile)
+
+Rating: 8/10
+
+Very cinematic.
+
+Feels like:
+
+“I don’t know how I’ll finish all this.”
+
+Good for narration:
+
+“The syllabus seemed endless.”
+
+Only issue:
+
+* Different face again.
+* Different hairstyle again.
+
+⸻
+
+Image 4 (crying face)
+
+Rating: 3/10
+
+This is where AI misunderstood the emotion.
+
+Problems:
+
+* Looks cartoonish.
+* Tears are exaggerated.
+* Feels like a Disney character.
+* Emotion becomes melodrama.
+
+Your story is not:
+
+“A student having a breakdown.”
+
+Your story is:
+
+“A student quietly struggling and searching for a solution.”
+
+Replace with:
+
+Extreme close-up of tired eyes, dark circles, subtle stress, rain reflections in pupils, silent determination mixed with exhaustion, realistic cinematic photography, no tears, no crying.
+
+⸻
+
+Overall verdict
+
+You are finally moving toward a trailer that can genuinely look professional.
+
+Current quality:
+8/10
+
+Potential quality if you keep character consistency:
+9–9.5/10
+
+The biggest issue now is character consistency.
+
+Every frame should use exactly the same protagonist:
+
+* Indian male MBBS student
+* Age 20
+* Curly black hair
+* Dark hoodie
+* Slim build
+* Slight beard shadow
+* Tired eyes
+* Realistic face
+* Same facial structure in every frame
+
+If the face changes every scene, viewers subconsciously feel they are watching different people, and the emotional connection disappears.
+
+For Scene 1, I would keep Image 1 and Image 3, remove Image 4 completely, and replace it with a realistic close-up of exhausted eyes rather than tears. That alone would make the opening sequence feel far more like a Netflix or Oscar-style drama instead of an animated short.
