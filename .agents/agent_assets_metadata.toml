@@ -1674,6 +1674,66 @@ uri = "file://attached_assets/generated_images/cinematic_behind_the_scenes_e7e8.
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "6ubqmCW1Xrl5uWJufFazC"
+uri = "file://attached_assets/ep_01.png"
+type = "image"
+title = "campus drone golden hour"
+
+[[generated]]
+id = "3yQUBj3llP4-ojOLOsyzQ"
+uri = "file://attached_assets/ep_02.png"
+type = "image"
+title = "student montage four panel"
+
+[[generated]]
+id = "nM50XoGfHWYtl5WW3_R8A"
+uri = "file://attached_assets/ep_03.png"
+type = "image"
+title = "founder walking campus humble"
+
+[[generated]]
+id = "HyfYHNJVXR1zW_Zy3ibnv"
+uri = "file://attached_assets/ep_04.png"
+type = "image"
+title = "chain of sharing knowledge"
+
+[[generated]]
+id = "gIJ7HmnAHImnKuAmRnQ0l"
+uri = "file://attached_assets/ep_05.png"
+type = "image"
+title = "empty hostel room nostalgic"
+
+[[generated]]
+id = "ylOlqq1GeORa1PSeYEF0O"
+uri = "file://attached_assets/ep_06.png"
+type = "image"
+title = "notebook macro medical notes"
+
+[[generated]]
+id = "CYOTxECxZc9l-S2haapkp"
+uri = "file://attached_assets/ep_07.png"
+type = "image"
+title = "hand closing notebook hopeful"
+
+[[generated]]
+id = "COtZQ1PrVSPI5y0N3wHv8"
+uri = "file://attached_assets/ep_08.png"
+type = "image"
+title = "sunset aerial odisha city"
+
+[[generated]]
+id = "gE4tmjRaZjYS9h7qpDyBw"
+uri = "file://attached_assets/ep_09.png"
+type = "image"
+title = "first year student finds app"
+
+[[generated]]
+id = "M7q9rhtiE7vt7W9y-sCzB"
+uri = "file://attached_assets/ep_final.png"
+type = "image"
+title = "one window to thousands aerial"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"

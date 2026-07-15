@@ -193,6 +193,22 @@ export const SCENE_DURATIONS: Record<string, number> = {
   final_quote:  9000, // "Every doctor was once a student searching for guidance."
   s11_credits: 20000, // Behind-the-scenes memory collage — soft piano, no narration
   s11_end:      6000, // Final fade to black
+
+  // ── Epilogue — The Journey Continues ─────────────────────────────────────
+  ep_today:    3500,  // "Today" — black title card
+  ep_01:      15000,  // Shot 1  — Campus drone flyover
+  ep_02:      20000,  // Shot 2  — Many stories montage
+  ep_03:      15000,  // Shot 3  — The Founder walking
+  ep_04:      20000,  // Shot 4  — The Unseen Impact intercut
+  ep_05:      15000,  // Shot 5  — The Empty Room
+  ep_06:      20000,  // Shot 6  — The Notebook
+  ep_07:      20000,  // Shot 7  — The Future: Chapter 2
+  ep_08:      25000,  // Shot 8  — Sunset over Odisha
+  ep_09:      20000,  // Shot 9  — The Final Student
+  ep_final:   30000,  // Final Shot — One window to thousands
+  ep_title:    8000,  // "MISSION DISTINCTION / A Story Still Being Written"
+  ep_last:    10000,  // "Somewhere tonight…"
+  ep_end:      5000,  // Black fade to end
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1031,6 +1047,85 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.0, 1.04], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s11_end: {
+    type: 'black',
+    narration: '',
+    fadeIn: false,
+  },
+
+  // ── Epilogue — The Journey Continues ─────────────────────────────────────
+
+  ep_today: {
+    type: 'textcard',
+    line1: 'Today',
+  },
+  ep_01: {
+    type: 'frame',
+    image: 'ep_01.png',
+    narration: '"The mission never stopped growing."',
+    kenBurns: { scale: [1.1, 1.0], x: ['0%', '0%'], y: ['2%', '-2%'] },
+  },
+  ep_02: {
+    type: 'silent',
+    image: 'ep_02.png',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  ep_03: {
+    type: 'frame',
+    image: 'ep_03.png',
+    narration: '"The mission was never about becoming known."',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  ep_04: {
+    type: 'frame',
+    image: 'ep_04.png',
+    narration: '"The greatest impact is often invisible."',
+    kenBurns: { scale: [1.04, 1.0], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  ep_05: {
+    type: 'silent',
+    image: 'ep_05.png',
+    kenBurns: { scale: [1.0, 1.04], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  ep_06: {
+    type: 'silent',
+    image: 'ep_06.png',
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['2%', '-2%'] },
+  },
+  ep_07: {
+    type: 'silent',
+    image: 'ep_07.png',
+    kenBurns: { scale: [1.0, 1.04], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  ep_08: {
+    type: 'frame',
+    image: 'ep_08.png',
+    narration: '"A mission does not end when it succeeds. It ends when it is no longer needed."',
+    kenBurns: { scale: [1.12, 1.0], x: ['0%', '0%'], y: ['3%', '-3%'] },
+  },
+  ep_09: {
+    type: 'frame',
+    image: 'ep_09.png',
+    narration: '"And until that day… the mission continues."',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  ep_final: {
+    type: 'silent',
+    image: 'ep_final.png',
+    kenBurns: { scale: [1.08, 1.0], x: ['0%', '0%'], y: ['2%', '-2%'] },
+    fadeToBlack: true,
+  },
+  ep_title: {
+    type: 'textcard',
+    line1: 'MISSION DISTINCTION',
+    line2: 'A Story Still Being Written',
+    large: true,
+  },
+  ep_last: {
+    type: 'textcard',
+    line1: '"Somewhere tonight, another student',
+    line2: 'is opening the app for the first time."',
+  },
+  ep_end: {
     type: 'black',
     narration: '',
     fadeIn: false,
