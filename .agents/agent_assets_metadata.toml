@@ -1356,6 +1356,12 @@ uri = "file://attached_assets/generated_images/cinematic_2x2_four_panel_cfb3.png
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "CRMm1X-nNCihCRFDXyCoY"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_50c9.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
