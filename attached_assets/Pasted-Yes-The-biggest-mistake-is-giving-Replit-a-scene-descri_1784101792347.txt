@@ -1,0 +1,319 @@
+Yes. The biggest mistake is giving Replit a scene description instead of a movie direction sheet.
+
+For Scene 1, give Replit this entire specification.
+
+SCENE 1 — THE STRUGGLE
+
+Duration
+
+45–60 seconds
+
+Visual Style (Mandatory)
+
+Create a cinematic 3D animated film sequence.
+
+Unreal Engine 5 quality.
+
+Pixar-level character realism.
+
+Arcane-inspired lighting.
+
+Realistic Indian MBBS student.
+
+Highly expressive facial animation.
+
+Volumetric lighting.
+
+Cinematic depth of field.
+
+Dynamic camera movement.
+
+Realistic cloth simulation.
+
+Realistic rain effects.
+
+Emotional storytelling.
+
+Hollywood Oscar-winning animation quality.
+
+NOT flat vector art.
+
+NOT infographic style.
+
+NOT educational cartoon.
+
+NOT stick figures.
+
+NOT low-poly characters.
+
+⸻
+
+CHARACTER DESIGN
+
+Main Character:
+
+* Male
+* Indian
+* Age 20
+* MBBS student
+* Curly black hair
+* Slight beard
+* No glasses
+* Slim build
+* Wearing dark hoodie
+* Sleep deprived appearance
+* Intelligent face
+* Expressive eyes
+
+Keep this exact appearance throughout the movie.
+
+⸻
+
+ENVIRONMENT
+
+Location:
+
+MBBS hostel room.
+
+Details:
+
+* Gray’s Anatomy book
+* Guyton Physiology
+* Biochemistry textbook
+* Scattered notes
+* Highlighters
+* Coffee mug
+* Study lamp
+* Rain outside window
+* Wall calendar
+* Medical diagrams pinned to wall
+
+Mood:
+
+Lonely.
+
+Silent.
+
+Overwhelmed.
+
+⸻
+
+SHOT 1
+
+Duration: 5 seconds
+
+Camera:
+
+Wide establishing shot.
+
+Action:
+
+Heavy rain outside hostel building.
+
+Single room window glowing.
+
+Everything else dark.
+
+Mood:
+
+Isolation.
+
+Prompt:
+
+Cinematic nighttime aerial shot of MBBS hostel during rainstorm. Only one room illuminated. Thunderclouds overhead. Emotional Hollywood atmosphere. Unreal Engine 5 realism.
+
+⸻
+
+SHOT 2
+
+Duration: 5 seconds
+
+Camera:
+
+Slow push through window.
+
+Action:
+
+Reveal student studying alone.
+
+Rain visible behind him.
+
+Prompt:
+
+Camera slowly moves through rain-covered hostel window revealing exhausted MBBS student studying late at night under desk lamp. Warm light against cold blue rain atmosphere.
+
+⸻
+
+SHOT 3
+
+Duration: 6 seconds
+
+Camera:
+
+Medium shot.
+
+Action:
+
+Student surrounded by books.
+
+Pages everywhere.
+
+Prompt:
+
+Realistic MBBS student sitting among mountains of anatomy, physiology and biochemistry books. Notes scattered across desk. Room filled with academic pressure.
+
+⸻
+
+SHOT 4
+
+Duration: 5 seconds
+
+Camera:
+
+Close-up.
+
+Action:
+
+Eyes moving across pages.
+
+Unable to focus.
+
+Prompt:
+
+Extreme close-up of tired eyes reading anatomy notes. Eyes show exhaustion and anxiety. Cinematic emotional detail.
+
+⸻
+
+SHOT 5
+
+Duration: 6 seconds
+
+Camera:
+
+Over-the-shoulder shot.
+
+Action:
+
+Student sees huge unfinished syllabus.
+
+Prompt:
+
+Notebook page showing endless list of MBBS topics. Student freezes. Realization of overwhelming syllabus. Emotional storytelling.
+
+⸻
+
+SHOT 6
+
+Duration: 5 seconds
+
+Camera:
+
+Close-up.
+
+Action:
+
+Hand drops pen.
+
+Prompt:
+
+Pen slowly falls from exhausted hand onto notebook. Symbolizing mental fatigue. Cinematic slow motion.
+
+⸻
+
+SHOT 7
+
+Duration: 6 seconds
+
+Camera:
+
+Side profile.
+
+Action:
+
+Student leans back.
+
+Stares into space.
+
+Prompt:
+
+MBBS student leaning back in chair staring into darkness. Rain reflected in eyes. Feeling lost and overwhelmed.
+
+⸻
+
+SHOT 8
+
+Duration: 6 seconds
+
+Camera:
+
+Close-up.
+
+Action:
+
+Expression changes.
+
+Prompt:
+
+Face transitions from determination to doubt. Subtle emotional animation. Oscar-winning character acting.
+
+⸻
+
+SHOT 9
+
+Duration: 6 seconds
+
+Camera:
+
+Slow orbit.
+
+Action:
+
+Room becomes visually larger.
+
+Student looks smaller.
+
+Prompt:
+
+Camera slowly circles student while room appears overwhelming. Books and notes symbolize pressure closing in around him.
+
+⸻
+
+SHOT 10
+
+Duration: 5 seconds
+
+Camera:
+
+Extreme close-up.
+
+Action:
+
+Student looks at blank notebook.
+
+Prompt:
+
+Blank notebook page illuminated by desk lamp. Student staring silently. Emotional cinematic ending shot.
+
+⸻
+
+Final Narration
+
+Use voice-over:
+
+“Every year, thousands of MBBS students begin their journey with dreams.”
+
+“But dreams alone do not make the syllabus smaller.”
+
+“The books grow.”
+
+“The pressure grows.”
+
+“And sometimes…”
+
+“You begin to wonder if you’re falling behind.”
+
+“One student felt exactly the same.”
+
+Fade to black.
+
+This is the level of detail Replit needs. If you give only one paragraph, it fills the gaps with simple cartoon graphics. If you give shot-by-shot directions like this, it has a much better chance of producing something cinematic.

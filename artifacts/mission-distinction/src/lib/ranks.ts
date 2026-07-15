@@ -15,7 +15,7 @@ export interface Rank {
 export const RANKS: Rank[] = [
   {
     level: 1,
-    name: "Ball Boy",
+    name: "Group Stage",
     emoji: "⚽",
     min: 0,
     max: 499,
@@ -28,7 +28,7 @@ export const RANKS: Rank[] = [
   },
   {
     level: 2,
-    name: "Amateur Player",
+    name: "Round of 16",
     emoji: "🥅",
     min: 500,
     max: 1499,
@@ -41,7 +41,7 @@ export const RANKS: Rank[] = [
   },
   {
     level: 3,
-    name: "League Player",
+    name: "Quarter-Final",
     emoji: "🏟️",
     min: 1500,
     max: 3499,
@@ -54,7 +54,7 @@ export const RANKS: Rank[] = [
   },
   {
     level: 4,
-    name: "Pro Midfielder",
+    name: "Semi-Final",
     emoji: "⭐",
     min: 3500,
     max: 6999,
@@ -67,7 +67,7 @@ export const RANKS: Rank[] = [
   },
   {
     level: 5,
-    name: "International",
+    name: "Final",
     emoji: "🌍",
     min: 7000,
     max: 14999,
@@ -80,7 +80,7 @@ export const RANKS: Rank[] = [
   },
   {
     level: 6,
-    name: "World Cup Legend",
+    name: "Champion",
     emoji: "🏆",
     min: 15000,
     max: null,

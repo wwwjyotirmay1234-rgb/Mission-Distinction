@@ -258,8 +258,8 @@ function GamePeekModal({ game, currentXp, onClose }: { game: PeekGame; currentXp
               {/* Progress bar */}
               <div className="space-y-1.5">
                 <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>{currentXp.toLocaleString()} XP</span>
-                  <span>{rank.min.toLocaleString()} XP</span>
+                  <span>{currentXp.toLocaleString()} Goals</span>
+                  <span>{rank.min.toLocaleString()} Goals</span>
                 </div>
                 <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
                   <div
@@ -271,13 +271,13 @@ function GamePeekModal({ game, currentXp, onClose }: { game: PeekGame; currentXp
 
               <p className="text-xs text-center text-muted-foreground">
                 {xpNeeded > 0
-                  ? <><span className="text-foreground font-semibold">{xpNeeded.toLocaleString()} XP</span> more to unlock</>
+                  ? <><span className="text-foreground font-semibold">{xpNeeded.toLocaleString()} Goals</span> more to unlock</>
                   : "Almost there!"}
               </p>
             </div>
 
             <Button className="w-full" onClick={onClose}>
-              Keep Earning XP
+              Keep Scoring Goals ⚽
             </Button>
           </div>
         </motion.div>

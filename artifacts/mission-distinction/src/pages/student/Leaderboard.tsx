@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Flame, Medal, Zap, Crown, Building2 } from "lucide-react";
+import { Trophy, Flame, Medal, Crown, Building2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import { RankBadge } from "@/components/RankBadge";
@@ -151,7 +151,7 @@ export default function StudentLeaderboard() {
       <Tabs value={tab} onValueChange={(v) => setTab(v as "xp" | "score" | "streak" | "college")}>
         <TabsList className="bg-muted/50 border border-primary/20 flex-wrap h-auto gap-1">
           <TabsTrigger value="xp" className="gap-1.5">
-            ⚽ XP Table
+            ⚽ Goals Table
           </TabsTrigger>
           <TabsTrigger value="score" className="gap-1.5">
             <Medal size={13} /> Top Scorers
@@ -185,14 +185,14 @@ export default function StudentLeaderboard() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold text-muted-foreground">
             {tab === "xp"
-              ? "Ranked by total XP earned"
+              ? "⚽ Group Stage Standings — Goals Scored"
               : tab === "score"
-              ? "Ranked by average quiz score"
+              ? "🎯 Top Scorers — Match Average"
               : tab === "streak"
-              ? "Ranked by study streak"
+              ? "🔥 Win Streak Table — Consecutive Days"
               : myCollege
-              ? `Top students at ${myCollege}`
-              : "Set your college in Settings to see your college leaderboard"}
+              ? `🏟️ Club Leaderboard — ${myCollege}`
+              : "Set your college in Settings to see your club leaderboard"}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -239,10 +239,10 @@ export default function StudentLeaderboard() {
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-base font-bold text-amber-400 flex items-center gap-1 justify-end">
-                          <Zap size={13} /> {entry.totalXp.toLocaleString()}
+                        <p className="text-base font-bold text-primary flex items-center gap-1 justify-end">
+                          <span className="text-sm">⚽</span> {entry.totalXp.toLocaleString()}
                         </p>
-                        <p className="text-xs text-muted-foreground">XP</p>
+                        <p className="text-xs text-muted-foreground">Goals</p>
                       </div>
                     </div>
                   );
@@ -252,45 +252,63 @@ export default function StudentLeaderboard() {
           ) : tab === "xp" ? (
             (xpData ?? []).length === 0 ? (
               <div className="p-12 text-center text-muted-foreground text-sm">
-                No XP data yet. Start earning XP by taking quizzes!
+                <span className="text-3xl block mb-2">⚽</span>
+                No goals yet — take a quiz to get on the scoreboard!
               </div>
             ) : (
-              <div className="divide-y divide-border/40">
-                {(xpData ?? []).map((entry, idx) => {
-                  const pos = idx + 1;
-                  const isMe = entry.id === user?.id;
-                  const entryRank = getRankForXp(entry.totalXp);
-                  return (
-                    <div
-                      key={entry.id}
-                      className={`p-4 flex items-center gap-4 transition-colors ${isMe ? "bg-primary/5" : "hover:bg-muted/20"}`}
-                    >
-                      <div className="w-10 flex items-center justify-center shrink-0">
-                        <PositionBadge rank={pos} />
-                      </div>
-                      <Avatar name={entry.fullName} url={entry.avatarUrl} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold truncate">
-                            {entry.fullName}
-                            {isMe && <span className="ml-1 text-xs text-primary">(You)</span>}
-                          </p>
-                          <RankBadge xp={entry.totalXp} size="xs" />
+              <>
+                {/* Tournament table header */}
+                <div className="grid grid-cols-[40px_1fr_68px_52px_48px] gap-x-2 px-4 py-2 border-b border-border/40 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 bg-muted/20">
+                  <span className="text-center">#</span>
+                  <span>Player</span>
+                  <span className="text-right">⚽ Goals</span>
+                  <span className="text-right">🔥 Days</span>
+                  <span className="text-right">Pts</span>
+                </div>
+                <div className="divide-y divide-border/40">
+                  {(xpData ?? []).map((entry, idx) => {
+                    const pos = idx + 1;
+                    const isMe = entry.id === user?.id;
+                    const pts = Math.floor(entry.totalXp / 100);
+                    return (
+                      <div
+                        key={entry.id}
+                        className={`grid grid-cols-[40px_1fr_68px_52px_48px] gap-x-2 px-4 py-3 items-center transition-colors ${isMe ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/20"}`}
+                      >
+                        <div className="flex items-center justify-center shrink-0">
+                          <PositionBadge rank={pos} />
                         </div>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {entry.college || "Unknown College"}{entry.year ? ` · ${entry.year}` : ""}
-                        </p>
+                        <div className="min-w-0 flex items-center gap-2">
+                          <Avatar name={entry.fullName} url={entry.avatarUrl} />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="text-sm font-semibold truncate">
+                                {entry.fullName}
+                                {isMe && <span className="ml-1 text-[10px] text-primary font-bold">(You)</span>}
+                              </p>
+                              <RankBadge xp={entry.totalXp} size="xs" />
+                            </div>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {entry.college || "—"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-bold text-primary flex items-center gap-0.5 justify-end">
+                            <span className="text-xs">⚽</span> {entry.totalXp.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-semibold text-orange-400">{entry.studyStreak ?? 0}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-bold text-amber-400">{pts}</p>
+                        </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-base font-bold text-amber-400 flex items-center gap-1 justify-end">
-                          <Zap size={13} /> {entry.totalXp.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground">XP</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              </>
             )
           ) : classicEntries.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground text-sm">

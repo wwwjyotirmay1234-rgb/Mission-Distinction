@@ -256,9 +256,16 @@ export default function NotesMarketplace() {
             <div className="text-center text-gray-500 py-12 text-sm">Loading...</div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-16">
-              <Store size={32} className="mx-auto mb-3 text-gray-600" />
-              <p className="text-gray-400 font-medium">No notes yet for this subject</p>
-              <p className="text-gray-500 text-sm mt-1">Be the first to share your notes!</p>
+              <svg viewBox="0 0 64 48" className="mx-auto mb-3 w-14 h-10 text-primary/30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="4" width="56" height="5" rx="2.5" fill="currentColor"/>
+                <rect x="4" y="4" width="5" height="34" rx="2.5" fill="currentColor"/>
+                <rect x="55" y="4" width="5" height="34" rx="2.5" fill="currentColor"/>
+                <path d="M4 38 Q32 28 60 38" stroke="currentColor" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.45"/>
+                <circle cx="32" cy="22" r="6" fill="currentColor" opacity="0.35"/>
+                <path d="M32 16 l2 4 l4 0 l-3 3 l1 4 l-4-3 l-4 3 l1-4 l-3-3 l4 0 z" fill="white" opacity="0.5" transform="scale(0.7) translate(14,14)"/>
+              </svg>
+              <p className="text-muted-foreground font-medium">No notes on the pitch yet</p>
+              <p className="text-muted-foreground/60 text-sm mt-1">Be the first to share your notes!</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -301,9 +308,13 @@ export default function NotesMarketplace() {
             <div className="text-center text-gray-500 py-12 text-sm">Loading...</div>
           ) : (mySubmissionsQuery.data?.submissions?.length ?? 0) === 0 ? (
             <div className="text-center py-16">
-              <Upload size={32} className="mx-auto mb-3 text-gray-600" />
-              <p className="text-gray-400 font-medium">No submissions yet</p>
-              <p className="text-gray-500 text-sm mt-1">Share your notes and earn XP!</p>
+              <svg viewBox="0 0 64 64" className="mx-auto mb-3 w-12 h-12 text-primary/30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="32" cy="32" r="24" stroke="currentColor" strokeWidth="4"/>
+                <path d="M32 14 l5 10 l11 1.5 l-8 7.5 l2 11 l-10-5.5 l-10 5.5 l2-11 l-8-7.5 l11-1.5 z" fill="currentColor" opacity="0.45"/>
+                <circle cx="32" cy="32" r="5" fill="currentColor" opacity="0.6"/>
+              </svg>
+              <p className="text-muted-foreground font-medium">No goals from your side yet</p>
+              <p className="text-muted-foreground/60 text-sm mt-1">Share your notes and score Goals!</p>
             </div>
           ) : (
             <div className="space-y-3">

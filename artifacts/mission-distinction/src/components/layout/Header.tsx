@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, Bell, LogOut, User as UserIcon, Menu, Zap, Megaphone, Newspaper, CalendarDays, AlertTriangle, Sun, Moon, PanelLeft, ArrowLeftRight, Link2 } from "lucide-react";
+import { Search, Bell, LogOut, User as UserIcon, Menu, Megaphone, Newspaper, CalendarDays, AlertTriangle, Sun, Moon, PanelLeft, ArrowLeftRight, Link2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
@@ -312,9 +312,7 @@ export function Header() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 gap-3"
-      style={{ boxShadow: "0 1px 0 0 rgba(0,180,70,0.22)" }}
-    >
+    <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 gap-3 header-pitch-glow">
       {/* Mobile: open sheet drawer */}
       <Button
         variant="ghost"
@@ -350,11 +348,13 @@ export function Header() {
       <div className="flex items-center gap-2 sm:gap-3 ml-auto">
         {user?.role !== "admin" && xpStats && (
           <button
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border/50 bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer"
             onClick={() => setLocation("/student/progress")}
+            title={`${xp.toLocaleString()} Goals Scored`}
           >
-            <Zap size={12} className="text-amber-400" />
+            <span className="text-sm leading-none">⚽</span>
             <span className="text-xs font-bold text-foreground">{xp.toLocaleString()}</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Goals</span>
             <span className={`text-xs font-semibold ${rank.textClass}`}>{rank.emoji}</span>
           </button>
         )}
@@ -423,8 +423,8 @@ export function Header() {
             </DropdownMenuItem>
             {user?.role !== "admin" && (
               <DropdownMenuItem onClick={() => setLocation("/student/progress")}>
-                <Zap className="mr-2 h-4 w-4 text-amber-400" />
-                <span>My XP & Rank</span>
+                <span className="mr-2 text-sm">⚽</span>
+                <span>My Goals & Rank</span>
               </DropdownMenuItem>
             )}
             {showSwitchButton && (

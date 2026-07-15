@@ -617,18 +617,18 @@ export default function StudentQuiz() {
                 <Trophy className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-primary">+{result.xpEarned} XP Earned!</p>
+                <p className="text-sm font-semibold text-primary">+{result.xpEarned} Goals Scored! ⚽</p>
                 <p className="text-xs text-muted-foreground">
-                  50 base + {result.score} correct × 5 XP
+                  50 base + {result.score} correct × 5 Goals
                   {result.rankUp && result.newRankName && (
-                    <span className="ml-1 font-semibold text-yellow-400"> · 🎖️ Ranked up to {result.newRankName}!</span>
+                    <span className="ml-1 font-semibold text-yellow-400"> · 🎖️ Advanced to {result.newRankName}!</span>
                   )}
                 </p>
               </div>
             </div>
             {result.totalXp !== undefined && (
               <div className="text-right shrink-0">
-                <p className="text-xs text-muted-foreground">Total XP</p>
+                <p className="text-xs text-muted-foreground">Total Goals</p>
                 <p className="text-sm font-bold text-foreground">{result.totalXp.toLocaleString()}</p>
               </div>
             )}

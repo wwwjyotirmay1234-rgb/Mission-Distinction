@@ -117,9 +117,15 @@ export default function GrandRounds() {
           <div className="text-center py-12 text-gray-500 text-sm">Loading...</div>
         ) : cases.length === 0 ? (
           <div className="text-center py-20">
-            <Stethoscope size={36} className="mx-auto mb-3 text-gray-600" />
-            <p className="text-gray-400 font-medium">No Grand Rounds yet</p>
-            <p className="text-gray-500 text-sm mt-1">The first Grand Round will be posted soon. Stay tuned!</p>
+            <svg viewBox="0 0 64 64" className="mx-auto mb-3 w-14 h-14 text-primary/30" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="8" y="8" width="48" height="34" rx="4" stroke="currentColor" strokeWidth="3"/>
+              <line x1="32" y1="8" x2="32" y2="42" stroke="currentColor" strokeWidth="2" opacity="0.5"/>
+              <circle cx="32" cy="25" r="7" stroke="currentColor" strokeWidth="2.5" opacity="0.6"/>
+              <rect x="8" y="42" width="48" height="4" rx="2" fill="currentColor" opacity="0.3"/>
+              <line x1="20" y1="50" x2="44" y2="50" stroke="currentColor" strokeWidth="3" strokeLinecap="round" opacity="0.4"/>
+            </svg>
+            <p className="text-muted-foreground font-medium">No Grand Rounds on the pitch yet</p>
+            <p className="text-muted-foreground/60 text-sm mt-1">The first Grand Round will be posted soon. Stay tuned!</p>
           </div>
         ) : (
           <div className="space-y-3">
