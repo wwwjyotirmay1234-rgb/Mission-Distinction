@@ -516,6 +516,66 @@ uri = "file://artifacts/journey-video/public/images/char_s6_odisha_students.png"
 type = "image"
 title = "ue5 odisha students studying phones"
 
+[[generated]]
+id = "FAgR1QJ4XjR_VMiCleetx"
+uri = "file://attached_assets/film/frame_01.png"
+type = "image"
+title = "frame 1 student hostel wide"
+
+[[generated]]
+id = "a4EJ_Tk9U83bXcHTzKEOu"
+uri = "file://attached_assets/film/frame_02.png"
+type = "image"
+title = "frame 2 close up tired eyes"
+
+[[generated]]
+id = "hPC80d5HemWk5CQ4cfpqL"
+uri = "file://attached_assets/film/frame_03.png"
+type = "image"
+title = "frame 3 over shoulder syllabus"
+
+[[generated]]
+id = "QQvS9gTgiUJq42k7A0WIH"
+uri = "file://attached_assets/film/frame_04.png"
+type = "image"
+title = "frame 4 extreme close up eyes"
+
+[[generated]]
+id = "9dA2a0ehshhPWJr7VXVsj"
+uri = "file://attached_assets/film/frame_05.png"
+type = "image"
+title = "frame 5 pen drops hand"
+
+[[generated]]
+id = "Dg_Ff_KAa62N6QsHe2fnR"
+uri = "file://attached_assets/film/frame_06.png"
+type = "image"
+title = "frame 6 student leaning back chair"
+
+[[generated]]
+id = "RC1VcXr7nZ6t9cp8g1f4D"
+uri = "file://attached_assets/film/frame_07.png"
+type = "image"
+title = "frame 7 rain window silhouette"
+
+[[generated]]
+id = "NujlhG9HOYoJvdodqHMbS"
+uri = "file://attached_assets/film/frame_08.png"
+type = "image"
+title = "frame 8 student blank notebook self doubt"
+
+[[generated]]
+id = "t1AFwmPZzUd4YOeE4iYLj"
+uri = "file://attached_assets/film/frame_09.png"
+type = "image"
+title = "frame 9 overhead student small books large"
+
+[[generated]]
+id = "ge4Oy-xrlpC_xLD6lb7-U"
+uri = "file://attached_assets/film/frame_10.png"
+type = "image"
+title = "frame 10 determination exhaustion face"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
@@ -587,3 +647,63 @@ id = "EChASJZLLRbYyIA3UcKCI"
 uri = "file://artifacts/journey-video/public/images/ai_scene10.png"
 type = "image"
 title = "Scene 10 — 500 Downloads Finale (rooftop)"
+
+[[outputs]]
+id = "MyNuvm6547KJ8rWPJPowz"
+uri = "file://attached_assets/film/frame_01.png"
+type = "image"
+title = "Frame 1 — Wide hostel room, 2:17 AM"
+
+[[outputs]]
+id = "K1Q5gtbV9l7t0-GxFvqpT"
+uri = "file://attached_assets/film/frame_02.png"
+type = "image"
+title = "Frame 2 — Close-up, tired eyes with rain reflections"
+
+[[outputs]]
+id = "NqjZT6c8Rro7R9eSD3mDt"
+uri = "file://attached_assets/film/frame_03.png"
+type = "image"
+title = "Frame 3 — Over-shoulder, overwhelming syllabus"
+
+[[outputs]]
+id = "y4jSWOfZVXm3Ad8VnTWiV"
+uri = "file://attached_assets/film/frame_04.png"
+type = "image"
+title = "Frame 4 — Extreme close-up, struggling eyes"
+
+[[outputs]]
+id = "tdAJhU1afKNXn-q4xv7uz"
+uri = "file://attached_assets/film/frame_05.png"
+type = "image"
+title = "Frame 5 — Pen slipping from fingers"
+
+[[outputs]]
+id = "H4cMlngSHQsBKPIkvoCEl"
+uri = "file://attached_assets/film/frame_06.png"
+type = "image"
+title = "Frame 6 — Leaning back, staring at ceiling"
+
+[[outputs]]
+id = "tehhy9cBp9UgYcZUh0f-w"
+uri = "file://attached_assets/film/frame_07.png"
+type = "image"
+title = "Frame 7 — Rain on window, student silhouette"
+
+[[outputs]]
+id = "nRiTKZG3F96cTfoMLaeVg"
+uri = "file://attached_assets/film/frame_08.png"
+type = "image"
+title = "Frame 8 — Blank notebook, self-doubt"
+
+[[outputs]]
+id = "F6yYocKTpFlvCBZ7XjP6i"
+uri = "file://attached_assets/film/frame_09.png"
+type = "image"
+title = "Frame 9 — Overhead shot, student vs books"
+
+[[outputs]]
+id = "ZBMb-iD5c8Djbo1b3Lkey"
+uri = "file://attached_assets/film/frame_10.png"
+type = "image"
+title = "Frame 10 — Split-lit face, exhaustion meets determination"
