@@ -1,85 +1,121 @@
 import { AnimatePresence } from 'framer-motion';
 import { useEffect } from 'react';
 import { useVideoPlayer } from '@/lib/video';
-import { CinematicFrame } from './video_scenes/Frames';
+import { CinematicFrame, BlackScene, TextCard } from './video_scenes/Frames';
 
 export const SCENE_DURATIONS: Record<string, number> = {
-  s1: 6000,
-  s2: 5000,
-  s3: 6000,
-  s4: 5000,
-  s5: 5000,
-  s6: 6000,
-  s7: 5000,
-  s8: 6000,
-  s9: 5000,
-  s10: 6000,
+  opening:    5000,
+  s1:         4000,
+  s2:         5000,
+  s3:         5000,
+  s4:         4000,
+  s5:         4000,
+  s6:         5000,
+  s7:         3000,
+  s8:         6000,
+  s9:         5000,
+  s10:        6000,
+  final:      7000,
+  text1:      5000,
+  text2:      5000,
+  transition: 5000,
 };
 
-const FRAMES = [
-  {
-    id: 's1',
+interface SceneData {
+  type: 'black' | 'frame' | 'textcard';
+  image?: string;
+  narration?: string;
+  kenBurns?: { scale: number[]; x: string[]; y: string[] };
+  fadeToBlack?: boolean;
+  fadeIn?: boolean;
+  line1?: string;
+  line2?: string;
+  large?: boolean;
+}
+
+const SCENES: Record<string, SceneData> = {
+  opening: {
+    type: 'black',
+    fadeIn: true,
+    narration: '"Every year, thousands of students enter medical college with a dream.\n\nA dream to become a doctor."',
+  },
+  s1: {
+    type: 'frame',
     image: 'frame_01.png',
-    text: "Every year, thousands of MBBS students begin their journey with dreams.",
-    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
-    isFirst: true,
+    narration: '"But dreams meet reality."',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '-2%'] },
   },
-  {
-    id: 's2',
-    image: 'frame_02.png',
-    text: "Every year, thousands of MBBS students begin their journey with dreams.",
-    kenBurns: { scale: [1.08, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  s2: {
+    type: 'frame',
+    image: 'frame_02b.png',
+    kenBurns: { scale: [1.06, 1.0], x: ['1%', '-1%'], y: ['0%', '0%'] },
   },
-  {
-    id: 's3',
-    image: 'frame_03.png',
-    text: "But dreams alone do not make the syllabus smaller.",
+  s3: {
+    type: 'frame',
+    image: 'frame_03b.png',
+    narration: '"The syllabus seemed endless."',
+    kenBurns: { scale: [1.0, 1.07], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s4: {
+    type: 'frame',
+    image: 'frame_04b.png',
+    narration: '"The books kept growing."',
     kenBurns: { scale: [1.05, 1.05], x: ['-2%', '2%'], y: ['0%', '0%'] },
   },
-  {
-    id: 's4',
-    image: 'frame_04.png',
-    text: "But dreams alone do not make the syllabus smaller.",
+  s5: {
+    type: 'frame',
+    image: 'frame_02.png',
+    narration: '"The pressure kept growing."',
     kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
-  {
-    id: 's5',
-    image: 'frame_05.png',
-    text: "The books grow. The pressure grows.",
-    kenBurns: { scale: [1.05, 1.05], x: ['0%', '0%'], y: ['2%', '-2%'] },
-  },
-  {
-    id: 's6',
-    image: 'frame_06.png',
-    text: "The books grow. The pressure grows.",
-    kenBurns: { scale: [1.08, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  {
-    id: 's7',
-    image: 'frame_07.png',
-    text: "And sometimes… you begin to wonder if you're falling behind.",
+  s6: {
+    type: 'frame',
+    image: 'frame_03.png',
     kenBurns: { scale: [1.05, 1.05], x: ['2%', '-2%'], y: ['0%', '0%'] },
   },
-  {
-    id: 's8',
-    image: 'frame_08.png',
-    text: "And sometimes… you begin to wonder if you're falling behind.",
-    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
+  s7: {
+    type: 'frame',
+    image: 'frame_05.png',
+    kenBurns: { scale: [1.04, 1.08], x: ['0%', '0%'], y: ['1%', '-1%'] },
   },
-  {
-    id: 's9',
+  s8: {
+    type: 'frame',
+    image: 'frame_06.png',
+    narration: '"And sometimes… he wondered if he was already falling behind."',
+    kenBurns: { scale: [1.08, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9: {
+    type: 'frame',
+    image: 'frame_09b.png',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s10: {
+    type: 'frame',
     image: 'frame_09.png',
-    text: "One student felt exactly the same.",
+    narration: '"He wasn\'t the only one. Across Odisha… hundreds of students felt exactly the same."',
     kenBurns: { scale: [1.1, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
-  {
-    id: 's10',
+  final: {
+    type: 'frame',
     image: 'frame_10.png',
-    text: "",
-    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
-    isLast: true,
+    fadeToBlack: true,
+    kenBurns: { scale: [1.0, 1.07], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
-];
+  text1: {
+    type: 'textcard',
+    line1: '"What if the problem wasn\'t the students…"',
+    line2: '"What if the problem was the lack of guidance?"',
+  },
+  text2: {
+    type: 'textcard',
+    line1: '"What if the problem was the lack of guidance?"',
+  },
+  transition: {
+    type: 'textcard',
+    line1: 'One Idea Changed Everything.',
+    large: true,
+  },
+};
 
 export default function VideoTemplate({
   durations = SCENE_DURATIONS,
@@ -96,19 +132,40 @@ export default function VideoTemplate({
     onSceneChange?.(currentSceneKey);
   }, [currentSceneKey, onSceneChange]);
 
-  const baseSceneKey = currentSceneKey.replace(/_r[12]$/, '');
-  const baseIndex = Object.keys(SCENE_DURATIONS).indexOf(baseSceneKey);
-  const frameData = FRAMES[baseIndex >= 0 ? baseIndex : 0];
+  const baseKey = currentSceneKey.replace(/_r[12]$/, '');
+  const sceneData = SCENES[baseKey] ?? SCENES['opening'];
   const duration = durations[currentSceneKey] ?? 5000;
 
   return (
     <div className="w-full h-screen overflow-hidden relative bg-black">
       <AnimatePresence mode="sync">
-        <CinematicFrame
-          key={currentSceneKey}
-          duration={duration}
-          {...frameData}
-        />
+        {sceneData.type === 'black' && (
+          <BlackScene
+            key={currentSceneKey}
+            duration={duration}
+            narration={sceneData.narration ?? ''}
+            fadeIn={sceneData.fadeIn}
+          />
+        )}
+        {sceneData.type === 'frame' && (
+          <CinematicFrame
+            key={currentSceneKey}
+            duration={duration}
+            image={sceneData.image!}
+            narration={sceneData.narration}
+            kenBurns={sceneData.kenBurns!}
+            fadeToBlack={sceneData.fadeToBlack}
+          />
+        )}
+        {sceneData.type === 'textcard' && (
+          <TextCard
+            key={currentSceneKey}
+            duration={duration}
+            line1={sceneData.line1!}
+            line2={sceneData.line2}
+            large={sceneData.large}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

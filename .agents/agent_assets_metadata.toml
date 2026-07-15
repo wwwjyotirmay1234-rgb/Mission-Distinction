@@ -576,6 +576,30 @@ uri = "file://attached_assets/film/frame_10.png"
 type = "image"
 title = "frame 10 split lit face determination emerging"
 
+[[generated]]
+id = "Etw---xqRGJKH2eS6rBcb"
+uri = "file://attached_assets/film/frame_02b.png"
+type = "image"
+title = "frame 2 inside hostel room reveal"
+
+[[generated]]
+id = "KB5VBVSoXvxH0mXkXZ6f8"
+uri = "file://attached_assets/film/frame_03b.png"
+type = "image"
+title = "frame 3 side profile student trying to focus"
+
+[[generated]]
+id = "_kxa6sV_XhTtQAsI9a0gi"
+uri = "file://attached_assets/film/frame_04b.png"
+type = "image"
+title = "frame 4 books anatomy notes close up pan"
+
+[[generated]]
+id = "W8fLcgmvg2v4V6EQnGidV"
+uri = "file://attached_assets/film/frame_09b.png"
+type = "image"
+title = "frame 9 phone group chat left behind"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
