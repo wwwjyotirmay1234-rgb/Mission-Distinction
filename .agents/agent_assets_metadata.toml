@@ -1296,6 +1296,66 @@ uri = "file://artifacts/scene1-film/public/frames/s7_13.png"
 type = "image"
 title = "s7_13 Mission Distinction loads successfully stable founder subtle smile reflection"
 
+[[generated]]
+id = "6capus2kwVo1adTzSFLPz"
+uri = "file://attached_assets/generated_images/extreme_close_up_cinematic_f678.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "qHyLhHNE22dbfN1qQMElY"
+uri = "file://attached_assets/generated_images/cinematic_overhead_top_down_2a95.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "dYMESpQJsXxNjHvNWWd8I"
+uri = "file://attached_assets/generated_images/over_shoulder_cinematic_shot_b7bc.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "yHo5kKhB2T6tCmfAeHcYP"
+uri = "file://attached_assets/generated_images/cinematic_overhead_shot_of_18e7.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "VL_AcPJrlc-ZU1D9o61Dj"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_da50.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "_q6kMG6KtafkbuyuNfxK2"
+uri = "file://attached_assets/generated_images/cinematic_split_composition_left_2e4d.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "h390rxmtdjl_kcxEZ52NF"
+uri = "file://attached_assets/generated_images/cinematic_hostel_room_interior_2761.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "H5ooZKScS8lKAao8I3szL"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_7118.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "bBShdI5yW8HS7e4qaRkOz"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_a186.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "eP5EqENRBm0sO938rQHgk"
+uri = "file://attached_assets/generated_images/cinematic_2x2_four_panel_cfb3.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
