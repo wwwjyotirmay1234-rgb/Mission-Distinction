@@ -226,6 +226,24 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s12_title:   8000,  // "MISSION DISTINCTION / Not An App. A Mission."
   s12_last:   10000,  // "And this is only the beginning."
   s12_end:     5000,  // Black fade to end
+
+  // ── Scene 13 — The Legacy (After The Credits II) ──────────────────────────
+  s13_open:    8000,  // Black + ambient sounds (pages, keyboard, rain, footsteps)
+  s13_text1:   5000,  // "Some dreams end when they succeed. Others begin."
+  s13_01:     20000,  // Shot 1  — Unknown first-year arrives on campus
+  s13_02:     25000,  // Shot 2  — History repeats (cluttered desk, stress)
+  s13_03:     15000,  // Shot 3  — The Discovery (screen light in eyes)
+  s13_04:     30000,  // Shot 4  — Invisible helpers (ghost founder silhouettes)
+  s13_05:     40000,  // Shot 5  — Chain reaction montage
+  s13_06:     45000,  // Shot 6  — Years pass (student → intern → doctor)
+  s13_07:     30000,  // Shot 7  — The Doctor (treating patient, family smiles)
+  s13_08:     25000,  // Shot 8  — Founders watch from distance, quietly proud
+  s13_09:     40000,  // Shot 9  — Legacy wall (thousands of student photos)
+  s13_10:     35000,  // Shot 10 — The Torch (doctor hands notes to first-year)
+  s13_final:  60000,  // Final Shot — Drone ascent, city of light
+  s13_title:   8000,  // "MISSION DISTINCTION / Knowledge. Service. Humanity."
+  s13_last:   10000,  // "The story now belongs to them."
+  s13_end:     5000,  // Black fade
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1227,6 +1245,98 @@ const SCENES: Record<string, SceneData> = {
     line1: '"And this is only the beginning."',
   },
   s12_end: {
+    type: 'black',
+    narration: '',
+    fadeIn: false,
+  },
+
+  // ── Scene 13 — The Legacy ──────────────────────────────────────────────────
+
+  s13_open: {
+    type: 'black',
+    narration: '',
+    fadeIn: false,
+  },
+  s13_text1: {
+    type: 'textcard',
+    line1: '"Some dreams end when they succeed."',
+    line2: '"Others begin."',
+  },
+  s13_01: {
+    type: 'frame',
+    image: 's13_01.png',
+    narration: '"A year later… another student arrived. Just like us."',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '2%'] },
+  },
+  s13_02: {
+    type: 'frame',
+    image: 's13_02.png',
+    narration: '"The weight was the same. The uncertainty was the same. The fear was the same."',
+    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s13_03: {
+    type: 'frame',
+    image: 's13_03.png',
+    narration: '"This time… the answer already existed."',
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s13_04: {
+    type: 'silent',
+    image: 's13_04.png',
+    kenBurns: { scale: [1.04, 1.0], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s13_05: {
+    type: 'frame',
+    image: 's13_05.png',
+    narration: '"Knowledge shared became confidence. Confidence shared became strength."',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s13_06: {
+    type: 'silent',
+    image: 's13_06.png',
+    kenBurns: { scale: [1.0, 1.06], x: ['1%', '-1%'], y: ['0%', '0%'] },
+  },
+  s13_07: {
+    type: 'frame',
+    image: 's13_07.png',
+    narration: '"Every page. Every note. Every hour. Reached farther than we imagined."',
+    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['2%', '-2%'] },
+  },
+  s13_08: {
+    type: 'frame',
+    image: 's13_08.png',
+    narration: '"Worth it."',
+    kenBurns: { scale: [1.0, 1.04], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s13_09: {
+    type: 'frame',
+    image: 's13_09.png',
+    narration: '"The goal was never downloads. The goal was impact."',
+    kenBurns: { scale: [1.1, 1.0], x: ['0%', '0%'], y: ['3%', '-3%'] },
+  },
+  s13_10: {
+    type: 'silent',
+    image: 's13_10.png',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s13_final: {
+    type: 'frame',
+    image: 's13_final.png',
+    narration: '"A mission is not measured by how many people follow it. It is measured by how many continue it."',
+    kenBurns: { scale: [1.12, 1.0], x: ['0%', '0%'], y: ['4%', '-4%'] },
+    fadeToBlack: true,
+  },
+  s13_title: {
+    type: 'textcard',
+    line1: 'MISSION DISTINCTION',
+    line2: 'Knowledge. Service. Humanity.',
+    large: true,
+  },
+  s13_last: {
+    type: 'textcard',
+    line1: '"The story now belongs to them."',
+  },
+  s13_end: {
     type: 'black',
     narration: '',
     fadeIn: false,
