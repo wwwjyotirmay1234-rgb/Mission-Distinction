@@ -672,6 +672,42 @@ uri = "file://attached_assets/film/s2_07.png"
 type = "image"
 title = "s2 ending three friends determination"
 
+[[generated]]
+id = "NI8mV8tqOWesu2j32dne9"
+uri = "file://attached_assets/film/s1_n01.png"
+type = "image"
+title = "drone-hostel-night-rain"
+
+[[generated]]
+id = "cf0rf3czgxp09WXUZ5ZrV"
+uri = "file://attached_assets/film/s1_n02.png"
+type = "image"
+title = "rainy-window-student-inside"
+
+[[generated]]
+id = "4ONhhBz2UL5w3YA_2ooAF"
+uri = "file://attached_assets/film/s1_n05.png"
+type = "image"
+title = "over-shoulder-laptop-chaos"
+
+[[generated]]
+id = "-lqwR-n6WswVM_LGzk2sA"
+uri = "file://attached_assets/film/s1_n07.png"
+type = "image"
+title = "pen-drop-extreme-closeup"
+
+[[generated]]
+id = "lMZvt0ga0LptkflWcoDCX"
+uri = "file://attached_assets/film/s1_n09.png"
+type = "image"
+title = "realization-expression-shift"
+
+[[generated]]
+id = "kORy-M-3aK8fkAy39czto"
+uri = "file://attached_assets/film/s1_n10.png"
+type = "image"
+title = "eyes-notebook-reflection-idea"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
