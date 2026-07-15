@@ -990,6 +990,24 @@ uri = "file://artifacts/scene1-film/public/frames/s3_07.png"
 type = "image"
 title = "s3_07 three friends turning point under tree"
 
+[[generated]]
+id = "GhR1OW___eiS8Zsiv6fm9"
+uri = "file://artifacts/scene1-film/public/frames/s3_05.png"
+type = "image"
+title = "s3_05 three friends under tree golden hour"
+
+[[generated]]
+id = "Q1lLONokKZ3_UKSkxBG1B"
+uri = "file://artifacts/scene1-film/public/frames/s3_06.png"
+type = "image"
+title = "s3_06 overhead notebook list subjects"
+
+[[generated]]
+id = "9qiXSRQKvY7OEIHQ_P53-"
+uri = "file://artifacts/scene1-film/public/frames/s1_n09.png"
+type = "image"
+title = "s1_n09 founder quiet determination night"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
