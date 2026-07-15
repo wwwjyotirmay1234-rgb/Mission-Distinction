@@ -305,7 +305,8 @@ router.post("/switch-to-student", superAdminMiddleware, async (req: Request, res
       .where(eq(usersTable.id, adminId));
 
     if (!admin?.linkedStudentId) {
-      return res.status(404).json({ error: "No linked student account. Ask the administrator to set one up." });
+      res.status(404).json({ error: "No linked student account. Ask the administrator to set one up." });
+      return;
     }
 
     const [student] = await db
@@ -329,7 +330,8 @@ router.post("/switch-to-student", superAdminMiddleware, async (req: Request, res
       .where(eq(usersTable.id, admin.linkedStudentId));
 
     if (!student) {
-      return res.status(404).json({ error: "Linked student account not found." });
+      res.status(404).json({ error: "Linked student account not found." });
+      return;
     }
 
     const token = generateToken(student.id, student.role, req.headers["user-agent"]);
@@ -344,15 +346,15 @@ router.post("/link-student", superAdminMiddleware, async (req: Request, res: Res
   try {
     const adminId = (req as any).user?.userId;
     const { studentEmail } = req.body as { studentEmail?: string };
-    if (!studentEmail) return res.status(400).json({ error: "studentEmail required" });
+    if (!studentEmail) { res.status(400).json({ error: "studentEmail required" }); return; }
 
     const [student] = await db
       .select({ id: usersTable.id, fullName: usersTable.fullName, email: usersTable.email, role: usersTable.role })
       .from(usersTable)
       .where(eq(usersTable.email, studentEmail));
 
-    if (!student) return res.status(404).json({ error: "Student account not found." });
-    if (student.role !== "student") return res.status(400).json({ error: "That account is not a student account." });
+    if (!student) { res.status(404).json({ error: "Student account not found." }); return; }
+    if (student.role !== "student") { res.status(400).json({ error: "That account is not a student account." }); return; }
 
     await db
       .update(usersTable)
