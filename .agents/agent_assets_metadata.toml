@@ -1530,6 +1530,54 @@ uri = "file://attached_assets/generated_images/cinematic_massive_drone_pullback_
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "lHv9h1-lmcnrK8GwhaKng"
+uri = "file://attached_assets/generated_images/aerial_drone_night_photograph_73bd.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "qOukV3uBZkieV9oDD3qmx"
+uri = "file://attached_assets/generated_images/cinematic_close_up_shot_464f.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "P52iB-FzlJqnR6V-Dtee7"
+uri = "file://attached_assets/generated_images/a_dark_cinematic_2x3_6abc.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "ZwhpV9vrqdB9LNh5d3Rlt"
+uri = "file://attached_assets/generated_images/close_up_macro_photograph_1d54.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "8W51zELKcc0jyD99qvLWC"
+uri = "file://attached_assets/generated_images/cinematic_rear_view_of_ab65.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "FOvSLpcI40GwzC6qNQ3V1"
+uri = "file://attached_assets/generated_images/cinematic_3d_glowing_map_4e01.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "ENVRT9QlTyM_MizUVzHS2"
+uri = "file://attached_assets/generated_images/close_up_macro_photograph_84bd.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "rFRk-fKx4siJW87tiNlfL"
+uri = "file://attached_assets/generated_images/macro_photo_of_a_5e94.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
