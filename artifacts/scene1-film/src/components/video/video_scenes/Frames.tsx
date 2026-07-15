@@ -36,10 +36,14 @@ export function CinematicFrame({ image, duration, narration, kenBurns, fadeToBla
       {/* Image with Ken Burns */}
       <motion.img
         src={`${import.meta.env.BASE_URL}frames/${image}`}
+        alt=""
+        loading="eager"
+        decoding="async"
         className="absolute inset-0 w-full h-full object-cover"
         initial={{ scale: kenBurns.scale[0], x: kenBurns.x[0], y: kenBurns.y[0] }}
         animate={{ scale: kenBurns.scale[1], x: kenBurns.x[1], y: kenBurns.y[1] }}
         transition={{ duration: duration / 1000, ease: 'linear' }}
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
       />
 
       {/* Cinematic letterbox vignette */}
@@ -106,10 +110,14 @@ export function SilentFrame({ image, duration, kenBurns, fadeToBlack }: SilentFr
     >
       <motion.img
         src={`${import.meta.env.BASE_URL}frames/${image}`}
+        alt=""
+        loading="eager"
+        decoding="async"
         className="absolute inset-0 w-full h-full object-cover"
         initial={{ scale: kenBurns.scale[0], x: kenBurns.x[0], y: kenBurns.y[0] }}
         animate={{ scale: kenBurns.scale[1], x: kenBurns.x[1], y: kenBurns.y[1] }}
         transition={{ duration: duration / 1000, ease: 'linear' }}
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
       />
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/25 pointer-events-none" />
