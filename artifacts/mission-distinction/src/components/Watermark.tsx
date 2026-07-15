@@ -1,8 +1,8 @@
 import { useTheme } from "@/contexts/ThemeContext";
 
 export function Watermark() {
-  const { theme } = useTheme();
-  if (theme !== "light") return null;
+  const { isLight } = useTheme();
+  if (!isLight) return null;
 
   return (
     <div
