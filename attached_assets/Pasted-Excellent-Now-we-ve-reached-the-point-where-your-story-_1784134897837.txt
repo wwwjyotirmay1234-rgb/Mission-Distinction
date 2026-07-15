@@ -1,0 +1,484 @@
+Excellent. Now we’ve reached the point where your story stops being a student-help project and becomes a true founder’s journey.
+
+Up to now:
+
+* Scene 1 → Struggle
+* Scene 2 → Idea
+* Scene 3 → Discovery
+* Scene 4 → Collecting Resources
+* Scene 5 → First Impact
+* Scene 6 → PDFs Are Not Enough
+
+Now comes the first major obstacle.
+
+Every great film has a moment where the heroes realize:
+
+“We have no idea how to do this.”
+
+⸻
+
+🎬 SCENE 7 — THE LEAP OF FAITH
+
+Theme: “Dreams are free. Building them isn’t.”
+
+Duration
+
+2–3 minutes
+
+Emotion Arc
+
+Excitement → Overconfidence → Confusion → Frustration → Determination
+
+⸻
+
+OPENING
+
+Black screen.
+
+Sound:
+
+Notebook pages turning.
+
+Keyboard typing.
+
+Rain.
+
+Heartbeat.
+
+Voice-over
+
+“Creating PDFs was difficult.”
+
+“Creating an app felt impossible.”
+
+Fade in.
+
+⸻
+
+SHOT 1 — THE BLUEPRINT
+
+Duration
+
+10 seconds
+
+Camera
+
+Top-down shot
+
+Movement
+
+Slow push-in
+
+Visual
+
+Notebook.
+
+Messy sketches.
+
+Hand-drawn screens.
+
+Boxes connected with arrows.
+
+Labels:
+
+* Notes
+* PDFs
+* Quizzes
+* Community
+
+The first Mission Distinction blueprint.
+
+Music
+
+Hopeful piano.
+
+⸻
+
+SHOT 2 — THE DREAM
+
+Duration
+
+8 seconds
+
+Camera
+
+Close-up sequence
+
+Visual
+
+Three founders imagining:
+
+* Students learning
+* Organized resources
+* Thousands using the platform
+
+Everything feels possible.
+
+Emotion
+
+Excitement.
+
+⸻
+
+SHOT 3 — REALITY ARRIVES
+
+Duration
+
+8 seconds
+
+Camera
+
+Close-up
+
+Visual
+
+Laptop screen.
+
+Blank.
+
+No code.
+
+No app.
+
+No experience.
+
+Sound
+
+Silence.
+
+Voice-over
+
+“Then reality arrived.”
+
+⸻
+
+SHOT 4 — GOOGLE UNIVERSITY
+
+Duration
+
+12 seconds
+
+Camera
+
+Montage
+
+Visual
+
+Late nights.
+
+Searching:
+
+* How to build an app
+* Frontend
+* Backend
+* Database
+* Authentication
+
+Dozens of tabs open.
+
+Emotion
+
+Information overload.
+
+⸻
+
+SHOT 5 — FIRST ATTEMPT
+
+Duration
+
+10 seconds
+
+Camera
+
+Over-the-shoulder
+
+Visual
+
+First prototype.
+
+Ugly.
+
+Broken.
+
+Nothing works properly.
+
+Friend 1
+
+“This doesn’t look right.”
+
+⸻
+
+SHOT 6 — FAILURE
+
+Duration
+
+12 seconds
+
+Camera
+
+Close-up sequence
+
+Visual
+
+Error messages.
+
+Broken pages.
+
+Loading screens.
+
+Failed builds.
+
+Sound
+
+System error sounds.
+
+Keyboard frustration.
+
+Voice-over
+
+“Every answer created three new problems.”
+
+⸻
+
+SHOT 7 — THE LONG NIGHTS
+
+Duration
+
+15 seconds
+
+Camera
+
+Time-lapse
+
+Visual
+
+Days becoming nights.
+
+Nights becoming mornings.
+
+Hostel lights turning on and off.
+
+Three founders still working.
+
+Emotion
+
+Persistence.
+
+⸻
+
+SHOT 8 — THE DOUBT
+
+Duration
+
+12 seconds
+
+Camera
+
+Medium shot
+
+Movement
+
+Slow orbit
+
+Visual
+
+Three founders sitting quietly.
+
+Exhausted.
+
+Dialogue
+
+Friend 2:
+
+“Maybe this is too big.”
+
+Silence.
+
+Nobody answers.
+
+⸻
+
+SHOT 9 — THE DECISION
+
+Duration
+
+10 seconds
+
+Camera
+
+Close-up on founder
+
+Movement
+
+Slow push-in
+
+Visual
+
+Founder staring at notebook.
+
+Remembers:
+
+* Scene 1 struggle
+* Students helped by PDFs
+* Thank-you messages
+
+Dialogue
+
+Founder:
+
+“If students need it…”
+
+“We keep going.”
+
+Silence.
+
+⸻
+
+SHOT 10 — RESTART
+
+Duration
+
+12 seconds
+
+Camera
+
+Montage
+
+Visual
+
+* Whiteboard erased
+* New plans drawn
+* New designs
+* New learning
+
+They begin again.
+
+Smarter.
+
+More prepared.
+
+Music
+
+Orchestral strings begin.
+
+⸻
+
+SHOT 11 — FIRST REAL VERSION
+
+Duration
+
+15 seconds
+
+Camera
+
+Slow reveal
+
+Movement
+
+Push-in
+
+Visual
+
+Laptop screen.
+
+For the first time:
+
+Mission Distinction actually looks like an app.
+
+Not perfect.
+
+Not complete.
+
+But real.
+
+Emotion
+
+Goosebumps moment.
+
+⸻
+
+SHOT 12 — THE FUTURE
+
+Duration
+
+10 seconds
+
+Camera
+
+Close-up
+
+Visual
+
+Founder looking at unfinished app.
+
+Reflection visible in eyes.
+
+Voice-over
+
+“It wasn’t ready.”
+
+“But for the first time…”
+
+“It felt possible.”
+
+⸻
+
+FINAL SHOT
+
+Duration
+
+8 seconds
+
+Camera
+
+Macro shot
+
+Visual
+
+Laptop screen displaying:
+
+Mission Distinction v0.1
+
+Cursor blinking.
+
+Waiting.
+
+Music
+
+Hopeful crescendo.
+
+⸻
+
+END CARD
+
+Black screen.
+
+Text:
+
+“The First Version Was Born.”
+
+Pause.
+
+“Now It Had To Survive.”
+
+Fade out.
+
+⸻
+
+Why This Scene Is Critical
+
+This is your “Rocky training montage” scene.
+
+The audience must see that the app wasn’t magically created.
+
+They need to feel:
+
+* confusion
+* mistakes
+* learning
+* frustration
+* persistence
+
+Only then will the launch and 500-download scenes feel earned.
+
+🎬 Next Scene (Scene 8 — The Collapse) should be even stronger: a major setback where the project nearly dies—bugs, lost work, exhaustion, or the moment the founders consider abandoning the app entirely. That’s often the emotional low point before the final rise.

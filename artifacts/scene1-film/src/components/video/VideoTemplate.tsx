@@ -9,7 +9,8 @@ import { CinematicFrame, BlackScene, TextCard, SilentFrame } from './video_scene
 //  SCENE 3 — THE DISCOVERY        (10 shots, ~69 s)
 //  SCENE 4 — THE COLLECTION       (11 shots, ~87 s)
 //  SCENE 5 — THE LIMITS OF PDFs   (11 shots, ~108 s)
-//  Total runtime: ~7 min including bridges + endings
+//  SCENE 6 — THE LEAP OF FAITH    (13 shots, ~142 s)
+//  Total runtime: ~9.5 min including bridges + endings
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SCENE_DURATIONS: Record<string, number> = {
@@ -85,8 +86,26 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s5_10:  12000,   // Shot 10 — Founder writes "Let's build an app."
   s5_11:  10000,   // Final   — Rough app sketch on notebook — history changed
 
-  // ── Ending ───────────────────────────────────────────────────────────────
+  // ── Bridge 5 / Scene 5 End Card ──────────────────────────────────────────
   end_card3: 6000, // "The Resource Project Was Over." / "The Mission Was Just Beginning."
+
+  // ── Scene 6 — The Leap of Faith ──────────────────────────────────────────
+  s6_01:  10000,   // Shot 1  — Blueprint: notebook with Notes/PDFs/Quizzes/Community wireframes
+  s6_02:   8000,   // Shot 2  — The Dream: three founders looking up, imagining it all
+  s6_03:   8000,   // Shot 3  — Reality arrives: blank laptop screen, no code
+  s6_04:  12000,   // Shot 4  — Google University: dozens of tabs, information overload
+  s6_05:  10000,   // Shot 5  — First attempt: ugly broken prototype, friend reacts
+  s6_06:  12000,   // Shot 6  — Failure: error messages, broken pages, console errors
+  s6_07:  15000,   // Shot 7  — Long nights: hostel, time passing, all three working
+  s6_08:  12000,   // Shot 8  — The doubt: exhausted founders, heavy silence
+  s6_09:  10000,   // Shot 9  — The decision: founder resolves, "we keep going"
+  s6_10:  12000,   // Shot 10 — Restart: whiteboard erased, new plans, new energy
+  s6_11:  15000,   // Shot 11 — First real version: Mission Distinction app on laptop
+  s6_12:  10000,   // Shot 12 — The future: founder face lit by screen glow, reflection
+  s6_13:   8000,   // Final   — "Mission Distinction v0.1" blinking cursor
+
+  // ── Ending ───────────────────────────────────────────────────────────────
+  end_card4: 6000, // "The First Version Was Born." / "Now It Had To Survive."
   end_title: 7000, // "One Idea Changed Everything."
 };
 
@@ -430,12 +449,99 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['2%', '-2%'] },
   },
 
-  // ── Ending ────────────────────────────────────────────────────────────────
+  // ── Bridge 5 ─────────────────────────────────────────────────────────────
 
   end_card3: {
     type: 'textcard',
     line1: 'The Resource Project Was Over.',
     line2: 'The Mission Was Just Beginning.',
+  },
+
+  // ── Scene 6 — The Leap of Faith ──────────────────────────────────────────
+
+  s6_01: {
+    type: 'frame',
+    image: 's6_01.png',
+    narration: '"Dreams are free. Building them isn\'t."',
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['-2%', '2%'] },
+  },
+  s6_02: {
+    type: 'silent',
+    image: 's6_02.png',
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s6_03: {
+    type: 'frame',
+    image: 's6_03.png',
+    narration: '"Then reality arrived."',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s6_04: {
+    type: 'silent',
+    image: 's6_04.png',
+    kenBurns: { scale: [1.06, 1.0], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s6_05: {
+    type: 'frame',
+    image: 's6_05.png',
+    narration: '"The first version didn\'t work. Nothing did."',
+    kenBurns: { scale: [1.0, 1.07], x: ['1%', '-1%'], y: ['0%', '0%'] },
+  },
+  s6_06: {
+    type: 'frame',
+    image: 's6_06.png',
+    narration: '"Every answer created three new problems."',
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s6_07: {
+    type: 'silent',
+    image: 's6_07.png',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s6_08: {
+    type: 'frame',
+    image: 's6_08.png',
+    narration: '"Maybe this is too big."',
+    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s6_09: {
+    type: 'frame',
+    image: 's6_09.png',
+    narration: '"If students need it… we keep going."',
+    fadeToBlack: false,
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s6_10: {
+    type: 'silent',
+    image: 's6_10.png',
+    kenBurns: { scale: [1.04, 1.0], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s6_11: {
+    type: 'frame',
+    image: 's6_11.png',
+    narration: '"For the first time… it looked like an app."',
+    kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s6_12: {
+    type: 'frame',
+    image: 's6_12.png',
+    narration: '"It wasn\'t ready. But for the first time… it felt possible."',
+    fadeToBlack: true,
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s6_13: {
+    type: 'silent',
+    image: 's6_13.png',
+    fadeToBlack: true,
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+
+  // ── Ending ────────────────────────────────────────────────────────────────
+
+  end_card4: {
+    type: 'textcard',
+    line1: 'The First Version Was Born.',
+    line2: 'Now It Had To Survive.',
   },
   end_title: {
     type: 'textcard',
