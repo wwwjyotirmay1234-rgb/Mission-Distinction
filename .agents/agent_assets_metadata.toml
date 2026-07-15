@@ -756,6 +756,54 @@ uri = "file://attached_assets/film/s2_07_new.png"
 type = "image"
 title = "three students notebook Mission Distinction"
 
+[[generated]]
+id = "AqKHKEKOcSJjIcLgyNXtc"
+uri = "file://attached_assets/film/v2_s1_02.png"
+type = "image"
+title = "founder face frustrated exhausted reading"
+
+[[generated]]
+id = "IJY71LYYt_8vmPPbHPz4j"
+uri = "file://attached_assets/film/v2_s1_03.png"
+type = "image"
+title = "founder profile checklist notebook"
+
+[[generated]]
+id = "B48aO4ZPoMbdP0rUbjY0-"
+uri = "file://attached_assets/film/v2_s1_05.png"
+type = "image"
+title = "founder profile rainy window lamp"
+
+[[generated]]
+id = "WqBJl46J0DdgIg_fblIna"
+uri = "file://attached_assets/film/v2_s1_n09.png"
+type = "image"
+title = "founder realization expression lamp light"
+
+[[generated]]
+id = "7b0VW0e0ty1gbFZdUyo3H"
+uri = "file://attached_assets/film/v2_s2_01.png"
+type = "image"
+title = "three students canteen frustration"
+
+[[generated]]
+id = "4ocxXjMCL_oHkOXhyIDC9"
+uri = "file://attached_assets/film/v2_s2_04.png"
+type = "image"
+title = "founder canteen idea quiet realization"
+
+[[generated]]
+id = "tjl_Gjv0GaJI2vDOF7S0C"
+uri = "file://attached_assets/film/v2_s2_05.png"
+type = "image"
+title = "founder writing focused determined"
+
+[[generated]]
+id = "L8Xcfz7aSgXcbFtp0ifeJ"
+uri = "file://attached_assets/film/v2_s2_07.png"
+type = "image"
+title = "three students Mission Distinction notebook"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
