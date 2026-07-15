@@ -123,9 +123,33 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s7_12:  15000,   // Shot 12 — Dawn: sunrise through window, three silhouettes, 5:30 AM
   s7_13:  12000,   // Final   — Mission Distinction loads successfully, subtle smile
 
-  // ── Ending ───────────────────────────────────────────────────────────────
+  // ── Bridge before Scene 9 ────────────────────────────────────────────────
   end_card5: 6000, // "Most Projects End Here." / "Mission Distinction Didn't."
-  end_title: 7000, // "One Idea Changed Everything."
+  bridge9:   5000, // "THE DREAM WAS BUILT." / "NOW CAME LAUNCH DAY."
+
+  // ── Scene 9 — Launch Day ──────────────────────────────────────────────────
+  s9_01:  10000,   // Shot 1  — Sunrise: drone over campus, golden light, new day
+  s9_02:  12000,   // Shot 2  — The Room: same hostel room, now transformed
+  s9_03:  15000,   // Shot 3  — The Countdown: three founders checking everything
+  s9_04:  12000,   // Shot 4  — Final Review: Mission Distinction app, all ready
+  s9_05:  10000,   // Shot 5  — The Question: "Ready?" — silence
+  s9_06:  12000,   // Shot 6  — The Click: cursor on launch button, trembling finger
+  s9_07:  15000,   // Shot 7  — Silence: three founders staring, waiting
+  s9_08:  10000,   // Shot 8  — First User: analytics show "1"
+  s9_09:  12000,   // Shot 9  — Another Room: unknown student downloads app
+  s9_10:   8000,   // Shot 10 — 5 Users: 5 → 9 → 14
+  s9_11:  25000,   // Shot 11 — Montage: students across Odisha using app
+  s9_12:  15000,   // Shot 12 — The Surge: analytics climbing fast
+  s9_13:  15000,   // Shot 13 — The Realization: founder emotional, remembering
+  s9_14:  12000,   // Shot 14 — The Message: "This is exactly what we needed."
+  s9_15:  15000,   // Shot 15 — Celebration: three friends, quiet smiles, exhausted
+  s9_16:  15000,   // Shot 16 — The Window: same window, different person now
+  s9_17:  20000,   // Final   — Drone pullback: campus lights, thousands of students
+
+  // ── Scene 9 End ───────────────────────────────────────────────────────────
+  end_card6:    8000, // "150 Students." / "24 Hours." / "A Mission Had Begun."
+  post_credit:  8000, // "500 USERS" / "Three weeks later."
+  end_title:    9000, // "To Be Continued…"
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -640,16 +664,131 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
 
-  // ── Ending ────────────────────────────────────────────────────────────────
+  // ── Bridge → Scene 9 ─────────────────────────────────────────────────────
 
   end_card5: {
     type: 'textcard',
     line1: 'Most Projects End Here.',
     line2: 'Mission Distinction Didn\'t.',
   },
+  bridge9: {
+    type: 'textcard',
+    line1: 'THE DREAM WAS BUILT.',
+    line2: 'NOW CAME LAUNCH DAY.',
+  },
+
+  // ── Scene 9 — Launch Day ──────────────────────────────────────────────────
+
+  s9_01: {
+    type: 'frame',
+    image: 's9_01.png',
+    narration: '"Months earlier… it was just an idea in a notebook. Today… the world would finally see it."',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['2%', '-2%'] },
+  },
+  s9_02: {
+    type: 'silent',
+    image: 's9_02.png',
+    kenBurns: { scale: [1.05, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9_03: {
+    type: 'silent',
+    image: 's9_03.png',
+    kenBurns: { scale: [1.0, 1.04], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s9_04: {
+    type: 'frame',
+    image: 's9_04.png',
+    narration: '"Perfection wasn\'t possible. But waiting forever wasn\'t either."',
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9_05: {
+    type: 'silent',
+    image: 's9_05.png',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9_06: {
+    type: 'silent',
+    image: 's9_06.png',
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9_07: {
+    type: 'silent',
+    image: 's9_07.png',
+    kenBurns: { scale: [1.02, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9_08: {
+    type: 'silent',
+    image: 's9_08.png',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9_09: {
+    type: 'frame',
+    image: 's9_09.png',
+    narration: '"Somewhere else… a student opened it for the first time."',
+    kenBurns: { scale: [1.04, 1.0], x: ['1%', '-1%'], y: ['0%', '0%'] },
+  },
+  s9_10: {
+    type: 'silent',
+    image: 's9_10.png',
+    kenBurns: { scale: [1.0, 1.07], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9_11: {
+    type: 'frame',
+    image: 's9_11.png',
+    narration: '"One student became ten. Ten became fifty. The mission was moving."',
+    kenBurns: { scale: [1.0, 1.05], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s9_12: {
+    type: 'silent',
+    image: 's9_12.png',
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9_13: {
+    type: 'frame',
+    image: 's9_13.png',
+    narration: '"The numbers weren\'t important. What they represented was."',
+    kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9_14: {
+    type: 'silent',
+    image: 's9_14.png',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9_15: {
+    type: 'silent',
+    image: 's9_15.png',
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9_16: {
+    type: 'frame',
+    image: 's9_16.png',
+    narration: '"Months earlier… he searched for help. Now he was helping others find it."',
+    fadeToBlack: true,
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s9_17: {
+    type: 'silent',
+    image: 's9_17.png',
+    fadeToBlack: true,
+    kenBurns: { scale: [1.0, 1.12], x: ['0%', '0%'], y: ['2%', '-2%'] },
+  },
+
+  // ── Scene 9 Ending ────────────────────────────────────────────────────────
+
+  end_card6: {
+    type: 'textcard',
+    line1: '150 Students.',
+    line2: '24 Hours.',
+    line3: 'A Mission Had Begun.',
+  },
+  post_credit: {
+    type: 'textcard',
+    line1: '500 USERS',
+    line2: 'Three weeks later.',
+  },
   end_title: {
     type: 'textcard',
-    line1: 'One Idea Changed Everything.',
+    line1: 'To Be Continued…',
     large: true,
   },
 };

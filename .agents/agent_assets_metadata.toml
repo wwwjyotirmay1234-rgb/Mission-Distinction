@@ -1362,6 +1362,108 @@ uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_50c9.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "NtrMXjiHKbZXgI4J-rQYF"
+uri = "file://attached_assets/generated_images/cinematic_drone_aerial_shot_08b0.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "wllnSrH8opvfgD8Ad5Mu8"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_slow_a97e.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "RlfzIqE5jeAf5a0AILogb"
+uri = "file://attached_assets/generated_images/cinematic_over_the_shoulder_6c73.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "hj6xQaqB9SyRFUQaEJCqP"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_of_06f7.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "vYLDsd04JdAcySo008Iux"
+uri = "file://attached_assets/generated_images/cinematic_extreme_macro_close_5578.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "4rfiG6GjdImg4ZOAVzW99"
+uri = "file://attached_assets/generated_images/cinematic_triptych_style_close_2a91.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "__ihZ9Skst2IUSYvch_kp"
+uri = "file://attached_assets/generated_images/cinematic_tracking_shot_of_cdaf.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "QM5xLd2EK9eOQ06pZN0r0"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_7919.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "RF2Ue_uFZEmOb4L-3DgBP"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_4eee.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "hKs7ikUmGa7QtmWYxmZw9"
+uri = "file://attached_assets/generated_images/cinematic_close_up_sequence_fc1f.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "qGBQ6xSB10-IAUOhEruBz"
+uri = "file://attached_assets/generated_images/cinematic_4_panel_montage_b4d3.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "YPB6AXQQbhuM6CFh5Yruu"
+uri = "file://attached_assets/generated_images/cinematic_close_up_sequence_d7ab.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Jgyc_r8Ns67s_psLLawZX"
+uri = "file://attached_assets/generated_images/cinematic_extreme_close_up_956b.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "lRpZ5MEACZvu9Smbj2FQB"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_8da0.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "mvtLyaEzXgGJ9m1UaQkkt"
+uri = "file://attached_assets/generated_images/cinematic_macro_close_up_243c.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Rc3NEdO8ZVHL679NrEsAw"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_matching_85d2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "jreoFhUWBxHAnxw3mEbp4"
+uri = "file://attached_assets/generated_images/cinematic_drone_aerial_shot_9d1f.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
