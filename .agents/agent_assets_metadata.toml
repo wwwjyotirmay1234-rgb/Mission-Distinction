@@ -708,6 +708,54 @@ uri = "file://attached_assets/film/s1_n10.png"
 type = "image"
 title = "eyes-notebook-reflection-idea"
 
+[[generated]]
+id = "OTudMFsfYrfCLSk42einT"
+uri = "file://attached_assets/film/s1_01_new.png"
+type = "image"
+title = "overhead desk MBBS books 2:47AM"
+
+[[generated]]
+id = "Pqy5QjYZmK9r3h--tNmUL"
+uri = "file://attached_assets/film/s1_02_new.png"
+type = "image"
+title = "Indian student face frustrated close-up"
+
+[[generated]]
+id = "HC_nsNS10bE40rXrIh17u"
+uri = "file://attached_assets/film/s1_03_new.png"
+type = "image"
+title = "Indian student checklist notebook MBBS"
+
+[[generated]]
+id = "2Y4bTn8CeMtorSnrY-5pi"
+uri = "file://attached_assets/film/s1_05_new.png"
+type = "image"
+title = "Indian student rainy window profile"
+
+[[generated]]
+id = "jn7Iu61CGqHeoDzXtAHoz"
+uri = "file://attached_assets/film/s2_01_new.png"
+type = "image"
+title = "three Indian students canteen discussion"
+
+[[generated]]
+id = "sclQqPPEFKck6b1THx9HW"
+uri = "file://attached_assets/film/s2_04_new.png"
+type = "image"
+title = "Indian founder canteen idea realization"
+
+[[generated]]
+id = "SsiyNrbVG90cGCxF2wD5A"
+uri = "file://attached_assets/film/s2_05_new.png"
+type = "image"
+title = "Indian student writing determined canteen"
+
+[[generated]]
+id = "pBmVm_4DQEfVKrhlrv_bP"
+uri = "file://attached_assets/film/s2_07_new.png"
+type = "image"
+title = "three students notebook Mission Distinction"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
