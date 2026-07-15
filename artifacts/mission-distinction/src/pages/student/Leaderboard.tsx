@@ -118,16 +118,19 @@ export default function StudentLeaderboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight mb-2 flex items-center gap-2">
-          <Trophy className="text-yellow-500" size={24} /> Leaderboard
+        <h1 className="text-2xl font-bold tracking-tight mb-1 flex items-center gap-2">
+          <span className="text-2xl">🏆</span> Tournament Standings
         </h1>
-        <p className="text-muted-foreground">See how you rank among your peers.</p>
+        <p className="text-muted-foreground text-sm">⚽ World Cup of Medicine — see where you rank on the pitch.</p>
       </div>
 
       {myRank > 0 && (
-        <Card className="bg-primary/10 border-primary/30">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-lg shrink-0">
+        <Card className="bg-primary/10 border-primary/40 overflow-hidden relative">
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 18px, rgba(0,160,60,0.06) 18px, rgba(0,160,60,0.06) 36px)" }}
+          />
+          <CardContent className="p-4 flex items-center gap-4 relative">
+            <div className="w-10 h-10 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-lg shrink-0 border border-primary/30">
               {user?.fullName?.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
@@ -139,25 +142,25 @@ export default function StudentLeaderboard() {
             </div>
             <div className="text-right shrink-0">
               <p className="text-xl font-black text-primary">#{myRank}</p>
-              <p className="text-xs text-muted-foreground">Your rank</p>
+              <p className="text-[10px] text-muted-foreground">Your position</p>
             </div>
           </CardContent>
         </Card>
       )}
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as "xp" | "score" | "streak" | "college")}>
-        <TabsList className="bg-muted/50 border border-border/50 flex-wrap h-auto gap-1">
+        <TabsList className="bg-muted/50 border border-primary/20 flex-wrap h-auto gap-1">
           <TabsTrigger value="xp" className="gap-1.5">
-            <Zap size={13} className="text-amber-400" /> XP Rankings
+            ⚽ XP Table
           </TabsTrigger>
           <TabsTrigger value="score" className="gap-1.5">
             <Medal size={13} /> Top Scorers
           </TabsTrigger>
           <TabsTrigger value="streak" className="gap-1.5">
-            <Flame size={13} /> Streak Leaders
+            <Flame size={13} /> Win Streak
           </TabsTrigger>
           <TabsTrigger value="college" className="gap-1.5">
-            <Building2 size={13} className="text-blue-400" /> My College
+            <Building2 size={13} className="text-blue-400" /> My Club
           </TabsTrigger>
         </TabsList>
       </Tabs>

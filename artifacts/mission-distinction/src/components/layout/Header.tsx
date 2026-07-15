@@ -312,7 +312,9 @@ export function Header() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 gap-3">
+    <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 gap-3"
+      style={{ boxShadow: "0 1px 0 0 rgba(0,180,70,0.22)" }}
+    >
       {/* Mobile: open sheet drawer */}
       <Button
         variant="ghost"
@@ -340,7 +342,7 @@ export function Header() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
           type="search"
-          placeholder="Search for notes, quizzes, topics..."
+          placeholder="Search notes, quizzes, topics..."
           className="pl-9 bg-muted/50 border-none focus-visible:ring-1"
         />
       </div>

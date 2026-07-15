@@ -1,7 +1,7 @@
 /**
- * Section color identity system.
- * Each major feature area gets a consistent color across sidebar icons,
- * dashboard cards, and badges so students can navigate by color, not just text.
+ * Section color identity system — ⚽ Football World Cup Edition.
+ * Each feature area maps to a national-team jersey colour so students
+ * can navigate by colour, not just text.
  */
 export type SectionKey =
   | "learning"
@@ -22,11 +22,11 @@ export interface SectionColor {
 
 export const SECTION_COLORS: Record<SectionKey, SectionColor> = {
   learning: {
-    text: "text-violet-400",
-    bg: "bg-violet-500/10",
-    border: "border-violet-500/30",
-    gradient: "from-violet-500/15 to-violet-500/0",
-    ring: "ring-violet-500/40",
+    text: "text-emerald-400",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/30",
+    gradient: "from-emerald-500/15 to-emerald-500/0",
+    ring: "ring-emerald-500/40",
   },
   anatomy: {
     text: "text-blue-400",
@@ -36,11 +36,11 @@ export const SECTION_COLORS: Record<SectionKey, SectionColor> = {
     ring: "ring-blue-500/40",
   },
   progress: {
-    text: "text-emerald-400",
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-500/30",
-    gradient: "from-emerald-500/15 to-emerald-500/0",
-    ring: "ring-emerald-500/40",
+    text: "text-yellow-400",
+    bg: "bg-yellow-500/10",
+    border: "border-yellow-500/30",
+    gradient: "from-yellow-500/15 to-yellow-500/0",
+    ring: "ring-yellow-500/40",
   },
   exams: {
     text: "text-orange-400",
@@ -57,11 +57,11 @@ export const SECTION_COLORS: Record<SectionKey, SectionColor> = {
     ring: "ring-red-500/40",
   },
   community: {
-    text: "text-pink-400",
-    bg: "bg-pink-500/10",
-    border: "border-pink-500/30",
-    gradient: "from-pink-500/15 to-pink-500/0",
-    ring: "ring-pink-500/40",
+    text: "text-amber-400",
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/30",
+    gradient: "from-amber-500/15 to-amber-500/0",
+    ring: "ring-amber-500/40",
   },
   tools: {
     text: "text-cyan-400",

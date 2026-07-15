@@ -130,7 +130,11 @@ export function BottomNav() {
     <>
       <nav
         className="fixed bottom-0 right-0 z-40 bg-sidebar/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)] transition-[left] duration-200 ease-in-out"
-        style={{ boxShadow: "0 -2px 12px rgba(0,0,0,0.35)", left: sidebarInset }}
+        style={{
+          boxShadow: "0 -2px 12px rgba(0,0,0,0.45), 0 -1px 0 0 rgba(0,180,70,0.28)",
+          borderTop: "1px solid rgba(0,160,60,0.20)",
+          left: sidebarInset,
+        }}
         role="navigation"
         aria-label="Bottom navigation"
       >

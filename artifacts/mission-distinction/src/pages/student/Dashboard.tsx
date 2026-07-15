@@ -408,9 +408,9 @@ export default function StudentDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            Welcome back, {user?.fullName?.split(" ")[0]}! 👋
+            Welcome back, {user?.fullName?.split(" ")[0]}! ⚽
           </h1>
-          <p className="text-sm text-muted-foreground">Ready to conquer your goals today?</p>
+          <p className="text-sm text-muted-foreground">Kick off your study session — match day is every day.</p>
         </div>
         <div className="flex flex-row flex-wrap gap-2 items-center">
           {/* Academic Year selector */}
@@ -508,35 +508,36 @@ export default function StudentDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card/50 backdrop-blur border-border/50">
+        <Card className="bg-card/50 backdrop-blur border-primary/20 relative overflow-hidden">
+          <div className="absolute -right-3 -top-3 w-16 h-16 bg-primary/10 rounded-full blur-xl pointer-events-none" />
           <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between pb-1.5">
-              <p className="text-xs sm:text-sm font-medium">Quizzes</p>
-              <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
+              <p className="text-xs sm:text-sm font-medium">Matches</p>
+              <span className="text-sm sm:text-base shrink-0">⚽</span>
             </div>
             {statsLoading ? <Skeleton className="h-7 w-12 mt-1" /> : (
-              <h2 className="text-2xl sm:text-3xl font-bold">{stats?.quizzesAttempted || 0}</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-primary">{stats?.quizzesAttempted || 0}</h2>
             )}
-            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">attempted</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">played</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-card/50 backdrop-blur border-border/50 border-primary/20 relative overflow-hidden">
-          <div className="absolute -right-4 -top-4 w-20 h-20 bg-primary/10 rounded-full blur-xl pointer-events-none" />
+        <Card className="bg-card/50 backdrop-blur border-border/50 border-amber-500/20 relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-amber-500/10 rounded-full blur-xl pointer-events-none" />
           <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between pb-1.5">
-              <p className="text-xs sm:text-sm font-medium">Streak</p>
-              <Flame className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500 shrink-0" />
+              <p className="text-xs sm:text-sm font-medium">Win Streak</p>
+              <Flame className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500 shrink-0" />
             </div>
             {statsLoading ? <Skeleton className="h-7 w-12 mt-1" /> : (
               <div className="flex items-baseline gap-1">
-                <h2 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
+                <h2 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-500">
                   {stats?.studyStreak || 0}
                 </h2>
-                <span className="text-xs font-bold text-orange-500">Days</span>
+                <span className="text-xs font-bold text-amber-500">Days</span>
               </div>
             )}
-            <p className="text-[10px] sm:text-xs font-medium text-orange-400/80 mt-1">Keep it up! 🔥</p>
+            <p className="text-[10px] sm:text-xs font-medium text-amber-400/80 mt-1">Keep it up! 🔥</p>
           </CardContent>
         </Card>
       </div>
@@ -588,7 +589,7 @@ export default function StudentDashboard() {
                   </div>
                 ) : !activities || (activities as DashboardActivity[]).length === 0 ? (
                   <div className="p-8 text-center text-muted-foreground text-sm">
-                    No recent activity. Take a quiz or read some notes to get started!
+                    No recent activity. Take a quiz or read some notes to kick off! ⚽
                   </div>
                 ) : (
                   <div className="divide-y divide-border/40">

@@ -93,142 +93,157 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* DARK MODE ONLY APP */
+/* ⚽ FOOTBALL WORLD CUP THEME — Stadium Night */
 :root {
   color-scheme: dark;
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
+  --button-outline: rgba(255,255,255, .08);
+  --badge-outline: rgba(0,255,80, .08);
 
   --opaque-button-border-intensity: 9;
 
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
+  --elevate-1: rgba(0,200,80, .04);
+  --elevate-2: rgba(0,200,80, .09);
 
-  /* Deep navy backgrounds */
-  --background: 231 33% 8%; /* #0d0f1a */
-  --foreground: 210 40% 98%;
+  /* Stadium-night dark green backgrounds */
+  --background: 130 38% 6%;       /* #091309 — pitch at night */
+  --foreground: 0 0% 96%;
 
-  --border: 233 45% 15%;
-  --input: 233 45% 15%;
-  --ring: 262 83% 58%;
+  --border: 130 25% 14%;
+  --input: 130 25% 14%;
+  --ring: 51 100% 50%;            /* Gold focus ring */
 
-  --card: 233 45% 11%; /* #10132a */
-  --card-foreground: 210 40% 98%;
-  --card-border: rgba(255, 255, 255, 0.05);
+  --card: 130 30% 9%;             /* #0f1d10 */
+  --card-foreground: 0 0% 96%;
+  --card-border: rgba(0, 200, 80, 0.07);
 
-  --sidebar: 231 33% 8%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-border: 233 45% 15%;
-  --sidebar-primary: 262 83% 58%;
-  --sidebar-primary-foreground: 210 40% 98%;
-  --sidebar-accent: 233 45% 15%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-ring: 262 83% 58%;
+  --sidebar: 130 42% 4%;          /* #060d07 — darkest green */
+  --sidebar-foreground: 0 0% 96%;
+  --sidebar-border: 130 25% 11%;
+  --sidebar-primary: 145 100% 24%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-primary-border: rgba(0,160,60,0.4);
+  --sidebar-accent: 130 25% 10%;
+  --sidebar-accent-foreground: 0 0% 96%;
+  --sidebar-accent-border: rgba(0,200,80,0.08);
+  --sidebar-ring: 51 100% 50%;
 
-  --popover: 233 45% 11%;
-  --popover-foreground: 210 40% 98%;
-  --popover-border: 233 45% 15%;
+  --popover: 130 30% 9%;
+  --popover-foreground: 0 0% 96%;
+  --popover-border: 130 25% 14%;
 
-  /* Purple primary */
-  --primary: 262 83% 58%; /* #7c3aed */
-  --primary-foreground: 210 40% 98%;
+  /* Pitch green — FIFA official */
+  --primary: 145 100% 24%;        /* #00772b */
+  --primary-foreground: 0 0% 100%;
+  --primary-border: rgba(0, 150, 60, 0.4);
 
-  /* Purple accent (complements primary) */
-  --secondary: 271 81% 64%;
-  --secondary-foreground: 210 40% 98%;
+  /* Stadium Gold */
+  --secondary: 51 100% 50%;       /* #FFD700 */
+  --secondary-foreground: 0 0% 8%;
+  --secondary-border: rgba(255,215,0,0.3);
 
-  --muted: 233 45% 15%;
-  --muted-foreground: 215 20.2% 65.1%;
+  --muted: 130 25% 13%;
+  --muted-foreground: 130 15% 58%;
+  --muted-border: rgba(0,200,80,0.08);
 
-  --accent: 233 45% 15%;
-  --accent-foreground: 210 40% 98%;
+  --accent: 130 25% 13%;
+  --accent-foreground: 0 0% 96%;
+  --accent-border: rgba(0,200,80,0.08);
 
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive: 0 72% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --destructive-border: rgba(239,68,68,0.3);
 
-  --chart-1: 262 83% 58%;
-  --chart-2: 217 91% 60%;
-  --chart-3: 142 71% 45%;
-  --chart-4: 43 74% 66%;
-  --chart-5: 316 73% 52%;
+  /* Chart: football team jersey palette */
+  --chart-1: 145 100% 24%;        /* pitch green */
+  --chart-2: 51 100% 50%;         /* stadium gold */
+  --chart-3: 210 80% 58%;         /* cobalt blue (France) */
+  --chart-4: 0 75% 52%;           /* scarlet (Spain/England) */
+  --chart-5: 280 60% 55%;         /* purple (Portugal) */
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: Menlo, monospace;
-  --radius: .5rem; 
+  --radius: .5rem;
 
-  --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 2px 4px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 4px 6px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 8px 10px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
+  --shadow-2xs: 0px 2px 0px 0px rgba(0,150,60, 0.00);
+  --shadow-xs: 0px 2px 0px 0px rgba(0,150,60, 0.00);
+  --shadow-sm: 0px 2px 0px 0px rgba(0,150,60, 0.00), 0px 1px 2px -1px rgba(0,150,60, 0.00);
+  --shadow: 0px 2px 0px 0px rgba(0,150,60, 0.00), 0px 1px 2px -1px rgba(0,150,60, 0.00);
+  --shadow-md: 0px 2px 0px 0px rgba(0,150,60, 0.00), 0px 2px 4px -1px rgba(0,150,60, 0.00);
+  --shadow-lg: 0px 2px 0px 0px rgba(0,150,60, 0.00), 0px 4px 6px -1px rgba(0,150,60, 0.00);
+  --shadow-xl: 0px 2px 0px 0px rgba(0,150,60, 0.00), 0px 8px 10px -1px rgba(0,150,60, 0.00);
+  --shadow-2xl: 0px 2px 0px 0px rgba(0,150,60, 0.00);
 }
 
 .dark {
-  --background: 231 33% 8%; 
-  --foreground: 210 40% 98%;
+  --background: 130 38% 6%;
+  --foreground: 0 0% 96%;
 }
 
-/* Light mode overrides — applied when <html class="light"> */
+/* ⚽ Light mode — Bright day match, sunlit pitch */
 .light {
   color-scheme: light;
-  --button-outline: rgba(0,0,0,.10);
-  --badge-outline: rgba(0,0,0,.05);
-  --elevate-1: rgba(0,0,0,.03);
-  --elevate-2: rgba(0,0,0,.07);
+  --button-outline: rgba(0,100,40,.12);
+  --badge-outline: rgba(0,100,40,.08);
+  --elevate-1: rgba(0,100,40,.04);
+  --elevate-2: rgba(0,100,40,.08);
 
-  --background: 220 33% 97%;
-  --foreground: 222 47% 11%;
+  --background: 135 45% 95%;      /* very light pitch-green */
+  --foreground: 130 40% 12%;
 
-  --border: 214 32% 88%;
-  --input: 214 32% 88%;
-  --ring: 262 83% 58%;
+  --border: 135 30% 82%;
+  --input: 135 30% 82%;
+  --ring: 145 100% 30%;
 
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --card-border: rgba(0,0,0,0.07);
+  --card-foreground: 130 40% 12%;
+  --card-border: rgba(0,120,50,0.1);
 
-  --sidebar: 220 33% 97%;
-  --sidebar-foreground: 222 47% 11%;
-  --sidebar-border: 214 32% 88%;
-  --sidebar-primary: 262 83% 58%;
-  --sidebar-primary-foreground: 210 40% 98%;
-  --sidebar-accent: 214 32% 93%;
-  --sidebar-accent-foreground: 222 47% 11%;
-  --sidebar-accent-border: rgba(0,0,0,0.06);
-  --sidebar-ring: 262 83% 58%;
+  --sidebar: 135 40% 92%;
+  --sidebar-foreground: 130 40% 12%;
+  --sidebar-border: 135 30% 80%;
+  --sidebar-primary: 145 100% 30%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-primary-border: rgba(0,150,60,0.3);
+  --sidebar-accent: 135 30% 86%;
+  --sidebar-accent-foreground: 130 40% 12%;
+  --sidebar-accent-border: rgba(0,120,50,0.08);
+  --sidebar-ring: 145 100% 30%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --popover-border: 214 32% 88%;
+  --popover-foreground: 130 40% 12%;
+  --popover-border: 135 30% 82%;
 
-  --primary: 262 83% 58%;
-  --primary-foreground: 210 40% 98%;
-  --primary-border: rgba(124,58,237,0.3);
+  --primary: 145 100% 28%;
+  --primary-foreground: 0 0% 100%;
+  --primary-border: rgba(0,150,60,0.3);
 
-  --secondary: 271 81% 64%;
-  --secondary-foreground: 210 40% 98%;
-  --secondary-border: rgba(139,92,246,0.3);
+  --secondary: 45 100% 42%;
+  --secondary-foreground: 0 0% 8%;
+  --secondary-border: rgba(200,160,0,0.3);
 
-  --muted: 214 32% 93%;
-  --muted-foreground: 215 16% 47%;
-  --muted-border: rgba(0,0,0,0.06);
+  --muted: 135 30% 87%;
+  --muted-foreground: 130 25% 44%;
+  --muted-border: rgba(0,120,50,0.08);
 
-  --accent: 214 32% 93%;
-  --accent-foreground: 222 47% 11%;
-  --accent-border: rgba(0,0,0,0.06);
+  --accent: 135 30% 87%;
+  --accent-foreground: 130 40% 12%;
+  --accent-border: rgba(0,120,50,0.08);
 
   --destructive: 0 72% 51%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive-foreground: 0 0% 100%;
   --destructive-border: rgba(239,68,68,0.3);
 }
 
+/* ── Pitch stripe animation ─── */
 @keyframes marquee {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
+}
+
+@keyframes pitch-pulse {
+  0%, 100% { opacity: 0.06; }
+  50%       { opacity: 0.12; }
 }
 
 @layer base {
@@ -253,9 +268,7 @@
   }
 }
 
-/* ── KaTeX dark-theme overrides ─────────────────────────────────────────────
-   KaTeX ships light-coloured SVG paths and borders. Override so math renders
-   correctly on the app's dark background.                                    */
+/* ── KaTeX dark-theme overrides ─────────────────────────────────────────────*/
 .katex {
   color: hsl(var(--foreground));
   font-size: 1em;
@@ -269,17 +282,15 @@
 .katex-display > .katex {
   text-align: left;
 }
-/* Fraction rules, radical bars, etc. inherit currentColor so they go white */
 .katex .mfrac .frac-line,
 .katex .sqrt > .root,
 .katex .overline .overline-line,
 .katex .underline .underline-line {
   border-color: currentColor;
 }
-/* Boxed expressions (used heavily in Physiology formulas) */
 .katex .boxed {
-  border: 1.5px solid rgba(var(--primary), 0.7);
+  border: 1.5px solid rgba(0,180,70,0.6);
   border-radius: 4px;
   padding: 2px 6px;
-  background: rgba(var(--primary), 0.06);
+  background: rgba(0,180,70,0.06);
 }
