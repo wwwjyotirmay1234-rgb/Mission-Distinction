@@ -483,7 +483,7 @@ export function CinematicCamera({
       style={{ position: 'absolute', inset: 0, transformOrigin: origin, overflow: 'hidden' }}
       initial={{ scale: zoom[0], x: panX[0], y: panY[0] }}
       animate={{ scale: zoom[1], x: panX[1], y: panY[1] }}
-      transition={{ duration, ease }}>
+      transition={{ duration, ease: ease as import('framer-motion').Easing }}>
       {children}
     </motion.div>
   );
