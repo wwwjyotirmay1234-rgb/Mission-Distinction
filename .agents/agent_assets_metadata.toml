@@ -972,6 +972,24 @@ uri = "file://attached_assets/film/s3_10.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "WmgcHWg7w38CblLUOIwUT"
+uri = "file://artifacts/scene1-film/public/frames/s2_03.png"
+type = "image"
+title = "s2_03 student phone overwhelm"
+
+[[generated]]
+id = "B2ssrRpSngaWwS13KMQO2"
+uri = "file://artifacts/scene1-film/public/frames/s3_03.png"
+type = "image"
+title = "s3_03 students notes exchange corridor"
+
+[[generated]]
+id = "uUzdF7lSAMiFO8VSKU-lh"
+uri = "file://artifacts/scene1-film/public/frames/s3_07.png"
+type = "image"
+title = "s3_07 three friends turning point under tree"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
