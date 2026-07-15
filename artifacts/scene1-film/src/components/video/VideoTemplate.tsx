@@ -14,9 +14,6 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s1_f4:        4000,   // extreme close-up eyes
   s1_f5:        6000,   // looks toward window → fade to black
 
-  // ── Scene 1 → Scene 2 bridge ─────────────────────────
-  bridge:       4000,   // "The Decision" title card
-
   // ── Scene 2 — The Decision ───────────────────────────
   s2_s1:        5000,   // canteen, three friends sitting
   s2_s2:        4000,   // friend throws notebook
@@ -80,13 +77,6 @@ const SCENES: Record<string, SceneData> = {
     narration: '"And sometimes… he wondered if he was already falling behind."',
     fadeToBlack: true,
     kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-
-  // Bridge
-  bridge: {
-    type: 'textcard',
-    line1: 'Scene 2',
-    line2: 'The Decision',
   },
 
   // Scene 2
