@@ -46,29 +46,6 @@ interface NavGroup {
 
 const MORE_GROUP_OPEN_KEY = "md_sidebar_more_open";
 
-/* Stadium crowd silhouette SVG — painted at the base of the sidebar */
-function StadiumCrowd({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 220 38"
-      xmlns="http://www.w3.org/2000/svg"
-      preserveAspectRatio="none"
-      aria-hidden="true"
-      className={className}
-    >
-      <path
-        d="M0,38 C8,20 20,30 30,16 C40,4 52,24 62,12 C72,0 82,20 92,14 C102,8 112,22 122,16 C132,10 142,26 152,18 C162,10 174,28 184,20 C194,12 206,26 220,18 L220,38 Z"
-        fill="currentColor"
-        opacity="0.18"
-      />
-      <path
-        d="M0,38 C6,26 18,34 28,24 C38,14 50,30 60,22 C70,14 80,28 90,22 C100,16 110,28 120,22 C130,16 142,30 152,24 C162,18 174,30 184,24 C194,18 206,30 220,24 L220,38 Z"
-        fill="currentColor"
-        opacity="0.10"
-      />
-    </svg>
-  );
-}
 
 function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void; forceExpanded?: boolean }) {
   const [location] = useLocation();
@@ -227,20 +204,13 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
   }
 
   return (
-    <div
-      className="flex flex-col h-full overflow-hidden relative"
-      style={{
-        backgroundImage:
-          "repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(140,80,255,0.055) 28px, rgba(140,80,255,0.055) 56px)",
-      }}
-    >
+    <div className="flex flex-col h-full overflow-hidden relative">
       {/* Logo + collapse toggle */}
       <div className={cn("flex items-center shrink-0 border-b border-sidebar-border", isCollapsed ? "justify-center py-4 px-2" : "px-4 py-4 gap-3")}>
         {!isCollapsed && (
           <>
             <div className="relative shrink-0">
               <img src="/md-logo-new.png" alt="Mission Distinction" className="h-8 w-8 object-contain rounded-lg" />
-              <span className="absolute -bottom-1 -right-1 text-[10px] leading-none select-none">⚽</span>
             </div>
             <span className="font-bold text-base text-foreground tracking-tight truncate">
               Mission<span className="text-primary">Distinction</span>
@@ -250,7 +220,6 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
         {isCollapsed && (
           <div className="relative">
             <img src="/md-logo-new.png" alt="Mission Distinction" className="h-7 w-7 object-contain rounded-lg" />
-            <span className="absolute -bottom-1 -right-1 text-[9px] leading-none select-none">⚽</span>
           </div>
         )}
         {/* Collapse toggle — only on desktop */}
@@ -302,11 +271,6 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
           );
         })}
       </nav>
-
-      {/* Stadium crowd silhouette — decorative */}
-      <div className={cn("w-full text-primary pointer-events-none select-none shrink-0", isCollapsed ? "opacity-50" : "opacity-100")}>
-        <StadiumCrowd className="w-full h-9" />
-      </div>
 
       {/* XP bar */}
       {xpStats && (

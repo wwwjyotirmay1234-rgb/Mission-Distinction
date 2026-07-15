@@ -153,12 +153,12 @@
   --destructive-foreground: 0 0% 100%;
   --destructive-border: rgba(239,68,68,0.3);
 
-  /* Chart: football team jersey palette */
+  /* Chart palette */
   --chart-1: 270 70% 60%;         /* violet */
-  --chart-2: 51 100% 50%;         /* stadium gold */
-  --chart-3: 210 80% 58%;         /* cobalt blue (France) */
-  --chart-4: 0 75% 52%;           /* scarlet (Spain/England) */
-  --chart-5: 280 60% 55%;         /* purple (Portugal) */
+  --chart-2: 210 80% 58%;         /* blue */
+  --chart-3: 160 60% 45%;         /* teal */
+  --chart-4: 0 75% 52%;           /* red */
+  --chart-5: 45 90% 55%;          /* amber */
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: Georgia, serif;
@@ -180,7 +180,7 @@
   --foreground: 0 0% 96%;
 }
 
-/* ⚽ Light mode */
+/* Light mode */
 .light {
   color-scheme: light;
   --button-outline: rgba(100,50,200,.12);
@@ -235,54 +235,9 @@
   --destructive-border: rgba(239,68,68,0.3);
 }
 
-/* ── Football utility tokens ─────────────────────────────────────────────── */
-:root {
-  --pitch-green:  #007a30;   /* FIFA official turf green */
-  --stadium-gold: #ffd700;   /* World Cup trophy gold */
-  --jersey-white: #f0f4f0;   /* Away-kit off-white */
-}
-
-/* ── Pitch stripe / stadium animations ─── */
 @keyframes marquee {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
-}
-
-@keyframes pitch-pulse {
-  0%, 100% { opacity: 0.06; }
-  50%       { opacity: 0.12; }
-}
-
-@keyframes header-pitch-glow {
-  0%, 100% { box-shadow: 0 1px 0 0 rgba(140, 80, 255, 0.18), 0 2px 8px 0 rgba(140, 80, 255, 0.06); }
-  50%       { box-shadow: 0 1px 0 0 rgba(140, 80, 255, 0.36), 0 2px 16px 0 rgba(140, 80, 255, 0.14); }
-}
-
-/* Animated pitch-green glow applied directly to the header element */
-.header-pitch-glow {
-  animation: header-pitch-glow 3s ease-in-out infinite;
-}
-
-/* Primary button: subtle inner-dashed stitch border (football shirt effect) */
-.btn-football-primary::after {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  pointer-events: none;
-}
-
-/* ── Football focus glow (overrides Tailwind ring colour with stadium gold) */
-@layer base {
-  :focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--stadium-gold), 0 0 8px 2px rgba(255,215,0,0.25);
-  }
-  button:focus-visible, a:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--stadium-gold), 0 0 8px 2px rgba(255,215,0,0.22);
-  }
 }
 
 @layer base {

@@ -312,7 +312,7 @@ export function Header() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 gap-3 header-pitch-glow">
+    <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 gap-3">
       {/* Mobile: open sheet drawer */}
       <Button
         variant="ghost"
@@ -350,11 +350,10 @@ export function Header() {
           <button
             className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer"
             onClick={() => setLocation("/student/progress")}
-            title={`${xp.toLocaleString()} Goals Scored`}
+            title={`${xp.toLocaleString()} XP`}
           >
-            <span className="text-sm leading-none">⚽</span>
             <span className="text-xs font-bold text-foreground">{xp.toLocaleString()}</span>
-            <span className="text-[10px] text-muted-foreground font-medium">Goals</span>
+            <span className="text-[10px] text-muted-foreground font-medium">XP</span>
             <span className={`text-xs font-semibold ${rank.textClass}`}>{rank.emoji}</span>
           </button>
         )}
@@ -423,8 +422,8 @@ export function Header() {
             </DropdownMenuItem>
             {user?.role !== "admin" && (
               <DropdownMenuItem onClick={() => setLocation("/student/progress")}>
-                <span className="mr-2 text-sm">⚽</span>
-                <span>My Goals & Rank</span>
+                <span className="mr-2 text-sm">⭐</span>
+                <span>My XP & Rank</span>
               </DropdownMenuItem>
             )}
             {showSwitchButton && (
