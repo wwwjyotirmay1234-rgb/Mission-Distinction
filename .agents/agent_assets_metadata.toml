@@ -600,6 +600,78 @@ uri = "file://attached_assets/film/frame_09b.png"
 type = "image"
 title = "shot 9 phone screen"
 
+[[generated]]
+id = "YMg-9YL-THj-a48CXOOdE"
+uri = "file://attached_assets/film/s1_01.png"
+type = "image"
+title = "s1f1 wide desk 2:17am"
+
+[[generated]]
+id = "oQp4W-WbDfHSYYSVWggOC"
+uri = "file://attached_assets/film/s1_02.png"
+type = "image"
+title = "s1f2 medium reading"
+
+[[generated]]
+id = "e3vvEODeuRoqjjbz9jLc-"
+uri = "file://attached_assets/film/s1_03.png"
+type = "image"
+title = "s1f3 over-shoulder checklist"
+
+[[generated]]
+id = "5MktwVJ0iP7IaZJ6cx9ep"
+uri = "file://attached_assets/film/s1_04.png"
+type = "image"
+title = "s1f4 eyes exhaustion no tears"
+
+[[generated]]
+id = "OT69GfLikZgD5EWy4i5Vh"
+uri = "file://attached_assets/film/s1_05.png"
+type = "image"
+title = "s1f5 window city lights"
+
+[[generated]]
+id = "KiXV5VWvDIisz3OIz7ivV"
+uri = "file://attached_assets/film/s2_01.png"
+type = "image"
+title = "s2s1 canteen three friends"
+
+[[generated]]
+id = "900ff-1kNHMej9kLvuTIl"
+uri = "file://attached_assets/film/s2_02.png"
+type = "image"
+title = "s2s2 friend throws notebook"
+
+[[generated]]
+id = "n6GpnlU3FZ79GKYYiZhxZ"
+uri = "file://attached_assets/film/s2_03.png"
+type = "image"
+title = "s2s3 friend WhatsApp scattered PDFs"
+
+[[generated]]
+id = "Fmg46EEUlrLq67bNMDuGb"
+uri = "file://attached_assets/film/s2_04.png"
+type = "image"
+title = "s2s4 founder listening thinking"
+
+[[generated]]
+id = "O1YfouL2NBqYt1-537cxc"
+uri = "file://attached_assets/film/s2_05.png"
+type = "image"
+title = "s2s5 founder opens notebook"
+
+[[generated]]
+id = "b6GX9HRbyLZMUSebLbI1W"
+uri = "file://attached_assets/film/s2_06.png"
+type = "image"
+title = "s2s6 pen writing MD"
+
+[[generated]]
+id = "RudaEchrxkj-sm3Bc1hQB"
+uri = "file://attached_assets/film/s2_07.png"
+type = "image"
+title = "s2 ending three friends determination"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
@@ -755,3 +827,75 @@ id = "rOeEOjBIsQUcEulmoEj2h"
 uri = "file://attached_assets/film/frame_04b.png"
 type = "image"
 title = "Shot 4 — Books close-up pan"
+
+[[outputs]]
+id = "0Pgwq2bhscFsle4mXZFb5"
+uri = "file://attached_assets/film/s1_01.png"
+type = "image"
+title = "Scene 1 — F1: Wide shot, 2:17 AM desk"
+
+[[outputs]]
+id = "YaCdhAYPkVl_2ug5NeWO2"
+uri = "file://attached_assets/film/s1_02.png"
+type = "image"
+title = "Scene 1 — F2: Medium shot, reading"
+
+[[outputs]]
+id = "giyBzdw4wke06MTFvtD6Y"
+uri = "file://attached_assets/film/s1_03.png"
+type = "image"
+title = "Scene 1 — F3: Over-shoulder checklist"
+
+[[outputs]]
+id = "tjQz648dM8MV3QVQmHTxR"
+uri = "file://attached_assets/film/s1_04.png"
+type = "image"
+title = "Scene 1 — F4: Eyes close-up, no tears"
+
+[[outputs]]
+id = "2NvSEfCStspyqvhP6H80M"
+uri = "file://attached_assets/film/s1_05.png"
+type = "image"
+title = "Scene 1 — F5: Looking at window, city lights"
+
+[[outputs]]
+id = "rYQeqGPi0pVAUI63e6jUc"
+uri = "file://attached_assets/film/s2_01.png"
+type = "image"
+title = "Scene 2 — S1: Canteen, three friends"
+
+[[outputs]]
+id = "ygcruocUwby2iwYNfB6jR"
+uri = "file://attached_assets/film/s2_02.png"
+type = "image"
+title = "Scene 2 — S2: Friend throws notebook"
+
+[[outputs]]
+id = "p9C0qsEgCQvk280pkak_0"
+uri = "file://attached_assets/film/s2_03.png"
+type = "image"
+title = "Scene 2 — S3: Friend scrolling WhatsApp"
+
+[[outputs]]
+id = "mQeRKu7vhpNL_tOsMZwMz"
+uri = "file://attached_assets/film/s2_04.png"
+type = "image"
+title = "Scene 2 — S4: Founder listening, thinking"
+
+[[outputs]]
+id = "6cqsY1MifjLhmflKlkxux"
+uri = "file://attached_assets/film/s2_05.png"
+type = "image"
+title = "Scene 2 — S5: Founder opens notebook"
+
+[[outputs]]
+id = "D4jyxAMwbTR-Q_2eo7MXa"
+uri = "file://attached_assets/film/s2_06.png"
+type = "image"
+title = "Scene 2 — S6: Pen writes “MD”"
+
+[[outputs]]
+id = "mUAf-asayecAW-VvBTuHa"
+uri = "file://attached_assets/film/s2_07.png"
+type = "image"
+title = "Scene 2 — Ending: Three friends, determination"

@@ -4,21 +4,31 @@ import { useVideoPlayer } from '@/lib/video';
 import { CinematicFrame, BlackScene, TextCard } from './video_scenes/Frames';
 
 export const SCENE_DURATIONS: Record<string, number> = {
-  opening:    5000,
-  s1:         4000,
-  s2:         5000,
-  s3:         5000,
-  s4:         4000,
-  s5:         4000,
-  s6:         5000,
-  s7:         3000,
-  s8:         6000,
-  s9:         5000,
-  s10:        6000,
-  final:      7000,
-  text1:      5000,
-  text2:      5000,
-  transition: 5000,
+  // ── Opening ──────────────────────────────────────────
+  opening:      5000,
+
+  // ── Scene 1 — The Struggle ───────────────────────────
+  s1_f1:        5000,   // wide shot, 2:17 AM desk
+  s1_f2:        5000,   // medium shot, reading
+  s1_f3:        5000,   // over-shoulder checklist
+  s1_f4:        4000,   // extreme close-up eyes
+  s1_f5:        6000,   // looks toward window → fade to black
+
+  // ── Scene 1 → Scene 2 bridge ─────────────────────────
+  bridge:       4000,   // "The Decision" title card
+
+  // ── Scene 2 — The Decision ───────────────────────────
+  s2_s1:        5000,   // canteen, three friends sitting
+  s2_s2:        4000,   // friend throws notebook
+  s2_s3:        4000,   // friend scrolls WhatsApp
+  s2_s4:        5000,   // founder listening, thinking
+  s2_s5:        5000,   // founder opens notebook
+  s2_s6:        6000,   // pen writes "MD"
+  s2_s7:        5000,   // all three look at notebook — determination
+
+  // ── Ending ───────────────────────────────────────────
+  end_text:     5000,   // "An idea was born."
+  end_title:    6000,   // "One Idea Changed Everything."
 };
 
 interface SceneData {
@@ -37,80 +47,95 @@ const SCENES: Record<string, SceneData> = {
   opening: {
     type: 'black',
     fadeIn: true,
-    narration: '"Every year, thousands of students enter medical college with a dream.\n\nA dream to become a doctor."',
+    narration: '"Every year, thousands of students enter medical college with a dream. A dream to become a doctor."',
   },
-  s1: {
+
+  // Scene 1
+  s1_f1: {
     type: 'frame',
-    image: 'frame_01.png',
+    image: 's1_01.png',
     narration: '"But dreams meet reality."',
     kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '-2%'] },
   },
-  s2: {
+  s1_f2: {
     type: 'frame',
-    image: 'frame_02b.png',
-    kenBurns: { scale: [1.06, 1.0], x: ['1%', '-1%'], y: ['0%', '0%'] },
+    image: 's1_02.png',
+    kenBurns: { scale: [1.05, 1.0], x: ['1%', '-1%'], y: ['0%', '0%'] },
   },
-  s3: {
+  s1_f3: {
     type: 'frame',
-    image: 'frame_03b.png',
+    image: 's1_03.png',
     narration: '"The syllabus seemed endless."',
     kenBurns: { scale: [1.0, 1.07], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
-  s4: {
+  s1_f4: {
     type: 'frame',
-    image: 'frame_04b.png',
-    narration: '"The books kept growing."',
-    kenBurns: { scale: [1.05, 1.05], x: ['-2%', '2%'], y: ['0%', '0%'] },
-  },
-  s5: {
-    type: 'frame',
-    image: 'frame_02.png',
+    image: 's1_04.png',
     narration: '"The pressure kept growing."',
-    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
+    kenBurns: { scale: [1.0, 1.09], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
-  s6: {
+  s1_f5: {
     type: 'frame',
-    image: 'frame_03.png',
-    kenBurns: { scale: [1.05, 1.05], x: ['2%', '-2%'], y: ['0%', '0%'] },
-  },
-  s7: {
-    type: 'frame',
-    image: 'frame_05.png',
-    kenBurns: { scale: [1.04, 1.08], x: ['0%', '0%'], y: ['1%', '-1%'] },
-  },
-  s8: {
-    type: 'frame',
-    image: 'frame_06.png',
+    image: 's1_05.png',
     narration: '"And sometimes… he wondered if he was already falling behind."',
-    kenBurns: { scale: [1.08, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s9: {
-    type: 'frame',
-    image: 'frame_09b.png',
-    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s10: {
-    type: 'frame',
-    image: 'frame_09.png',
-    narration: '"He wasn\'t the only one. Across Odisha… hundreds of students felt exactly the same."',
-    kenBurns: { scale: [1.1, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  final: {
-    type: 'frame',
-    image: 'frame_10.png',
     fadeToBlack: true,
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+
+  // Bridge
+  bridge: {
+    type: 'textcard',
+    line1: 'Scene 2',
+    line2: 'The Decision',
+  },
+
+  // Scene 2
+  s2_s1: {
+    type: 'frame',
+    image: 's2_01.png',
+    kenBurns: { scale: [1.05, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s2_s2: {
+    type: 'frame',
+    image: 's2_02.png',
+    narration: '"I can\'t find proper notes."',
+    kenBurns: { scale: [1.0, 1.06], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s2_s3: {
+    type: 'frame',
+    image: 's2_03.png',
+    narration: '"Everything is scattered."',
+    kenBurns: { scale: [1.04, 1.04], x: ['2%', '-2%'], y: ['0%', '0%'] },
+  },
+  s2_s4: {
+    type: 'frame',
+    image: 's2_04.png',
     kenBurns: { scale: [1.0, 1.07], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
-  text1: {
-    type: 'textcard',
-    line1: '"What if the problem wasn\'t the students…"',
-    line2: '"What if the problem was the lack of guidance?"',
+  s2_s5: {
+    type: 'frame',
+    image: 's2_05.png',
+    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
-  text2: {
-    type: 'textcard',
-    line1: '"What if the problem was the lack of guidance?"',
+  s2_s6: {
+    type: 'frame',
+    image: 's2_06.png',
+    narration: '"What if everything students needed was in one place?"',
+    kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
-  transition: {
+  s2_s7: {
+    type: 'frame',
+    image: 's2_07.png',
+    fadeToBlack: true,
+    kenBurns: { scale: [1.08, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+
+  // Ending
+  end_text: {
+    type: 'textcard',
+    line1: '"An idea was born."',
+  },
+  end_title: {
     type: 'textcard',
     line1: 'One Idea Changed Everything.',
     large: true,
@@ -126,7 +151,7 @@ export default function VideoTemplate({
   loop?: boolean;
   onSceneChange?: (sceneKey: string) => void;
 } = {}) {
-  const { currentScene, currentSceneKey } = useVideoPlayer({ durations, loop });
+  const { currentSceneKey } = useVideoPlayer({ durations, loop });
 
   useEffect(() => {
     onSceneChange?.(currentSceneKey);
