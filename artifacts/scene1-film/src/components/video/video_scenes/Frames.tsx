@@ -185,19 +185,21 @@ interface TextCardProps {
   duration: number;
   line1: string;
   line2?: string;
+  line3?: string;
   large?: boolean;
 }
 
-export function TextCard({ duration, line1, line2, large }: TextCardProps) {
+export function TextCard({ duration, line1, line2, line3, large }: TextCardProps) {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
     timers.push(setTimeout(() => setPhase(1), 500));
-    if (line2) timers.push(setTimeout(() => setPhase(2), 2000));
-    timers.push(setTimeout(() => setPhase(3), duration - 800));
+    if (line2) timers.push(setTimeout(() => setPhase(2), 1600));
+    if (line3) timers.push(setTimeout(() => setPhase(3), 2800));
+    timers.push(setTimeout(() => setPhase(4), duration - 800));
     return () => timers.forEach(clearTimeout);
-  }, [duration, line2]);
+  }, [duration, line2, line3]);
 
   // Bridge cards use uppercase tracking style; ending uses italic large
   const isBridge = !large;
@@ -236,7 +238,6 @@ export function TextCard({ duration, line1, line2, large }: TextCardProps) {
 
       {line2 && (
         <>
-          {/* Thin divider between the two lines */}
           <motion.div
             className="w-16 h-px bg-white/30"
             initial={{ scaleX: 0, opacity: 0 }}
@@ -259,6 +260,34 @@ export function TextCard({ duration, line1, line2, large }: TextCardProps) {
             transition={{ duration: 1.1, ease: 'easeInOut' }}
           >
             {line2}
+          </motion.p>
+        </>
+      )}
+
+      {line3 && (
+        <>
+          <motion.div
+            className="w-16 h-px bg-white/30"
+            initial={{ scaleX: 0, opacity: 0 }}
+            animate={phase >= 3 ? { scaleX: 1, opacity: 1 } : { scaleX: 0, opacity: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+          />
+          <motion.p
+            className={isBridge
+              ? "text-center text-white/80 font-light tracking-[0.2em] uppercase"
+              : "text-center text-white/75 italic tracking-widest"}
+            style={{
+              fontFamily: isBridge ? 'var(--font-body, sans-serif)' : 'var(--font-display)',
+              fontSize: fontSize2,
+              lineHeight: 1.5,
+              maxWidth: '70vw',
+              textShadow: '0 2px 20px rgba(0,0,0,0.9)',
+            }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={phase >= 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+            transition={{ duration: 1.1, ease: 'easeInOut' }}
+          >
+            {line3}
           </motion.p>
         </>
       )}

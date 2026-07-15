@@ -912,6 +912,66 @@ uri = "file://attached_assets/film/new3_s2_01.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "7T1_CMy_goKbi9YSia-5e"
+uri = "file://attached_assets/film/s3_01.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "oKqMy-O5cfSheCq-qPmHu"
+uri = "file://attached_assets/film/s3_02.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "EugO-tt5vhADlY4JJ4AwW"
+uri = "file://attached_assets/film/s3_03.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "4oYEE04N4zr5DEuuOJKKp"
+uri = "file://attached_assets/film/s3_04.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "5qWWkoDRTrVnGOfviHfmS"
+uri = "file://attached_assets/film/s3_05.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "JuBrcAVTBMzx-FOAB9kHP"
+uri = "file://attached_assets/film/s3_06.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Zgs2r9ZB5B2vsCAHYex0Y"
+uri = "file://attached_assets/film/s3_07.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "iFOwKuCiKTHyfr9JimAJs"
+uri = "file://attached_assets/film/s3_08.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "oGzqC-0KI1x6E5oB_SNcq"
+uri = "file://attached_assets/film/s3_09.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "5nhayyzLleR6uYyx2gfwm"
+uri = "file://attached_assets/film/s3_10.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
