@@ -580,7 +580,7 @@ title = "final shot split-lit face"
 id = "Etw---xqRGJKH2eS6rBcb"
 uri = "file://attached_assets/film/frame_02b.png"
 type = "image"
-title = "shot 2 inside hostel"
+title = "shot 2 inside room - matching reference character"
 
 [[generated]]
 id = "KB5VBVSoXvxH0mXkXZ6f8"
@@ -736,7 +736,7 @@ title = "Final — Split-lit face"
 id = "kR3XPx4UzObBMlROe9xeU"
 uri = "file://attached_assets/film/frame_02b.png"
 type = "image"
-title = "Shot 2 — Inside the room"
+title = "Shot 2 — Inside the room (updated)"
 
 [[outputs]]
 id = "xQkna52yao152aLNCGUht"
