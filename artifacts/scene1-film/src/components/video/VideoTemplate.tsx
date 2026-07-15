@@ -209,6 +209,23 @@ export const SCENE_DURATIONS: Record<string, number> = {
   ep_title:    8000,  // "MISSION DISTINCTION / A Story Still Being Written"
   ep_last:    10000,  // "Somewhere tonight…"
   ep_end:      5000,  // Black fade to end
+
+  // ── Scene 12 — The Anniversary (After The Credits) ────────────────────────
+  s12_year:    3500,  // "ONE YEAR LATER" title card
+  s12_01:     15000,  // Shot 1  — The Old Room (empty, rain, same desk)
+  s12_02:     20000,  // Shot 2  — Flashback Echoes (double-exposure memories)
+  s12_03:     20000,  // Shot 3  — Team Reunion (three founders, same table)
+  s12_04:     15000,  // Shot 4  — First Resource Pack (old folder, few PDFs)
+  s12_05:     30000,  // Shot 5  — The Students (montage across Odisha)
+  s12_06:     20000,  // Shot 6  — The Wall (messages projected)
+  s12_07:     15000,  // Shot 7  — The Realization (founder reading messages)
+  s12_08:     25000,  // Shot 8  — Future Board (whiteboard: new goals)
+  s12_09:     25000,  // Shot 9  — New Generation (first-year entering campus)
+  s12_10:     30000,  // Shot 10 — Full Circle (same desk, MD already open)
+  s12_final:  40000,  // Final Shot — Drone pullback to city constellation
+  s12_title:   8000,  // "MISSION DISTINCTION / Not An App. A Mission."
+  s12_last:   10000,  // "And this is only the beginning."
+  s12_end:     5000,  // Black fade to end
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1126,6 +1143,90 @@ const SCENES: Record<string, SceneData> = {
     line2: 'is opening the app for the first time."',
   },
   ep_end: {
+    type: 'black',
+    narration: '',
+    fadeIn: false,
+  },
+
+  // ── Scene 12 — The Anniversary ────────────────────────────────────────────
+
+  s12_year: {
+    type: 'textcard',
+    line1: 'ONE YEAR LATER',
+  },
+  s12_01: {
+    type: 'frame',
+    image: 's12_01.png',
+    narration: '"Every mission begins somewhere. Ours began here."',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '2%'] },
+  },
+  s12_02: {
+    type: 'silent',
+    image: 's12_02.png',
+    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s12_03: {
+    type: 'silent',
+    image: 's12_03.png',
+    kenBurns: { scale: [1.0, 1.05], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s12_04: {
+    type: 'frame',
+    image: 's12_04.png',
+    narration: '"The first version wasn\'t perfect. It simply helped."',
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['2%', '-2%'] },
+  },
+  s12_05: {
+    type: 'silent',
+    image: 's12_05.png',
+    kenBurns: { scale: [1.0, 1.04], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s12_06: {
+    type: 'silent',
+    image: 's12_06.png',
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s12_07: {
+    type: 'frame',
+    image: 's12_07.png',
+    narration: '"The downloads were numbers. These were people."',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s12_08: {
+    type: 'silent',
+    image: 's12_08.png',
+    kenBurns: { scale: [1.08, 1.0], x: ['0%', '0%'], y: ['-2%', '2%'] },
+  },
+  s12_09: {
+    type: 'frame',
+    image: 's12_09.png',
+    narration: '"Every year… a new student begins the same journey."',
+    kenBurns: { scale: [1.0, 1.06], x: ['1%', '-1%'], y: ['0%', '0%'] },
+  },
+  s12_10: {
+    type: 'silent',
+    image: 's12_10.png',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s12_final: {
+    type: 'frame',
+    image: 's12_final.png',
+    narration: '"A year ago, three students asked a question. Today… thousands are writing the answer."',
+    kenBurns: { scale: [1.1, 1.0], x: ['0%', '0%'], y: ['3%', '-3%'] },
+    fadeToBlack: true,
+  },
+  s12_title: {
+    type: 'textcard',
+    line1: 'MISSION DISTINCTION',
+    line2: 'Not An App.',
+    line3: 'A Mission.',
+    large: true,
+  },
+  s12_last: {
+    type: 'textcard',
+    line1: '"And this is only the beginning."',
+  },
+  s12_end: {
     type: 'black',
     narration: '',
     fadeIn: false,
