@@ -591,7 +591,7 @@ const SCENES: Record<string, SceneData> = {
   s7_05: {
     type: 'frame',
     image: 's7_05.png',
-    narration: '"Medicine. And Mission Distinction. At the same time."',
+    narration: '"First year MBBS. And Mission Distinction. At the same time."',
     kenBurns: { scale: [1.0, 1.07], x: ['-1%', '1%'], y: ['0%', '0%'] },
   },
   s7_06: {
