@@ -1464,6 +1464,72 @@ uri = "file://attached_assets/generated_images/cinematic_drone_aerial_shot_9d1f.
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "i1divSW3-sFN5MhZVjGEi"
+uri = "file://attached_assets/generated_images/cinematic_three_shot_wide_d459.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "b0LA19tBDzsY8JiaJ_gtJ"
+uri = "file://attached_assets/generated_images/cinematic_rapid_montage_memory_9a54.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "HfCtPbyiCRh_TxjpdIBXS"
+uri = "file://attached_assets/generated_images/cinematic_top_down_stylized_8ece.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "KIDT9wDa8jTLO-N60BypB"
+uri = "file://attached_assets/generated_images/cinematic_4_panel_montage_173a.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "F2WAdr0ixVpCM7-jI8oWM"
+uri = "file://attached_assets/generated_images/cinematic_macro_close_up_d926.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "hvzTXy6JrQRjGno4QJydx"
+uri = "file://attached_assets/generated_images/cinematic_extreme_close_up_5cd1.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "MgutPKvcVdntrQBb6HSBH"
+uri = "file://attached_assets/generated_images/cinematic_three_shot_of_293f.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "YMsE2bhjURMVbgPdjasgV"
+uri = "file://attached_assets/generated_images/cinematic_top_down_slow_b925.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "JE7GY93DA97rLrfyUq9dm"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_260d.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Uv43SEUgGqKHP-pl2O3e6"
+uri = "file://attached_assets/generated_images/cinematic_drone_aerial_shot_c801.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "kFqP6wro9RXEZegacyzGb"
+uri = "file://attached_assets/generated_images/cinematic_massive_drone_pullback_47ce.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"

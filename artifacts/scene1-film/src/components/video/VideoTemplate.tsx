@@ -146,9 +146,27 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s9_16:  15000,   // Shot 16 — The Window: same window, different person now
   s9_17:  20000,   // Final   — Drone pullback: campus lights, thousands of students
 
-  // ── Scene 9 End ───────────────────────────────────────────────────────────
+  // ── Scene 9 End / Bridge to Scene 10 ────────────────────────────────────
   end_card6:    8000, // "150 Students." / "24 Hours." / "A Mission Had Begun."
-  post_credit:  8000, // "500 USERS" / "Three weeks later."
+  bridge10:     5000, // "3 WEEKS LATER."
+
+  // ── Scene 10 — The Responsibility ────────────────────────────────────────
+  s10_01:  10000,   // Shot 1  — Analytics: 500 users milestone
+  s10_02:  12000,   // Shot 2  — Three founders in silent disbelief
+  s10_03:  20000,   // Shot 3  — Flashback montage: the full journey
+  s10_04:  20000,   // Shot 4  — Across Odisha: students using app
+  s10_05:  15000,   // Shot 5  — Map of Odisha: glowing dots city by city
+  s10_06:  15000,   // Shot 6  — The letters: student messages pouring in
+  s10_07:  15000,   // Shot 7  — The Weight: founder reads messages, responsibility
+  s10_08:  15000,   // Shot 8  — "What's next?" — three founders at table
+  s10_09:  20000,   // Shot 9  — Vision board: new goals, bigger mission
+  s10_10:  20000,   // Shot 10 — Founder writes: v2 → v3 → Beyond Odisha
+  s10_11:  15000,   // Shot 11 — Sunrise: same campus, new chapter
+  s10_12:  25000,   // Final   — Rooftop: three founders, rising drone, city of lights
+
+  // ── Scene 10 End ──────────────────────────────────────────────────────────
+  end_card7:   10000, // "MISSION DISTINCTION / Started With A Struggle. / Built With Purpose. / Continued By Students."
+  epilogue:     8000, // "501… 502… 503… The numbers continue rising."
   end_title:    9000, // "To Be Continued…"
 };
 
@@ -773,7 +791,7 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.0, 1.12], x: ['0%', '0%'], y: ['2%', '-2%'] },
   },
 
-  // ── Scene 9 Ending ────────────────────────────────────────────────────────
+  // ── Scene 9 Ending / Bridge ───────────────────────────────────────────────
 
   end_card6: {
     type: 'textcard',
@@ -781,10 +799,96 @@ const SCENES: Record<string, SceneData> = {
     line2: '24 Hours.',
     line3: 'A Mission Had Begun.',
   },
-  post_credit: {
+  bridge10: {
     type: 'textcard',
-    line1: '500 USERS',
-    line2: 'Three weeks later.',
+    line1: '3 WEEKS LATER.',
+    line2: 'THE MISSION KEPT GROWING.',
+  },
+
+  // ── Scene 10 — The Responsibility ────────────────────────────────────────
+
+  s10_01: {
+    type: 'silent',
+    image: 's10_01.png',
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s10_02: {
+    type: 'frame',
+    image: 's10_02.png',
+    narration: '"Five hundred downloads in three weeks."',
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s10_03: {
+    type: 'frame',
+    image: 's10_03.png',
+    narration: '"It started with a struggle. Then an idea. Then a promise."',
+    kenBurns: { scale: [1.0, 1.06], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s10_04: {
+    type: 'frame',
+    image: 's10_04.png',
+    narration: '"Students they would never meet were now depending on them."',
+    kenBurns: { scale: [1.0, 1.05], x: ['1%', '-1%'], y: ['0%', '0%'] },
+  },
+  s10_05: {
+    type: 'frame',
+    image: 's10_05.png',
+    narration: '"The mission was no longer inside one room."',
+    kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s10_06: {
+    type: 'silent',
+    image: 's10_06.png',
+    kenBurns: { scale: [1.05, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s10_07: {
+    type: 'frame',
+    image: 's10_07.png',
+    narration: '"Five hundred downloads. Five hundred expectations."',
+    kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s10_08: {
+    type: 'silent',
+    image: 's10_08.png',
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s10_09: {
+    type: 'frame',
+    image: 's10_09.png',
+    narration: '"The old goals were not enough. The mission had grown bigger than the plan."',
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['-2%', '2%'] },
+  },
+  s10_10: {
+    type: 'frame',
+    image: 's10_10.png',
+    narration: '"The goal was never downloads. The goal was impact."',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s10_11: {
+    type: 'silent',
+    image: 's10_11.png',
+    kenBurns: { scale: [1.0, 1.07], x: ['0%', '0%'], y: ['2%', '-2%'] },
+  },
+  s10_12: {
+    type: 'frame',
+    image: 's10_12.png',
+    narration: '"Three students started a mission. Thousands would carry it forward."',
+    fadeToBlack: true,
+    kenBurns: { scale: [1.0, 1.15], x: ['0%', '0%'], y: ['2%', '-2%'] },
+  },
+
+  // ── Scene 10 Ending ───────────────────────────────────────────────────────
+
+  end_card7: {
+    type: 'textcard',
+    line1: 'MISSION DISTINCTION',
+    line2: 'Started With A Struggle. Built With Purpose.',
+    line3: 'Continued By Students.',
+  },
+  epilogue: {
+    type: 'textcard',
+    line1: '501… 502… 503…',
+    line2: 'The numbers kept rising.',
   },
   end_title: {
     type: 'textcard',
