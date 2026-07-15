@@ -1076,8 +1076,17 @@ export default function StudentCommunity() {
                     <Card key={i} className="bg-card/40 border-border/40"><CardContent className="p-6"><Skeleton className="h-24 w-full" /></CardContent></Card>
                   ))
                 ) : posts.length === 0 ? (
-                  <div className="p-12 text-center border border-dashed rounded-xl text-muted-foreground">
-                    No posts found. Be the first to post!
+                  <div className="p-10 text-center border border-dashed border-primary/20 rounded-xl">
+                    <svg viewBox="0 0 64 64" className="mx-auto mb-3 w-12 h-12 text-primary/30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="4" y="4" width="56" height="42" rx="5" stroke="currentColor" strokeWidth="3"/>
+                      <line x1="32" y1="4" x2="32" y2="46" stroke="currentColor" strokeWidth="2" opacity="0.4"/>
+                      <circle cx="32" cy="25" r="9" stroke="currentColor" strokeWidth="2.5" opacity="0.55"/>
+                      <rect x="4" y="15" width="8" height="20" rx="2" stroke="currentColor" strokeWidth="2" opacity="0.4"/>
+                      <rect x="52" y="15" width="8" height="20" rx="2" stroke="currentColor" strokeWidth="2" opacity="0.4"/>
+                      <rect x="4" y="46" width="56" height="5" rx="2" fill="currentColor" opacity="0.2"/>
+                    </svg>
+                    <p className="text-muted-foreground font-medium">No posts on the pitch yet</p>
+                    <p className="text-muted-foreground/60 text-sm mt-1">Be the first to post!</p>
                   </div>
                 ) : (
                   [...posts]

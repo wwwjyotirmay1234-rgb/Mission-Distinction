@@ -270,39 +270,53 @@ export default function StudentLeaderboard() {
                     const pos = idx + 1;
                     const isMe = entry.id === user?.id;
                     const pts = Math.floor(entry.totalXp / 100);
+
+                    const sectionBreak =
+                      pos === 1 ? { label: "🏆 Final", color: "text-amber-400" } :
+                      pos === 3 ? { label: "⭐ Semi-Final", color: "text-purple-400" } :
+                      pos === 5 ? { label: "🏟️ Quarter-Final", color: "text-blue-400" } :
+                      pos === 9 ? { label: "🥅 Round of 16", color: "text-green-400" } :
+                      pos === 17 ? { label: "⚽ Group Stage", color: "text-muted-foreground" } :
+                      null;
+
                     return (
-                      <div
-                        key={entry.id}
-                        className={`grid grid-cols-[40px_1fr_68px_52px_48px] gap-x-2 px-4 py-3 items-center transition-colors ${isMe ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/20"}`}
-                      >
-                        <div className="flex items-center justify-center shrink-0">
-                          <PositionBadge rank={pos} />
-                        </div>
-                        <div className="min-w-0 flex items-center gap-2">
-                          <Avatar name={entry.fullName} url={entry.avatarUrl} />
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="text-sm font-semibold truncate">
-                                {entry.fullName}
-                                {isMe && <span className="ml-1 text-[10px] text-primary font-bold">(You)</span>}
+                      <div key={entry.id}>
+                        {sectionBreak && (
+                          <div className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest ${sectionBreak.color} bg-muted/10 border-b border-border/20`}>
+                            {sectionBreak.label}
+                          </div>
+                        )}
+                        <div className={`grid grid-cols-[40px_1fr_68px_52px_48px] gap-x-2 px-4 py-3 items-center transition-colors ${isMe ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/20"}`}>
+                          <div className="flex items-center justify-center shrink-0">
+                            <PositionBadge rank={pos} />
+                          </div>
+                          <div className="min-w-0 flex items-center gap-2">
+                            <Avatar name={entry.fullName} url={entry.avatarUrl} />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs">🇮🇳</span>
+                                <p className="text-sm font-semibold truncate">
+                                  {entry.fullName}
+                                  {isMe && <span className="ml-1 text-[10px] text-primary font-bold">(You)</span>}
+                                </p>
+                                <RankBadge xp={entry.totalXp} size="xs" />
+                              </div>
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                {entry.college || "—"}
                               </p>
-                              <RankBadge xp={entry.totalXp} size="xs" />
                             </div>
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              {entry.college || "—"}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold text-primary flex items-center gap-0.5 justify-end">
+                              <span className="text-xs">⚽</span> {entry.totalXp.toLocaleString()}
                             </p>
                           </div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-bold text-primary flex items-center gap-0.5 justify-end">
-                            <span className="text-xs">⚽</span> {entry.totalXp.toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-semibold text-orange-400">{entry.studyStreak ?? 0}</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-bold text-amber-400">{pts}</p>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-semibold text-orange-400">{entry.studyStreak ?? 0}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold text-amber-400">{pts}</p>
+                          </div>
                         </div>
                       </div>
                     );

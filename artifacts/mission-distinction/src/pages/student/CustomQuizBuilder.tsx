@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
+import { apiFetchJson } from "@/lib/apiFetch";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { CheckCircle, XCircle, ChevronRight, RotateCcw, Zap, BookOpen, Target, Trophy } from "lucide-react";
+import { CheckCircle, XCircle, ChevronRight, RotateCcw, Trophy, Target } from "lucide-react";
 
 interface Question {
   id: number;
@@ -145,26 +145,26 @@ export default function CustomQuizBuilder() {
 
   if (step === "configure") {
     return (
-      <div className="min-h-screen bg-[#0d0f1a] text-white p-4 max-w-xl mx-auto">
+      <div className="min-h-screen bg-background text-foreground p-4 max-w-xl mx-auto">
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
-            <Zap className="text-violet-400" size={20} />
-            <h1 className="text-xl font-bold text-violet-300">Custom Quiz Builder</h1>
+            <span className="text-xl">⚽</span>
+            <h1 className="text-xl font-bold text-foreground">Custom Quiz Builder</h1>
           </div>
-          <p className="text-sm text-gray-400">Build a personalised MCQ quiz from the PYQ bank</p>
+          <p className="text-sm text-muted-foreground">Build a personalised MCQ quiz from the PYQ bank</p>
         </div>
 
         <div className="space-y-6">
           {/* Subject */}
-          <div className="bg-[#13152a] rounded-xl p-4 border border-white/5">
-            <label className="block text-sm font-semibold text-gray-300 mb-3">Select Subject *</label>
+          <div className="bg-card/60 rounded-xl p-4 border border-border/40">
+            <label className="block text-sm font-semibold text-foreground mb-3">Select Subject *</label>
             <Select value={subject} onValueChange={v => { setSubject(v); setSelectedTags([]); }}>
-              <SelectTrigger className="bg-[#1a1d35] border-white/10 text-white">
+              <SelectTrigger className="bg-muted/30 border-border text-foreground">
                 <SelectValue placeholder="Choose a subject..." />
               </SelectTrigger>
-              <SelectContent className="bg-[#1a1d35] border-white/10">
+              <SelectContent className="bg-card border-border">
                 {SUBJECTS.map(s => (
-                  <SelectItem key={s} value={s} className="text-white hover:bg-white/10">{s}</SelectItem>
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -172,9 +172,9 @@ export default function CustomQuizBuilder() {
 
           {/* Topic Tags */}
           {subject && availableTags.length > 0 && (
-            <div className="bg-[#13152a] rounded-xl p-4 border border-white/5">
-              <label className="block text-sm font-semibold text-gray-300 mb-1">Filter by Topics <span className="text-gray-500 font-normal">(optional)</span></label>
-              <p className="text-xs text-gray-500 mb-3">Leave blank to include all topics</p>
+            <div className="bg-card/60 rounded-xl p-4 border border-border/40">
+              <label className="block text-sm font-semibold text-foreground mb-1">Filter by Topics <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <p className="text-xs text-muted-foreground mb-3">Leave blank to include all topics</p>
               <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
                 {availableTags.slice(0, 60).map(tag => (
                   <button
@@ -182,8 +182,8 @@ export default function CustomQuizBuilder() {
                     onClick={() => toggleTag(tag)}
                     className={`text-xs px-3 py-1 rounded-full border transition-all ${
                       selectedTags.includes(tag)
-                        ? "bg-violet-600 border-violet-500 text-white"
-                        : "bg-[#1a1d35] border-white/10 text-gray-300 hover:border-violet-500"
+                        ? "bg-primary/20 border-primary text-primary"
+                        : "bg-muted/20 border-border text-muted-foreground hover:border-primary/50"
                     }`}
                   >
                     {tag}
@@ -191,7 +191,7 @@ export default function CustomQuizBuilder() {
                 ))}
               </div>
               {selectedTags.length > 0 && (
-                <button onClick={() => setSelectedTags([])} className="mt-2 text-xs text-violet-400 hover:underline">
+                <button onClick={() => setSelectedTags([])} className="mt-2 text-xs text-primary hover:underline">
                   Clear selection ({selectedTags.length} selected)
                 </button>
               )}
@@ -199,9 +199,9 @@ export default function CustomQuizBuilder() {
           )}
 
           {/* Question Count */}
-          <div className="bg-[#13152a] rounded-xl p-4 border border-white/5">
-            <label className="block text-sm font-semibold text-gray-300 mb-1">
-              Number of Questions: <span className="text-violet-400">{questionCount}</span>
+          <div className="bg-card/60 rounded-xl p-4 border border-border/40">
+            <label className="block text-sm font-semibold text-foreground mb-1">
+              Number of Questions: <span className="text-primary font-bold">{questionCount}</span>
             </label>
             <Slider
               value={[questionCount]}
@@ -211,7 +211,7 @@ export default function CustomQuizBuilder() {
               step={5}
               className="mt-3"
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-muted-foreground mt-1">
               <span>5 (quick)</span>
               <span>25 (medium)</span>
               <span>50 (full)</span>
@@ -221,7 +221,7 @@ export default function CustomQuizBuilder() {
           <Button
             onClick={handleBuild}
             disabled={!subject || buildMutation.isPending}
-            className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 text-base rounded-xl"
+            className="w-full font-bold py-3 text-base rounded-xl"
           >
             {buildMutation.isPending ? "Building Quiz..." : `Start ${questionCount}-Question Quiz →`}
           </Button>
@@ -236,26 +236,23 @@ export default function CustomQuizBuilder() {
     const progress = ((currentIdx) / session.questions.length) * 100;
 
     return (
-      <div className="min-h-screen bg-[#0d0f1a] text-white p-4 max-w-xl mx-auto">
-        {/* Header */}
+      <div className="min-h-screen bg-background text-foreground p-4 max-w-xl mx-auto">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-xs text-gray-400">{session.subject}</p>
-            <p className="text-sm font-semibold text-white">Q {currentIdx + 1} / {session.questions.length}</p>
+            <p className="text-xs text-muted-foreground">{session.subject}</p>
+            <p className="text-sm font-semibold text-foreground">Q {currentIdx + 1} / {session.questions.length}</p>
           </div>
-          <Badge className="bg-violet-700/30 text-violet-300 border-violet-700/50">
+          <Badge className="bg-primary/10 text-primary border-primary/30">
             {answers.filter(a => a !== null).length} answered
           </Badge>
         </div>
 
-        <Progress value={progress} className="h-1 mb-5 bg-white/10" />
+        <Progress value={progress} className="h-1 mb-5" />
 
-        {/* Question */}
-        <div className="bg-[#13152a] rounded-xl p-4 border border-white/5 mb-4">
-          <p className="text-white font-medium leading-relaxed text-sm">{q.text}</p>
+        <div className="bg-card/60 rounded-xl p-4 border border-border/40 mb-4">
+          <p className="text-foreground font-medium leading-relaxed text-sm">{q.text}</p>
         </div>
 
-        {/* Options */}
         <div className="space-y-2 mb-6">
           {(q.options ?? []).map((opt, i) => (
             <button
@@ -263,37 +260,32 @@ export default function CustomQuizBuilder() {
               onClick={() => handleAnswer(i)}
               className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all ${
                 answered === i
-                  ? "bg-violet-600/20 border-violet-500 text-white"
-                  : "bg-[#13152a] border-white/10 text-gray-300 hover:border-violet-400"
+                  ? "bg-primary/15 border-primary text-foreground"
+                  : "bg-card/40 border-border/40 text-muted-foreground hover:border-primary/40"
               }`}
             >
-              <span className="font-bold mr-2 text-violet-400">{String.fromCharCode(65 + i)}.</span>
+              <span className="font-bold mr-2 text-primary">{String.fromCharCode(65 + i)}.</span>
               {opt}
             </button>
           ))}
         </div>
 
-        {/* Navigation */}
         <div className="flex gap-3">
           {currentIdx < session.questions.length - 1 ? (
-            <Button
-              onClick={handleNext}
-              className="flex-1 bg-violet-600 hover:bg-violet-700"
-            >
+            <Button onClick={handleNext} className="flex-1">
               Next <ChevronRight size={16} className="ml-1" />
             </Button>
           ) : (
             <Button
               onClick={handleSubmit}
               disabled={submitMutation.isPending}
-              className="flex-1 bg-green-600 hover:bg-green-700"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white border-green-700"
             >
               {submitMutation.isPending ? "Submitting..." : "Submit Quiz"}
             </Button>
           )}
         </div>
 
-        {/* Question navigator dots */}
         <div className="flex flex-wrap gap-1 mt-4 justify-center">
           {session.questions.map((_, i) => (
             <button
@@ -301,10 +293,10 @@ export default function CustomQuizBuilder() {
               onClick={() => setCurrentIdx(i)}
               className={`w-7 h-7 rounded-full text-xs font-bold transition-all ${
                 i === currentIdx
-                  ? "bg-violet-600 text-white"
+                  ? "bg-primary text-primary-foreground"
                   : answers[i] !== null
-                  ? "bg-violet-900/60 text-violet-300"
-                  : "bg-white/5 text-gray-500"
+                  ? "bg-primary/20 text-primary"
+                  : "bg-muted/30 text-muted-foreground"
               }`}
             >
               {i + 1}
@@ -317,38 +309,36 @@ export default function CustomQuizBuilder() {
 
   if (step === "results" && result && session) {
     const grade =
-      result.percentage >= 80 ? "Distinction" :
-      result.percentage >= 60 ? "Merit" :
-      result.percentage >= 40 ? "Pass" : "Needs Revision";
+      result.percentage >= 80 ? "Distinction 🏆" :
+      result.percentage >= 60 ? "Merit ⭐" :
+      result.percentage >= 40 ? "Pass 🥅" : "Needs Revision";
 
     const gradeColor =
-      grade === "Distinction" ? "text-yellow-400" :
-      grade === "Merit" ? "text-green-400" :
-      grade === "Pass" ? "text-blue-400" : "text-red-400";
+      result.percentage >= 80 ? "text-amber-400" :
+      result.percentage >= 60 ? "text-green-400" :
+      result.percentage >= 40 ? "text-blue-400" : "text-red-400";
 
     return (
-      <div className="min-h-screen bg-[#0d0f1a] text-white p-4 max-w-xl mx-auto">
-        {/* Score card */}
-        <div className="bg-gradient-to-br from-violet-900/40 to-purple-900/20 border border-violet-500/30 rounded-2xl p-6 mb-5 text-center">
-          <Trophy className="mx-auto mb-2 text-yellow-400" size={32} />
-          <div className="text-5xl font-black text-white mb-1">{result.percentage}%</div>
+      <div className="min-h-screen bg-background text-foreground p-4 max-w-xl mx-auto">
+        <div className="bg-gradient-to-br from-primary/20 to-amber-500/10 border border-primary/30 rounded-2xl p-6 mb-5 text-center">
+          <Trophy className="mx-auto mb-2 text-amber-400" size={32} />
+          <div className="text-5xl font-black text-foreground mb-1">{result.percentage}%</div>
           <div className={`text-lg font-bold ${gradeColor} mb-1`}>{grade}</div>
-          <div className="text-sm text-gray-400">{result.score} / {result.total} correct — {session.subject}</div>
+          <div className="text-sm text-muted-foreground">{result.score} / {result.total} correct — {session.subject}</div>
         </div>
 
-        <Button onClick={resetAll} variant="outline" className="w-full mb-4 border-white/10 text-gray-300">
+        <Button onClick={resetAll} variant="outline" className="w-full mb-4">
           <RotateCcw size={14} className="mr-2" /> Build Another Quiz
         </Button>
 
-        {/* Breakdown */}
-        <h2 className="text-sm font-bold text-gray-300 mb-3 flex items-center gap-2">
+        <h2 className="text-sm font-bold text-muted-foreground mb-3 flex items-center gap-2">
           <Target size={14} /> Answer Review
         </h2>
         <div className="space-y-3">
           {result.breakdown.map((item, i) => (
             <div
               key={item.questionId}
-              className={`bg-[#13152a] rounded-xl border p-4 cursor-pointer transition-all ${
+              className={`bg-card/50 rounded-xl border p-4 cursor-pointer transition-all ${
                 item.correct ? "border-green-500/30" : "border-red-500/30"
               }`}
               onClick={() => setReviewIdx(reviewIdx === i ? null : i)}
@@ -360,7 +350,7 @@ export default function CustomQuizBuilder() {
                     : <XCircle size={16} className="text-red-400" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-200 leading-snug">{item.text}</p>
+                  <p className="text-sm text-foreground leading-snug">{item.text}</p>
                   {reviewIdx === i && (
                     <div className="mt-3 space-y-2">
                       {item.correctOption !== null && (
@@ -377,12 +367,12 @@ export default function CustomQuizBuilder() {
                         </p>
                       )}
                       {item.explanation && (
-                        <p className="text-xs text-gray-400 border-t border-white/5 pt-2">{item.explanation}</p>
+                        <p className="text-xs text-muted-foreground border-t border-border/40 pt-2">{item.explanation}</p>
                       )}
                     </div>
                   )}
                 </div>
-                <span className="text-xs text-gray-500 flex-shrink-0">
+                <span className="text-xs text-muted-foreground flex-shrink-0">
                   {reviewIdx === i ? "▲" : "▼"}
                 </span>
               </div>

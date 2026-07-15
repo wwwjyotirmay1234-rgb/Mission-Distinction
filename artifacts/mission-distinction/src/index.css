@@ -263,6 +263,16 @@
   animation: header-pitch-glow 3s ease-in-out infinite;
 }
 
+/* Primary button: subtle inner-dashed stitch border (football shirt effect) */
+.btn-football-primary::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
 /* ── Football focus glow (overrides Tailwind ring colour with stadium gold) */
 @layer base {
   :focus-visible {
