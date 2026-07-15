@@ -2304,6 +2304,18 @@ uri = "file://attached_assets/generated_images/cinematic_close_up_of_307f.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "paoUi87F5bA_kKxrRHrY-"
+uri = "file://attached_assets/generated_images/cinematic_side_profile_medium_2480.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "oq8E-LWQtwQrnfuwBltul"
+uri = "file://attached_assets/generated_images/cinematic_side_profile_shot_6d53.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
