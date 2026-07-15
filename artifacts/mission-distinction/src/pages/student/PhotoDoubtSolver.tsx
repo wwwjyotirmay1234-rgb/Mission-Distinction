@@ -85,32 +85,31 @@ export default function PhotoDoubtSolver() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0f1a] text-white p-4 max-w-xl mx-auto">
+    <div className="min-h-screen bg-background text-foreground p-4 max-w-xl mx-auto">
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-1">
-          <Camera className="text-violet-400" size={20} />
-          <h1 className="text-xl font-bold text-violet-300">Photo Doubt Solver</h1>
+          <Camera className="text-primary" size={20} />
+          <h1 className="text-xl font-bold text-primary">Photo Doubt Solver</h1>
         </div>
-        <p className="text-sm text-gray-400">Photograph any textbook question or diagram — AI explains it instantly</p>
+        <p className="text-sm text-muted-foreground">Photograph any textbook question or diagram — AI explains it instantly</p>
       </div>
 
       {/* Upload area */}
       {!previewUrl ? (
-        <div className="bg-[#13152a] border-2 border-dashed border-white/10 rounded-2xl p-8 text-center mb-4">
-          <Sparkles className="mx-auto mb-3 text-violet-400" size={28} />
-          <p className="text-gray-300 font-medium mb-1">Take a photo or upload an image</p>
-          <p className="text-xs text-gray-500 mb-5">Textbook pages, diagrams, MCQs, clinical images — anything</p>
+        <div className="bg-card border-2 border-dashed border-border rounded-2xl p-8 text-center mb-4">
+          <Sparkles className="mx-auto mb-3 text-primary" size={28} />
+          <p className="text-foreground font-medium mb-1">Take a photo or upload an image</p>
+          <p className="text-xs text-muted-foreground mb-5">Textbook pages, diagrams, MCQs, clinical images — anything</p>
           <div className="flex gap-3 justify-center">
             <Button
               onClick={() => cameraInputRef.current?.click()}
-              className="bg-violet-600 hover:bg-violet-700 text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <Camera size={16} className="mr-2" /> Camera
             </Button>
             <Button
               onClick={() => fileInputRef.current?.click()}
               variant="outline"
-              className="border-white/10 text-gray-300 hover:bg-white/5"
             >
               <Upload size={16} className="mr-2" /> Upload
             </Button>
@@ -136,7 +135,7 @@ export default function PhotoDoubtSolver() {
           <img
             src={previewUrl}
             alt="Selected"
-            className="w-full rounded-2xl object-contain max-h-64 bg-black"
+            className="w-full rounded-2xl object-contain max-h-64 bg-muted"
           />
           <button
             onClick={clearImage}
@@ -154,7 +153,7 @@ export default function PhotoDoubtSolver() {
             placeholder="Optional: Type your specific question about this image..."
             value={question}
             onChange={e => setQuestion(e.target.value)}
-            className="bg-[#13152a] border-white/10 text-white placeholder-gray-500 resize-none text-sm"
+            className="bg-card border-border text-foreground placeholder:text-muted-foreground resize-none text-sm"
             rows={2}
             maxLength={500}
           />
@@ -166,11 +165,11 @@ export default function PhotoDoubtSolver() {
         <Button
           onClick={() => solveMutation.mutate()}
           disabled={solveMutation.isPending}
-          className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 text-base rounded-xl mb-5"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 text-base rounded-xl mb-5"
         >
           {solveMutation.isPending ? (
             <span className="flex items-center gap-2">
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
               AI is analysing...
             </span>
           ) : (
@@ -184,31 +183,31 @@ export default function PhotoDoubtSolver() {
         <div className="mb-6 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-violet-400 font-semibold">{result.subject}</p>
-              <h2 className="text-base font-bold text-white">{result.topic}</h2>
+              <p className="text-xs text-primary font-semibold">{result.subject}</p>
+              <h2 className="text-base font-bold text-foreground">{result.topic}</h2>
             </div>
-            <Button onClick={clearImage} variant="outline" size="sm" className="border-white/10 text-gray-400 text-xs">
+            <Button onClick={clearImage} variant="outline" size="sm" className="text-xs">
               New Photo
             </Button>
           </div>
 
           {/* Explanation */}
-          <div className="bg-[#13152a] rounded-xl p-4 border border-white/5">
+          <div className="bg-card rounded-xl p-4 border border-border/40">
             <div className="flex items-center gap-2 mb-2">
-              <BookOpen size={14} className="text-violet-400" />
-              <p className="text-xs font-semibold text-violet-300">Explanation</p>
+              <BookOpen size={14} className="text-primary" />
+              <p className="text-xs font-semibold text-primary">Explanation</p>
             </div>
-            <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-line">{result.explanation}</p>
+            <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{result.explanation}</p>
           </div>
 
           {/* Key Points */}
           {result.keyPoints?.length > 0 && (
-            <div className="bg-[#13152a] rounded-xl p-4 border border-white/5">
-              <p className="text-xs font-semibold text-green-400 mb-2">✓ Key Points</p>
+            <div className="bg-card rounded-xl p-4 border border-border/40">
+              <p className="text-xs font-semibold text-green-600 dark:text-green-400 mb-2">✓ Key Points</p>
               <ul className="space-y-1">
                 {result.keyPoints.map((pt, i) => (
-                  <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
-                    <span className="text-green-400 mt-0.5 flex-shrink-0">•</span>
+                  <li key={i} className="text-sm text-foreground flex items-start gap-2">
+                    <span className="text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0">•</span>
                     {pt}
                   </li>
                 ))}
@@ -218,12 +217,12 @@ export default function PhotoDoubtSolver() {
 
           {/* Memory Tip */}
           {result.memoryTip && (
-            <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-xl p-4">
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
-                <Lightbulb size={14} className="text-yellow-400" />
-                <p className="text-xs font-semibold text-yellow-400">Memory Tip</p>
+                <Lightbulb size={14} className="text-yellow-600 dark:text-yellow-400" />
+                <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400">Memory Tip</p>
               </div>
-              <p className="text-sm text-yellow-200">{result.memoryTip}</p>
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">{result.memoryTip}</p>
             </div>
           )}
 
@@ -231,7 +230,7 @@ export default function PhotoDoubtSolver() {
           {result.relatedTopics?.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {result.relatedTopics.map((t, i) => (
-                <span key={i} className="text-xs bg-violet-900/30 text-violet-300 px-3 py-1 rounded-full border border-violet-700/30">
+                <span key={i} className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/30">
                   {t}
                 </span>
               ))}
@@ -244,33 +243,33 @@ export default function PhotoDoubtSolver() {
       {(historyQuery.data?.doubts?.length ?? 0) > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <Clock size={14} className="text-gray-400" />
-            <h2 className="text-sm font-bold text-gray-300">Previous Doubts</h2>
+            <Clock size={14} className="text-muted-foreground" />
+            <h2 className="text-sm font-bold text-foreground">Previous Doubts</h2>
           </div>
           <div className="space-y-2">
             {historyQuery.data!.doubts.map(d => (
-              <div key={d.id} className="bg-[#13152a] border border-white/5 rounded-xl overflow-hidden">
+              <div key={d.id} className="bg-card border border-border/40 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setExpandedHistory(expandedHistory === d.id ? null : d.id)}
                   className="w-full flex items-center gap-3 p-3 text-left"
                 >
-                  <img src={d.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover bg-black flex-shrink-0" />
+                  <img src={d.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover bg-muted flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{d.aiExplanation.topic ?? "Doubt"}</p>
-                    <p className="text-xs text-gray-500">{d.subject ?? d.aiExplanation.subject} · {new Date(d.createdAt).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{d.aiExplanation.topic ?? "Doubt"}</p>
+                    <p className="text-xs text-muted-foreground">{d.subject ?? d.aiExplanation.subject} · {new Date(d.createdAt).toLocaleDateString()}</p>
                   </div>
-                  {expandedHistory === d.id ? <ChevronUp size={14} className="text-gray-500 flex-shrink-0" /> : <ChevronDown size={14} className="text-gray-500 flex-shrink-0" />}
+                  {expandedHistory === d.id ? <ChevronUp size={14} className="text-muted-foreground flex-shrink-0" /> : <ChevronDown size={14} className="text-muted-foreground flex-shrink-0" />}
                 </button>
                 {expandedHistory === d.id && (
                   <div className="px-3 pb-3 space-y-2">
-                    <img src={d.imageUrl} alt="" className="w-full rounded-lg max-h-48 object-contain bg-black" />
-                    {d.question && <p className="text-xs text-violet-300 italic">"{d.question}"</p>}
-                    <p className="text-sm text-gray-300 leading-relaxed">{d.aiExplanation.explanation}</p>
+                    <img src={d.imageUrl} alt="" className="w-full rounded-lg max-h-48 object-contain bg-muted" />
+                    {d.question && <p className="text-xs text-primary italic">"{d.question}"</p>}
+                    <p className="text-sm text-foreground leading-relaxed">{d.aiExplanation.explanation}</p>
                     {d.aiExplanation.keyPoints?.length > 0 && (
                       <ul className="space-y-1 mt-2">
                         {d.aiExplanation.keyPoints.map((pt, i) => (
-                          <li key={i} className="text-xs text-gray-400 flex items-start gap-1">
-                            <span className="text-green-400">•</span> {pt}
+                          <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+                            <span className="text-green-600 dark:text-green-400">•</span> {pt}
                           </li>
                         ))}
                       </ul>

@@ -14,25 +14,25 @@ export default function CrossSectionViewer({ system }: { system: AnatomySystem }
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0d1117] rounded-xl overflow-hidden border border-white/5">
+    <div className="flex flex-col h-full bg-card rounded-xl overflow-hidden border border-border/40">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/5 bg-white/[0.03]">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/40 bg-muted/20">
         <div>
-          <p className="text-sm font-semibold text-white">{system.crossSectionTitle}</p>
-          <p className="text-xs text-slate-400">Level: {system.crossSectionLevel}</p>
+          <p className="text-sm font-semibold text-foreground">{system.crossSectionTitle}</p>
+          <p className="text-xs text-muted-foreground">Level: {system.crossSectionLevel}</p>
         </div>
       </div>
 
       {/* Mode tabs */}
-      <div className="flex border-b border-white/5">
+      <div className="flex border-b border-border/40">
         {(["ct", "mri", "anatomical"] as Mode[]).map(m => (
           <button
             key={m}
             onClick={() => setMode(m)}
             className={`flex-1 py-2 text-xs font-semibold uppercase tracking-wide transition-colors ${
               mode === m
-                ? "text-cyan-400 border-b-2 border-cyan-400 -mb-px bg-cyan-500/5"
-                : "text-slate-500 hover:text-slate-300"
+                ? "text-cyan-500 border-b-2 border-cyan-500 -mb-px bg-cyan-500/5"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {modeData[m].label}
@@ -40,9 +40,8 @@ export default function CrossSectionViewer({ system }: { system: AnatomySystem }
         ))}
       </div>
 
-      {/* Image */}
+      {/* Image — intentionally dark background for medical imaging */}
       <div className={`flex-1 flex items-center justify-center min-h-[200px] ${modeData[mode].bg} relative overflow-hidden`}>
-        {/* Cross-section placeholder with system-specific content */}
         <div className="relative w-full h-full flex items-center justify-center p-4">
           {mode === "anatomical" ? (
             <AnatomicalDiagram systemId={system.id} />
@@ -53,19 +52,19 @@ export default function CrossSectionViewer({ system }: { system: AnatomySystem }
       </div>
 
       {/* Info */}
-      <div className="px-4 py-3 border-t border-white/5 flex items-start gap-2">
-        <div className="mt-0.5 text-cyan-400">
+      <div className="px-4 py-3 border-t border-border/40 flex items-start gap-2">
+        <div className="mt-0.5 text-cyan-500">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-slate-300 leading-relaxed">{modeData[mode].note}</p>
+          <p className="text-xs text-foreground leading-relaxed">{modeData[mode].note}</p>
         </div>
       </div>
 
       {/* Description */}
       <div className="px-4 pb-3">
-        <div className="p-2.5 rounded-lg bg-white/[0.04] border border-white/5">
-          <p className="text-[11px] text-slate-400 leading-relaxed">{system.crossSectionDescription}</p>
+        <div className="p-2.5 rounded-lg bg-muted/40 border border-border/40">
+          <p className="text-[11px] text-muted-foreground leading-relaxed">{system.crossSectionDescription}</p>
         </div>
       </div>
     </div>
@@ -180,9 +179,7 @@ function CTMRIDiagram({ systemId, mode }: { systemId: string; mode: "ct" | "mri"
       >
         <AnatomicalDiagram systemId={systemId} />
       </div>
-      <div className={`absolute bottom-0 left-0 right-0 text-center text-[9px] py-1 rounded-b-full ${
-        isCT ? "text-slate-500" : "text-slate-500"
-      }`}>
+      <div className="absolute bottom-0 left-0 right-0 text-center text-[9px] py-1 rounded-b-full text-slate-500">
         {isCT ? "HU window: W:400 L:40" : "T2-weighted MRI"}
       </div>
     </div>

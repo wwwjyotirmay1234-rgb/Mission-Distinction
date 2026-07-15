@@ -90,7 +90,7 @@ export default function NotesMarketplace() {
       return resp.json();
     },
     onSuccess: () => {
-      toast.success("Notes submitted for review! You'll earn XP when approved.");
+      toast.success("Notes submitted for review! You'll earn Goals when approved.");
       setUploadOpen(false);
       setFile(null);
       setTitle("");
@@ -102,89 +102,89 @@ export default function NotesMarketplace() {
   });
 
   const statusBadge = (status: string) => {
-    if (status === "approved") return <Badge className="bg-green-700/30 text-green-300 border-green-700/40"><CheckCircle size={10} className="mr-1" />Approved</Badge>;
-    if (status === "rejected") return <Badge className="bg-red-700/30 text-red-300 border-red-700/40"><XCircle size={10} className="mr-1" />Rejected</Badge>;
-    return <Badge className="bg-yellow-700/30 text-yellow-300 border-yellow-700/40"><Clock size={10} className="mr-1" />Pending Review</Badge>;
+    if (status === "approved") return <Badge className="bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/40"><CheckCircle size={10} className="mr-1" />Approved</Badge>;
+    if (status === "rejected") return <Badge className="bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/40"><XCircle size={10} className="mr-1" />Rejected</Badge>;
+    return <Badge className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/40"><Clock size={10} className="mr-1" />Pending Review</Badge>;
   };
 
   const notes = approvedQuery.data?.notes ?? [];
   const filtered = filterSubject === "All" ? notes : notes.filter(n => n.subject === filterSubject);
 
   return (
-    <div className="min-h-screen bg-[#0d0f1a] text-white p-4 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-background text-foreground p-4 max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between mb-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Store className="text-violet-400" size={20} />
-            <h1 className="text-xl font-bold text-violet-300">Notes Marketplace</h1>
+            <Store className="text-primary" size={20} />
+            <h1 className="text-xl font-bold text-primary">Notes Marketplace</h1>
           </div>
-          <p className="text-sm text-gray-400">Community-shared handwritten notes — approved by admins</p>
+          <p className="text-sm text-muted-foreground">Community-shared handwritten notes — approved by admins</p>
         </div>
         <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white flex-shrink-0">
+            <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground flex-shrink-0">
               <Upload size={14} className="mr-1" /> Share Notes
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-[#13152a] border-white/10 text-white max-w-md">
+          <DialogContent className="bg-card border-border text-foreground max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-violet-300">Share Your Notes</DialogTitle>
+              <DialogTitle className="text-primary">Share Your Notes</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-2">
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Title *</label>
+                <label className="text-xs text-muted-foreground mb-1 block">Title *</label>
                 <Input
                   placeholder="e.g. Anatomy Upper Limb Short Notes"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  className="bg-[#1a1d35] border-white/10 text-white placeholder-gray-500"
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
                   maxLength={200}
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Subject *</label>
+                <label className="text-xs text-muted-foreground mb-1 block">Subject *</label>
                 <Select value={subject} onValueChange={setSubject}>
-                  <SelectTrigger className="bg-[#1a1d35] border-white/10 text-white">
+                  <SelectTrigger className="bg-muted border-border text-foreground">
                     <SelectValue placeholder="Select subject..." />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1a1d35] border-white/10">
+                  <SelectContent className="bg-card border-border">
                     {SUBJECTS.map(s => (
-                      <SelectItem key={s} value={s} className="text-white hover:bg-white/10">{s}</SelectItem>
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">Description <span className="text-gray-600">(optional)</span></label>
+                <label className="text-xs text-muted-foreground mb-1 block">Description <span className="text-muted-foreground/60">(optional)</span></label>
                 <Textarea
                   placeholder="What topics does this cover? Any special tips?"
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  className="bg-[#1a1d35] border-white/10 text-white placeholder-gray-500 resize-none text-sm"
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground resize-none text-sm"
                   rows={2}
                   maxLength={500}
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">File * <span className="text-gray-600">(PDF or image, max 30 MB)</span></label>
+                <label className="text-xs text-muted-foreground mb-1 block">File * <span className="text-muted-foreground/60">(PDF or image, max 30 MB)</span></label>
                 {file ? (
-                  <div className="flex items-center gap-2 p-3 bg-[#1a1d35] rounded-lg border border-white/10">
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg border border-border">
                     {file.type === "application/pdf"
-                      ? <FileText size={20} className="text-red-400 flex-shrink-0" />
-                      : <ImageIcon size={20} className="text-blue-400 flex-shrink-0" />}
+                      ? <FileText size={20} className="text-red-500 flex-shrink-0" />
+                      : <ImageIcon size={20} className="text-blue-500 flex-shrink-0" />}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white truncate">{file.name}</p>
-                      <p className="text-xs text-gray-400">{(file.size / 1024 / 1024).toFixed(1)} MB</p>
+                      <p className="text-sm text-foreground truncate">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(1)} MB</p>
                     </div>
-                    <button onClick={() => setFile(null)} className="text-gray-400 hover:text-red-400 text-xs">Remove</button>
+                    <button onClick={() => setFile(null)} className="text-muted-foreground hover:text-destructive text-xs">Remove</button>
                   </div>
                 ) : (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full p-6 border-2 border-dashed border-white/10 rounded-xl text-center text-sm text-gray-400 hover:border-violet-500 transition-colors"
+                    className="w-full p-6 border-2 border-dashed border-border rounded-xl text-center text-sm text-muted-foreground hover:border-primary transition-colors"
                   >
-                    <Upload size={20} className="mx-auto mb-1 text-gray-500" />
+                    <Upload size={20} className="mx-auto mb-1 text-muted-foreground" />
                     Click to select PDF or image
                   </button>
                 )}
@@ -200,14 +200,14 @@ export default function NotesMarketplace() {
                   }}
                 />
               </div>
-              <div className="bg-violet-900/20 border border-violet-700/30 rounded-lg p-3 text-xs text-violet-300">
+              <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 text-xs text-primary">
                 <Zap size={12} className="inline mr-1" />
-                You'll earn <strong>10–20 XP</strong> when your notes are approved by an admin.
+                You'll earn <strong>10–20 Goals ⚽</strong> when your notes are approved by an admin.
               </div>
               <Button
                 onClick={() => submitMutation.mutate()}
                 disabled={submitMutation.isPending || !file || !title.trim() || !subject}
-                className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
               >
                 {submitMutation.isPending ? "Uploading..." : "Submit for Review"}
               </Button>
@@ -217,13 +217,13 @@ export default function NotesMarketplace() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 bg-[#13152a] p-1 rounded-xl">
+      <div className="flex gap-1 mb-4 bg-muted p-1 rounded-xl">
         {(["browse", "my-submissions"] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-              tab === t ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"
+              tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {t === "browse" ? "Browse Notes" : "My Submissions"}
@@ -242,8 +242,8 @@ export default function NotesMarketplace() {
                   onClick={() => setFilterSubject(s)}
                   className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-all ${
                     filterSubject === s
-                      ? "bg-violet-600 border-violet-500 text-white"
-                      : "bg-[#13152a] border-white/10 text-gray-300 hover:border-violet-400"
+                      ? "bg-primary border-primary text-primary-foreground"
+                      : "bg-card border-border text-foreground hover:border-primary"
                   }`}
                 >
                   {s}
@@ -253,7 +253,7 @@ export default function NotesMarketplace() {
           </div>
 
           {approvedQuery.isLoading ? (
-            <div className="text-center text-gray-500 py-12 text-sm">Loading...</div>
+            <div className="text-center text-muted-foreground py-12 text-sm">Loading...</div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-16">
               <svg viewBox="0 0 64 48" className="mx-auto mb-3 w-14 h-10 text-primary/30" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -270,18 +270,18 @@ export default function NotesMarketplace() {
           ) : (
             <div className="space-y-3">
               {filtered.map(note => (
-                <div key={note.id} className="bg-[#13152a] border border-white/5 rounded-xl p-4">
+                <div key={note.id} className="bg-card border border-border/40 rounded-xl p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-white/5 flex-shrink-0">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-muted/50 flex-shrink-0">
                       {note.fileType === "pdf"
-                        ? <FileText size={18} className="text-red-400" />
-                        : <ImageIcon size={18} className="text-blue-400" />}
+                        ? <FileText size={18} className="text-red-500" />
+                        : <ImageIcon size={18} className="text-blue-500" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{note.title}</p>
-                      <p className="text-xs text-gray-400">{note.subject} · by {note.uploaderName}</p>
+                      <p className="text-sm font-semibold text-foreground truncate">{note.title}</p>
+                      <p className="text-xs text-muted-foreground">{note.subject} · by {note.uploaderName}</p>
                       {note.description && (
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{note.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{note.description}</p>
                       )}
                     </div>
                     <a
@@ -290,7 +290,7 @@ export default function NotesMarketplace() {
                       rel="noopener noreferrer"
                       className="flex-shrink-0"
                     >
-                      <Button size="sm" variant="outline" className="border-violet-500/40 text-violet-300 hover:bg-violet-900/20 text-xs h-8">
+                      <Button size="sm" variant="outline" className="border-primary/40 text-primary hover:bg-primary/10 text-xs h-8">
                         <Eye size={12} className="mr-1" /> View
                       </Button>
                     </a>
@@ -305,7 +305,7 @@ export default function NotesMarketplace() {
       {tab === "my-submissions" && (
         <>
           {mySubmissionsQuery.isLoading ? (
-            <div className="text-center text-gray-500 py-12 text-sm">Loading...</div>
+            <div className="text-center text-muted-foreground py-12 text-sm">Loading...</div>
           ) : (mySubmissionsQuery.data?.submissions?.length ?? 0) === 0 ? (
             <div className="text-center py-16">
               <svg viewBox="0 0 64 64" className="mx-auto mb-3 w-12 h-12 text-primary/30" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -319,19 +319,19 @@ export default function NotesMarketplace() {
           ) : (
             <div className="space-y-3">
               {mySubmissionsQuery.data!.submissions.map(sub => (
-                <div key={sub.id} className="bg-[#13152a] border border-white/5 rounded-xl p-4">
+                <div key={sub.id} className="bg-card border border-border/40 rounded-xl p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{sub.title}</p>
-                      <p className="text-xs text-gray-400 mb-2">{sub.subject} · {new Date(sub.createdAt).toLocaleDateString()}</p>
+                      <p className="text-sm font-semibold text-foreground truncate">{sub.title}</p>
+                      <p className="text-xs text-muted-foreground mb-2">{sub.subject} · {new Date(sub.createdAt).toLocaleDateString()}</p>
                       {statusBadge(sub.status)}
                       {sub.status === "approved" && sub.xpAwarded && (
-                        <span className="ml-2 text-xs text-yellow-400"><Zap size={10} className="inline" /> XP awarded!</span>
+                        <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400"><Zap size={10} className="inline" /> Goals awarded!</span>
                       )}
                     </div>
                   </div>
                   {sub.adminNote && (
-                    <p className="mt-2 text-xs text-gray-400 bg-white/5 rounded-lg p-2 border border-white/5">
+                    <p className="mt-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 border border-border/40">
                       <strong>Admin note:</strong> {sub.adminNote}
                     </p>
                   )}
