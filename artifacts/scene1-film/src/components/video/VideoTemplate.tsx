@@ -4,11 +4,12 @@ import { useVideoPlayer } from '@/lib/video';
 import { CinematicFrame, BlackScene, TextCard, SilentFrame } from './video_scenes/Frames';
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  SCENE 1 — THE STRUGGLE    (10 shots, ~56 s)
-//  SCENE 2 — THE DECISION    (7 shots,  ~34 s)
-//  SCENE 3 — THE DISCOVERY   (10 shots, ~69 s)
-//  SCENE 4 — THE COLLECTION  (11 shots, ~87 s)
-//  Total runtime: ~5 min including bridges + endings
+//  SCENE 1 — THE STRUGGLE         (10 shots, ~56 s)
+//  SCENE 2 — THE DECISION         (7 shots,  ~34 s)
+//  SCENE 3 — THE DISCOVERY        (10 shots, ~69 s)
+//  SCENE 4 — THE COLLECTION       (11 shots, ~87 s)
+//  SCENE 5 — THE LIMITS OF PDFs   (11 shots, ~108 s)
+//  Total runtime: ~7 min including bridges + endings
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SCENE_DURATIONS: Record<string, number> = {
@@ -68,8 +69,24 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s4_10:   8000,   // The look — exhausted, just relieved
   s4_11:  10000,   // Final shot — folder close-up, the beginning
 
-  // ── Ending ───────────────────────────────────────────────────────────────
+  // ── Bridge 4 / Scene 4 End Card ──────────────────────────────────────────
   end_card2: 6000, // "The First Resource Was Created." / "Now They Had To Share It."
+
+  // ── Scene 5 — The Limits of PDFs ─────────────────────────────────────────
+  s5_01:  10000,   // Shot 1  — Growth montage: files spreading, WhatsApp groups growing
+  s5_02:   8000,   // Shot 2  — Founder's phone: flood of messages, system breaking
+  s5_03:   8000,   // Shot 3  — Midnight support: all three answering, resending
+  s5_04:  10000,   // Shot 4  — Laptop desktop chaos: duplicate folders everywhere
+  s5_05:   8000,   // Shot 5  — Student searching WhatsApp — original problem returns
+  s5_06:  12000,   // Shot 6  — Three founders, tired, silent conversation
+  s5_07:   8000,   // Shot 7  — Notebook: "What if students didn't need to search?"
+  s5_08:  12000,   // Shot 8  — Notebook sketch: Home / Notes / PDFs / Quizzes / Community
+  s5_09:  10000,   // Shot 9  — Three founders imagining: excitement mixed with fear
+  s5_10:  12000,   // Shot 10 — Founder writes "Let's build an app."
+  s5_11:  10000,   // Final   — Rough app sketch on notebook — history changed
+
+  // ── Ending ───────────────────────────────────────────────────────────────
+  end_card3: 6000, // "The Resource Project Was Over." / "The Mission Was Just Beginning."
   end_title: 7000, // "One Idea Changed Everything."
 };
 
@@ -345,6 +362,80 @@ const SCENES: Record<string, SceneData> = {
     type: 'textcard',
     line1: 'The First Resource Was Created.',
     line2: 'Now They Had To Share It.',
+  },
+
+  // ── Scene 5 — The Limits of PDFs ──────────────────────────────────────────
+
+  s5_01: {
+    type: 'silent',
+    image: 's5_01.png',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s5_02: {
+    type: 'frame',
+    image: 's5_02.png',
+    narration: '"The system was breaking."',
+    kenBurns: { scale: [1.04, 1.0], x: ['1%', '-1%'], y: ['0%', '0%'] },
+  },
+  s5_03: {
+    type: 'frame',
+    image: 's5_03.png',
+    narration: '"Helping students had become a full-time job."',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s5_04: {
+    type: 'silent',
+    image: 's5_04.png',
+    kenBurns: { scale: [1.08, 1.0], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s5_05: {
+    type: 'frame',
+    image: 's5_05.png',
+    narration: '"The original problem had returned."',
+    kenBurns: { scale: [1.0, 1.06], x: ['1%', '-1%'], y: ['0%', '0%'] },
+  },
+  s5_06: {
+    type: 'silent',
+    image: 's5_06.png',
+    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s5_07: {
+    type: 'frame',
+    image: 's5_07.png',
+    narration: '"What if students didn\'t need to search?"',
+    kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['-2%', '2%'] },
+  },
+  s5_08: {
+    type: 'frame',
+    image: 's5_08.png',
+    narration: '"The answer wasn\'t another folder."',
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s5_09: {
+    type: 'silent',
+    image: 's5_09.png',
+    kenBurns: { scale: [1.0, 1.07], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s5_10: {
+    type: 'frame',
+    image: 's5_10.png',
+    narration: '"It was something bigger."',
+    fadeToBlack: true,
+    kenBurns: { scale: [1.0, 1.12], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s5_11: {
+    type: 'silent',
+    image: 's5_11.png',
+    fadeToBlack: true,
+    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['2%', '-2%'] },
+  },
+
+  // ── Ending ────────────────────────────────────────────────────────────────
+
+  end_card3: {
+    type: 'textcard',
+    line1: 'The Resource Project Was Over.',
+    line2: 'The Mission Was Just Beginning.',
   },
   end_title: {
     type: 'textcard',
