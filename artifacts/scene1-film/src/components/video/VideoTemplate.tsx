@@ -168,6 +168,31 @@ export const SCENE_DURATIONS: Record<string, number> = {
   end_card7:   10000, // "MISSION DISTINCTION / Started With A Struggle. / Built With Purpose. / Continued By Students."
   epilogue:     8000, // "501… 502… 503… The numbers continue rising."
   end_title:    9000, // "To Be Continued…"
+
+  // ── Bridge to Scene 11 ───────────────────────────────────────────────────
+  s11_rain:     5000, // Black screen — silence — the same rain from Scene 1
+  s11_title:    5000, // "One Year Later"
+
+  // ── Scene 11 — The Legacy ────────────────────────────────────────────────
+  s11_01:  15000,   // Shot 1  — Drone: medical college campus, new students arriving
+  s11_02:  15000,   // Shot 2  — Tracking: new first-year student enters hostel
+  s11_03:  15000,   // Shot 3  — Wide: hostel room, same books, fresh start
+  s11_04:  20000,   // Shot 4  — Close-up: student overwhelmed — history repeats
+  s11_05:  12000,   // Shot 5  — Over-shoulder: student searches "Mission Distinction"
+  s11_06:  20000,   // Shot 6  — Close-up: MD app opens — relief
+  s11_07:  15000,   // Shot 7  — Intercut: student using MD / founders unaware
+  s11_08:  20000,   // Shot 8  — Montage: students across Odisha connected by one platform
+  s11_09:  15000,   // Shot 9  — Macro: old notebook — "What if everything was in one place?"
+  s11_10:  25000,   // Shot 10 — Full circle: same room, same rain, but now learning not struggling
+  s11_11:  20000,   // Shot 11 — Camera pulls back through rainy window — rising higher
+  s11_12:  30000,   // Shot 12 — Aerial: thousands of glowing windows across Odisha
+  s11_final: 30000, // Final shot — "MISSION DISTINCTION" spelled in city lights
+
+  // ── Scene 11 End Cards ───────────────────────────────────────────────────
+  end_card8:   10000, // "Three students started with a question. / Thousands found an answer."
+  final_quote:  9000, // "Every doctor was once a student searching for guidance."
+  s11_credits: 20000, // Behind-the-scenes memory collage — soft piano, no narration
+  s11_end:      6000, // Final fade to black
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -894,6 +919,121 @@ const SCENES: Record<string, SceneData> = {
     type: 'textcard',
     line1: 'To Be Continued…',
     large: true,
+  },
+
+  // ── Scene 11 — The Legacy ─────────────────────────────────────────────────
+
+  s11_rain: {
+    type: 'black',
+    narration: '',
+    fadeIn: true,
+  },
+  s11_title: {
+    type: 'textcard',
+    line1: 'One Year Later',
+    large: true,
+  },
+
+  s11_01: {
+    type: 'frame',
+    image: 's11_01.png',
+    narration: '"Every year… a new journey begins."',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['2%', '-1%'] },
+  },
+  s11_02: {
+    type: 'frame',
+    image: 's11_02.png',
+    narration: '"Same corridors. Same uncertainty. Same fear."',
+    kenBurns: { scale: [1.05, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s11_03: {
+    type: 'frame',
+    image: 's11_03.png',
+    narration: '"The books hadn\'t changed. The struggle hadn\'t either."',
+    kenBurns: { scale: [1.0, 1.07], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s11_04: {
+    type: 'frame',
+    image: 's11_04.png',
+    narration: '"He sat with the same confusion that had once started everything."',
+    kenBurns: { scale: [1.08, 1.0], x: ['0%', '0%'], y: ['-1%', '1%'] },
+  },
+  s11_05: {
+    type: 'frame',
+    image: 's11_05.png',
+    narration: '"Then… he picked up his phone."',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s11_06: {
+    type: 'frame',
+    image: 's11_06.png',
+    narration: '"Notes. Resources. Community. Everything… in one place."',
+    kenBurns: { scale: [1.04, 1.0], x: ['1%', '-1%'], y: ['0%', '0%'] },
+  },
+  s11_07: {
+    type: 'frame',
+    image: 's11_07.png',
+    narration: '"The people who built it… may never know his name."',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['-1%', '1%'] },
+  },
+  s11_08: {
+    type: 'frame',
+    image: 's11_08.png',
+    narration: '"But impact doesn\'t need recognition."',
+    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s11_09: {
+    type: 'frame',
+    image: 's11_09.png',
+    narration: '"It just needs to reach the right person… at the right moment."',
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['2%', '-2%'] },
+  },
+  s11_10: {
+    type: 'frame',
+    image: 's11_10.png',
+    narration: '"The struggle remained. But now… no one had to face it alone."',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s11_11: {
+    type: 'silent',
+    image: 's11_11.png',
+    kenBurns: { scale: [1.0, 1.12], x: ['0%', '0%'], y: ['3%', '-3%'] },
+  },
+  s11_12: {
+    type: 'frame',
+    image: 's11_12.png',
+    narration: '"A mission is not measured by downloads. It is measured by the lives it touches."',
+    kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['2%', '-2%'] },
+  },
+  s11_final: {
+    type: 'frame',
+    image: 's11_final.png',
+    narration: '"Mission Distinction."',
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
+    fadeToBlack: true,
+  },
+
+  // ── Scene 11 End Cards ────────────────────────────────────────────────────
+
+  end_card8: {
+    type: 'textcard',
+    line1: 'Three students started with a question.',
+    line2: 'Thousands found an answer.',
+  },
+  final_quote: {
+    type: 'textcard',
+    line1: '"Every doctor was once a student',
+    line2: 'searching for guidance."',
+  },
+  s11_credits: {
+    type: 'silent',
+    image: 's11_credits.png',
+    kenBurns: { scale: [1.0, 1.04], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s11_end: {
+    type: 'black',
+    narration: '',
+    fadeIn: false,
   },
 };
 
