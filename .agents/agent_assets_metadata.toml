@@ -1812,6 +1812,18 @@ uri = "file://attached_assets/s12_08_v2.png"
 type = "image"
 title = "whiteboard planning no text"
 
+[[generated]]
+id = "Z3jtw6S5tU0jQUItJoWx4"
+uri = "file://attached_assets/s12_03_v2.png"
+type = "image"
+title = "three founders reunion clean walls"
+
+[[generated]]
+id = "SeNDnsWH4RtJmzerSXfcg"
+uri = "file://attached_assets/s12_05_v2.png"
+type = "image"
+title = "students montage no whiteboard text"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
