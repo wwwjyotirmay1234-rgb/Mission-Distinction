@@ -184,7 +184,7 @@ export default function VideoWithControls() {
   if (!isIframed) return <VideoTemplate />;
 
   return (
-    <div className="relative w-full" style={{ height: '100dvh' }}>
+    <div className="relative w-full flex-1" style={{ height: '100dvh', minHeight: '100%' }}>
       <VideoTemplate
         key={mountKey}
         durations={durations}

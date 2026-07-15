@@ -1301,7 +1301,7 @@ export default function VideoTemplate({
   };
 
   return (
-    <div className="w-full overflow-hidden relative bg-black" style={{ height: '100dvh' }}>
+    <div className="w-full overflow-hidden relative bg-black flex-1" style={{ height: '100dvh', minHeight: '100%' }}>
       <AnimatePresence mode="sync">
         {renderScene()}
       </AnimatePresence>
