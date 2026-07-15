@@ -136,36 +136,44 @@ export default function VideoTemplate({
   const sceneData = SCENES[baseKey] ?? SCENES['opening'];
   const duration = durations[currentSceneKey] ?? 5000;
 
+  const renderScene = () => {
+    if (sceneData.type === 'black') {
+      return (
+        <BlackScene
+          key={currentSceneKey}
+          duration={duration}
+          narration={sceneData.narration ?? ''}
+          fadeIn={sceneData.fadeIn}
+        />
+      );
+    }
+    if (sceneData.type === 'frame') {
+      return (
+        <CinematicFrame
+          key={currentSceneKey}
+          duration={duration}
+          image={sceneData.image!}
+          narration={sceneData.narration}
+          kenBurns={sceneData.kenBurns!}
+          fadeToBlack={sceneData.fadeToBlack}
+        />
+      );
+    }
+    return (
+      <TextCard
+        key={currentSceneKey}
+        duration={duration}
+        line1={sceneData.line1!}
+        line2={sceneData.line2}
+        large={sceneData.large}
+      />
+    );
+  };
+
   return (
     <div className="w-full h-screen overflow-hidden relative bg-black">
       <AnimatePresence mode="sync">
-        {sceneData.type === 'black' && (
-          <BlackScene
-            key={currentSceneKey}
-            duration={duration}
-            narration={sceneData.narration ?? ''}
-            fadeIn={sceneData.fadeIn}
-          />
-        )}
-        {sceneData.type === 'frame' && (
-          <CinematicFrame
-            key={currentSceneKey}
-            duration={duration}
-            image={sceneData.image!}
-            narration={sceneData.narration}
-            kenBurns={sceneData.kenBurns!}
-            fadeToBlack={sceneData.fadeToBlack}
-          />
-        )}
-        {sceneData.type === 'textcard' && (
-          <TextCard
-            key={currentSceneKey}
-            duration={duration}
-            line1={sceneData.line1!}
-            line2={sceneData.line2}
-            large={sceneData.large}
-          />
-        )}
+        {renderScene()}
       </AnimatePresence>
     </div>
   );
