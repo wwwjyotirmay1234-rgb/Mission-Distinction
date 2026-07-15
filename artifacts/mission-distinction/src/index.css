@@ -97,64 +97,64 @@
 :root {
   color-scheme: dark;
   --button-outline: rgba(255,255,255, .08);
-  --badge-outline: rgba(0,255,80, .08);
+  --badge-outline: rgba(160,100,255, .08);
 
   --opaque-button-border-intensity: 9;
 
-  --elevate-1: rgba(0,200,80, .04);
-  --elevate-2: rgba(0,200,80, .09);
+  --elevate-1: rgba(140,80,255, .04);
+  --elevate-2: rgba(140,80,255, .09);
 
-  /* Stadium-night dark green backgrounds */
-  --background: 130 38% 6%;       /* #091309 — pitch at night */
+  /* Deep navy backgrounds — original app feel */
+  --background: 237 35% 8%;       /* #0d0f1a — deep navy */
   --foreground: 0 0% 96%;
 
-  --border: 130 25% 14%;
-  --input: 130 25% 14%;
+  --border: 237 25% 18%;
+  --input: 237 25% 18%;
   --ring: 51 100% 50%;            /* Gold focus ring */
 
-  --card: 130 30% 9%;             /* #0f1d10 */
+  --card: 237 30% 12%;            /* #13152a — navy card */
   --card-foreground: 0 0% 96%;
-  --card-border: rgba(0, 200, 80, 0.07);
+  --card-border: rgba(140, 80, 255, 0.07);
 
-  --sidebar: 130 42% 4%;          /* #060d07 — darkest green */
+  --sidebar: 237 42% 6%;          /* #070817 — darkest navy */
   --sidebar-foreground: 0 0% 96%;
-  --sidebar-border: 130 25% 11%;
-  --sidebar-primary: 145 100% 24%;
+  --sidebar-border: 237 25% 13%;
+  --sidebar-primary: 270 70% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-primary-border: rgba(0,160,60,0.4);
-  --sidebar-accent: 130 25% 10%;
+  --sidebar-primary-border: rgba(140,80,255,0.4);
+  --sidebar-accent: 237 25% 11%;
   --sidebar-accent-foreground: 0 0% 96%;
-  --sidebar-accent-border: rgba(0,200,80,0.08);
+  --sidebar-accent-border: rgba(140,80,255,0.08);
   --sidebar-ring: 51 100% 50%;
 
-  --popover: 130 30% 9%;
+  --popover: 237 30% 12%;
   --popover-foreground: 0 0% 96%;
-  --popover-border: 130 25% 14%;
+  --popover-border: 237 25% 18%;
 
-  /* Pitch green — FIFA official */
-  --primary: 145 100% 24%;        /* #00772b */
+  /* Violet / purple — the primary accent */
+  --primary: 270 70% 60%;         /* #7c3aed-ish vibrant violet */
   --primary-foreground: 0 0% 100%;
-  --primary-border: rgba(0, 150, 60, 0.4);
+  --primary-border: rgba(140, 80, 255, 0.4);
 
   /* Stadium Gold */
   --secondary: 51 100% 50%;       /* #FFD700 */
   --secondary-foreground: 0 0% 8%;
   --secondary-border: rgba(255,215,0,0.3);
 
-  --muted: 130 25% 13%;
-  --muted-foreground: 130 15% 58%;
-  --muted-border: rgba(0,200,80,0.08);
+  --muted: 237 25% 15%;
+  --muted-foreground: 237 15% 60%;
+  --muted-border: rgba(140,80,255,0.08);
 
-  --accent: 130 25% 13%;
+  --accent: 237 25% 15%;
   --accent-foreground: 0 0% 96%;
-  --accent-border: rgba(0,200,80,0.08);
+  --accent-border: rgba(140,80,255,0.08);
 
   --destructive: 0 72% 40%;
   --destructive-foreground: 0 0% 100%;
   --destructive-border: rgba(239,68,68,0.3);
 
   /* Chart: football team jersey palette */
-  --chart-1: 145 100% 24%;        /* pitch green */
+  --chart-1: 270 70% 60%;         /* violet */
   --chart-2: 51 100% 50%;         /* stadium gold */
   --chart-3: 210 80% 58%;         /* cobalt blue (France) */
   --chart-4: 0 75% 52%;           /* scarlet (Spain/England) */
@@ -176,59 +176,59 @@
 }
 
 .dark {
-  --background: 130 38% 6%;
+  --background: 237 35% 8%;
   --foreground: 0 0% 96%;
 }
 
-/* ⚽ Light mode — Bright day match, sunlit pitch */
+/* ⚽ Light mode */
 .light {
   color-scheme: light;
-  --button-outline: rgba(0,100,40,.12);
-  --badge-outline: rgba(0,100,40,.08);
-  --elevate-1: rgba(0,100,40,.04);
-  --elevate-2: rgba(0,100,40,.08);
+  --button-outline: rgba(100,50,200,.12);
+  --badge-outline: rgba(100,50,200,.08);
+  --elevate-1: rgba(100,50,200,.04);
+  --elevate-2: rgba(100,50,200,.08);
 
-  --background: 135 45% 95%;      /* very light pitch-green */
-  --foreground: 130 40% 12%;
+  --background: 0 0% 98%;
+  --foreground: 237 35% 12%;
 
-  --border: 135 30% 82%;
-  --input: 135 30% 82%;
-  --ring: 145 100% 30%;
+  --border: 237 20% 88%;
+  --input: 237 20% 88%;
+  --ring: 270 70% 50%;
 
   --card: 0 0% 100%;
-  --card-foreground: 130 40% 12%;
-  --card-border: rgba(0,120,50,0.1);
+  --card-foreground: 237 35% 12%;
+  --card-border: rgba(100,50,200,0.10);
 
-  --sidebar: 135 40% 92%;
-  --sidebar-foreground: 130 40% 12%;
-  --sidebar-border: 135 30% 80%;
-  --sidebar-primary: 145 100% 30%;
+  --sidebar: 237 30% 96%;
+  --sidebar-foreground: 237 35% 12%;
+  --sidebar-border: 237 20% 86%;
+  --sidebar-primary: 270 65% 50%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-primary-border: rgba(0,150,60,0.3);
-  --sidebar-accent: 135 30% 86%;
-  --sidebar-accent-foreground: 130 40% 12%;
-  --sidebar-accent-border: rgba(0,120,50,0.08);
-  --sidebar-ring: 145 100% 30%;
+  --sidebar-primary-border: rgba(100,50,200,0.3);
+  --sidebar-accent: 237 25% 92%;
+  --sidebar-accent-foreground: 237 35% 12%;
+  --sidebar-accent-border: rgba(100,50,200,0.08);
+  --sidebar-ring: 270 65% 50%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 130 40% 12%;
-  --popover-border: 135 30% 82%;
+  --popover-foreground: 237 35% 12%;
+  --popover-border: 237 20% 88%;
 
-  --primary: 145 100% 28%;
+  --primary: 270 65% 50%;
   --primary-foreground: 0 0% 100%;
-  --primary-border: rgba(0,150,60,0.3);
+  --primary-border: rgba(100,50,200,0.3);
 
   --secondary: 45 100% 42%;
   --secondary-foreground: 0 0% 8%;
   --secondary-border: rgba(200,160,0,0.3);
 
-  --muted: 135 30% 87%;
-  --muted-foreground: 130 25% 44%;
-  --muted-border: rgba(0,120,50,0.08);
+  --muted: 237 20% 93%;
+  --muted-foreground: 237 20% 48%;
+  --muted-border: rgba(100,50,200,0.08);
 
-  --accent: 135 30% 87%;
-  --accent-foreground: 130 40% 12%;
-  --accent-border: rgba(0,120,50,0.08);
+  --accent: 237 20% 93%;
+  --accent-foreground: 237 35% 12%;
+  --accent-border: rgba(100,50,200,0.08);
 
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
@@ -254,8 +254,8 @@
 }
 
 @keyframes header-pitch-glow {
-  0%, 100% { box-shadow: 0 1px 0 0 rgba(0, 180, 70, 0.18), 0 2px 8px 0 rgba(0, 180, 70, 0.06); }
-  50%       { box-shadow: 0 1px 0 0 rgba(0, 180, 70, 0.36), 0 2px 16px 0 rgba(0, 180, 70, 0.14); }
+  0%, 100% { box-shadow: 0 1px 0 0 rgba(140, 80, 255, 0.18), 0 2px 8px 0 rgba(140, 80, 255, 0.06); }
+  50%       { box-shadow: 0 1px 0 0 rgba(140, 80, 255, 0.36), 0 2px 16px 0 rgba(140, 80, 255, 0.14); }
 }
 
 /* Animated pitch-green glow applied directly to the header element */

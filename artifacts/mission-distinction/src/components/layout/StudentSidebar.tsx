@@ -231,7 +231,7 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
       className="flex flex-col h-full overflow-hidden relative"
       style={{
         backgroundImage:
-          "repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(0,160,60,0.055) 28px, rgba(0,160,60,0.055) 56px)",
+          "repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(140,80,255,0.055) 28px, rgba(140,80,255,0.055) 56px)",
       }}
     >
       {/* Logo + collapse toggle */}

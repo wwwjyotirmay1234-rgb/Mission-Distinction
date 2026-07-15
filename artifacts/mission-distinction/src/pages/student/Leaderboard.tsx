@@ -127,7 +127,7 @@ export default function StudentLeaderboard() {
       {myRank > 0 && (
         <Card className="bg-primary/10 border-primary/40 overflow-hidden relative">
           <div className="absolute inset-0 pointer-events-none"
-            style={{ backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 18px, rgba(0,160,60,0.06) 18px, rgba(0,160,60,0.06) 36px)" }}
+            style={{ backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 18px, rgba(140,80,255,0.06) 18px, rgba(140,80,255,0.06) 36px)" }}
           />
           <CardContent className="p-4 flex items-center gap-4 relative">
             <div className="w-10 h-10 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-lg shrink-0 border border-primary/30">
