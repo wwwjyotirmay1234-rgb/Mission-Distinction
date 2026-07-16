@@ -2555,3 +2555,33 @@ id = "5_GkiSLWlhZRu0bsfuQuH"
 uri = "file://migration_dump.sql.gz"
 type = "unspecified"
 title = "Mission Distinction DB — Fresh Migration Dump"
+
+[[outputs]]
+id = "KHRvB-CLThZbPya-eB54e"
+uri = "file://artifacts/scene1-film/public/audio/ambient.mp3"
+type = "audio"
+title = "ambient_rain"
+
+[[outputs]]
+id = "bzrvyinH4mHpigFE7gPMI"
+uri = "file://artifacts/scene1-film/public/audio/building.mp3"
+type = "audio"
+title = "piano_strings"
+
+[[outputs]]
+id = "fBoFVcj-bJk6zXWjMBnkY"
+uri = "file://artifacts/scene1-film/public/audio/tension.mp3"
+type = "audio"
+title = "tension"
+
+[[outputs]]
+id = "oKKQ6iZq_MrjAyKfl1DOZ"
+uri = "file://artifacts/scene1-film/public/audio/piano.mp3"
+type = "audio"
+title = "piano_solo"
+
+[[outputs]]
+id = "xDtDckA0RGvdP8q1Z4L8g"
+uri = "file://artifacts/scene1-film/public/audio/triumph.mp3"
+type = "audio"
+title = "triumph"

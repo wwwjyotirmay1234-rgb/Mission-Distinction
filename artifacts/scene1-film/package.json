@@ -32,5 +32,9 @@
     "tailwindcss": "catalog:",
     "three": "^0.182.0",
     "vite": "catalog:"
+  },
+  "dependencies": {
+    "@types/howler": "^2.2.13",
+    "howler": "^2.2.4"
   }
 }
