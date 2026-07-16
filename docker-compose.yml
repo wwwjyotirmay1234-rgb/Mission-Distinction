@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      - db
+
+  web:
+    image: node:20
+    working_dir: /app
+    command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm --filter @workspace/mission-distinction dev --host 0.0.0.0"
+    ports:
+      - "3000:5173"
+    volumes:
+      - ./:/app
+    environment:
+      VITE_POSTHOG_KEY: ${VITE_POSTHOG_KEY}
+      VITE_POSTHOG_HOST: ${VITE_POSTHOG_HOST}
+      SUPABASE_URL: ${SUPABASE_URL}
+
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: example
+      POSTGRES_USER: user
+      POSTGRES_DB: mission
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
