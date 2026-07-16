@@ -172,20 +172,18 @@ export function useFilmAudio(currentSceneKey: string, muted: boolean) {
 
     // Howler resumes AudioContext on these events; we piggyback to re-play
     const ctx = Howler.ctx;
-    if (ctx) {
-      const onStateChange = () => {
-        if (ctx.state === 'running') tryResume();
-      };
-      ctx.addEventListener('statechange', onStateChange);
-      // Also try on first user gesture directly
-      document.addEventListener('click', tryResume, { once: true, capture: true });
-      document.addEventListener('touchstart', tryResume, { once: true, capture: true });
-      return () => {
-        ctx.removeEventListener('statechange', onStateChange);
-        document.removeEventListener('click', tryResume, true);
-        document.removeEventListener('touchstart', tryResume, true);
-      };
-    }
+    const onStateChange = () => {
+      if (ctx?.state === 'running') tryResume();
+    };
+    ctx?.addEventListener('statechange', onStateChange);
+    // Also try on first user gesture directly
+    document.addEventListener('click', tryResume, { once: true, capture: true });
+    document.addEventListener('touchstart', tryResume, { once: true, capture: true });
+    return () => {
+      ctx?.removeEventListener('statechange', onStateChange);
+      document.removeEventListener('click', tryResume, true);
+      document.removeEventListener('touchstart', tryResume, true);
+    };
   }, []);
 
   // Scene change → crossfade to appropriate track

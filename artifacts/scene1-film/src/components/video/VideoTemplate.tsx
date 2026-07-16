@@ -2,6 +2,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useEffect } from 'react';
 import { useVideoPlayer } from '@/lib/video';
 import { CinematicFrame, BlackScene, TextCard, SilentFrame } from './video_scenes/Frames';
+import { useFilmAudio } from '@/hooks/useFilmAudio';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  SCENE 1 — THE STRUGGLE         (10 shots, ~56 s)
@@ -1349,12 +1350,16 @@ export default function VideoTemplate({
   durations = SCENE_DURATIONS,
   loop = true,
   onSceneChange,
+  muted = false,
 }: {
   durations?: Record<string, number>;
   loop?: boolean;
   onSceneChange?: (sceneKey: string) => void;
+  muted?: boolean;
 } = {}) {
   const { currentSceneKey } = useVideoPlayer({ durations, loop });
+
+  useFilmAudio(currentSceneKey, muted);
 
   useEffect(() => {
     onSceneChange?.(currentSceneKey);
