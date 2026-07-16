@@ -2388,6 +2388,18 @@ uri = "file://artifacts/scene1-film/public/frames/s8_12.png"
 type = "image"
 title = "s8_12 overhead founders morning glow"
 
+[[generated]]
+id = "std_IEzLd7IlCZIfFc621"
+uri = "file://artifacts/scene1-film/public/frames/s11_circle.png"
+type = "image"
+title = "full circle: new student with MD app open"
+
+[[generated]]
+id = "P48nbh7KmtJ4Y0RoqPZdG"
+uri = "file://artifacts/scene1-film/public/frames/s11_phone.png"
+type = "image"
+title = "close-up: student using Mission Distinction app"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"

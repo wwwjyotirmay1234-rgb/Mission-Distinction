@@ -180,84 +180,23 @@ export const SCENE_DURATIONS: Record<string, number> = {
 
   // ── Scene 10 End ──────────────────────────────────────────────────────────
   end_card7:   10000, // "MISSION DISTINCTION / Started With A Struggle. / Built With Purpose. / Continued By Students."
-  epilogue:     8000, // "501… 502… 503… The numbers continue rising."
-  end_title:    9000, // "To Be Continued…"
-
-  // ── Bridge to Scene 11 ───────────────────────────────────────────────────
-  s11_rain:     5000, // Black screen — silence — the same rain from Scene 1
+  // ── Bridge to Scene 11 — The New Student ─────────────────────────────────
+  s11_rain:     5000, // Black screen — same rain as Scene 1
   s11_title:    5000, // "One Year Later"
 
-  // ── Scene 11 — The Legacy ────────────────────────────────────────────────
-  s11_01:  15000,   // Shot 1  — Drone: medical college campus, new students arriving
-  s11_02:  15000,   // Shot 2  — Tracking: new first-year student enters hostel
-  s11_03:  15000,   // Shot 3  — Wide: hostel room, same books, fresh start
-  s11_04:  20000,   // Shot 4  — Close-up: student overwhelmed — history repeats
-  s11_05:  12000,   // Shot 5  — Over-shoulder: student searches "Mission Distinction"
-  s11_06:  20000,   // Shot 6  — Close-up: MD app opens — relief
-  s11_07:  15000,   // Shot 7  — Intercut: student using MD / founders unaware
-  s11_08:  20000,   // Shot 8  — Montage: students across Odisha connected by one platform
-  s11_09:  15000,   // Shot 9  — Macro: old notebook — "What if everything was in one place?"
-  s11_10:  25000,   // Shot 10 — Full circle: same room, same rain, but now learning not struggling
-  s11_11:  20000,   // Shot 11 — Camera pulls back through rainy window — rising higher
-  s11_12:  30000,   // Shot 12 — Aerial: thousands of glowing windows across Odisha
-  s11_final: 30000, // Final shot — "MISSION DISTINCTION" spelled in city lights
+  // ── Scene 11 — The New Student ───────────────────────────────────────────
+  s11_01:  12000,   // Shot 1  — Drone: medical college campus, new students arriving
+  s11_02:  12000,   // Shot 2  — Tracking: new first-year student enters hostel
+  s11_03:  10000,   // Shot 3  — Wide: hostel room, same books, fresh start
+  s11_04:  12000,   // Shot 4  — Close-up: student overwhelmed — history repeats
+  s11_05:  10000,   // Shot 5  — Over-shoulder: student picks up phone
+  s11_06:  12000,   // Shot 6  — MD app opens — relief
 
-  // ── Scene 11 End Cards ───────────────────────────────────────────────────
-  end_card8:   10000, // "Three students started with a question. / Thousands found an answer."
-  final_quote:  9000, // "Every doctor was once a student searching for guidance."
-  s11_credits: 20000, // Behind-the-scenes memory collage — soft piano, no narration
-  s11_end:      6000, // Final fade to black
-
-  // ── Epilogue — The Journey Continues ─────────────────────────────────────
-  ep_today:    3500,  // "Today" — black title card
-  ep_01:      15000,  // Shot 1  — Campus drone flyover
-  ep_02:      20000,  // Shot 2  — Many stories montage
-  ep_03:      15000,  // Shot 3  — The Founder walking
-  ep_04:      20000,  // Shot 4  — The Unseen Impact intercut
-  ep_05:      15000,  // Shot 5  — The Empty Room
-  ep_06:      20000,  // Shot 6  — The Notebook
-  ep_07:      20000,  // Shot 7  — The Future: Chapter 2
-  ep_08:      25000,  // Shot 8  — Sunset over Odisha
-  ep_09:      20000,  // Shot 9  — The Final Student
-  ep_final:   30000,  // Final Shot — One window to thousands
-  ep_title:    8000,  // "MISSION DISTINCTION / A Story Still Being Written"
-  ep_last:    10000,  // "Somewhere tonight…"
-  ep_end:      5000,  // Black fade to end
-
-  // ── Scene 12 — The Anniversary (After The Credits) ────────────────────────
-  s12_year:    3500,  // "ONE YEAR LATER" title card
-  s12_01:     15000,  // Shot 1  — The Old Room (empty, rain, same desk)
-  s12_02:     20000,  // Shot 2  — Flashback Echoes (double-exposure memories)
-  s12_03:     20000,  // Shot 3  — Team Reunion (three founders, same table)
-  s12_04:     15000,  // Shot 4  — First Resource Pack (old folder, few PDFs)
-  s12_05:     30000,  // Shot 5  — The Students (montage across Odisha)
-  s12_06:     20000,  // Shot 6  — The Wall (messages projected)
-  s12_07:     15000,  // Shot 7  — The Realization (founder reading messages)
-  s12_08:     25000,  // Shot 8  — Future Board (whiteboard: new goals)
-  s12_09:     25000,  // Shot 9  — New Generation (first-year entering campus)
-  s12_10:     30000,  // Shot 10 — Full Circle (same desk, MD already open)
-  s12_final:  40000,  // Final Shot — Drone pullback to city constellation
-  s12_title:   8000,  // "MISSION DISTINCTION / Not An App. A Mission."
-  s12_last:   10000,  // "And this is only the beginning."
-  s12_end:     5000,  // Black fade to end
-
-  // ── Scene 13 — The Legacy (After The Credits II) ──────────────────────────
-  s13_open:    8000,  // Black + ambient sounds (pages, keyboard, rain, footsteps)
-  s13_text1:   5000,  // "Some dreams end when they succeed. Others begin."
-  s13_01:     20000,  // Shot 1  — Unknown first-year arrives on campus
-  s13_02:     25000,  // Shot 2  — History repeats (cluttered desk, stress)
-  s13_03:     15000,  // Shot 3  — The Discovery (screen light in eyes)
-  s13_04:     30000,  // Shot 4  — Invisible helpers (ghost founder silhouettes)
-  s13_05:     40000,  // Shot 5  — Chain reaction montage
-  s13_06:     45000,  // Shot 6  — Years pass (student → intern → doctor)
-  s13_07:     30000,  // Shot 7  — The Doctor (treating patient, family smiles)
-  s13_08:     25000,  // Shot 8  — Founders watch from distance, quietly proud
-  s13_09:     40000,  // Shot 9  — Legacy wall (thousands of student photos)
-  s13_10:     35000,  // Shot 10 — The Torch (doctor hands notes to first-year)
-  s13_final:  60000,  // Final Shot — Drone ascent, city of light
-  s13_title:   8000,  // "MISSION DISTINCTION / Knowledge. Service. Humanity."
-  s13_last:   10000,  // "The story now belongs to them."
-  s13_end:     5000,  // Black fade
+  // ── The Full Circle ───────────────────────────────────────────────────────
+  s11_circle: 14000, // Overhead desk: new student, MD already open, studying calmly
+  s11_phone:   8000, // Close-up: Mission Distinction app — anatomy notes on screen
+  s11_last:    9000, // Title card: "MISSION DISTINCTION"
+  s11_end:     5000, // Black fade to end
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1047,18 +986,7 @@ const SCENES: Record<string, SceneData> = {
     line2: 'Started With A Struggle. Built With Purpose.',
     line3: 'Continued By Students.',
   },
-  epilogue: {
-    type: 'textcard',
-    line1: '501… 502… 503…',
-    line2: 'The numbers kept rising.',
-  },
-  end_title: {
-    type: 'textcard',
-    line1: 'To Be Continued…',
-    large: true,
-  },
-
-  // ── Scene 11 — The Legacy ─────────────────────────────────────────────────
+  // ── Scene 11 — The New Student ───────────────────────────────────────────
 
   s11_rain: {
     type: 'black',
@@ -1107,323 +1035,27 @@ const SCENES: Record<string, SceneData> = {
     narration: '"Notes. Resources. Community. Everything… in one place."',
     kenBurns: { scale: [1.04, 1.0], x: ['1%', '-1%'], y: ['0%', '0%'] },
   },
-  s11_07: {
-    type: 'frame',
-    image: 's11_07.png',
-    narration: '"The people who built it… may never know his name."',
-    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['-1%', '1%'] },
-  },
-  s11_08: {
-    type: 'frame',
-    image: 's11_08.png',
-    narration: '"But impact doesn\'t need recognition."',
-    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s11_09: {
-    type: 'frame',
-    image: 's11_09.png',
-    narration: '"It just needs to reach the right person… at the right moment."',
-    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['2%', '-2%'] },
-  },
-  s11_10: {
-    type: 'frame',
-    image: 's11_10.png',
-    narration: '"The struggle remained. But now… no one had to face it alone."',
-    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s11_11: {
-    type: 'silent',
-    image: 's11_11.png',
-    kenBurns: { scale: [1.0, 1.12], x: ['0%', '0%'], y: ['3%', '-3%'] },
-  },
-  s11_12: {
-    type: 'frame',
-    image: 's11_12.png',
-    narration: '"A mission is not measured by downloads. It is measured by the lives it touches."',
-    kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['2%', '-2%'] },
-  },
-  s11_final: {
-    type: 'frame',
-    image: 's11_final.png',
-    narration: '"Mission Distinction."',
-    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
-    fadeToBlack: true,
-  },
 
-  // ── Scene 11 End Cards ────────────────────────────────────────────────────
+  // ── The Full Circle — Final Shots ─────────────────────────────────────────
 
-  end_card8: {
-    type: 'textcard',
-    line1: 'Three students started with a question.',
-    line2: 'Thousands found an answer.',
-  },
-  final_quote: {
-    type: 'textcard',
-    line1: '"Every doctor was once a student',
-    line2: 'searching for guidance."',
-  },
-  s11_credits: {
+  s11_circle: {
     type: 'silent',
-    image: 's11_credits.png',
-    kenBurns: { scale: [1.0, 1.04], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s11_end: {
-    type: 'black',
-    narration: '',
-    fadeIn: false,
-  },
-
-  // ── Epilogue — The Journey Continues ─────────────────────────────────────
-
-  ep_today: {
-    type: 'textcard',
-    line1: 'Today',
-  },
-  ep_01: {
-    type: 'frame',
-    image: 'ep_01.png',
-    narration: '"The mission never stopped growing."',
-    kenBurns: { scale: [1.1, 1.0], x: ['0%', '0%'], y: ['2%', '-2%'] },
-  },
-  ep_02: {
-    type: 'silent',
-    image: 'ep_02.png',
-    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  ep_03: {
-    type: 'frame',
-    image: 'ep_03.png',
-    narration: '"The mission was never about becoming known."',
-    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  ep_04: {
-    type: 'frame',
-    image: 'ep_04.png',
-    narration: '"The greatest impact is often invisible."',
-    kenBurns: { scale: [1.04, 1.0], x: ['-1%', '1%'], y: ['0%', '0%'] },
-  },
-  ep_05: {
-    type: 'silent',
-    image: 'ep_05.png',
-    kenBurns: { scale: [1.0, 1.04], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  ep_06: {
-    type: 'silent',
-    image: 'ep_06.png',
-    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['2%', '-2%'] },
-  },
-  ep_07: {
-    type: 'silent',
-    image: 'ep_07.png',
-    kenBurns: { scale: [1.0, 1.04], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  ep_08: {
-    type: 'frame',
-    image: 'ep_08.png',
-    narration: '"A mission does not end when it succeeds. It ends when it is no longer needed."',
-    kenBurns: { scale: [1.12, 1.0], x: ['0%', '0%'], y: ['3%', '-3%'] },
-  },
-  ep_09: {
-    type: 'frame',
-    image: 'ep_09.png',
-    narration: '"And until that day… the mission continues."',
-    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  ep_final: {
-    type: 'silent',
-    image: 'ep_final.png',
-    kenBurns: { scale: [1.08, 1.0], x: ['0%', '0%'], y: ['2%', '-2%'] },
-    fadeToBlack: true,
-  },
-  ep_title: {
-    type: 'textcard',
-    line1: 'MISSION DISTINCTION',
-    line2: 'A Story Still Being Written',
-    large: true,
-  },
-  ep_last: {
-    type: 'textcard',
-    line1: '"Somewhere tonight, another student',
-    line2: 'is opening the app for the first time."',
-  },
-  ep_end: {
-    type: 'black',
-    narration: '',
-    fadeIn: false,
-  },
-
-  // ── Scene 12 — The Anniversary ────────────────────────────────────────────
-
-  s12_year: {
-    type: 'textcard',
-    line1: 'ONE YEAR IN',
-    line2: 'A NEW CHAPTER HAD BEGUN.',
-  },
-  s12_01: {
-    type: 'frame',
-    image: 's12_01.png',
-    narration: '"Every mission begins somewhere. Ours began here."',
-    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '2%'] },
-  },
-  s12_02: {
-    type: 'silent',
-    image: 's12_02.png',
-    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s12_03: {
-    type: 'silent',
-    image: 's12_03.png',
-    kenBurns: { scale: [1.0, 1.05], x: ['-1%', '1%'], y: ['0%', '0%'] },
-  },
-  s12_04: {
-    type: 'frame',
-    image: 's12_04.png',
-    narration: '"The first version wasn\'t perfect. It simply helped."',
-    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['2%', '-2%'] },
-  },
-  s12_05: {
-    type: 'silent',
-    image: 's12_05.png',
-    kenBurns: { scale: [1.0, 1.04], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s12_06: {
-    type: 'silent',
-    image: 's12_06.png',
-    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s12_07: {
-    type: 'frame',
-    image: 's12_07.png',
-    narration: '"The downloads were numbers. These were people."',
-    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s12_08: {
-    type: 'silent',
-    image: 's12_08.png',
+    image: 's11_circle.png',
     kenBurns: { scale: [1.08, 1.0], x: ['0%', '0%'], y: ['-2%', '2%'] },
   },
-  s12_09: {
+  s11_phone: {
     type: 'frame',
-    image: 's12_09.png',
-    narration: '"Every year… a new student begins the same journey."',
-    kenBurns: { scale: [1.0, 1.06], x: ['1%', '-1%'], y: ['0%', '0%'] },
-  },
-  s12_10: {
-    type: 'silent',
-    image: 's12_10.png',
-    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s12_final: {
-    type: 'frame',
-    image: 's12_final.png',
-    narration: '"A year ago, three students asked a question. Today… thousands are writing the answer."',
-    kenBurns: { scale: [1.1, 1.0], x: ['0%', '0%'], y: ['3%', '-3%'] },
-    fadeToBlack: true,
-  },
-  s12_title: {
-    type: 'textcard',
-    line1: 'MISSION DISTINCTION',
-    line2: 'Not An App.',
-    line3: 'A Mission.',
-    large: true,
-  },
-  s12_last: {
-    type: 'textcard',
-    line1: '"And this is only the beginning."',
-  },
-  s12_end: {
-    type: 'black',
-    narration: '',
-    fadeIn: false,
-  },
-
-  // ── Scene 13 — The Legacy ──────────────────────────────────────────────────
-
-  s13_open: {
-    type: 'black',
-    narration: '',
-    fadeIn: false,
-  },
-  s13_text1: {
-    type: 'textcard',
-    line1: '"Some dreams end when they succeed."',
-    line2: '"Others begin."',
-  },
-  s13_01: {
-    type: 'frame',
-    image: 's13_01.png',
-    narration: '"Another student walked through those doors. Just like we once had."',
-    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '2%'] },
-  },
-  s13_02: {
-    type: 'frame',
-    image: 's13_02.png',
-    narration: '"The weight was the same. The uncertainty was the same. The fear was the same."',
-    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s13_03: {
-    type: 'frame',
-    image: 's13_03.png',
-    narration: '"This time… the answer already existed."',
-    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s13_04: {
-    type: 'silent',
-    image: 's13_04.png',
-    kenBurns: { scale: [1.04, 1.0], x: ['-1%', '1%'], y: ['0%', '0%'] },
-  },
-  s13_05: {
-    type: 'frame',
-    image: 's13_05.png',
-    narration: '"Knowledge shared became confidence. Confidence shared became strength."',
-    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s13_06: {
-    type: 'silent',
-    image: 's13_06.png',
-    kenBurns: { scale: [1.0, 1.06], x: ['1%', '-1%'], y: ['0%', '0%'] },
-  },
-  s13_07: {
-    type: 'frame',
-    image: 's13_07.png',
-    narration: '"Every page. Every note. Every hour. Reached farther than we imagined."',
-    kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['2%', '-2%'] },
-  },
-  s13_08: {
-    type: 'frame',
-    image: 's13_08.png',
-    narration: '"Worth it."',
-    kenBurns: { scale: [1.0, 1.04], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s13_09: {
-    type: 'frame',
-    image: 's13_09.png',
-    narration: '"It reached the right person… at the right moment. That was always enough."',
-    kenBurns: { scale: [1.1, 1.0], x: ['0%', '0%'], y: ['3%', '-3%'] },
-  },
-  s13_10: {
-    type: 'silent',
-    image: 's13_10.png',
+    image: 's11_phone.png',
+    narration: '"The answer was already there. Waiting."',
     kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
-  },
-  s13_final: {
-    type: 'frame',
-    image: 's13_final.png',
-    narration: '"A mission is not measured by how many people follow it. It is measured by how many continue it."',
-    kenBurns: { scale: [1.12, 1.0], x: ['0%', '0%'], y: ['4%', '-4%'] },
     fadeToBlack: true,
   },
-  s13_title: {
+  s11_last: {
     type: 'textcard',
     line1: 'MISSION DISTINCTION',
-    line2: 'Knowledge. Service. Humanity.',
     large: true,
   },
-  s13_last: {
-    type: 'textcard',
-    line1: '"The story now belongs to them."',
-  },
-  s13_end: {
+  s11_end: {
     type: 'black',
     narration: '',
     fadeIn: false,
