@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Repeat, Volume2, VolumeX } from 'lucide-react';
+import { ChevronDown, ChevronUp, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import VideoTemplate, { SCENE_DURATIONS } from './VideoTemplate';
 import { useSceneControls } from '@/hooks/useSceneControls';
@@ -63,13 +63,11 @@ interface ControlBarProps {
   visible: boolean;
   collapsed: boolean;
   locked: boolean;
-  muted: boolean;
   sceneKeys: string[];
   activeIndex: number;
   activeDuration: number;
   tick: number;
   onToggleLock: () => void;
-  onToggleMute: () => void;
   onJumpTo: (index: number) => void;
   onToggleCollapsed: () => void;
 }
@@ -128,13 +126,11 @@ function ControlBar({
   visible,
   collapsed,
   locked,
-  muted,
   sceneKeys,
   activeIndex,
   activeDuration,
   tick,
   onToggleLock,
-  onToggleMute,
   onJumpTo,
   onToggleCollapsed,
 }: ControlBarProps) {
@@ -175,22 +171,6 @@ function ControlBar({
         {activeIndex + 1}/{sceneKeys.length}
       </div>
 
-      <div className="w-px self-stretch bg-white/15" aria-hidden="true" />
-
-      <button
-        onClick={onToggleMute}
-        className={`w-14 h-14 flex items-center justify-center transition-colors rounded-lg shrink-0 ${
-          muted
-            ? 'text-white/40 hover:text-white/70 hover:bg-white/10'
-            : 'text-white/60 hover:text-white hover:bg-white/10'
-        }`}
-        title={muted ? 'Unmute music' : 'Mute music'}
-        aria-label={muted ? 'Unmute music' : 'Mute music'}
-        aria-pressed={muted}
-      >
-        {muted ? <VolumeX className="w-7 h-7" /> : <Volume2 className="w-7 h-7" />}
-      </button>
-
       <button
         onClick={onToggleCollapsed}
         className="w-14 h-14 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors rounded-lg shrink-0"
@@ -208,8 +188,6 @@ export default function VideoWithControls() {
   const isIframed = typeof window !== 'undefined' && window.self !== window.top;
   const isPortraitPhone = useIsPortraitPhone();
   const [roteDismissed, setRoteDismissed] = useState(false);
-  const [muted, setMuted] = useState(false);
-
   const {
     sceneKeys,
     activeIndex,
@@ -262,17 +240,7 @@ export default function VideoWithControls() {
   if (!isIframed) {
     return (
       <>
-        <VideoTemplate durations={SCENE_DURATIONS} muted={muted} />
-
-        {/* Floating mute button for direct / non-iframe viewing */}
-        <button
-          onClick={() => setMuted(m => !m)}
-          className="fixed top-4 right-4 z-50 w-10 h-10 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-full text-white/60 hover:text-white hover:bg-black/60 transition-colors"
-          title={muted ? 'Unmute music' : 'Mute music'}
-          aria-label={muted ? 'Unmute music' : 'Mute music'}
-        >
-          {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-        </button>
+        <VideoTemplate durations={SCENE_DURATIONS} />
 
         <AnimatePresence>
           {showRotatePrompt && (
@@ -290,7 +258,6 @@ export default function VideoWithControls() {
         durations={durations}
         loop
         onSceneChange={onSceneChange}
-        muted={muted}
       />
       <div
         ref={sensorRef}
@@ -305,13 +272,11 @@ export default function VideoWithControls() {
           visible={barVisible}
           collapsed={collapsed}
           locked={locked}
-          muted={muted}
           sceneKeys={sceneKeys}
           activeIndex={activeIndex}
           activeDuration={activeDuration}
           tick={tick}
           onToggleLock={toggleLock}
-          onToggleMute={() => setMuted(m => !m)}
           onJumpTo={jumpTo}
           onToggleCollapsed={handleToggleCollapsed}
         />
