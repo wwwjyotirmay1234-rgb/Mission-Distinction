@@ -123,11 +123,25 @@ export const SCENE_DURATIONS: Record<string, number> = {
   s7_12:  15000,   // Shot 12 — Dawn: sunrise through window, three silhouettes, 5:30 AM
   s7_13:  12000,   // Final   — Mission Distinction loads successfully, subtle smile
 
-  // ── Bridge before Scene 9 ────────────────────────────────────────────────
+  // ── Bridge → Scene 8 ─────────────────────────────────────────────────────
   end_card5: 6000, // "Most Projects End Here." / "Mission Distinction Didn't."
   bridge9:   5000, // "THE DREAM WAS BUILT." / "NOW CAME LAUNCH DAY."
 
-  // ── Scene 9 — Launch Day ──────────────────────────────────────────────────
+  // ── Scene 8 — Launch Day ──────────────────────────────────────────────────
+  s8_01:  8000,   // Shot 1  — Pre-launch tension: founders staring at screen
+  s8_02:  6000,   // Shot 2  — Close-up: finger hovering over launch button
+  s8_03:  5000,   // Shot 3  — The Click: finger presses LAUNCH
+  s8_04:  7000,   // Shot 4  — Screen: app goes live, green success
+  s8_05:  8000,   // Shot 5  — Download counter begins spinning upward
+  s8_06:  8000,   // Shot 6  — Founders watching in disbelief
+  s8_07:  7000,   // Shot 7  — Phone notifications from across Odisha
+  s8_08:  7000,   // Shot 8  — Analytics: downloads accelerating
+  s8_09:  9000,   // Shot 9  — Emotional realization: tears forming
+  s8_10:  8000,   // Shot 10 — Celebration erupts: group hug, laughter
+  s8_11:  8000,   // Shot 11 — App milestone screen: 100+ downloads
+  s8_12: 10000,   // Shot 12 — Overhead: founders at dawn, new beginning
+
+  // ── Scene 9 — Impact ─────────────────────────────────────────────────────
   s9_01:  10000,   // Shot 1  — Sunrise: drone over campus, golden light, new day
   s9_02:  12000,   // Shot 2  — The Room: same hostel room, now transformed
   s9_03:  15000,   // Shot 3  — The Countdown: three founders checking everything
@@ -771,7 +785,79 @@ const SCENES: Record<string, SceneData> = {
     line2: 'NOW CAME LAUNCH DAY.',
   },
 
-  // ── Scene 9 — Launch Day ──────────────────────────────────────────────────
+  // ── Scene 8 — Launch Day ──────────────────────────────────────────────────
+
+  s8_01: {
+    type: 'frame',
+    image: 's8_01.png',
+    narration: '"The code was done. The app was ready. All that remained… was one button."',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s8_02: {
+    type: 'silent',
+    image: 's8_02.png',
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s8_03: {
+    type: 'frame',
+    image: 's8_03.png',
+    narration: '"They pressed it."',
+    kenBurns: { scale: [1.05, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s8_04: {
+    type: 'silent',
+    image: 's8_04.png',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s8_05: {
+    type: 'frame',
+    image: 's8_05.png',
+    narration: '"The counter moved."',
+    kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s8_06: {
+    type: 'frame',
+    image: 's8_06.png',
+    narration: '"Real students. Real downloads. From real places."',
+    kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s8_07: {
+    type: 'silent',
+    image: 's8_07.png',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s8_08: {
+    type: 'frame',
+    image: 's8_08.png',
+    narration: '"It was working."',
+    kenBurns: { scale: [1.0, 1.08], x: ['-1%', '1%'], y: ['0%', '0%'] },
+  },
+  s8_09: {
+    type: 'frame',
+    image: 's8_09.png',
+    narration: '"Someone, somewhere, was studying better because of what they built."',
+    kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s8_10: {
+    type: 'silent',
+    image: 's8_10.png',
+    kenBurns: { scale: [1.05, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s8_11: {
+    type: 'frame',
+    image: 's8_11.png',
+    narration: '"This was only the beginning."',
+    kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+  s8_12: {
+    type: 'frame',
+    image: 's8_12.png',
+    narration: '"Three students. One idea. And a thousand reasons to keep going."',
+    fadeToBlack: true,
+    kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
+  },
+
+  // ── Scene 9 — Impact ─────────────────────────────────────────────────────
 
   s9_01: {
     type: 'frame',

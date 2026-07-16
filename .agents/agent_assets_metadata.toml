@@ -2316,6 +2316,78 @@ uri = "file://attached_assets/generated_images/cinematic_side_profile_shot_6d53.
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "jUKNnSFIh6vl49ezSxgve"
+uri = "file://artifacts/scene1-film/public/frames/s8_01.png"
+type = "image"
+title = "s8_01 pre-launch tension"
+
+[[generated]]
+id = "BsRV8hzeD4IgdxvKvxGXi"
+uri = "file://artifacts/scene1-film/public/frames/s8_02.png"
+type = "image"
+title = "s8_02 finger hovering launch"
+
+[[generated]]
+id = "dPdQ9PqeZ8K_5IqNvS4Bh"
+uri = "file://artifacts/scene1-film/public/frames/s8_03.png"
+type = "image"
+title = "s8_03 finger pressing launch"
+
+[[generated]]
+id = "UVLK-2zlnKCNIqTBLEolK"
+uri = "file://artifacts/scene1-film/public/frames/s8_04.png"
+type = "image"
+title = "s8_04 app going live screen"
+
+[[generated]]
+id = "yePGGbWFTs4w3PwGadD5E"
+uri = "file://artifacts/scene1-film/public/frames/s8_05.png"
+type = "image"
+title = "s8_05 download counter spinning"
+
+[[generated]]
+id = "lO3842U6bJgNJonvKPhzZ"
+uri = "file://artifacts/scene1-film/public/frames/s8_06.png"
+type = "image"
+title = "s8_06 students disbelief awe"
+
+[[generated]]
+id = "3s94D7uLU-vf9meL_Bn2B"
+uri = "file://artifacts/scene1-film/public/frames/s8_07.png"
+type = "image"
+title = "s8_07 notification pings cities"
+
+[[generated]]
+id = "n1EbxOze-pG4plbTCoTSe"
+uri = "file://artifacts/scene1-film/public/frames/s8_08.png"
+type = "image"
+title = "s8_08 emotional realization tears"
+
+[[generated]]
+id = "zG6D7p05zHMJyE1XqMzv2"
+uri = "file://artifacts/scene1-film/public/frames/s8_09.png"
+type = "image"
+title = "s8_09 celebration group hug"
+
+[[generated]]
+id = "10f9zu4KaCGhwqtr4RfGT"
+uri = "file://artifacts/scene1-film/public/frames/s8_10.png"
+type = "image"
+title = "s8_10 founders after celebration sunrise"
+
+[[generated]]
+id = "Igh-v-4q_d4FytxrjJ7mU"
+uri = "file://artifacts/scene1-film/public/frames/s8_11.png"
+type = "image"
+title = "s8_11 app milestone screen"
+
+[[generated]]
+id = "PT1U7lPYFPcUOAndMKLDP"
+uri = "file://artifacts/scene1-film/public/frames/s8_12.png"
+type = "image"
+title = "s8_12 overhead founders morning glow"
+
 [[outputs]]
 id = "wzvpboiXssrPROTXFvYM-"
 uri = "file://exports/MoU_Mission_Distinction.md"
