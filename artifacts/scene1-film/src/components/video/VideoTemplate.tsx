@@ -1,4 +1,4 @@
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect } from 'react';
 import { useVideoPlayer } from '@/lib/video';
 import { CinematicFrame, BlackScene, TextCard, SilentFrame } from './video_scenes/Frames';
@@ -1359,7 +1359,7 @@ export default function VideoTemplate({
 } = {}) {
   const { currentSceneKey } = useVideoPlayer({ durations, loop });
 
-  useFilmAudio(currentSceneKey, muted);
+  const { needsTap } = useFilmAudio(currentSceneKey, muted);
 
   useEffect(() => {
     onSceneChange?.(currentSceneKey);
@@ -1419,6 +1419,29 @@ export default function VideoTemplate({
     <div className="w-full overflow-hidden relative bg-black flex-1" style={{ height: '100dvh', minHeight: '100%' }}>
       <AnimatePresence mode="sync" initial={false}>
         {renderScene()}
+      </AnimatePresence>
+
+      {/* iOS / mobile audio unlock hint — shown when AudioContext is suspended */}
+      <AnimatePresence>
+        {needsTap && !muted && (
+          <motion.div
+            key="audio-hint"
+            className="absolute top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 bg-black/55 backdrop-blur-sm rounded-full px-5 py-2.5 pointer-events-none select-none"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
+            <motion.span
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+              className="text-white/80 text-xs tracking-[0.18em] font-light"
+              style={{ fontFamily: 'var(--font-body)' }}
+            >
+              ♪ Tap anywhere for audio
+            </motion.span>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
