@@ -2549,3 +2549,9 @@ id = "RbK5ZuTF6gOIbj5mej05J"
 uri = "file://replit_dump.sql.gz"
 type = "unspecified"
 title = "Mission Distinction — Full DB Dump"
+
+[[outputs]]
+id = "5_GkiSLWlhZRu0bsfuQuH"
+uri = "file://migration_dump.sql.gz"
+type = "unspecified"
+title = "Mission Distinction DB — Fresh Migration Dump"
