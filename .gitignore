@@ -47,3 +47,6 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Chat-session assets — large binary files, not needed in production builds
+attached_assets/
