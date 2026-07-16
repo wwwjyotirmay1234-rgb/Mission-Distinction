@@ -2543,3 +2543,9 @@ id = "mUAf-asayecAW-VvBTuHa"
 uri = "file://attached_assets/film/s2_07.png"
 type = "image"
 title = "Scene 2 — Ending: Three friends, determination"
+
+[[outputs]]
+id = "RbK5ZuTF6gOIbj5mej05J"
+uri = "file://replit_dump.sql.gz"
+type = "unspecified"
+title = "Mission Distinction — Full DB Dump"
