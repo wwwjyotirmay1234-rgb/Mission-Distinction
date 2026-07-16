@@ -181,7 +181,7 @@ export default function VideoWithControls() {
 
   const barVisible = !collapsed || hovering || tapPinned;
 
-  if (!isIframed) return <VideoTemplate />;
+  if (!isIframed) return <VideoTemplate durations={SCENE_DURATIONS} />;
 
   return (
     <div className="relative w-full flex-1" style={{ height: '100dvh', minHeight: '100%' }}>
