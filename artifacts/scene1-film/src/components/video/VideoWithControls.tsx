@@ -1,7 +1,61 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, Repeat } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import VideoTemplate, { SCENE_DURATIONS } from './VideoTemplate';
 import { useSceneControls } from '@/hooks/useSceneControls';
+
+function useIsPortraitPhone() {
+  const check = () =>
+    window.innerWidth < window.innerHeight && window.innerWidth < 600;
+  const [isPortraitPhone, setIsPortraitPhone] = useState(check);
+  useEffect(() => {
+    const handler = () => setIsPortraitPhone(check());
+    window.addEventListener('resize', handler);
+    window.addEventListener('orientationchange', handler);
+    return () => {
+      window.removeEventListener('resize', handler);
+      window.removeEventListener('orientationchange', handler);
+    };
+  }, []);
+  return isPortraitPhone;
+}
+
+function RotatePrompt({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <motion.div
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <motion.div
+        animate={{ rotate: [0, 90, 0] }}
+        transition={{ duration: 1.8, repeat: Infinity, repeatDelay: 1.2, ease: 'easeInOut' }}
+        className="mb-8"
+      >
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="8" width="28" height="44" rx="5" stroke="white" strokeWidth="2.5" />
+          <circle cx="24" cy="47" r="2.5" fill="white" />
+          <path d="M46 18 C54 18 58 26 58 32" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+          <path d="M55 28 L58 32 L62 30" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </motion.div>
+      <p className="text-white/90 text-lg font-light tracking-widest text-center px-8" style={{ fontFamily: 'var(--font-body)' }}>
+        Rotate your phone
+      </p>
+      <p className="text-white/50 text-sm tracking-wider text-center px-8 mt-2" style={{ fontFamily: 'var(--font-body)' }}>
+        for the cinematic experience
+      </p>
+      <button
+        onClick={onDismiss}
+        className="mt-10 px-6 py-2.5 rounded-full border border-white/20 text-white/50 text-sm tracking-wider hover:text-white/80 hover:border-white/40 transition-colors"
+      >
+        Watch anyway
+      </button>
+    </motion.div>
+  );
+}
 
 const PROGRESS_TICK_MS = 60;
 
@@ -132,6 +186,8 @@ function ControlBar({
 
 export default function VideoWithControls() {
   const isIframed = typeof window !== 'undefined' && window.self !== window.top;
+  const isPortraitPhone = useIsPortraitPhone();
+  const [roteDismissed, setRoteDismissed] = useState(false);
 
   const {
     sceneKeys,
@@ -180,8 +236,20 @@ export default function VideoWithControls() {
   }, [collapsed, tapPinned]);
 
   const barVisible = !collapsed || hovering || tapPinned;
+  const showRotatePrompt = isPortraitPhone && !roteDismissed;
 
-  if (!isIframed) return <VideoTemplate durations={SCENE_DURATIONS} />;
+  if (!isIframed) {
+    return (
+      <>
+        <VideoTemplate durations={SCENE_DURATIONS} />
+        <AnimatePresence>
+          {showRotatePrompt && (
+            <RotatePrompt onDismiss={() => setRoteDismissed(true)} />
+          )}
+        </AnimatePresence>
+      </>
+    );
+  }
 
   return (
     <div className="relative w-full flex-1" style={{ height: '100dvh', minHeight: '100%' }}>
@@ -213,6 +281,11 @@ export default function VideoWithControls() {
           onToggleCollapsed={handleToggleCollapsed}
         />
       </div>
+      <AnimatePresence>
+        {showRotatePrompt && (
+          <RotatePrompt onDismiss={() => setRoteDismissed(true)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
