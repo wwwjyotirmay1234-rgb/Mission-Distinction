@@ -1312,7 +1312,7 @@ const SCENES: Record<string, SceneData> = {
   s13_09: {
     type: 'frame',
     image: 's13_09.png',
-    narration: '"The goal was never downloads. The goal was impact."',
+    narration: '"It reached the right person… at the right moment. That was always enough."',
     kenBurns: { scale: [1.1, 1.0], x: ['0%', '0%'], y: ['3%', '-3%'] },
   },
   s13_10: {
