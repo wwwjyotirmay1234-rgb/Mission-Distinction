@@ -1171,7 +1171,8 @@ const SCENES: Record<string, SceneData> = {
 
   s12_year: {
     type: 'textcard',
-    line1: 'ONE YEAR LATER',
+    line1: 'ONE YEAR IN',
+    line2: 'A NEW CHAPTER HAD BEGUN.',
   },
   s12_01: {
     type: 'frame',
@@ -1266,7 +1267,7 @@ const SCENES: Record<string, SceneData> = {
   s13_01: {
     type: 'frame',
     image: 's13_01.png',
-    narration: '"A year later… another student arrived. Just like us."',
+    narration: '"Another student walked through those doors. Just like we once had."',
     kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '2%'] },
   },
   s13_02: {
