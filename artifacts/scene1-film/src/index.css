@@ -85,6 +85,13 @@ body {
   overscroll-behavior: none;
 }
 
+/* iOS-safe full-viewport height — use this class instead of inline 100dvh */
+.film-viewport {
+  height: 100vh;               /* universal fallback */
+  height: -webkit-fill-available; /* iOS 12–15.3 */
+  height: 100dvh;              /* iOS 15.4+ / modern */
+}
+
 #root {
   height: 100%;
   display: flex;

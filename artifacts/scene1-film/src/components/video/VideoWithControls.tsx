@@ -284,7 +284,7 @@ export default function VideoWithControls() {
   }
 
   return (
-    <div className="relative w-full flex-1" style={{ height: '100dvh', minHeight: '100%' }}>
+    <div className="film-viewport relative w-full flex-1">
       <VideoTemplate
         key={mountKey}
         durations={durations}

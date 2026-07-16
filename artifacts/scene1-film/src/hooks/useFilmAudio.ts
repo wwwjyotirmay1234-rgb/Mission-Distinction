@@ -180,43 +180,47 @@ export function useFilmAudio(
   // ── Initialise ambient + iOS detection on mount ──────────────────────────
 
   useEffect(() => {
-    // Creating the first Howl causes Howler to create the AudioContext.
-    getAmbient();
-
-    // Check for suspended AudioContext (iOS / Safari autoplay block)
-    const ctx = Howler.ctx;
-    if (ctx?.state === 'suspended') setNeedsTap(true);
-
+    let ctx: AudioContext | null = null;
+    const dismissOnGesture = () => setNeedsTap(false);
     const onStateChange = () => {
-      if (Howler.ctx?.state === 'running') {
-        setNeedsTap(false);
-        // Restart any tracks that should be playing
-        const base = sceneKeyRef.current.replace(/_r[12]$/, '');
-        const targetAmbVol = mutedRef.current ? 0 : sceneAmbientVol(base);
-        const amb = ambientRef.current;
-        if (amb && targetAmbVol > 0 && !amb.playing()) {
-          amb.play();
-          amb.fade(amb.volume(), targetAmbVol, 800);
-        }
-        const active = activeMelodicRef.current;
-        if (active) {
-          const howl = melodicHowlsRef.current[active];
-          if (howl && !howl.playing()) {
-            howl.play();
-            if (!mutedRef.current) howl.fade(howl.volume(), MELODIC_VOL[active], 800);
+      try {
+        if (Howler.ctx?.state === 'running') {
+          setNeedsTap(false);
+          const base = sceneKeyRef.current.replace(/_r[12]$/, '');
+          const targetAmbVol = mutedRef.current ? 0 : sceneAmbientVol(base);
+          const amb = ambientRef.current;
+          if (amb && targetAmbVol > 0 && !amb.playing()) {
+            amb.play();
+            amb.fade(amb.volume(), targetAmbVol, 800);
+          }
+          const active = activeMelodicRef.current;
+          if (active) {
+            const howl = melodicHowlsRef.current[active];
+            if (howl && !howl.playing()) {
+              howl.play();
+              if (!mutedRef.current) howl.fade(howl.volume(), MELODIC_VOL[active], 800);
+            }
           }
         }
-      }
+      } catch { /* audio state recovery failed — not critical */ }
     };
 
-    // Dismiss hint immediately on first gesture (belt + suspenders with statechange)
-    const dismissOnGesture = () => setNeedsTap(false);
-    ctx?.addEventListener('statechange', onStateChange);
+    try {
+      // Creating the first Howl causes Howler to set up the AudioContext.
+      getAmbient();
+      ctx = Howler.ctx ?? null;
+      if (ctx?.state === 'suspended') setNeedsTap(true);
+      ctx?.addEventListener('statechange', onStateChange);
+    } catch (e) {
+      // Audio init failed (e.g. restrictive WebKit) — film still plays, just no music.
+      console.warn('[useFilmAudio] init failed:', e);
+    }
+
     document.addEventListener('click', dismissOnGesture, { once: true, capture: true });
     document.addEventListener('touchstart', dismissOnGesture, { once: true, capture: true });
 
     return () => {
-      ctx?.removeEventListener('statechange', onStateChange);
+      try { ctx?.removeEventListener('statechange', onStateChange); } catch { /* ignore */ }
       document.removeEventListener('click', dismissOnGesture, true);
       document.removeEventListener('touchstart', dismissOnGesture, true);
     };
@@ -226,43 +230,46 @@ export function useFilmAudio(
   // ── Scene change → update both layers ────────────────────────────────────
 
   useEffect(() => {
-    const base = currentSceneKey.replace(/_r[12]$/, '');
+    try {
+      const base = currentSceneKey.replace(/_r[12]$/, '');
 
-    // --- Layer 1: Ambient rain bed ---
-    const targetAmbVol = muted ? 0 : sceneAmbientVol(base);
-    const amb = getAmbient();
-    if (targetAmbVol > 0) {
-      if (!amb.playing()) amb.play();
-      amb.fade(amb.volume(), targetAmbVol, CROSSFADE_MS);
-    } else if (amb.volume() > 0) {
-      amb.fade(amb.volume(), 0, CROSSFADE_MS);
-    }
+      // --- Layer 1: Ambient rain bed ---
+      const targetAmbVol = muted ? 0 : sceneAmbientVol(base);
+      const amb = getAmbient();
+      if (targetAmbVol > 0) {
+        if (!amb.playing()) amb.play();
+        amb.fade(amb.volume(), targetAmbVol, CROSSFADE_MS);
+      } else if (amb.volume() > 0) {
+        amb.fade(amb.volume(), 0, CROSSFADE_MS);
+      }
 
-    // --- Layer 2: Melodic ---
-    const newMelodic = resolveMelodic(currentSceneKey);
-    const prevMelodic = activeMelodicRef.current;
+      // --- Layer 2: Melodic ---
+      const newMelodic = resolveMelodic(currentSceneKey);
+      const prevMelodic = activeMelodicRef.current;
 
-    if (newMelodic !== prevMelodic) {
-      // Fade out previous melodic track
-      if (prevMelodic) {
-        const prevHowl = melodicHowlsRef.current[prevMelodic];
-        if (prevHowl) {
-          prevHowl.fade(prevHowl.volume(), 0, CROSSFADE_MS);
-          if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
-          stopTimerRef.current = setTimeout(() => {
-            if (activeMelodicRef.current !== prevMelodic) prevHowl.stop();
-          }, CROSSFADE_MS + 100);
+      if (newMelodic !== prevMelodic) {
+        if (prevMelodic) {
+          const prevHowl = melodicHowlsRef.current[prevMelodic];
+          if (prevHowl) {
+            prevHowl.fade(prevHowl.volume(), 0, CROSSFADE_MS);
+            if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+            stopTimerRef.current = setTimeout(() => {
+              if (activeMelodicRef.current !== prevMelodic) prevHowl.stop();
+            }, CROSSFADE_MS + 100);
+          }
+        }
+
+        activeMelodicRef.current = newMelodic;
+
+        if (newMelodic) {
+          const targetVol = muted ? 0 : MELODIC_VOL[newMelodic];
+          const howl = getMelodic(newMelodic);
+          if (!howl.playing()) howl.play();
+          howl.fade(howl.volume(), targetVol, CROSSFADE_MS);
         }
       }
-
-      activeMelodicRef.current = newMelodic;
-
-      if (newMelodic) {
-        const targetVol = muted ? 0 : MELODIC_VOL[newMelodic];
-        const howl = getMelodic(newMelodic);
-        if (!howl.playing()) howl.play();
-        howl.fade(howl.volume(), targetVol, CROSSFADE_MS);
-      }
+    } catch (e) {
+      console.warn('[useFilmAudio] scene update failed:', e);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSceneKey]);
@@ -270,20 +277,20 @@ export function useFilmAudio(
   // ── Muted toggle → adjust both layers' volumes ───────────────────────────
 
   useEffect(() => {
-    const base = sceneKeyRef.current.replace(/_r[12]$/, '');
-
-    // Ambient
-    const amb = ambientRef.current;
-    if (amb) {
-      const ambTarget = muted ? 0 : sceneAmbientVol(base);
-      amb.fade(amb.volume(), ambTarget, 400);
-    }
-
-    // Melodic
-    const active = activeMelodicRef.current;
-    if (active) {
-      const howl = melodicHowlsRef.current[active];
-      if (howl) howl.fade(howl.volume(), muted ? 0 : MELODIC_VOL[active], 400);
+    try {
+      const base = sceneKeyRef.current.replace(/_r[12]$/, '');
+      const amb = ambientRef.current;
+      if (amb) {
+        const ambTarget = muted ? 0 : sceneAmbientVol(base);
+        amb.fade(amb.volume(), ambTarget, 400);
+      }
+      const active = activeMelodicRef.current;
+      if (active) {
+        const howl = melodicHowlsRef.current[active];
+        if (howl) howl.fade(howl.volume(), muted ? 0 : MELODIC_VOL[active], 400);
+      }
+    } catch (e) {
+      console.warn('[useFilmAudio] mute toggle failed:', e);
     }
   }, [muted]);
 

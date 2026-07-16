@@ -1417,13 +1417,13 @@ export default function VideoTemplate({
   };
 
   return (
-    <div className="w-full overflow-hidden relative bg-black flex-1" style={{ height: '100dvh', minHeight: '100%' }}>
+    <div className="film-viewport w-full overflow-hidden relative bg-black flex-1">
       <AnimatePresence mode="sync" initial={false}>
         {renderScene()}
       </AnimatePresence>
 
       {/* iOS / mobile audio unlock hint — shown when AudioContext is suspended */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {needsTap && !muted && (
           <motion.div
             key="audio-hint"
