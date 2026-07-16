@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v32"; // Android-focused bottom nav polish: pill active state, haptics, elevation, mini-player offset
+const CACHE_VERSION = "v33"; // Exclude /scene1-film/ from SW interception to fix stale frame image cache
 
 // Derive the app base from the SW registration scope, not the SW script URL.
 // This is correct regardless of where sw.js itself is served (root vs sub-path).
@@ -254,6 +254,10 @@ async function cacheApiResponse(request, response) {
 self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET") return;
+
+  // Don't intercept the film artifact — its frame images must always be
+  // fetched fresh (the old cache-first strategy served stale black frames).
+  if (url.pathname.startsWith("/scene1-film/")) return;
 
   if (isCacheableApi(url)) {
     // Network-first: always try the network so online users get fresh content
