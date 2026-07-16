@@ -98,6 +98,18 @@ app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(cookieParser());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
+// ── Maintenance mode gate ─────────────────────────────────────────────────────
+// Set MAINTENANCE_MODE=true to block all write traffic while migrating DB.
+// GET /api/health always passes through so the frontend can detect the state.
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (process.env.MAINTENANCE_MODE !== "true") return next();
+  if (req.method === "GET" && req.path === "/api/health") return next();
+  res.status(503).json({
+    maintenance: true,
+    message: "Mission Distinction is under maintenance. We'll be back in a few minutes.",
+  });
+});
+
 app.use("/api", csrfDefense);
 
 app.use("/api", router);

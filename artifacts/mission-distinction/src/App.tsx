@@ -1,6 +1,7 @@
 import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { trackPage } from "@/lib/analytics";
+import MaintenancePage from "@/pages/Maintenance";
 import * as Sentry from "@sentry/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
@@ -342,7 +343,37 @@ function StuckOverlayGuard() {
   return null;
 }
 
+function useMaintenance() {
+  const [maintenance, setMaintenance] = useState(false);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+
+    async function check() {
+      try {
+        const res = await fetch("/api/health", { cache: "no-store" });
+        const data = await res.json().catch(() => ({}));
+        setMaintenance(!!data.maintenance);
+        // If still in maintenance, poll every 15s; otherwise every 60s
+        timer = setTimeout(check, data.maintenance ? 15_000 : 60_000);
+      } catch {
+        // Network error — don't flip into maintenance, just retry in 15s
+        timer = setTimeout(check, 15_000);
+      }
+    }
+
+    check();
+    return () => clearTimeout(timer);
+  }, []);
+
+  return maintenance;
+}
+
 function App() {
+  const maintenance = useMaintenance();
+
+  if (maintenance) return <MaintenancePage />;
+
   return (
     <ErrorBoundary>
       <HideLoadingSpinner />

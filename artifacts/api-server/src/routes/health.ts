@@ -13,4 +13,13 @@ router.get("/", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+// Maintenance status — always reachable, even in maintenance mode
+// (the maintenance middleware explicitly passes GET /api/health through)
+router.get("/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    maintenance: process.env.MAINTENANCE_MODE === "true",
+  });
+});
+
 export default router;
