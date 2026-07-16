@@ -103,7 +103,7 @@ app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 // GET /api/health always passes through so the frontend can detect the state.
 app.use((req: Request, res: Response, next: NextFunction) => {
   if (process.env.MAINTENANCE_MODE !== "true") return next();
-  if (req.method === "GET" && req.path === "/api/health") return next();
+  if (req.method === "GET" && (req.url.startsWith("/api/health") || req.url.startsWith("/api/migration-download"))) return next();
   res.status(503).json({
     maintenance: true,
     message: "Mission Distinction is under maintenance. We'll be back in a few minutes.",

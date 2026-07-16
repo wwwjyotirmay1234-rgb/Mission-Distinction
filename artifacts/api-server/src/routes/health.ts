@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { createReadStream, existsSync } from "fs";
 import { HealthCheckResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -20,6 +21,19 @@ router.get("/health", (_req, res) => {
     status: "ok",
     maintenance: process.env.MAINTENANCE_MODE === "true",
   });
+});
+
+// Temporary migration dump download — bypasses maintenance mode
+// Remove this route after migration is complete
+router.get("/migration-download", (_req, res) => {
+  const filePath = "/tmp/md_migration.sql.gz";
+  if (!existsSync(filePath)) {
+    res.status(404).json({ error: "Dump not ready. Ask agent to regenerate it." });
+    return;
+  }
+  res.setHeader("Content-Type", "application/gzip");
+  res.setHeader("Content-Disposition", 'attachment; filename="mission_distinction_db.sql.gz"');
+  createReadStream(filePath).pipe(res);
 });
 
 export default router;
