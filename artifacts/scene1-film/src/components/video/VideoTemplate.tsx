@@ -230,9 +230,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s1_03: {
-    type: 'frame',
+    type: 'silent',
     image: 's1_01.png',
-    narration: '"The syllabus seemed endless."',
     kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['-2%', '2%'] },
   },
   s1_04: {
@@ -333,9 +332,8 @@ const SCENES: Record<string, SceneData> = {
   // ── Scene 3 — The Discovery ───────────────────────────────────────────────
 
   s3_01: {
-    type: 'frame',
+    type: 'silent',
     image: 's3_01.png',
-    narration: '"The next few days… a question refused to leave his mind."',
     kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s3_02: {
@@ -350,9 +348,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.05, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s3_04: {
-    type: 'frame',
+    type: 'silent',
     image: 's3_04.png',
-    narration: '"It wasn\'t one student. It wasn\'t one classroom. It was everyone."',
     kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s3_05: {
@@ -412,9 +409,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.04, 1.0], x: ['-1%', '1%'], y: ['0%', '0%'] },
   },
   s4_03: {
-    type: 'frame',
+    type: 'silent',
     image: 's4_03.png',
-    narration: '"Not everyone could help. But they kept asking."',
     kenBurns: { scale: [1.0, 1.06], x: ['1%', '-1%'], y: ['0%', '0%'] },
   },
   s4_04: {
@@ -440,9 +436,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s4_08: {
-    type: 'frame',
+    type: 'silent',
     image: 's4_08.png',
-    narration: '"Every mission costs something."',
     kenBurns: { scale: [1.04, 1.0], x: ['2%', '-2%'], y: ['0%', '0%'] },
   },
   s4_09: {
@@ -561,9 +556,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s6_03: {
-    type: 'frame',
+    type: 'silent',
     image: 's6_03.png',
-    narration: '"Then reality arrived."',
     kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s6_04: {
@@ -578,9 +572,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.0, 1.07], x: ['1%', '-1%'], y: ['0%', '0%'] },
   },
   s6_06: {
-    type: 'frame',
+    type: 'silent',
     image: 's6_06.png',
-    narration: '"Every answer created three new problems."',
     kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s6_07: {
@@ -607,9 +600,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.04, 1.0], x: ['-1%', '1%'], y: ['0%', '0%'] },
   },
   s6_11: {
-    type: 'frame',
+    type: 'silent',
     image: 's6_11.png',
-    narration: '"For the first time… it looked like an app."',
     kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s6_12: {
@@ -637,15 +629,13 @@ const SCENES: Record<string, SceneData> = {
   // ── Scene 7 — The Collapse ────────────────────────────────────────────────
 
   s7_01: {
-    type: 'frame',
+    type: 'silent',
     image: 's7_01.png',
-    narration: '"The app was finally taking shape."',
     kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s7_02: {
-    type: 'frame',
+    type: 'silent',
     image: 's7_02.png',
-    narration: '"The expectations were growing."',
     kenBurns: { scale: [1.04, 1.0], x: ['1%', '-1%'], y: ['0%', '0%'] },
   },
   s7_03: {
@@ -660,9 +650,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.06, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s7_05: {
-    type: 'frame',
+    type: 'silent',
     image: 's7_05.png',
-    narration: '"First year MBBS. And Mission Distinction. At the same time."',
     kenBurns: { scale: [1.0, 1.07], x: ['-1%', '1%'], y: ['0%', '0%'] },
   },
   s7_06: {
@@ -749,9 +738,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s8_05: {
-    type: 'frame',
+    type: 'silent',
     image: 's8_05.png',
-    narration: '"The counter moved."',
     kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s8_06: {
@@ -766,15 +754,13 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s8_08: {
-    type: 'frame',
+    type: 'silent',
     image: 's8_08.png',
-    narration: '"It was working."',
     kenBurns: { scale: [1.0, 1.08], x: ['-1%', '1%'], y: ['0%', '0%'] },
   },
   s8_09: {
-    type: 'frame',
+    type: 'silent',
     image: 's8_09.png',
-    narration: '"Someone, somewhere, was studying better because of what they built."',
     kenBurns: { scale: [1.0, 1.05], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s8_10: {
@@ -920,9 +906,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s10_03: {
-    type: 'frame',
+    type: 'silent',
     image: 's10_03.png',
-    narration: '"It started with a struggle. Then an idea. Then a promise."',
     kenBurns: { scale: [1.0, 1.06], x: ['-1%', '1%'], y: ['0%', '0%'] },
   },
   s10_04: {
@@ -932,9 +917,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.0, 1.05], x: ['1%', '-1%'], y: ['0%', '0%'] },
   },
   s10_05: {
-    type: 'frame',
+    type: 'silent',
     image: 's10_05.png',
-    narration: '"The mission was no longer inside one room."',
     kenBurns: { scale: [1.0, 1.1], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s10_06: {
@@ -954,9 +938,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.04, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s10_09: {
-    type: 'frame',
+    type: 'silent',
     image: 's10_09.png',
-    narration: '"The old goals were not enough. The mission had grown bigger than the plan."',
     kenBurns: { scale: [1.0, 1.08], x: ['0%', '0%'], y: ['-2%', '2%'] },
   },
   s10_10: {
@@ -1006,9 +989,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.0, 1.06], x: ['0%', '0%'], y: ['2%', '-1%'] },
   },
   s11_02: {
-    type: 'frame',
+    type: 'silent',
     image: 's11_02.png',
-    narration: '"Same corridors. Same uncertainty. Same fear."',
     kenBurns: { scale: [1.05, 1.0], x: ['0%', '0%'], y: ['0%', '0%'] },
   },
   s11_03: {
@@ -1018,9 +1000,8 @@ const SCENES: Record<string, SceneData> = {
     kenBurns: { scale: [1.0, 1.07], x: ['-1%', '1%'], y: ['0%', '0%'] },
   },
   s11_04: {
-    type: 'frame',
+    type: 'silent',
     image: 's11_04.png',
-    narration: '"He sat with the same confusion that had once started everything."',
     kenBurns: { scale: [1.08, 1.0], x: ['0%', '0%'], y: ['-1%', '1%'] },
   },
   s11_05: {
