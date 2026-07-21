@@ -47,7 +47,6 @@ const LEARN_SECTIONS: DrawerSection[] = [
     heading: "Study",
     links: [
       { icon: Microscope,    label: "Anatomy Hub",    href: "/student/anatomy" },
-      { icon: Stethoscope,   label: "Practical Hub",  href: "/student/practical-hub" },
       { icon: FileText,      label: "Notes & Books",  href: "/student/notes" },
       { icon: File,          label: "PDF Library",    href: "/student/pdfs" },
       { icon: ScholarIcon,   label: "Scholar Hub",    href: "/student/scholar-hub" },

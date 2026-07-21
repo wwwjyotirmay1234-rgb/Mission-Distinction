@@ -50,3 +50,12 @@ Thumbs.db
 
 # Chat-session assets — large binary files, not needed in production builds
 attached_assets/
+# Environment files
+.env
+.env.*
+
+# Firebase service account
+firebase-service-account.json
+
+# Local notes
+notepad

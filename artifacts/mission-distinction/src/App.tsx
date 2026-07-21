@@ -86,7 +86,6 @@ const StudentExams         = lazy(() => import("@/pages/student/Exams"));
 const StudentConfessions   = lazy(() => import("@/pages/student/Confessions"));
 const StudentStudyRooms    = lazy(() => import("@/pages/student/StudyRooms"));
 const StudentAITools       = lazy(() => import("@/pages/student/AITools"));
-const StudentPracticalHub  = lazy(() => import("@/pages/student/PracticalHub"));
 const StudentGames         = lazy(() => import("@/pages/student/Games"));
 const StudentQuizAnalysis  = lazy(() => import("@/pages/student/QuizAnalysis"));
 const StudentScholarHub    = lazy(() => import("@/pages/student/ScholarHub"));
@@ -220,7 +219,6 @@ function Router() {
                 <Route path="/student/confessions"  component={StudentConfessions} />
                 <Route path="/student/study-rooms"  component={StudentStudyRooms} />
                 <Route path="/student/ai-tools"     component={StudentAITools} />
-                <Route path="/student/practical-hub" component={StudentPracticalHub} />
                 <Route path="/student/games"        component={StudentGames} />
                 <Route path="/student/scholar-hub" component={StudentScholarHub} />
                 <Route path="/student/clinical-case"     component={StudentClinicalCase} />
