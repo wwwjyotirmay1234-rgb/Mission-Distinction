@@ -1,0 +1,290 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover-border: hsl(var(--popover-border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-border: var(--primary-border);
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary-border: var(--secondary-border);
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted-border: var(--muted-border);
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-border: var(--accent-border);
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive-border: var(--destructive-border);
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-primary-border: var(--sidebar-primary-border);
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-accent-border: var(--sidebar-accent-border);
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --font-sans: var(--app-font-sans);
+  --font-serif: var(--app-font-serif);
+  --font-mono: var(--app-font-mono);
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: calc(1 / 0.75);
+  --text-sm: 0.875rem;
+  --text-sm--line-height: calc(1.25 / 0.875);
+  --text-base: 1rem;
+  --text-base--line-height: calc(1.5 / 1);
+  --text-lg: 1.125rem;
+  --text-lg--line-height: calc(1.75 / 1.125);
+  --text-xl: 1.25rem;
+  --text-xl--line-height: calc(1.75 / 1.25);
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: calc(2 / 1.5);
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: calc(2.25 / 1.875);
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: calc(2.5 / 2.25);
+  --text-5xl: 3rem;
+  --text-5xl--line-height: 1;
+  --text-6xl: 3.75rem;
+  --text-6xl--line-height: 1;
+  --text-7xl: 4.5rem;
+  --text-7xl--line-height: 1;
+  --text-8xl: 6rem;
+  --text-8xl--line-height: 1;
+  --text-9xl: 8rem;
+  --text-9xl--line-height: 1;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ⚽ FOOTBALL WORLD CUP THEME — Stadium Night */
+:root {
+  color-scheme: dark;
+  --button-outline: rgba(255,255,255, .08);
+  --badge-outline: rgba(160,100,255, .08);
+
+  --opaque-button-border-intensity: 9;
+
+  --elevate-1: rgba(140,80,255, .04);
+  --elevate-2: rgba(140,80,255, .09);
+
+  /* Deep navy backgrounds — original app feel */
+  --background: 237 35% 8%;       /* #0d0f1a — deep navy */
+  --foreground: 0 0% 96%;
+
+  --border: 237 25% 18%;
+  --input: 237 25% 18%;
+  --ring: 51 100% 50%;            /* Gold focus ring */
+
+  --card: 237 30% 12%;            /* #13152a — navy card */
+  --card-foreground: 0 0% 96%;
+  --card-border: rgba(140, 80, 255, 0.07);
+
+  --sidebar: 237 42% 6%;          /* #070817 — darkest navy */
+  --sidebar-foreground: 0 0% 96%;
+  --sidebar-border: 237 25% 13%;
+  --sidebar-primary: 270 70% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-primary-border: rgba(140,80,255,0.4);
+  --sidebar-accent: 237 25% 11%;
+  --sidebar-accent-foreground: 0 0% 96%;
+  --sidebar-accent-border: rgba(140,80,255,0.08);
+  --sidebar-ring: 51 100% 50%;
+
+  --popover: 237 30% 12%;
+  --popover-foreground: 0 0% 96%;
+  --popover-border: 237 25% 18%;
+
+  /* Violet / purple — the primary accent */
+  --primary: 270 70% 60%;         /* #7c3aed-ish vibrant violet */
+  --primary-foreground: 0 0% 100%;
+  --primary-border: rgba(140, 80, 255, 0.4);
+
+  /* Stadium Gold */
+  --secondary: 51 100% 50%;       /* #FFD700 */
+  --secondary-foreground: 0 0% 8%;
+  --secondary-border: rgba(255,215,0,0.3);
+
+  --muted: 237 25% 15%;
+  --muted-foreground: 237 15% 60%;
+  --muted-border: rgba(140,80,255,0.08);
+
+  --accent: 237 25% 15%;
+  --accent-foreground: 0 0% 96%;
+  --accent-border: rgba(140,80,255,0.08);
+
+  --destructive: 0 72% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --destructive-border: rgba(239,68,68,0.3);
+
+  /* Chart palette */
+  --chart-1: 270 70% 60%;         /* violet */
+  --chart-2: 210 80% 58%;         /* blue */
+  --chart-3: 160 60% 45%;         /* teal */
+  --chart-4: 0 75% 52%;           /* red */
+  --chart-5: 45 90% 55%;          /* amber */
+
+  --app-font-sans: 'Inter', sans-serif;
+  --app-font-serif: Georgia, serif;
+  --app-font-mono: Menlo, monospace;
+  --radius: .5rem;
+
+  --shadow-2xs: 0px 2px 0px 0px rgba(0,150,60, 0.00);
+  --shadow-xs: 0px 2px 0px 0px rgba(0,150,60, 0.00);
+  --shadow-sm: 0px 2px 0px 0px rgba(0,150,60, 0.00), 0px 1px 2px -1px rgba(0,150,60, 0.00);
+  --shadow: 0px 2px 0px 0px rgba(0,150,60, 0.00), 0px 1px 2px -1px rgba(0,150,60, 0.00);
+  --shadow-md: 0px 2px 0px 0px rgba(0,150,60, 0.00), 0px 2px 4px -1px rgba(0,150,60, 0.00);
+  --shadow-lg: 0px 2px 0px 0px rgba(0,150,60, 0.00), 0px 4px 6px -1px rgba(0,150,60, 0.00);
+  --shadow-xl: 0px 2px 0px 0px rgba(0,150,60, 0.00), 0px 8px 10px -1px rgba(0,150,60, 0.00);
+  --shadow-2xl: 0px 2px 0px 0px rgba(0,150,60, 0.00);
+}
+
+.dark {
+  --background: 237 35% 8%;
+  --foreground: 0 0% 96%;
+}
+
+/* Light mode */
+.light {
+  color-scheme: light;
+  --button-outline: rgba(100,50,200,.12);
+  --badge-outline: rgba(100,50,200,.08);
+  --elevate-1: rgba(100,50,200,.04);
+  --elevate-2: rgba(100,50,200,.08);
+
+  --background: 0 0% 98%;
+  --foreground: 237 35% 12%;
+
+  --border: 237 20% 88%;
+  --input: 237 20% 88%;
+  --ring: 270 70% 50%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 237 35% 12%;
+  --card-border: rgba(100,50,200,0.10);
+
+  --sidebar: 237 30% 96%;
+  --sidebar-foreground: 237 35% 12%;
+  --sidebar-border: 237 20% 86%;
+  --sidebar-primary: 270 65% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-primary-border: rgba(100,50,200,0.3);
+  --sidebar-accent: 237 25% 92%;
+  --sidebar-accent-foreground: 237 35% 12%;
+  --sidebar-accent-border: rgba(100,50,200,0.08);
+  --sidebar-ring: 270 65% 50%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 237 35% 12%;
+  --popover-border: 237 20% 88%;
+
+  --primary: 270 65% 50%;
+  --primary-foreground: 0 0% 100%;
+  --primary-border: rgba(100,50,200,0.3);
+
+  --secondary: 45 100% 42%;
+  --secondary-foreground: 0 0% 8%;
+  --secondary-border: rgba(200,160,0,0.3);
+
+  --muted: 237 20% 93%;
+  --muted-foreground: 237 20% 48%;
+  --muted-border: rgba(100,50,200,0.08);
+
+  --accent: 237 20% 93%;
+  --accent-foreground: 237 35% 12%;
+  --accent-border: rgba(100,50,200,0.08);
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --destructive-border: rgba(239,68,68,0.3);
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    -webkit-box-shadow: 0 0 0px 1000px hsl(var(--background)) inset !important;
+    caret-color: hsl(var(--foreground));
+    transition: background-color 5000s ease-in-out 0s;
+  }
+}
+
+/* ── KaTeX dark-theme overrides ─────────────────────────────────────────────*/
+.katex {
+  color: hsl(var(--foreground));
+  font-size: 1em;
+}
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+  margin: 0.75rem 0;
+}
+.katex-display > .katex {
+  text-align: left;
+}
+.katex .mfrac .frac-line,
+.katex .sqrt > .root,
+.katex .overline .overline-line,
+.katex .underline .underline-line {
+  border-color: currentColor;
+}
+.katex .boxed {
+  border: 1.5px solid rgba(0,180,70,0.6);
+  border-radius: 4px;
+  padding: 2px 6px;
+  background: rgba(0,180,70,0.06);
+}

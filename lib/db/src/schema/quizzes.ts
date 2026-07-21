@@ -1,0 +1,133 @@
+import { pgTable, serial, text, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod/v4";
+
+export const quizzesTable = pgTable("quizzes", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  subject: text("subject").notNull(),
+  description: text("description"),
+  questionCount: integer("question_count").default(0).notNull(),
+  difficulty: text("difficulty").notNull().default("medium"),
+  durationMinutes: integer("duration_minutes"),
+  isFeatured: boolean("is_featured").default(false).notNull(),
+  isProctored: boolean("is_proctored").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const questionsTable = pgTable("questions", {
+  id: serial("id").primaryKey(),
+  quizId: integer("quiz_id").notNull(),
+  text: text("text").notNull(),
+  questionType: text("question_type").notNull().default("mcq"),
+  options: jsonb("options").$type<string[]>(),
+  correctOption: integer("correct_option"),
+  correctAnswer: text("correct_answer"),
+  explanation: text("explanation"),
+  maxMarks: integer("max_marks").default(5),
+  modelAnswer: text("model_answer"),
+  topicTags: text("topic_tags").array(),
+});
+
+export const quizAttemptsTable = pgTable("quiz_attempts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  quizId: integer("quiz_id").notNull(),
+  quizTitle: text("quiz_title").notNull(),
+  subject: text("subject").notNull(),
+  score: integer("score").notNull(),
+  total: integer("total").notNull(),
+  percentage: integer("percentage").notNull(),
+  hasPending: boolean("has_pending").default(false),
+  violationCount: integer("violation_count").default(0),
+  isFlagged: boolean("is_flagged").default(false),
+  proctoringSessionId: text("proctoring_session_id"),
+  proctoringFlaggedAt: timestamp("proctoring_flagged_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const proctoringLogsTable = pgTable("proctoring_logs", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  userId: integer("user_id").notNull(),
+  quizId: integer("quiz_id").notNull(),
+  attemptId: integer("attempt_id"),
+  eventType: text("event_type").notNull(),
+  details: jsonb("details"),
+  aiAnalysis: text("ai_analysis"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const questionReportsTable = pgTable("question_reports", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  questionId: integer("question_id").notNull(),
+  quizId: integer("quiz_id").notNull(),
+  reason: text("reason").notNull(),
+  details: text("details"),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const quizSubmissionsTable = pgTable("quiz_submissions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  quizId: integer("quiz_id").notNull(),
+  attemptId: integer("attempt_id").notNull(),
+  questionId: integer("question_id").notNull(),
+  answerText: text("answer_text"),
+  answerImageUrl: text("answer_image_url"),
+  maxMarks: integer("max_marks").notNull().default(5),
+  aiMarks: integer("ai_marks"),
+  aiFeedback: text("ai_feedback"),
+  aiLacking: text("ai_lacking"),
+  adminMarks: integer("admin_marks"),
+  adminFeedback: text("admin_feedback"),
+  adminLacking: text("admin_lacking"),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  gradedAt: timestamp("graded_at"),
+});
+
+export const quizAnswersTable = pgTable("quiz_answers", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  quizId: integer("quiz_id").notNull(),
+  attemptId: integer("attempt_id").notNull(),
+  questionId: integer("question_id").notNull(),
+  subject: text("subject").notNull(),
+  questionType: text("question_type").notNull(),
+  correct: boolean("correct"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const dailyQuestionsTable = pgTable("daily_questions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  dateKey: text("date_key").notNull(),
+  subject: text("subject").notNull(),
+  questionJson: jsonb("question_json").notNull(),
+  answered: boolean("answered").default(false).notNull(),
+  wasCorrect: boolean("was_correct"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const studyPlansTable = pgTable("study_plans", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  targetDate: text("target_date"),
+  planJson: jsonb("plan_json").notNull(),
+  weakSubjects: jsonb("weak_subjects").$type<string[]>(),
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+});
+
+export const insertQuizSchema = createInsertSchema(quizzesTable).omit({ id: true, createdAt: true, questionCount: true });
+export type InsertQuiz = z.infer<typeof insertQuizSchema>;
+export type Quiz = typeof quizzesTable.$inferSelect;
+export type Question = typeof questionsTable.$inferSelect;
+export type QuizAttempt = typeof quizAttemptsTable.$inferSelect;
+export type QuestionReport = typeof questionReportsTable.$inferSelect;
+export type QuizSubmission = typeof quizSubmissionsTable.$inferSelect;
+export type QuizAnswer = typeof quizAnswersTable.$inferSelect;
+export type StudyPlan = typeof studyPlansTable.$inferSelect;
+export type DailyQuestion = typeof dailyQuestionsTable.$inferSelect;

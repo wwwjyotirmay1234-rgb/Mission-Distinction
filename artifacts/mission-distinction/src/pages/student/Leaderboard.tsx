@@ -1,0 +1,376 @@
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { Trophy, Flame, Medal, Crown, Building2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { apiFetch } from "@/lib/apiFetch";
+import { RankBadge } from "@/components/RankBadge";
+import { getRankForXp, RANKS } from "@/lib/ranks";
+
+interface LeaderboardEntry {
+  id: number;
+  fullName: string;
+  college: string;
+  year: string;
+  studyStreak: number;
+  quizzesAttempted: number;
+  avgScore: number;
+  avatarUrl?: string | null;
+}
+
+interface XPLeaderboardEntry {
+  id: number;
+  fullName: string;
+  college: string;
+  year: string;
+  totalXp: number;
+  currentRank: number;
+  rankName: string;
+  studyStreak: number;
+  avatarUrl?: string | null;
+}
+
+interface LeaderboardResponse {
+  topScorers: LeaderboardEntry[];
+  streakLeaders: LeaderboardEntry[];
+}
+
+async function fetchLeaderboard(): Promise<LeaderboardResponse> {
+  const res = await apiFetch("/api/leaderboard");
+  if (!res.ok) throw new Error("Failed to fetch leaderboard");
+  return res.json();
+}
+
+async function fetchXPLeaderboard(): Promise<XPLeaderboardEntry[]> {
+  const res = await apiFetch("/api/xp/leaderboard");
+  if (!res.ok) throw new Error("Failed to fetch XP leaderboard");
+  return res.json();
+}
+
+const medals = ["🥇", "🥈", "🥉"];
+
+function Avatar({ name, url }: { name: string; url?: string | null }) {
+  const [failed, setFailed] = React.useState(false);
+  if (url && !failed) {
+    return (
+      <img
+        src={url}
+        alt={name}
+        onError={() => setFailed(true)}
+        className="w-10 h-10 rounded-full object-cover shrink-0"
+      />
+    );
+  }
+  return (
+    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold text-sm shrink-0">
+      {name?.charAt(0)?.toUpperCase()}
+    </div>
+  );
+}
+
+function PositionBadge({ rank }: { rank: number }) {
+  if (rank <= 3) {
+    return <span className="text-xl">{medals[rank - 1]}</span>;
+  }
+  return (
+    <span className="w-8 text-center text-sm font-bold text-muted-foreground">
+      #{rank}
+    </span>
+  );
+}
+
+export default function StudentLeaderboard() {
+  const [tab, setTab] = useState<"xp" | "score" | "streak" | "college">("xp");
+  const { user } = useAuth();
+
+  const { data, isLoading: classicLoading } = useQuery({
+    queryKey: ["leaderboard"],
+    queryFn: fetchLeaderboard,
+    staleTime: 60_000,
+  });
+
+  const { data: xpData, isLoading: xpLoading } = useQuery({
+    queryKey: ["xpLeaderboard"],
+    queryFn: fetchXPLeaderboard,
+    staleTime: 60_000,
+  });
+
+  const classicEntries: LeaderboardEntry[] =
+    tab === "score" ? (data?.topScorers ?? []) : (data?.streakLeaders ?? []);
+
+  const myCollege = user?.college ?? "";
+  const collegeXpEntries = (xpData ?? []).filter(
+    (e) => myCollege && e.college?.trim().toLowerCase() === myCollege.trim().toLowerCase()
+  );
+
+  const isLoading = tab === "xp" ? xpLoading : tab === "college" ? xpLoading : classicLoading;
+
+  const myXpRank = (xpData ?? []).findIndex(e => e.id === user?.id) + 1;
+  const myClassicRank = classicEntries.findIndex(e => e.id === user?.id) + 1;
+  const myCollegeRank = collegeXpEntries.findIndex(e => e.id === user?.id) + 1;
+  const myRank = tab === "xp" ? myXpRank : tab === "college" ? myCollegeRank : myClassicRank;
+
+  const myXpEntry = xpData?.find(e => e.id === user?.id);
+  const myRankInfo = myXpEntry ? getRankForXp(myXpEntry.totalXp) : null;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight mb-1 flex items-center gap-2">
+          <span className="text-2xl">🏆</span> Tournament Standings
+        </h1>
+        <p className="text-muted-foreground text-sm">⚽ World Cup of Medicine — see where you rank on the pitch.</p>
+      </div>
+
+      {myRank > 0 && (
+        <Card className="bg-primary/10 border-primary/40 overflow-hidden relative">
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 18px, rgba(140,80,255,0.06) 18px, rgba(140,80,255,0.06) 36px)" }}
+          />
+          <CardContent className="p-4 flex items-center gap-4 relative">
+            <div className="w-10 h-10 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-lg shrink-0 border border-primary/30">
+              {user?.fullName?.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-semibold truncate">{user?.fullName}</p>
+                {myRankInfo && <RankBadge xp={myXpEntry?.totalXp} size="xs" showName />}
+              </div>
+              <p className="text-xs text-muted-foreground truncate">{user?.college}</p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-xl font-black text-primary">#{myRank}</p>
+              <p className="text-[10px] text-muted-foreground">Your position</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "xp" | "score" | "streak" | "college")}>
+        <TabsList className="bg-muted/50 border border-primary/20 flex-wrap h-auto gap-1">
+          <TabsTrigger value="xp" className="gap-1.5">
+            ⚽ Goals Table
+          </TabsTrigger>
+          <TabsTrigger value="score" className="gap-1.5">
+            <Medal size={13} /> Top Scorers
+          </TabsTrigger>
+          <TabsTrigger value="streak" className="gap-1.5">
+            <Flame size={13} /> Win Streak
+          </TabsTrigger>
+          <TabsTrigger value="college" className="gap-1.5">
+            <Building2 size={13} className="text-blue-400" /> My Club
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {tab === "xp" && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {RANKS.map(rank => {
+            const count = (xpData ?? []).filter(u => getRankForXp(u.totalXp).level === rank.level).length;
+            return (
+              <div key={rank.level} className={`rounded-xl border p-3 ${rank.bgClass} ${rank.borderClass}`}>
+                <p className="text-base">{rank.emoji}</p>
+                <p className={`text-xs font-semibold mt-1 ${rank.textClass}`}>{rank.name}</p>
+                <p className="text-lg font-black text-foreground">{count}</p>
+                <p className="text-[10px] text-muted-foreground">students</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <Card className="bg-card/40 border-border/40">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold text-muted-foreground">
+            {tab === "xp"
+              ? "⚽ Group Stage Standings — Goals Scored"
+              : tab === "score"
+              ? "🎯 Top Scorers — Match Average"
+              : tab === "streak"
+              ? "🔥 Win Streak Table — Consecutive Days"
+              : myCollege
+              ? `🏟️ Club Leaderboard — ${myCollege}`
+              : "Set your college in Settings to see your club leaderboard"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-4 space-y-3">
+              {Array(8).fill(0).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : tab === "college" ? (
+            !myCollege ? (
+              <div className="p-12 text-center text-muted-foreground text-sm">
+                <Building2 size={32} className="mx-auto mb-3 opacity-40" />
+                Add your college in <strong>Settings → Profile</strong> to see your college leaderboard.
+              </div>
+            ) : collegeXpEntries.length === 0 ? (
+              <div className="p-12 text-center text-muted-foreground text-sm">
+                No other students from {myCollege} yet. Invite your friends!
+              </div>
+            ) : (
+              <div className="divide-y divide-border/40">
+                {collegeXpEntries.map((entry, idx) => {
+                  const pos = idx + 1;
+                  const isMe = entry.id === user?.id;
+                  return (
+                    <div
+                      key={entry.id}
+                      className={`p-4 flex items-center gap-4 transition-colors ${isMe ? "bg-primary/5" : "hover:bg-muted/20"}`}
+                    >
+                      <div className="w-10 flex items-center justify-center shrink-0">
+                        <PositionBadge rank={pos} />
+                      </div>
+                      <Avatar name={entry.fullName} url={entry.avatarUrl} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold truncate">
+                            {entry.fullName}
+                            {isMe && <span className="ml-1 text-xs text-primary">(You)</span>}
+                          </p>
+                          <RankBadge xp={entry.totalXp} size="xs" />
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {entry.year ? entry.year : "1st Year"}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-base font-bold text-primary flex items-center gap-1 justify-end">
+                          <span className="text-sm">⚽</span> {entry.totalXp.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Goals</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          ) : tab === "xp" ? (
+            (xpData ?? []).length === 0 ? (
+              <div className="p-12 text-center text-muted-foreground text-sm">
+                <span className="text-3xl block mb-2">⚽</span>
+                No goals yet — take a quiz to get on the scoreboard!
+              </div>
+            ) : (
+              <>
+                {/* Tournament table header */}
+                <div className="grid grid-cols-[40px_1fr_68px_52px_48px] gap-x-2 px-4 py-2 border-b border-border/40 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 bg-muted/20">
+                  <span className="text-center">#</span>
+                  <span>Player</span>
+                  <span className="text-right">⚽ Goals</span>
+                  <span className="text-right">🔥 Days</span>
+                  <span className="text-right">Pts</span>
+                </div>
+                <div className="divide-y divide-border/40">
+                  {(xpData ?? []).map((entry, idx) => {
+                    const pos = idx + 1;
+                    const isMe = entry.id === user?.id;
+                    const pts = Math.floor(entry.totalXp / 100);
+
+                    const sectionBreak =
+                      pos === 1 ? { label: "🏆 Final", color: "text-amber-400" } :
+                      pos === 3 ? { label: "⭐ Semi-Final", color: "text-purple-400" } :
+                      pos === 5 ? { label: "🏟️ Quarter-Final", color: "text-blue-400" } :
+                      pos === 9 ? { label: "🥅 Round of 16", color: "text-green-400" } :
+                      pos === 17 ? { label: "⚽ Group Stage", color: "text-muted-foreground" } :
+                      null;
+
+                    return (
+                      <div key={entry.id}>
+                        {sectionBreak && (
+                          <div className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest ${sectionBreak.color} bg-muted/10 border-b border-border/20`}>
+                            {sectionBreak.label}
+                          </div>
+                        )}
+                        <div className={`grid grid-cols-[40px_1fr_68px_52px_48px] gap-x-2 px-4 py-3 items-center transition-colors ${isMe ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/20"}`}>
+                          <div className="flex items-center justify-center shrink-0">
+                            <PositionBadge rank={pos} />
+                          </div>
+                          <div className="min-w-0 flex items-center gap-2">
+                            <Avatar name={entry.fullName} url={entry.avatarUrl} />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs">🇮🇳</span>
+                                <p className="text-sm font-semibold truncate">
+                                  {entry.fullName}
+                                  {isMe && <span className="ml-1 text-[10px] text-primary font-bold">(You)</span>}
+                                </p>
+                                <RankBadge xp={entry.totalXp} size="xs" />
+                              </div>
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                {entry.college || "—"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold text-primary flex items-center gap-0.5 justify-end">
+                              <span className="text-xs">⚽</span> {entry.totalXp.toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-semibold text-orange-400">{entry.studyStreak ?? 0}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold text-amber-400">{pts}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )
+          ) : classicEntries.length === 0 ? (
+            <div className="p-12 text-center text-muted-foreground text-sm">
+              No data yet. Be the first to take a quiz!
+            </div>
+          ) : (
+            <div className="divide-y divide-border/40">
+              {classicEntries.map((entry, idx) => {
+                const pos = idx + 1;
+                const isMe = entry.id === user?.id;
+                return (
+                  <div
+                    key={entry.id}
+                    className={`p-4 flex items-center gap-4 transition-colors ${isMe ? "bg-primary/5" : "hover:bg-muted/20"}`}
+                  >
+                    <div className="w-10 flex items-center justify-center shrink-0">
+                      <PositionBadge rank={pos} />
+                    </div>
+                    <Avatar name={entry.fullName} url={entry.avatarUrl} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">
+                        {entry.fullName}
+                        {isMe && <span className="ml-2 text-xs text-primary">(You)</span>}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {entry.college || "Unknown College"}{entry.year ? ` · ${entry.year}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      {tab === "score" ? (
+                        <>
+                          <p className="text-base font-bold text-primary">{entry.avgScore}%</p>
+                          <p className="text-xs text-muted-foreground">{entry.quizzesAttempted} quizzes</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-base font-bold text-orange-500">{entry.studyStreak} 🔥</p>
+                          <p className="text-xs text-muted-foreground">day streak</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

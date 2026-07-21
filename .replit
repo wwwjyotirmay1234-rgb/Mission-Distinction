@@ -1,0 +1,84 @@
+modules = ["nodejs-24", "python-3.11", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "GitHub Auto-Sync"
+
+[[workflows.workflow]]
+name = "GitHub Auto-Sync"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash scripts/github-sync.sh"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
+
+[nix]
+channel = "stable-25_05"
+
+[[ports]]
+localPort = 8080
+externalPort = 80
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 8082
+externalPort = 3001
+
+[[ports]]
+localPort = 8083
+externalPort = 3002
+
+[[ports]]
+localPort = 8084
+externalPort = 4200
+
+[[ports]]
+localPort = 8085
+externalPort = 6000
+
+[[ports]]
+localPort = 19257
+externalPort = 3000
+
+[[ports]]
+localPort = 21147
+externalPort = 3003
+
+[userenv]
+
+[userenv.shared]
+VITE_GA_MEASUREMENT_ID = "G-DQE6YB15MZ"
+VITE_POSTHOG_KEY = "phc_urAP6bqh9PYRneGKuV4iZ6QMnSbzTvtKTL934W7d2HUY"
+VITE_POSTHOG_HOST = "https://us.i.posthog.com"
+SUPABASE_URL = "https://gakkzqlztzoyqpqvfpgx.supabase.co"
+MAINTENANCE_MODE = "false"

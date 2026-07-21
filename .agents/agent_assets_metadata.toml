@@ -1,0 +1,2671 @@
+uploads = []
+
+[[generated]]
+id = "-uQRytKbWPb7jpNN55fwi"
+uri = "file://artifacts/mission-distinction/public/icon-512.png"
+type = "image"
+title = "mission distinction app icon 512"
+
+[[generated]]
+id = "8b24fyAG51DMJvtdyeqH8"
+uri = "file://artifacts/mission-distinction/public/icon-192.png"
+type = "image"
+title = "mission distinction icon 192"
+
+[[generated]]
+id = "28iCfdq-0ivZLz0TPDEf-"
+uri = "file://artifacts/release-trailer/public/assets/dna.png"
+type = "image"
+title = "Abstract glowing purple DNA"
+
+[[generated]]
+id = "U5NbRXPrrmDSnF1qKAmmp"
+uri = "file://artifacts/release-trailer/public/assets/studying.png"
+type = "image"
+title = "Medical student studying late"
+
+[[generated]]
+id = "7vvn-IA4CHct3oc86sXtI"
+uri = "file://artifacts/release-trailer/public/assets/network.png"
+type = "image"
+title = "Abstract neural network purple"
+
+[[generated]]
+id = "gXnMs6W4pILepWMMOnIGc"
+uri = "file://artifacts/release-trailer/public/assets/trophy.png"
+type = "image"
+title = "Trophy glowing purple"
+
+[[generated]]
+id = "7fNQRd6K2TlQTdYyBdHag"
+uri = "file://attached_assets/generated_images/pulse-sites-clean.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "F4wE_qqv-91vLOy3PMGuS"
+uri = "file://attached_assets/generated_images/bp-measurement-clean.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "cFR7wdA_NZA5uwGXkIZKp"
+uri = "file://attached_assets/generated_images/pulse-sites-clean-v2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "fQXISPMhCPtkksBO1EgkE"
+uri = "file://artifacts/journey-video/public/images/abstract-bg.png"
+type = "image"
+title = "abstract violet gold background"
+
+[[generated]]
+id = "3N7Ix7SY6cupRCJmNb-tf"
+uri = "file://artifacts/journey-video/public/images/medical-pattern.png"
+type = "image"
+title = "medical geometric pattern texture"
+
+[[generated]]
+id = "GoWfJqOi6XTL3c7Heo-_n"
+uri = "file://attached_assets/generated_images/student_coldopen.png"
+type = "image"
+title = "student cold open night study"
+
+[[generated]]
+id = "TFMEaFZO9HK7Pviltr7r_"
+uri = "file://attached_assets/generated_images/student_team.png"
+type = "image"
+title = "5 students team hostel"
+
+[[generated]]
+id = "Q0Unhvs6reqfiEIIQfhAU"
+uri = "file://attached_assets/generated_images/student_darknight.png"
+type = "image"
+title = "student dark night crisis rain"
+
+[[generated]]
+id = "hhwDu3_oO_D818vT559b4"
+uri = "file://attached_assets/generated_images/student_launch.png"
+type = "image"
+title = "student launch celebration phone"
+
+[[generated]]
+id = "z-rClrvTNTOKRQITQFkbO"
+uri = "file://attached_assets/generated_images/student_hope.png"
+type = "image"
+title = "student white coat hope portrait"
+
+[[generated]]
+id = "vORFRTHp6gFEnXdStO6IC"
+uri = "file://attached_assets/generated_images/student_team_outro.png"
+type = "image"
+title = "5 students team outro golden hour"
+
+[[generated]]
+id = "k3CCZA_Aeyfptu0JI5ia1"
+uri = "file://attached_assets/generated_images/student_desk_overhead.png"
+type = "image"
+title = "student overhead desk books"
+
+[[generated]]
+id = "RUPJW7tACvbguDUysGxIE"
+uri = "file://attached_assets/generated_images/group_coldopen.png"
+type = "image"
+title = "5 students cold open night study"
+
+[[generated]]
+id = "mNxYYEKVQ_BDGD9aLGzoq"
+uri = "file://attached_assets/generated_images/group_silhouette.png"
+type = "image"
+title = "5 students silhouette blue screen"
+
+[[generated]]
+id = "Es1KTHevQvsq2CCg3iSH0"
+uri = "file://attached_assets/generated_images/group_portrait.png"
+type = "image"
+title = "5 students portrait looking at camera"
+
+[[generated]]
+id = "0bzaNxL1azpbDYZ3Dfp_y"
+uri = "file://attached_assets/generated_images/group_coding.png"
+type = "image"
+title = "5 students coding late night"
+
+[[generated]]
+id = "yTrwsVl_LjTGJjA76CuWN"
+uri = "file://attached_assets/generated_images/group_celebration.png"
+type = "image"
+title = "5 students celebration phone"
+
+[[generated]]
+id = "PZ-rKvJtA45zZi7TrwTDX"
+uri = "file://attached_assets/generated_images/face_male_determined.png"
+type = "image"
+title = "male student close-up determined"
+
+[[generated]]
+id = "XzHkVCOdPRya7ddqkA9mW"
+uri = "file://attached_assets/generated_images/face_female_focused.png"
+type = "image"
+title = "female student close-up focused"
+
+[[generated]]
+id = "u-j_DzIsf5iYpJCsX9HVC"
+uri = "file://attached_assets/generated_images/hands_on_book.png"
+type = "image"
+title = "student hands on medical book"
+
+[[generated]]
+id = "OeOCtruU0KQJ2PBywQNuh"
+uri = "file://artifacts/journey-video/public/images/ai_scene1.png"
+type = "image"
+title = "MBBS student studying 2am hostel"
+
+[[generated]]
+id = "FfUj8H6fFt5r1FhjjTUQw"
+uri = "file://artifacts/journey-video/public/images/ai_scene2.png"
+type = "image"
+title = "medical lecture hall students struggling"
+
+[[generated]]
+id = "io_hnJ_wtVKT2dz5pXL44"
+uri = "file://artifacts/journey-video/public/images/ai_scene3.png"
+type = "image"
+title = "five students team brainstorming hostel"
+
+[[generated]]
+id = "jeDZgFucqizfQzY3Lx58w"
+uri = "file://artifacts/journey-video/public/images/ai_scene4.png"
+type = "image"
+title = "students building study resources montage"
+
+[[generated]]
+id = "4ThB9llYIGcXDOooWhNq9"
+uri = "file://artifacts/journey-video/public/images/ai_scene5.png"
+type = "image"
+title = "students coding night glowing screens"
+
+[[generated]]
+id = "xVnPRGZDQOGofkpGLgQMG"
+uri = "file://artifacts/journey-video/public/images/ai_scene6.png"
+type = "image"
+title = "error screen students devastated dark"
+
+[[generated]]
+id = "OERnkJ1x1F9TfMx5oWIf2"
+uri = "file://artifacts/journey-video/public/images/ai_scene7.png"
+type = "image"
+title = "student motivating team sunrise determination"
+
+[[generated]]
+id = "S5-ejc-eiFCPRZKZPFN1i"
+uri = "file://artifacts/journey-video/public/images/ai_scene8.png"
+type = "image"
+title = "app launch button celebration students"
+
+[[generated]]
+id = "G9lfsSwNer_x3h370Oz2V"
+uri = "file://artifacts/journey-video/public/images/ai_scene9.png"
+type = "image"
+title = "students across Odisha studying connected"
+
+[[generated]]
+id = "27URVIu3i69iGeKzVp5uT"
+uri = "file://artifacts/journey-video/public/images/ai_scene10.png"
+type = "image"
+title = "founders rooftop sunset 500 milestone"
+
+[[generated]]
+id = "1qeEVIMH2HMY3c3nkpZYe"
+uri = "file://artifacts/journey-video/public/images/scene0_desk_illustration.png"
+type = "image"
+title = "scene0 Pixar MBBS student 2:17AM desk"
+
+[[generated]]
+id = "CH3ybrqDFhO18t2UKLOl3"
+uri = "file://artifacts/journey-video/public/images/scene1_lecture_hall.png"
+type = "image"
+title = "scene1 lecture hall students"
+
+[[generated]]
+id = "C_mtSZsQBk2dj8mcJiaoR"
+uri = "file://artifacts/journey-video/public/images/scene2_whiteboard_team.png"
+type = "image"
+title = "scene2 team whiteboard hostel"
+
+[[generated]]
+id = "PB2XFKxpi5RIBK04j5bqj"
+uri = "file://artifacts/journey-video/public/images/scene3_journey_montage.png"
+type = "image"
+title = "scene3 coding night montage"
+
+[[generated]]
+id = "DZ9OhNFlYEB_25vAmo9kv"
+uri = "file://artifacts/journey-video/public/images/scene4_error_crash.png"
+type = "image"
+title = "scene4 error crash failure"
+
+[[generated]]
+id = "-jEu0sNG9fVFiNHX_L1Wd"
+uri = "file://artifacts/journey-video/public/images/scene5_launch_day.png"
+type = "image"
+title = "scene5 launch day sunrise"
+
+[[generated]]
+id = "UXmFRo4m1aFf_7heD6P5T"
+uri = "file://artifacts/journey-video/public/images/scene6_ripple_odisha.png"
+type = "image"
+title = "scene6 ripple across odisha"
+
+[[generated]]
+id = "vPOyV0L4vOM0sLjovJAVR"
+uri = "file://artifacts/journey-video/public/images/scene7_500_milestone.png"
+type = "image"
+title = "scene7 500 downloads milestone"
+
+[[generated]]
+id = "mrhe7HwWgZGRLUVaFvg4T"
+uri = "file://artifacts/journey-video/public/images/scene8_outro_desk.png"
+type = "image"
+title = "scene8 outro empty desk lamp"
+
+[[generated]]
+id = "yeZtphCpr0hrOdE4LFdvF"
+uri = "file://artifacts/journey-video/public/images/s0_shot_b_wide.png"
+type = "image"
+title = "Regenerate s0_shot_b_wide.png"
+
+[[generated]]
+id = "wLk3tGm7lG01wJMIE1X5U"
+uri = "file://artifacts/journey-video/public/images/s0_shot_a_clock.png"
+type = "image"
+title = "Scene0 shot_a"
+
+[[generated]]
+id = "mcucHFyDyquMkkeedbuw_"
+uri = "file://artifacts/journey-video/public/images/s0_shot_c_writing.png"
+type = "image"
+title = "Scene0 shot_c"
+
+[[generated]]
+id = "7jRfKe-SRFkVwXsh5JQHP"
+uri = "file://artifacts/journey-video/public/images/s0_shot_d_face_down.png"
+type = "image"
+title = "UE5 char s0_shot_d_face_down.png"
+
+[[generated]]
+id = "msjs6iFo8o_99oqF7YJUO"
+uri = "file://artifacts/journey-video/public/images/s0_shot_e_notebook.png"
+type = "image"
+title = "Scene0 shot_e"
+
+[[generated]]
+id = "snaOAu4H2CjE1WZxML93C"
+uri = "file://artifacts/journey-video/public/images/s0_shot_f_window.png"
+type = "image"
+title = "Regenerate s0_shot_f_window.png"
+
+[[generated]]
+id = "70Yn7ci-k9KdsGoneh4B9"
+uri = "file://artifacts/journey-video/public/images/s0_shot_g_eye.png"
+type = "image"
+title = "Regenerate s0_shot_g_eye.png"
+
+[[generated]]
+id = "ykWmatxZPppbK9Ng8_8KT"
+uri = "file://artifacts/journey-video/public/images/s0_shot_h_slumped.png"
+type = "image"
+title = "UE5 char s0_shot_h_slumped.png"
+
+[[generated]]
+id = "0lvDIwpUm5K_vFpc31EYj"
+uri = "file://artifacts/journey-video/public/images/s1_shot_c_corridor.png"
+type = "image"
+title = "Regenerate s1_shot_c_corridor.png"
+
+[[generated]]
+id = "kAGQ6Y8q-PlyJVO1crbNb"
+uri = "file://artifacts/journey-video/public/images/s1_shot_b_face_walking.png"
+type = "image"
+title = "Regenerate s1_shot_b_face_walking.png"
+
+[[generated]]
+id = "pQQr7IwJCPMg1OjQz38Iw"
+uri = "file://artifacts/journey-video/public/images/s1_shot_a_hostel.png"
+type = "image"
+title = "Regenerate s1_shot_a_hostel.png"
+
+[[generated]]
+id = "09fpYbpHrT9kbjgjb55Ad"
+uri = "file://artifacts/journey-video/public/images/s1_shot_d_students_struggling.png"
+type = "image"
+title = "Scene1 s1_shot_d_students_struggling.png"
+
+[[generated]]
+id = "sMUvLr0VvkDDq4h7om_k1"
+uri = "file://artifacts/journey-video/public/images/s1_shot_e_realization_eyes.png"
+type = "image"
+title = "Regenerate s1_shot_e_realization_eyes.png"
+
+[[generated]]
+id = "Ux-_GYMewpdhwd28FmYA6"
+uri = "file://artifacts/journey-video/public/images/s1_shot_f_lecture_hall_wide.png"
+type = "image"
+title = "Scene1 s1_shot_f_lecture_hall_wide.png"
+
+[[generated]]
+id = "pqTNc8-GD8iL4BKhhDErS"
+uri = "file://artifacts/journey-video/public/images/s1_shot_g_determination.png"
+type = "image"
+title = "Scene1 s1_shot_g_determination.png"
+
+[[generated]]
+id = "QKaB5YAeaJcQakMzJ0oML"
+uri = "file://artifacts/journey-video/public/images/s3_shot_a_silent_observation.png"
+type = "image"
+title = "Regenerate s3_shot_a_silent_observation.png"
+
+[[generated]]
+id = "_TtnGq1IYMgOj1WXdqEbp"
+uri = "file://artifacts/journey-video/public/images/s3_shot_c_calling_friends.png"
+type = "image"
+title = "Regenerate s3_shot_c_calling_friends.png"
+
+[[generated]]
+id = "H5nHo8KrVchEd5XQ-zV7T"
+uri = "file://artifacts/journey-video/public/images/s3_shot_b_idea_begins.png"
+type = "image"
+title = "Regenerate s3_shot_b_idea_begins.png"
+
+[[generated]]
+id = "j3icTQ4p-pKfgBb1zJMlW"
+uri = "file://artifacts/journey-video/public/images/s3_shot_d_gathering_team.png"
+type = "image"
+title = "Regenerate s3_shot_d_gathering_team.png"
+
+[[generated]]
+id = "YwkEYJ6a5fPPYtbXSnhVj"
+uri = "file://artifacts/journey-video/public/images/s3_shot_e_brainstorm.png"
+type = "image"
+title = "Team chars s3_shot_e_brainstorm.png"
+
+[[generated]]
+id = "KVzXzUflEEoAVKRZpJUFZ"
+uri = "file://artifacts/journey-video/public/images/s3_shot_f_whiteboard.png"
+type = "image"
+title = "Scene 2 ref-match s3_shot_f_whiteboard.png"
+
+[[generated]]
+id = "z0diQj2mIiRsTAFcDONG2"
+uri = "file://artifacts/journey-video/public/images/s3_shot_g_reactions.png"
+type = "image"
+title = "Team chars s3_shot_g_reactions.png"
+
+[[generated]]
+id = "pY8ju-dMC_tActIHZClz6"
+uri = "file://artifacts/journey-video/public/images/s3_shot_h_mission_born.png"
+type = "image"
+title = "Scene 2 ref-match s3_shot_h_mission_born.png"
+
+[[generated]]
+id = "bVQXIskH9rq_LyeeYquwj"
+uri = "file://artifacts/journey-video/public/images/s3_shot_i_first_plan.png"
+type = "image"
+title = "Scene 2 ref-match s3_shot_i_first_plan.png"
+
+[[generated]]
+id = "G87dIZvH1lH1CP4sbvuWI"
+uri = "file://artifacts/journey-video/public/images/s3_shot_j_destiny_pull.png"
+type = "image"
+title = "Regenerate s3_shot_j_destiny_pull.png"
+
+[[generated]]
+id = "RTF0QzTyu1NJd39pASKp-"
+uri = "file://artifacts/journey-video/public/images/s4_shot_b_error_screen.png"
+type = "image"
+title = "Regenerate s4_shot_b_error_screen.png"
+
+[[generated]]
+id = "FCdWVi4nw1tUehw3yQp_g"
+uri = "file://artifacts/journey-video/public/images/s4_shot_c_exhausted_3am.png"
+type = "image"
+title = "Scene3 s4_shot_c_exhausted_3am.png"
+
+[[generated]]
+id = "ZDqrmq8A3xWQ5RV1HIjPK"
+uri = "file://artifacts/journey-video/public/images/s4_shot_a_late_night_coding.png"
+type = "image"
+title = "Team chars s4_shot_a_late_night_coding.png"
+
+[[generated]]
+id = "d-udRGPiABJpPaRih5339"
+uri = "file://artifacts/journey-video/public/images/s4_shot_e_months_later.png"
+type = "image"
+title = "Scene3 s4_shot_e_months_later.png"
+
+[[generated]]
+id = "7_mWOFpKeFIxnoxerC5iB"
+uri = "file://artifacts/journey-video/public/images/s4_shot_f_almost_giving_up.png"
+type = "image"
+title = "Scene3 s4_shot_f_almost_giving_up.png"
+
+[[generated]]
+id = "ynAplvQgBk_U3L4VSSZBN"
+uri = "file://artifacts/journey-video/public/images/s4_shot_d_sunrise_window.png"
+type = "image"
+title = "Regenerate s4_shot_d_sunrise_window.png"
+
+[[generated]]
+id = "vPJiQzBmhV0ISNb8GC-jF"
+uri = "file://artifacts/journey-video/public/images/s4_shot_g_remembering_why.png"
+type = "image"
+title = "Scene3 s4_shot_g_remembering_why.png"
+
+[[generated]]
+id = "_jWyJI7TtLS0N9bVh2EfT"
+uri = "file://artifacts/journey-video/public/images/s4_shot_h_team_still_going.png"
+type = "image"
+title = "Scene3 s4_shot_h_team_still_going.png"
+
+[[generated]]
+id = "BwrQaO3FLsPb6-Ug3K4X4"
+uri = "file://artifacts/journey-video/public/images/char_s0_desk_alone.png"
+type = "image"
+title = "ue5 student desk alone 2am"
+
+[[generated]]
+id = "w3WhCBhdGiDGPauO5FSUU"
+uri = "file://artifacts/journey-video/public/images/char_s0_phone_frustrated.png"
+type = "image"
+title = "ue5 student phone frustrated"
+
+[[generated]]
+id = "NebMIj-ZOvX4vGMpaDdF6"
+uri = "file://artifacts/journey-video/public/images/char_s1_lecture_hall.png"
+type = "image"
+title = "ue5 lecture hall stressed students"
+
+[[generated]]
+id = "MnDgzwxHRsrZg123W8XB7"
+uri = "file://artifacts/journey-video/public/images/char_s2_whiteboard_team.png"
+type = "image"
+title = "ue5 five students whiteboard team"
+
+[[generated]]
+id = "dzExjTr1xhXk-gTj0vmp_"
+uri = "file://artifacts/journey-video/public/images/char_s3_crash_devastated.png"
+type = "image"
+title = "ue5 team crash devastated"
+
+[[generated]]
+id = "Ikb-TmCHW3GySZvw-1fkS"
+uri = "file://artifacts/journey-video/public/images/char_s3_sunrise_determined.png"
+type = "image"
+title = "ue5 student sunrise determined"
+
+[[generated]]
+id = "GTg7pQZqgFBQ7glz595Ai"
+uri = "file://artifacts/journey-video/public/images/char_s5_launch_moment.png"
+type = "image"
+title = "ue5 launch button press hands"
+
+[[generated]]
+id = "JMKVHafnJLoXxrHGSJzT5"
+uri = "file://artifacts/journey-video/public/images/char_s6_odisha_students.png"
+type = "image"
+title = "ue5 odisha students studying phones"
+
+[[generated]]
+id = "FAgR1QJ4XjR_VMiCleetx"
+uri = "file://attached_assets/film/frame_01.png"
+type = "image"
+title = "shot 1 hostel exterior rain"
+
+[[generated]]
+id = "a4EJ_Tk9U83bXcHTzKEOu"
+uri = "file://attached_assets/film/frame_02.png"
+type = "image"
+title = "shot 5 exhausted eyes"
+
+[[generated]]
+id = "hPC80d5HemWk5CQ4cfpqL"
+uri = "file://attached_assets/film/frame_03.png"
+type = "image"
+title = "shot 6 over shoulder"
+
+[[generated]]
+id = "QQvS9gTgiUJq42k7A0WIH"
+uri = "file://attached_assets/film/frame_04.png"
+type = "image"
+title = "frame 4 macro eyes breakdown despair"
+
+[[generated]]
+id = "9dA2a0ehshhPWJr7VXVsj"
+uri = "file://attached_assets/film/frame_05.png"
+type = "image"
+title = "shot 7 pen drops hand"
+
+[[generated]]
+id = "Dg_Ff_KAa62N6QsHe2fnR"
+uri = "file://attached_assets/film/frame_06.png"
+type = "image"
+title = "shot 8 leaning back"
+
+[[generated]]
+id = "RC1VcXr7nZ6t9cp8g1f4D"
+uri = "file://attached_assets/film/frame_07.png"
+type = "image"
+title = "frame 7 through rain window rack focus"
+
+[[generated]]
+id = "NujlhG9HOYoJvdodqHMbS"
+uri = "file://attached_assets/film/frame_08.png"
+type = "image"
+title = "shot 8b dutch angle"
+
+[[generated]]
+id = "t1AFwmPZzUd4YOeE4iYLj"
+uri = "file://attached_assets/film/frame_09.png"
+type = "image"
+title = "shot 10 overhead drone"
+
+[[generated]]
+id = "ge4Oy-xrlpC_xLD6lb7-U"
+uri = "file://attached_assets/film/frame_10.png"
+type = "image"
+title = "final shot split-lit face"
+
+[[generated]]
+id = "Etw---xqRGJKH2eS6rBcb"
+uri = "file://attached_assets/film/frame_02b.png"
+type = "image"
+title = "shot 2 inside room - matching reference character"
+
+[[generated]]
+id = "KB5VBVSoXvxH0mXkXZ6f8"
+uri = "file://attached_assets/film/frame_03b.png"
+type = "image"
+title = "shot 3 side profile curly"
+
+[[generated]]
+id = "_kxa6sV_XhTtQAsI9a0gi"
+uri = "file://attached_assets/film/frame_04b.png"
+type = "image"
+title = "shot 4 books close-up pan"
+
+[[generated]]
+id = "W8fLcgmvg2v4V6EQnGidV"
+uri = "file://attached_assets/film/frame_09b.png"
+type = "image"
+title = "shot 9 phone screen"
+
+[[generated]]
+id = "YMg-9YL-THj-a48CXOOdE"
+uri = "file://attached_assets/film/s1_01.png"
+type = "image"
+title = "s1f1 wide desk 2:17am"
+
+[[generated]]
+id = "oQp4W-WbDfHSYYSVWggOC"
+uri = "file://attached_assets/film/s1_02.png"
+type = "image"
+title = "s1f2 medium reading"
+
+[[generated]]
+id = "e3vvEODeuRoqjjbz9jLc-"
+uri = "file://attached_assets/film/s1_03.png"
+type = "image"
+title = "s1f3 over-shoulder checklist"
+
+[[generated]]
+id = "5MktwVJ0iP7IaZJ6cx9ep"
+uri = "file://attached_assets/film/s1_04.png"
+type = "image"
+title = "s1f4 eyes exhaustion no tears"
+
+[[generated]]
+id = "OT69GfLikZgD5EWy4i5Vh"
+uri = "file://attached_assets/film/s1_05.png"
+type = "image"
+title = "s1f5 window city lights"
+
+[[generated]]
+id = "KiXV5VWvDIisz3OIz7ivV"
+uri = "file://attached_assets/film/s2_01.png"
+type = "image"
+title = "s2s1 canteen three friends"
+
+[[generated]]
+id = "900ff-1kNHMej9kLvuTIl"
+uri = "file://attached_assets/film/s2_02.png"
+type = "image"
+title = "s2s2 friend throws notebook"
+
+[[generated]]
+id = "n6GpnlU3FZ79GKYYiZhxZ"
+uri = "file://attached_assets/film/s2_03.png"
+type = "image"
+title = "s2s3 friend WhatsApp scattered PDFs"
+
+[[generated]]
+id = "Fmg46EEUlrLq67bNMDuGb"
+uri = "file://attached_assets/film/s2_04.png"
+type = "image"
+title = "s2s4 founder listening thinking"
+
+[[generated]]
+id = "O1YfouL2NBqYt1-537cxc"
+uri = "file://attached_assets/film/s2_05.png"
+type = "image"
+title = "s2s5 founder opens notebook"
+
+[[generated]]
+id = "b6GX9HRbyLZMUSebLbI1W"
+uri = "file://attached_assets/film/s2_06.png"
+type = "image"
+title = "s2s6 pen writing MD"
+
+[[generated]]
+id = "RudaEchrxkj-sm3Bc1hQB"
+uri = "file://attached_assets/film/s2_07.png"
+type = "image"
+title = "s2 ending three friends determination"
+
+[[generated]]
+id = "NI8mV8tqOWesu2j32dne9"
+uri = "file://attached_assets/film/s1_n01.png"
+type = "image"
+title = "drone-hostel-night-rain"
+
+[[generated]]
+id = "cf0rf3czgxp09WXUZ5ZrV"
+uri = "file://attached_assets/film/s1_n02.png"
+type = "image"
+title = "rainy-window-student-inside"
+
+[[generated]]
+id = "4ONhhBz2UL5w3YA_2ooAF"
+uri = "file://attached_assets/film/s1_n05.png"
+type = "image"
+title = "over-shoulder-laptop-chaos"
+
+[[generated]]
+id = "-lqwR-n6WswVM_LGzk2sA"
+uri = "file://attached_assets/film/s1_n07.png"
+type = "image"
+title = "pen-drop-extreme-closeup"
+
+[[generated]]
+id = "lMZvt0ga0LptkflWcoDCX"
+uri = "file://attached_assets/film/s1_n09.png"
+type = "image"
+title = "realization-expression-shift"
+
+[[generated]]
+id = "kORy-M-3aK8fkAy39czto"
+uri = "file://attached_assets/film/s1_n10.png"
+type = "image"
+title = "eyes-notebook-reflection-idea"
+
+[[generated]]
+id = "OTudMFsfYrfCLSk42einT"
+uri = "file://attached_assets/film/s1_01_new.png"
+type = "image"
+title = "overhead desk MBBS books 2:47AM"
+
+[[generated]]
+id = "Pqy5QjYZmK9r3h--tNmUL"
+uri = "file://attached_assets/film/s1_02_new.png"
+type = "image"
+title = "Indian student face frustrated close-up"
+
+[[generated]]
+id = "HC_nsNS10bE40rXrIh17u"
+uri = "file://attached_assets/film/s1_03_new.png"
+type = "image"
+title = "Indian student checklist notebook MBBS"
+
+[[generated]]
+id = "2Y4bTn8CeMtorSnrY-5pi"
+uri = "file://attached_assets/film/s1_05_new.png"
+type = "image"
+title = "Indian student rainy window profile"
+
+[[generated]]
+id = "jn7Iu61CGqHeoDzXtAHoz"
+uri = "file://attached_assets/film/s2_01_new.png"
+type = "image"
+title = "three Indian students canteen discussion"
+
+[[generated]]
+id = "sclQqPPEFKck6b1THx9HW"
+uri = "file://attached_assets/film/s2_04_new.png"
+type = "image"
+title = "Indian founder canteen idea realization"
+
+[[generated]]
+id = "SsiyNrbVG90cGCxF2wD5A"
+uri = "file://attached_assets/film/s2_05_new.png"
+type = "image"
+title = "Indian student writing determined canteen"
+
+[[generated]]
+id = "pBmVm_4DQEfVKrhlrv_bP"
+uri = "file://attached_assets/film/s2_07_new.png"
+type = "image"
+title = "three students notebook Mission Distinction"
+
+[[generated]]
+id = "AqKHKEKOcSJjIcLgyNXtc"
+uri = "file://attached_assets/film/v2_s1_02.png"
+type = "image"
+title = "founder face frustrated exhausted reading"
+
+[[generated]]
+id = "IJY71LYYt_8vmPPbHPz4j"
+uri = "file://attached_assets/film/v2_s1_03.png"
+type = "image"
+title = "founder profile checklist notebook"
+
+[[generated]]
+id = "B48aO4ZPoMbdP0rUbjY0-"
+uri = "file://attached_assets/film/v2_s1_05.png"
+type = "image"
+title = "founder profile rainy window lamp"
+
+[[generated]]
+id = "WqBJl46J0DdgIg_fblIna"
+uri = "file://attached_assets/film/v2_s1_n09.png"
+type = "image"
+title = "founder realization expression lamp light"
+
+[[generated]]
+id = "7b0VW0e0ty1gbFZdUyo3H"
+uri = "file://attached_assets/film/v2_s2_01.png"
+type = "image"
+title = "three students canteen frustration"
+
+[[generated]]
+id = "4ocxXjMCL_oHkOXhyIDC9"
+uri = "file://attached_assets/film/v2_s2_04.png"
+type = "image"
+title = "founder canteen idea quiet realization"
+
+[[generated]]
+id = "tjl_Gjv0GaJI2vDOF7S0C"
+uri = "file://attached_assets/film/v2_s2_05.png"
+type = "image"
+title = "founder writing focused determined"
+
+[[generated]]
+id = "L8Xcfz7aSgXcbFtp0ifeJ"
+uri = "file://attached_assets/film/v2_s2_07.png"
+type = "image"
+title = "three students Mission Distinction notebook"
+
+[[generated]]
+id = "xRYXSkmFVStTUREOx8d2P"
+uri = "file://attached_assets/film/fix_s1_n02.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "CXLTSDcwCAcjkgBB_1168"
+uri = "file://attached_assets/film/fix_s1_01.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "0haId8rJ_ksti1lVgcUmJ"
+uri = "file://attached_assets/film/fix_s1_n05.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "FNBBAGB2SnG34wZJ7jzZQ"
+uri = "file://attached_assets/film/fix_s2_02.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "kZmf1OwDAf9g4jxVmt0pt"
+uri = "file://attached_assets/film/new_s1_02.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "77UjvhlbyzuHq8kd70Pb_"
+uri = "file://attached_assets/film/new_s1_03.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "7ykgO5xou2yU8aLAKdOss"
+uri = "file://attached_assets/film/new_s1_05.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "bw4OUReA5JfVjGDJFfII6"
+uri = "file://attached_assets/film/new_s1_n09.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "om6x0X7tjGqe1wZ6Cz01j"
+uri = "file://attached_assets/film/new_s1_n02.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "xsBB-NxJ2H5Du1qwZbfry"
+uri = "file://attached_assets/film/new_s1_01.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "fhH4p6yTYd3Iik16T2J5V"
+uri = "file://attached_assets/film/new_s2_01.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Ntr-9h6YmO8bv8fcbWkf9"
+uri = "file://attached_assets/film/new_s2_02.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "BtnNarVVO3v1A9IUDwj5p"
+uri = "file://attached_assets/film/new_s2_04.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "wFLYAlGttl-JsaZYMJqAL"
+uri = "file://attached_assets/film/new_s2_05.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "3VuNT6I1jiXvD7Fkqet1g"
+uri = "file://attached_assets/film/new_s2_07.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "xrBgL_mQqnlfF88h8bIf7"
+uri = "file://attached_assets/film/new_s1_n05.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "DAnxbA80WytL_DIBcRJ0E"
+uri = "file://attached_assets/film/new2_s2_01.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "yi5qPecHS9djE08r7cm8m"
+uri = "file://attached_assets/film/new3_s2_01.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "7T1_CMy_goKbi9YSia-5e"
+uri = "file://attached_assets/film/s3_01.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "oKqMy-O5cfSheCq-qPmHu"
+uri = "file://attached_assets/film/s3_02.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "EugO-tt5vhADlY4JJ4AwW"
+uri = "file://attached_assets/film/s3_03.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "4oYEE04N4zr5DEuuOJKKp"
+uri = "file://attached_assets/film/s3_04.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "5qWWkoDRTrVnGOfviHfmS"
+uri = "file://attached_assets/film/s3_05.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "JuBrcAVTBMzx-FOAB9kHP"
+uri = "file://attached_assets/film/s3_06.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Zgs2r9ZB5B2vsCAHYex0Y"
+uri = "file://attached_assets/film/s3_07.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "iFOwKuCiKTHyfr9JimAJs"
+uri = "file://attached_assets/film/s3_08.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "oGzqC-0KI1x6E5oB_SNcq"
+uri = "file://attached_assets/film/s3_09.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "5nhayyzLleR6uYyx2gfwm"
+uri = "file://attached_assets/film/s3_10.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "WmgcHWg7w38CblLUOIwUT"
+uri = "file://artifacts/scene1-film/public/frames/s2_03.png"
+type = "image"
+title = "s2_03 student phone overwhelm"
+
+[[generated]]
+id = "B2ssrRpSngaWwS13KMQO2"
+uri = "file://artifacts/scene1-film/public/frames/s3_03.png"
+type = "image"
+title = "s3_03 students notes exchange corridor"
+
+[[generated]]
+id = "uUzdF7lSAMiFO8VSKU-lh"
+uri = "file://artifacts/scene1-film/public/frames/s3_07.png"
+type = "image"
+title = "s3_07 three friends turning point under tree"
+
+[[generated]]
+id = "GhR1OW___eiS8Zsiv6fm9"
+uri = "file://artifacts/scene1-film/public/frames/s3_05.png"
+type = "image"
+title = "s3_05 three friends under tree golden hour"
+
+[[generated]]
+id = "Q1lLONokKZ3_UKSkxBG1B"
+uri = "file://artifacts/scene1-film/public/frames/s3_06.png"
+type = "image"
+title = "s3_06 overhead notebook list subjects"
+
+[[generated]]
+id = "9qiXSRQKvY7OEIHQ_P53-"
+uri = "file://artifacts/scene1-film/public/frames/s1_n09.png"
+type = "image"
+title = "s1_n09 founder quiet determination night"
+
+[[generated]]
+id = "QQ3zq2nnDjC-ThdJgroFy"
+uri = "file://artifacts/scene1-film/public/frames/s4_01.png"
+type = "image"
+title = "s4_01 blank notebook Mission Distinction"
+
+[[generated]]
+id = "ld28Ge-YXHhmnqYUjRO6M"
+uri = "file://artifacts/scene1-film/public/frames/s4_02.png"
+type = "image"
+title = "s4_02 founder searching library shelves"
+
+[[generated]]
+id = "ytAfK81TjXilEg6Ggqgsp"
+uri = "file://artifacts/scene1-film/public/frames/s4_03.png"
+type = "image"
+title = "s4_03 friend asking seniors for notes"
+
+[[generated]]
+id = "dhzIUPZCHcqb8ULUvaGtr"
+uri = "file://artifacts/scene1-film/public/frames/s4_04.png"
+type = "image"
+title = "s4_04 scattered pen drives PDFs hard drives"
+
+[[generated]]
+id = "s2UdNolOWnLoELZNNH4Pa"
+uri = "file://artifacts/scene1-film/public/frames/s4_05.png"
+type = "image"
+title = "s4_05 hostel room transformed workspace"
+
+[[generated]]
+id = "dOOKOILO2FQnoqKEivqTk"
+uri = "file://artifacts/scene1-film/public/frames/s4_06.png"
+type = "image"
+title = "s4_06 correct folder tabs ANATOMY PHYSIOLOGY BIOCHEMISTRY PRACTICALS PYQs"
+
+[[generated]]
+id = "8o9H9nIQZLtKUJZorsAky"
+uri = "file://artifacts/scene1-film/public/frames/s4_07.png"
+type = "image"
+title = "s4_07 midnight three students working 12:43"
+
+[[generated]]
+id = "yQQAallf3LCaxwISLAwWs"
+uri = "file://artifacts/scene1-film/public/frames/s4_08.png"
+type = "image"
+title = "s4_08 founder ignoring phone choosing mission — clean single shot"
+
+[[generated]]
+id = "ycl0vCPzk8RS6ficJg1d_"
+uri = "file://artifacts/scene1-film/public/frames/s4_09.png"
+type = "image"
+title = "s4_09 laptop MBBS Resource Pack v1 complete"
+
+[[generated]]
+id = "AOj2WIbi1cHw0BioJ-b4d"
+uri = "file://artifacts/scene1-film/public/frames/s4_10.png"
+type = "image"
+title = "s4_10 three founders exhausted relieved laptop"
+
+[[generated]]
+id = "i2jXI4YDRmWeYULVqcDJy"
+uri = "file://artifacts/scene1-film/public/frames/s4_11.png"
+type = "image"
+title = "s4_11 folder MBBS Resource Pack v1 close-up"
+
+[[generated]]
+id = "uMZ1nPhBVWQBGvxXqKbFf"
+uri = "file://artifacts/scene1-film/public/frames/s5_01.png"
+type = "image"
+title = "whatsapp growth montage phones"
+
+[[generated]]
+id = "nvL7JWkVmZEmGtNWki88o"
+uri = "file://artifacts/scene1-film/public/frames/s5_02.png"
+type = "image"
+title = "s5_02 founder phone readable WhatsApp messages clean shot"
+
+[[generated]]
+id = "MPrB82qIB99L89fmpHTy5"
+uri = "file://artifacts/scene1-film/public/frames/s5_03.png"
+type = "image"
+title = "s5_03 three founders midnight support answering messages"
+
+[[generated]]
+id = "arWkB6dBW89NvGHDQswZJ"
+uri = "file://artifacts/scene1-film/public/frames/s5_04.png"
+type = "image"
+title = "laptop desktop chaos duplicate folders"
+
+[[generated]]
+id = "QwPudCcOvWFxTkAKOEpBF"
+uri = "file://artifacts/scene1-film/public/frames/s5_05.png"
+type = "image"
+title = "s5_05 student searching WhatsApp group frustrated"
+
+[[generated]]
+id = "9gxuShl2m_fSUxVxqjk-9"
+uri = "file://artifacts/scene1-film/public/frames/s5_06.png"
+type = "image"
+title = "s5_06 three founders tired silent late night"
+
+[[generated]]
+id = "jgZFJJzNBAwsXNb1MdQSZ"
+uri = "file://artifacts/scene1-film/public/frames/s5_07.png"
+type = "image"
+title = "s5_07 notebook: What if students didn't need to search? — all words correct"
+
+[[generated]]
+id = "pDGr7Mc9bAg45AX7roSTd"
+uri = "file://artifacts/scene1-film/public/frames/s5_08.png"
+type = "image"
+title = "s5_08 notebook sketch app wireframe Home Notes PDFs Quizzes Community"
+
+[[generated]]
+id = "gXLzWi4xOq7G1gqWfrisn"
+uri = "file://artifacts/scene1-film/public/frames/s5_09.png"
+type = "image"
+title = "s5_09 three founders imagining app cautious excitement"
+
+[[generated]]
+id = "raVoXF7lyQjCzRIw8emJf"
+uri = "file://artifacts/scene1-film/public/frames/s5_10.png"
+type = "image"
+title = "s5_10 notebook Let's build an app written by hand"
+
+[[generated]]
+id = "VA-THuf2hlKsJlRvTkK9A"
+uri = "file://artifacts/scene1-film/public/frames/s5_11.png"
+type = "image"
+title = "s5_11 rough notebook sketch first Mission Distinction app concept"
+
+[[generated]]
+id = "pVTBvJBH6E-7TJRjwuPY7"
+uri = "file://artifacts/scene1-film/public/frames/s6_01.png"
+type = "image"
+title = "s6_01 messy notebook blueprint Notes PDFs Quizzes Community"
+
+[[generated]]
+id = "N2Bd-sJylejlydoyXWCd8"
+uri = "file://artifacts/scene1-film/public/frames/s6_02.png"
+type = "image"
+title = "s6_02 three founders excited imagining the app"
+
+[[generated]]
+id = "KsRAr0Jp5iZ7f1wbkj6vT"
+uri = "file://artifacts/scene1-film/public/frames/s6_03.png"
+type = "image"
+title = "s6_03 blank laptop screen no code empty reality arrives"
+
+[[generated]]
+id = "hagZMnfJyVUXjiz13JpWY"
+uri = "file://artifacts/scene1-film/public/frames/s6_04.png"
+type = "image"
+title = "s6_04 laptop dozens tabs searching how to build app"
+
+[[generated]]
+id = "og3o1xLsCbTc2qOf33PcB"
+uri = "file://artifacts/scene1-film/public/frames/s6_05.png"
+type = "image"
+title = "s6_05 first ugly broken prototype founder and friend"
+
+[[generated]]
+id = "mqS4FoWYscFtylaGmewMR"
+uri = "file://artifacts/scene1-film/public/frames/s6_06.png"
+type = "image"
+title = "s6_06 error messages broken pages console errors failure"
+
+[[generated]]
+id = "OZdnRxK0ZtAJPHJFpQ-f6"
+uri = "file://artifacts/scene1-film/public/frames/s6_07.png"
+type = "image"
+title = "s6_07 long nights hostel time passing three founders"
+
+[[generated]]
+id = "BRpP0jq3lJJlV1oIsKtPn"
+uri = "file://artifacts/scene1-film/public/frames/s6_08.png"
+type = "image"
+title = "s6_08 three founders exhausted doubting quiet"
+
+[[generated]]
+id = "_mf8unQ-tLy2gM6w6fFHD"
+uri = "file://artifacts/scene1-film/public/frames/s6_09.png"
+type = "image"
+title = "s6_09 founder close-up determined resolve keep going"
+
+[[generated]]
+id = "7v7EKaKXPxzLAemrZwfmy"
+uri = "file://artifacts/scene1-film/public/frames/s6_10.png"
+type = "image"
+title = "s6_10 whiteboard erased new plans restart fresh"
+
+[[generated]]
+id = "3w15A-Rh8AcS2vrpyHZeB"
+uri = "file://artifacts/scene1-film/public/frames/s6_11.png"
+type = "image"
+title = "s6_11 first real Mission Distinction app on laptop screen"
+
+[[generated]]
+id = "tBo2Hj1LaWrzZnwbp5S_T"
+uri = "file://artifacts/scene1-film/public/frames/s6_12.png"
+type = "image"
+title = "s6_12 founder face reflected screen glow future reflection"
+
+[[generated]]
+id = "l_lhT_DFLsCHWbeeuFEBa"
+uri = "file://artifacts/scene1-film/public/frames/s6_13.png"
+type = "image"
+title = "s6_13 Mission Distinction v0.1 cursor blinking final shot"
+
+[[generated]]
+id = "tC14hqybXEm5q0CIARkgP"
+uri = "file://artifacts/scene1-film/public/frames/s7_01.png"
+type = "image"
+title = "s7_01 growing workload split panel books code phone calendar"
+
+[[generated]]
+id = "5vl3WpqRPLYr2ul_jo6w0"
+uri = "file://artifacts/scene1-film/public/frames/s7_02.png"
+type = "image"
+title = "s7_02 phone messages when will app launch pressure"
+
+[[generated]]
+id = "QjdeNHAlcxccYrgEEkdrd"
+uri = "file://artifacts/scene1-film/public/frames/s7_03.png"
+type = "image"
+title = "s7_03 app crash loading error laptop screen"
+
+[[generated]]
+id = "rCM2qPgXEYMksJSloBrSn"
+uri = "file://artifacts/scene1-film/public/frames/s7_04.png"
+type = "image"
+title = "s7_04 second bug more errors build failed founder frustrated"
+
+[[generated]]
+id = "X1n9JG1H5dL0ejSuREdaZ"
+uri = "file://artifacts/scene1-film/public/frames/s7_05.png"
+type = "image"
+title = "s7_05 exam week anatomy textbook and laptop impossible balance"
+
+[[generated]]
+id = "Yj9mErK9Ds8dwETGPEoSS"
+uri = "file://artifacts/scene1-film/public/frames/s7_06.png"
+type = "image"
+title = "s7_06 empty hostel room 2:40am only founder awake two empty beds"
+
+[[generated]]
+id = "XGY2xgqlSWTpkQEca7x1Z"
+uri = "file://artifacts/scene1-film/public/frames/s7_07.png"
+type = "image"
+title = "s7_07 lowest point founder staring at screen completely drained defeat"
+
+[[generated]]
+id = "Om14QcTkHXR1Zzu1eOPyh"
+uri = "file://artifacts/scene1-film/public/frames/s7_08.png"
+type = "image"
+title = "s7_08 memory montage flashback rain notebook PDF thank you message"
+
+[[generated]]
+id = "GljkkAE6HawzJ-zGHuzJa"
+uri = "file://artifacts/scene1-film/public/frames/s7_09.png"
+type = "image"
+title = "s7_09 the message \"Your PDFs helped me pass\" thank you phone screen"
+
+[[generated]]
+id = "2wuH18SugfrDtdT_db_hl"
+uri = "file://artifacts/scene1-film/public/frames/s7_10.png"
+type = "image"
+title = "s7_10 doorway shot friends return silently hostel room at night"
+
+[[generated]]
+id = "L3MeuvE6zEG6PiRtBGKjh"
+uri = "file://artifacts/scene1-film/public/frames/s7_11.png"
+type = "image"
+title = "s7_11 three founders choosing to continue one more try"
+
+[[generated]]
+id = "NGrAUilU-M-NjY72S5nf2"
+uri = "file://artifacts/scene1-film/public/frames/s7_12.png"
+type = "image"
+title = "s7_12 dawn sunrise through hostel window three founders silhouetted still working"
+
+[[generated]]
+id = "ncDanH9Spwotx5xaq1itn"
+uri = "file://artifacts/scene1-film/public/frames/s7_13.png"
+type = "image"
+title = "s7_13 Mission Distinction loads successfully stable founder subtle smile reflection"
+
+[[generated]]
+id = "6capus2kwVo1adTzSFLPz"
+uri = "file://attached_assets/generated_images/extreme_close_up_cinematic_f678.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "qHyLhHNE22dbfN1qQMElY"
+uri = "file://attached_assets/generated_images/cinematic_overhead_top_down_2a95.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "dYMESpQJsXxNjHvNWWd8I"
+uri = "file://attached_assets/generated_images/over_shoulder_cinematic_shot_b7bc.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "yHo5kKhB2T6tCmfAeHcYP"
+uri = "file://attached_assets/generated_images/cinematic_overhead_shot_of_18e7.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "VL_AcPJrlc-ZU1D9o61Dj"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_da50.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "_q6kMG6KtafkbuyuNfxK2"
+uri = "file://attached_assets/generated_images/cinematic_split_composition_left_2e4d.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "h390rxmtdjl_kcxEZ52NF"
+uri = "file://attached_assets/generated_images/cinematic_hostel_room_interior_2761.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "H5ooZKScS8lKAao8I3szL"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_7118.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "bBShdI5yW8HS7e4qaRkOz"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_a186.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "eP5EqENRBm0sO938rQHgk"
+uri = "file://attached_assets/generated_images/cinematic_2x2_four_panel_cfb3.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "CRMm1X-nNCihCRFDXyCoY"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_50c9.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "NtrMXjiHKbZXgI4J-rQYF"
+uri = "file://attached_assets/generated_images/cinematic_drone_aerial_shot_08b0.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "wllnSrH8opvfgD8Ad5Mu8"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_slow_a97e.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "RlfzIqE5jeAf5a0AILogb"
+uri = "file://attached_assets/generated_images/cinematic_over_the_shoulder_6c73.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "hj6xQaqB9SyRFUQaEJCqP"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_of_06f7.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "vYLDsd04JdAcySo008Iux"
+uri = "file://attached_assets/generated_images/cinematic_extreme_macro_close_5578.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "4rfiG6GjdImg4ZOAVzW99"
+uri = "file://attached_assets/generated_images/cinematic_triptych_style_close_2a91.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "__ihZ9Skst2IUSYvch_kp"
+uri = "file://attached_assets/generated_images/cinematic_tracking_shot_of_cdaf.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "QM5xLd2EK9eOQ06pZN0r0"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_7919.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "RF2Ue_uFZEmOb4L-3DgBP"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_4eee.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "hKs7ikUmGa7QtmWYxmZw9"
+uri = "file://attached_assets/generated_images/cinematic_close_up_sequence_fc1f.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "qGBQ6xSB10-IAUOhEruBz"
+uri = "file://attached_assets/generated_images/cinematic_4_panel_montage_b4d3.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "YPB6AXQQbhuM6CFh5Yruu"
+uri = "file://attached_assets/generated_images/cinematic_close_up_sequence_d7ab.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Jgyc_r8Ns67s_psLLawZX"
+uri = "file://attached_assets/generated_images/cinematic_extreme_close_up_956b.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "lRpZ5MEACZvu9Smbj2FQB"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_8da0.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "mvtLyaEzXgGJ9m1UaQkkt"
+uri = "file://attached_assets/generated_images/cinematic_macro_close_up_243c.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Rc3NEdO8ZVHL679NrEsAw"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_matching_85d2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "jreoFhUWBxHAnxw3mEbp4"
+uri = "file://attached_assets/generated_images/cinematic_drone_aerial_shot_9d1f.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "i1divSW3-sFN5MhZVjGEi"
+uri = "file://attached_assets/generated_images/cinematic_three_shot_wide_d459.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "b0LA19tBDzsY8JiaJ_gtJ"
+uri = "file://attached_assets/generated_images/cinematic_rapid_montage_memory_9a54.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "HfCtPbyiCRh_TxjpdIBXS"
+uri = "file://attached_assets/generated_images/cinematic_top_down_stylized_8ece.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "KIDT9wDa8jTLO-N60BypB"
+uri = "file://attached_assets/generated_images/cinematic_4_panel_montage_173a.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "F2WAdr0ixVpCM7-jI8oWM"
+uri = "file://attached_assets/generated_images/cinematic_macro_close_up_d926.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "hvzTXy6JrQRjGno4QJydx"
+uri = "file://attached_assets/generated_images/cinematic_extreme_close_up_5cd1.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "MgutPKvcVdntrQBb6HSBH"
+uri = "file://attached_assets/generated_images/cinematic_three_shot_of_293f.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "YMsE2bhjURMVbgPdjasgV"
+uri = "file://attached_assets/generated_images/cinematic_top_down_slow_b925.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "JE7GY93DA97rLrfyUq9dm"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_260d.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Uv43SEUgGqKHP-pl2O3e6"
+uri = "file://attached_assets/generated_images/cinematic_drone_aerial_shot_c801.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "kFqP6wro9RXEZegacyzGb"
+uri = "file://attached_assets/generated_images/cinematic_massive_drone_pullback_47ce.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "lHv9h1-lmcnrK8GwhaKng"
+uri = "file://attached_assets/generated_images/aerial_drone_night_photograph_73bd.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "qOukV3uBZkieV9oDD3qmx"
+uri = "file://attached_assets/generated_images/cinematic_close_up_shot_464f.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "P52iB-FzlJqnR6V-Dtee7"
+uri = "file://attached_assets/generated_images/a_dark_cinematic_2x3_6abc.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "ZwhpV9vrqdB9LNh5d3Rlt"
+uri = "file://attached_assets/generated_images/close_up_macro_photograph_1d54.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "8W51zELKcc0jyD99qvLWC"
+uri = "file://attached_assets/generated_images/cinematic_rear_view_of_ab65.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "FOvSLpcI40GwzC6qNQ3V1"
+uri = "file://attached_assets/generated_images/cinematic_3d_glowing_map_4e01.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "ENVRT9QlTyM_MizUVzHS2"
+uri = "file://attached_assets/generated_images/close_up_macro_photograph_84bd.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "rFRk-fKx4siJW87tiNlfL"
+uri = "file://attached_assets/generated_images/macro_photo_of_a_5e94.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Bqto3rB472n5zy0S_1YRC"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_d1e0.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "gFMEESZjIU_tfE9qcKiKX"
+uri = "file://attached_assets/generated_images/cinematic_drone_aerial_shot_2ce5.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "DS7YOIbYCWkwFhP_OlMsZ"
+uri = "file://attached_assets/generated_images/cinematic_tracking_shot_following_2e83.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Cssw-z3ImK8qP2GgRbI_j"
+uri = "file://attached_assets/generated_images/cinematic_over_the_shoulder_1825.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "acee47-d3XWmo_OJZ0pK1"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_29c0.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Ottq6zZp23jLGydiVKe18"
+uri = "file://attached_assets/generated_images/cinematic_close_up_sequence_2561.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Ta5d2ZS14sU8RnpHYV0Xp"
+uri = "file://attached_assets/generated_images/cinematic_intercut_split_composition_d52d.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "pPcFD3VvLFBySslKrrZn1"
+uri = "file://attached_assets/generated_images/cinematic_night_scene_of_d8fc.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "nyZIpJ5hdne6NmG3jrNbo"
+uri = "file://attached_assets/generated_images/cinematic_montage_grid_4_d69c.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "S4_yaiDeVu7U_T7ojKQZe"
+uri = "file://attached_assets/generated_images/cinematic_macro_close_up_a2b6.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "gZAS9e2UIQHGAcRkmLnRb"
+uri = "file://attached_assets/generated_images/cinematic_shot_slowly_pulling_9f41.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "pNr-nEe87sR5bw3cnBcJc"
+uri = "file://attached_assets/generated_images/cinematic_aerial_view_of_45ea.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "fYEB_y741OdHHyLudFome"
+uri = "file://attached_assets/generated_images/massive_cinematic_aerial_pullback_dc1b.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "pqqT0Yw2c1EDYsYS37eXF"
+uri = "file://attached_assets/generated_images/cinematic_behind_the_scenes_3970.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "obmTYPGX2vzXM9ib8OJAE"
+uri = "file://attached_assets/generated_images/cinematic_drone_aerial_establishing_0569.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "e8zrClB_jb1OasjiaNZqb"
+uri = "file://attached_assets/generated_images/cinematic_behind_the_scenes_e7e8.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "6ubqmCW1Xrl5uWJufFazC"
+uri = "file://attached_assets/ep_01.png"
+type = "image"
+title = "campus drone golden hour"
+
+[[generated]]
+id = "3yQUBj3llP4-ojOLOsyzQ"
+uri = "file://attached_assets/ep_02.png"
+type = "image"
+title = "student montage four panel"
+
+[[generated]]
+id = "nM50XoGfHWYtl5WW3_R8A"
+uri = "file://attached_assets/ep_03.png"
+type = "image"
+title = "founder walking Indian campus"
+
+[[generated]]
+id = "HyfYHNJVXR1zW_Zy3ibnv"
+uri = "file://attached_assets/ep_04.png"
+type = "image"
+title = "chain of sharing knowledge"
+
+[[generated]]
+id = "gIJ7HmnAHImnKuAmRnQ0l"
+uri = "file://attached_assets/ep_05.png"
+type = "image"
+title = "empty hostel room nostalgic"
+
+[[generated]]
+id = "ylOlqq1GeORa1PSeYEF0O"
+uri = "file://attached_assets/ep_06.png"
+type = "image"
+title = "MBBS notebook diagrams macro"
+
+[[generated]]
+id = "CYOTxECxZc9l-S2haapkp"
+uri = "file://attached_assets/ep_07.png"
+type = "image"
+title = "hand closing notebook hopeful"
+
+[[generated]]
+id = "COtZQ1PrVSPI5y0N3wHv8"
+uri = "file://attached_assets/ep_08.png"
+type = "image"
+title = "sunset aerial odisha city"
+
+[[generated]]
+id = "gE4tmjRaZjYS9h7qpDyBw"
+uri = "file://attached_assets/ep_09.png"
+type = "image"
+title = "first year student finds app"
+
+[[generated]]
+id = "M7q9rhtiE7vt7W9y-sCzB"
+uri = "file://attached_assets/ep_final.png"
+type = "image"
+title = "one window to thousands aerial"
+
+[[generated]]
+id = "sAGPFGjCJbmsa-ctb0uWx"
+uri = "file://attached_assets/s12_01.png"
+type = "image"
+title = "empty room rain night nostalgic"
+
+[[generated]]
+id = "83-H0HIpUsi7oEApMmzl5"
+uri = "file://attached_assets/s12_02.png"
+type = "image"
+title = "flashback echoes double exposure"
+
+[[generated]]
+id = "V_FIMFVO3hOKESOT3RR_s"
+uri = "file://attached_assets/s12_03.png"
+type = "image"
+title = "three founders reunion warm"
+
+[[generated]]
+id = "RFb6csUviVwgU7dSTjwyE"
+uri = "file://attached_assets/s12_04.png"
+type = "image"
+title = "first resource pack folder"
+
+[[generated]]
+id = "qpaYIdEF7obnd7tMWu_WB"
+uri = "file://attached_assets/s12_05.png"
+type = "image"
+title = "students across Odisha montage"
+
+[[generated]]
+id = "L0qyDSl4doQu2YvHV9yz3"
+uri = "file://attached_assets/s12_06.png"
+type = "image"
+title = "student messages projected wall"
+
+[[generated]]
+id = "YS0eB49pqB33EZxh0STdA"
+uri = "file://attached_assets/s12_07.png"
+type = "image"
+title = "founder reading messages reflective"
+
+[[generated]]
+id = "4KctRzcqjzWxMNzNE0axN"
+uri = "file://attached_assets/s12_08.png"
+type = "image"
+title = "future board whiteboard goals"
+
+[[generated]]
+id = "iV69c6TTu5sRHa6jJ76Rn"
+uri = "file://attached_assets/s12_09.png"
+type = "image"
+title = "new first year entering campus"
+
+[[generated]]
+id = "rwswn1uytLfkXPFygDNOm"
+uri = "file://attached_assets/s12_10.png"
+type = "image"
+title = "full circle desk rain app open"
+
+[[generated]]
+id = "Rsm-dE5ujSkMElKmFGQui"
+uri = "file://attached_assets/s12_final.png"
+type = "image"
+title = "city constellation lights pullback"
+
+[[generated]]
+id = "U0N97Aul6vrsooZc1qj-o"
+uri = "file://attached_assets/s12_06_v2.png"
+type = "image"
+title = "hostel wall sticky notes messages"
+
+[[generated]]
+id = "NQzaUorU1xO9AakQS-qGP"
+uri = "file://attached_assets/s12_08_v2.png"
+type = "image"
+title = "whiteboard planning no text"
+
+[[generated]]
+id = "Z3jtw6S5tU0jQUItJoWx4"
+uri = "file://attached_assets/s12_03_v2.png"
+type = "image"
+title = "three founders reunion clean walls"
+
+[[generated]]
+id = "SeNDnsWH4RtJmzerSXfcg"
+uri = "file://attached_assets/s12_05_v2.png"
+type = "image"
+title = "students montage no whiteboard text"
+
+[[generated]]
+id = "7Aix8o-DpLoe6oGXUHuVp"
+uri = "file://attached_assets/s13_01.png"
+type = "image"
+title = "s13_01 regen — student from behind no text"
+
+[[generated]]
+id = "JsY0WaSszbPHcCJvoZ5lK"
+uri = "file://attached_assets/s13_02.png"
+type = "image"
+title = "s13_02 regen — stress desk no text"
+
+[[generated]]
+id = "3qzQIFs6xLNQEjBofp1LN"
+uri = "file://attached_assets/s13_03.png"
+type = "image"
+title = "discovery screen reflects in eyes"
+
+[[generated]]
+id = "-pk9xTOjVTLlxCc0tomfu"
+uri = "file://attached_assets/s13_04.png"
+type = "image"
+title = "invisible helpers ghost founders behind student"
+
+[[generated]]
+id = "Fi1AFtgx0dQXw0rlNpTzl"
+uri = "file://attached_assets/s13_05.png"
+type = "image"
+title = "chain reaction montage knowledge spreading"
+
+[[generated]]
+id = "fBUKeWFxC-EFj1sVqRT3I"
+uri = "file://attached_assets/s13_06.png"
+type = "image"
+title = "s13_06 regen — years pass no text labels"
+
+[[generated]]
+id = "MyGZL8ad5yXMhKFCNXRNc"
+uri = "file://attached_assets/s13_07.png"
+type = "image"
+title = "young doctor treating patient family"
+
+[[generated]]
+id = "tUtjxAbuYOb9ojjX1B8tD"
+uri = "file://attached_assets/s13_08.png"
+type = "image"
+title = "three founders watching quietly proud"
+
+[[generated]]
+id = "kOSDWbKco-cqxPcVxjqsZ"
+uri = "file://attached_assets/s13_09.png"
+type = "image"
+title = "legacy wall thousands of student photos"
+
+[[generated]]
+id = "CWATt8q0ZtkF7xb4CPRQJ"
+uri = "file://attached_assets/s13_10.png"
+type = "image"
+title = "the torch doctor hands notes to first-year"
+
+[[generated]]
+id = "-91153f94eP7_i12VyWtD"
+uri = "file://attached_assets/s13_final.png"
+type = "image"
+title = "drone ascent city constellation final"
+
+[[generated]]
+id = "Vo0ioZk-22FcWIlMpu5nL"
+uri = "file://attached_assets/generated_images/cinematic_overhead_aerial_shot_4cfa.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "yUk3u-HDqVqDqEL73pp4C"
+uri = "file://attached_assets/generated_images/cinematic_side_profile_of_b5ed.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "SWLzAYN85SQR-Nul9EaF9"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_fa5d.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "a9tXz7tUrArLkNXcyGlhA"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_of_7019.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "9WtIK_fGVIsEy4ZcwS55y"
+uri = "file://attached_assets/generated_images/cinematic_shot_of_three_19ae.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "mjNk8jXuoqNs5JlYJR0O5"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_8713.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "ce0gnoG_Yhk7MtPK1PVr2"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_of_7e51.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "FZFtAt4XMF7uZQNtJPWdo"
+uri = "file://attached_assets/generated_images/cinematic_overhead_flat_lay_676c.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "ai6WqMxQfqdqucJG5x3PP"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_3a09.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "X4JR5vIqGhe0YVy_xfLuS"
+uri = "file://attached_assets/generated_images/cinematic_overhead_shot_of_b885.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Y8pSgBj02_HuZvFGcwk_C"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_01f8.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "ySEoS112YhN7WKSiSkbxs"
+uri = "file://attached_assets/generated_images/cinematic_overhead_wide_shot_3408.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "PZ7Iw4QzhnW-xfF12yn-w"
+uri = "file://attached_assets/generated_images/cinematic_atmospheric_shot_of_95d4.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "0jK21GcYSNt333zQmzNjL"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_b1b5.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "YrhFUZXmGGbjdahrE9ugA"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_bcde.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "yqUUzbZxCo_RYtzT6M36P"
+uri = "file://attached_assets/generated_images/cinematic_split_composition_showing_7dc5.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "hDTQygvnI958peupM4MI_"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_de82.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "EXIHIxJ0QYHHB_PCQOrCZ"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_c7c0.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "4zBfV4oqGGzhdPfNLlzZ1"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_055c.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Dx9xEE_k2-dGszpUFhSQz"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_dbd5.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Cl3Zemk9lSJNhUf6fW_C-"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_of_22f5.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Q3raU9y8QGNXBdr0KbRAG"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_8a57.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "jkehsg9M4gVWONY4dpPpb"
+uri = "file://attached_assets/generated_images/cinematic_two_shot_of_7a04.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "_OGnPZVz1ew77njYlfhpj"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_ee13.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "IpARXeYd1Tdy5nH84mZWP"
+uri = "file://attached_assets/generated_images/cinematic_atmospheric_wide_shot_2d7e.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "sQhKjMUpzcuMAOXpCqSqu"
+uri = "file://attached_assets/generated_images/cinematic_overhead_shot_of_7874.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "5kRsiHYO_hVPKZIwmSBIu"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_ec0a.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "oQgE2SfCHgCh2-CFnaikU"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_8312.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "bs2jIxbDlebBa_efJqYHW"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_of_23dd.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "IlkHMnSux7UrPCC8zn7A1"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_0509.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "U14Kc0W-1Vj5zGqoLe1ZA"
+uri = "file://attached_assets/generated_images/cinematic_artistic_double_exposure_06e9.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "_3BoZAvEDWD5K-m-FyIGe"
+uri = "file://attached_assets/generated_images/cinematic_extreme_close_up_cb29.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "ItqHfWBwA-X8wAeM27Czw"
+uri = "file://attached_assets/generated_images/cinematic_atmospheric_shot_of_187b.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "T7yVHRFYde7-6o14q8p_6"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_705a.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "qDpyEEWTbtFGJdKyGR4mO"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_f982.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "xHuD9nvblHYQQtJnCT5GO"
+uri = "file://attached_assets/generated_images/cinematic_three_shot_of_6ca0.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "ER4Oa22RzDaQ74zbzsxWU"
+uri = "file://attached_assets/generated_images/cinematic_extreme_macro_close_4cd4.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "73IdwyP3uDjgdJh4boGEc"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_2120.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Ap0EobFkRuYZYrlACB_oD"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_of_9253.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "u2g-RwLvAML0ZEfLDA4jT"
+uri = "file://attached_assets/generated_images/cinematic_artistic_montage_composition_6c0b.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "jZz6DAN9ODSI8NdSxnJev"
+uri = "file://attached_assets/generated_images/cinematic_aerial_drone_shot_6fd7.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "NwMPm2-JWp_CZzAq_o1SN"
+uri = "file://attached_assets/generated_images/cinematic_shot_of_three_475f.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "6DipS46N_MrbCFfhrrAnx"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_22b0.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "f8tnbc5Q8Kk73eUTDnFSZ"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_1262.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "JwMqcR5oEa30dAlkEoSl9"
+uri = "file://attached_assets/generated_images/cinematic_three_shot_of_e4a0.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "g3toNf-1JEVxXNh5tKm7B"
+uri = "file://attached_assets/generated_images/cinematic_artistic_multi_exposure_e820.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "hMk8_CUsiqApDvKVydG_h"
+uri = "file://attached_assets/generated_images/cinematic_collage_of_four_8ece.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "n7zKAV8gY4qksNYG6ERTr"
+uri = "file://attached_assets/generated_images/cinematic_aerial_drone_shot_3972.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "eQJZxR1edcSWf4VtKus2i"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_f1a8.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "t0QKaiXMn8UBjK89dZqDA"
+uri = "file://attached_assets/generated_images/cinematic_three_shot_of_742a.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "x4FmfCXYhC7WYkEZHxUeU"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_of_3679.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "q2qDvvtnF7QZwSRUXzokW"
+uri = "file://attached_assets/generated_images/cinematic_macro_close_up_5cf5.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "N_FPDgAXnLHUMkmyRddTj"
+uri = "file://attached_assets/generated_images/cinematic_tracking_shot_of_671a.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "WjbfnE3amjLo1kFzaAwqB"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_e9ff.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "s7V-WjgFyWTdLEHj8glFn"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_187a.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Q4WQnX5X_w7EQ5q8JlM4X"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_dece.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "ZnGrJ2mW5w8bV9XUjGGo7"
+uri = "file://attached_assets/generated_images/cinematic_split_composition_left_fac2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "qW1W3ydMXLzXM9l9t2cM9"
+uri = "file://attached_assets/generated_images/cinematic_multi_panel_montage_3f91.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "2D5B9a7UFeb1lvZA2U_sV"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_of_f1c7.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "izIpKvWrZ7ObKbIX4xgHM"
+uri = "file://attached_assets/generated_images/cinematic_aerial_drone_shot_43f2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "-XEpTEKKj0Q-8T9OKYOVy"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_2847.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Leg9PUUWnk4759pPSZYp_"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_of_a7a0.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "umqXa86zMqlaQlVLmc2Z5"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_d9c6.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Hr3qXh-PE0IkgzwI-LXgl"
+uri = "file://attached_assets/generated_images/cinematic_artistic_double_exposure_d12a.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "WsuQiqCtTrVpOdj4qq2WL"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_d683.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "oN1jNuCg8PdPF63qBJtUl"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_714f.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "7U_tbis7xs_gf5UZyZoC1"
+uri = "file://attached_assets/generated_images/cinematic_medium_shot_of_3214.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "FXl45dqLHZsL1GG07fZqs"
+uri = "file://attached_assets/generated_images/cinematic_wide_shot_of_38f2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "BeTOP-jGLutqByUdYv79p"
+uri = "file://attached_assets/generated_images/cinematic_close_up_of_307f.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "paoUi87F5bA_kKxrRHrY-"
+uri = "file://attached_assets/generated_images/cinematic_side_profile_medium_2480.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "oq8E-LWQtwQrnfuwBltul"
+uri = "file://attached_assets/generated_images/cinematic_side_profile_shot_6d53.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "jUKNnSFIh6vl49ezSxgve"
+uri = "file://artifacts/scene1-film/public/frames/s8_01.png"
+type = "image"
+title = "s8_01 pre-launch tension"
+
+[[generated]]
+id = "BsRV8hzeD4IgdxvKvxGXi"
+uri = "file://artifacts/scene1-film/public/frames/s8_02.png"
+type = "image"
+title = "s8_02 finger hovering launch"
+
+[[generated]]
+id = "dPdQ9PqeZ8K_5IqNvS4Bh"
+uri = "file://artifacts/scene1-film/public/frames/s8_03.png"
+type = "image"
+title = "s8_03 finger pressing launch"
+
+[[generated]]
+id = "UVLK-2zlnKCNIqTBLEolK"
+uri = "file://artifacts/scene1-film/public/frames/s8_04.png"
+type = "image"
+title = "s8_04 app going live screen"
+
+[[generated]]
+id = "yePGGbWFTs4w3PwGadD5E"
+uri = "file://artifacts/scene1-film/public/frames/s8_05.png"
+type = "image"
+title = "s8_05 download counter spinning"
+
+[[generated]]
+id = "lO3842U6bJgNJonvKPhzZ"
+uri = "file://artifacts/scene1-film/public/frames/s8_06.png"
+type = "image"
+title = "s8_06 students disbelief awe"
+
+[[generated]]
+id = "3s94D7uLU-vf9meL_Bn2B"
+uri = "file://artifacts/scene1-film/public/frames/s8_07.png"
+type = "image"
+title = "s8_07 notification pings cities"
+
+[[generated]]
+id = "n1EbxOze-pG4plbTCoTSe"
+uri = "file://artifacts/scene1-film/public/frames/s8_08.png"
+type = "image"
+title = "s8_08 emotional realization tears"
+
+[[generated]]
+id = "zG6D7p05zHMJyE1XqMzv2"
+uri = "file://artifacts/scene1-film/public/frames/s8_09.png"
+type = "image"
+title = "s8_09 celebration group hug"
+
+[[generated]]
+id = "10f9zu4KaCGhwqtr4RfGT"
+uri = "file://artifacts/scene1-film/public/frames/s8_10.png"
+type = "image"
+title = "s8_10 founders after celebration sunrise"
+
+[[generated]]
+id = "Igh-v-4q_d4FytxrjJ7mU"
+uri = "file://artifacts/scene1-film/public/frames/s8_11.png"
+type = "image"
+title = "s8_11 app milestone screen"
+
+[[generated]]
+id = "PT1U7lPYFPcUOAndMKLDP"
+uri = "file://artifacts/scene1-film/public/frames/s8_12.png"
+type = "image"
+title = "s8_12 overhead founders morning glow"
+
+[[generated]]
+id = "std_IEzLd7IlCZIfFc621"
+uri = "file://artifacts/scene1-film/public/frames/s11_circle.png"
+type = "image"
+title = "full circle: new student with MD app open"
+
+[[generated]]
+id = "P48nbh7KmtJ4Y0RoqPZdG"
+uri = "file://artifacts/scene1-film/public/frames/s11_phone.png"
+type = "image"
+title = "close-up: student using Mission Distinction app"
+
+[[outputs]]
+id = "wzvpboiXssrPROTXFvYM-"
+uri = "file://exports/MoU_Mission_Distinction.md"
+type = "text"
+title = "Official MoU — Mission Distinction × Medical College"
+
+[[outputs]]
+id = "MwtIUlho0ig_lWo5q7bSM"
+uri = "file://attached_assets/screenshots/dashboard_android_mobile.jpg"
+type = "image"
+title = "Dashboard — Android mobile view"
+
+[[outputs]]
+id = "FqlN3M55uQqGiw_Uo3N_V"
+uri = "file://artifacts/journey-video/public/images/ai_scene1.png"
+type = "image"
+title = "Scene 1 — The Struggle (2AM hostel)"
+
+[[outputs]]
+id = "zpUQbMjrEuN8_NKKNCa28"
+uri = "file://artifacts/journey-video/public/images/ai_scene2.png"
+type = "image"
+title = "Scene 2 — Realization (lecture hall)"
+
+[[outputs]]
+id = "kz5N0VSaiF32hJtHPxs1g"
+uri = "file://artifacts/journey-video/public/images/ai_scene3.png"
+type = "image"
+title = "Scene 3 — Formation (5 students)"
+
+[[outputs]]
+id = "GObv98sgeuYnLMJPrp3FC"
+uri = "file://artifacts/journey-video/public/images/ai_scene4.png"
+type = "image"
+title = "Scene 4 — Building Resources"
+
+[[outputs]]
+id = "nc76WXzDQR9AWLXwCQ55u"
+uri = "file://artifacts/journey-video/public/images/ai_scene5.png"
+type = "image"
+title = "Scene 5 — Coding Night"
+
+[[outputs]]
+id = "qEN0_cnCMlOTpPvRGA6yV"
+uri = "file://artifacts/journey-video/public/images/ai_scene6.png"
+type = "image"
+title = "Scene 6 — The Failure (error)"
+
+[[outputs]]
+id = "iazV142tbP4G9zhZa6vnV"
+uri = "file://artifacts/journey-video/public/images/ai_scene7.png"
+type = "image"
+title = "Scene 7 — Never Giving Up (sunrise)"
+
+[[outputs]]
+id = "H2M3z4IzYV4ZNlEZX3ydu"
+uri = "file://artifacts/journey-video/public/images/ai_scene8.png"
+type = "image"
+title = "Scene 8 — Launch Day"
+
+[[outputs]]
+id = "JpxMidIFYdotnB7Is2Kq3"
+uri = "file://artifacts/journey-video/public/images/ai_scene9.png"
+type = "image"
+title = "Scene 9 — Ripple Across Odisha"
+
+[[outputs]]
+id = "EChASJZLLRbYyIA3UcKCI"
+uri = "file://artifacts/journey-video/public/images/ai_scene10.png"
+type = "image"
+title = "Scene 10 — 500 Downloads Finale (rooftop)"
+
+[[outputs]]
+id = "MyNuvm6547KJ8rWPJPowz"
+uri = "file://attached_assets/film/frame_01.png"
+type = "image"
+title = "Shot 1 — Hostel exterior, rain"
+
+[[outputs]]
+id = "K1Q5gtbV9l7t0-GxFvqpT"
+uri = "file://attached_assets/film/frame_02.png"
+type = "image"
+title = "Shot 5 — Exhausted eyes"
+
+[[outputs]]
+id = "NqjZT6c8Rro7R9eSD3mDt"
+uri = "file://attached_assets/film/frame_03.png"
+type = "image"
+title = "Shot 6 — Over-shoulder checklist"
+
+[[outputs]]
+id = "y4jSWOfZVXm3Ad8VnTWiV"
+uri = "file://attached_assets/film/frame_04.png"
+type = "image"
+title = "Frame 4 — Macro split diopter, bloodshot eyes"
+
+[[outputs]]
+id = "tdAJhU1afKNXn-q4xv7uz"
+uri = "file://attached_assets/film/frame_05.png"
+type = "image"
+title = "Shot 7 — Pen drops"
+
+[[outputs]]
+id = "H4cMlngSHQsBKPIkvoCEl"
+uri = "file://attached_assets/film/frame_06.png"
+type = "image"
+title = "Shot 8 — Leaning back"
+
+[[outputs]]
+id = "tehhy9cBp9UgYcZUh0f-w"
+uri = "file://attached_assets/film/frame_07.png"
+type = "image"
+title = "Frame 7 — Rack focus through rain-covered glass"
+
+[[outputs]]
+id = "nRiTKZG3F96cTfoMLaeVg"
+uri = "file://attached_assets/film/frame_08.png"
+type = "image"
+title = "Shot 8b — Dutch angle doubt"
+
+[[outputs]]
+id = "F6yYocKTpFlvCBZ7XjP6i"
+uri = "file://attached_assets/film/frame_09.png"
+type = "image"
+title = "Shot 10 — Overhead, student vs books"
+
+[[outputs]]
+id = "ZBMb-iD5c8Djbo1b3Lkey"
+uri = "file://attached_assets/film/frame_10.png"
+type = "image"
+title = "Final — Split-lit face"
+
+[[outputs]]
+id = "kR3XPx4UzObBMlROe9xeU"
+uri = "file://attached_assets/film/frame_02b.png"
+type = "image"
+title = "Shot 2 — Inside the room (updated)"
+
+[[outputs]]
+id = "xQkna52yao152aLNCGUht"
+uri = "file://attached_assets/film/frame_03b.png"
+type = "image"
+title = "Shot 3 — Side profile"
+
+[[outputs]]
+id = "IQqG2B1-62YwlTP0JHc8r"
+uri = "file://attached_assets/film/frame_09b.png"
+type = "image"
+title = "Shot 9 — Phone screen"
+
+[[outputs]]
+id = "rOeEOjBIsQUcEulmoEj2h"
+uri = "file://attached_assets/film/frame_04b.png"
+type = "image"
+title = "Shot 4 — Books close-up pan"
+
+[[outputs]]
+id = "0Pgwq2bhscFsle4mXZFb5"
+uri = "file://attached_assets/film/s1_01.png"
+type = "image"
+title = "Scene 1 — F1: Wide shot, 2:17 AM desk"
+
+[[outputs]]
+id = "YaCdhAYPkVl_2ug5NeWO2"
+uri = "file://attached_assets/film/s1_02.png"
+type = "image"
+title = "Scene 1 — F2: Medium shot, reading"
+
+[[outputs]]
+id = "giyBzdw4wke06MTFvtD6Y"
+uri = "file://attached_assets/film/s1_03.png"
+type = "image"
+title = "Scene 1 — F3: Over-shoulder checklist"
+
+[[outputs]]
+id = "tjQz648dM8MV3QVQmHTxR"
+uri = "file://attached_assets/film/s1_04.png"
+type = "image"
+title = "Scene 1 — F4: Eyes close-up, no tears"
+
+[[outputs]]
+id = "2NvSEfCStspyqvhP6H80M"
+uri = "file://attached_assets/film/s1_05.png"
+type = "image"
+title = "Scene 1 — F5: Looking at window, city lights"
+
+[[outputs]]
+id = "rYQeqGPi0pVAUI63e6jUc"
+uri = "file://attached_assets/film/s2_01.png"
+type = "image"
+title = "Scene 2 — S1: Canteen, three friends"
+
+[[outputs]]
+id = "ygcruocUwby2iwYNfB6jR"
+uri = "file://attached_assets/film/s2_02.png"
+type = "image"
+title = "Scene 2 — S2: Friend throws notebook"
+
+[[outputs]]
+id = "p9C0qsEgCQvk280pkak_0"
+uri = "file://attached_assets/film/s2_03.png"
+type = "image"
+title = "Scene 2 — S3: Friend scrolling WhatsApp"
+
+[[outputs]]
+id = "mQeRKu7vhpNL_tOsMZwMz"
+uri = "file://attached_assets/film/s2_04.png"
+type = "image"
+title = "Scene 2 — S4: Founder listening, thinking"
+
+[[outputs]]
+id = "6cqsY1MifjLhmflKlkxux"
+uri = "file://attached_assets/film/s2_05.png"
+type = "image"
+title = "Scene 2 — S5: Founder opens notebook"
+
+[[outputs]]
+id = "D4jyxAMwbTR-Q_2eo7MXa"
+uri = "file://attached_assets/film/s2_06.png"
+type = "image"
+title = "Scene 2 — S6: Pen writes “MD”"
+
+[[outputs]]
+id = "mUAf-asayecAW-VvBTuHa"
+uri = "file://attached_assets/film/s2_07.png"
+type = "image"
+title = "Scene 2 — Ending: Three friends, determination"
+
+[[outputs]]
+id = "RbK5ZuTF6gOIbj5mej05J"
+uri = "file://replit_dump.sql.gz"
+type = "unspecified"
+title = "Mission Distinction — Full DB Dump"
+
+[[outputs]]
+id = "5_GkiSLWlhZRu0bsfuQuH"
+uri = "file://migration_dump.sql.gz"
+type = "unspecified"
+title = "Mission Distinction DB — Fresh Migration Dump"
+
+[[outputs]]
+id = "KHRvB-CLThZbPya-eB54e"
+uri = "file://artifacts/scene1-film/public/audio/ambient.mp3"
+type = "audio"
+title = "ambient_rain"
+
+[[outputs]]
+id = "bzrvyinH4mHpigFE7gPMI"
+uri = "file://artifacts/scene1-film/public/audio/building.mp3"
+type = "audio"
+title = "piano_strings"
+
+[[outputs]]
+id = "fBoFVcj-bJk6zXWjMBnkY"
+uri = "file://artifacts/scene1-film/public/audio/tension.mp3"
+type = "audio"
+title = "tension"
+
+[[outputs]]
+id = "oKKQ6iZq_MrjAyKfl1DOZ"
+uri = "file://artifacts/scene1-film/public/audio/piano.mp3"
+type = "audio"
+title = "piano_solo"
+
+[[outputs]]
+id = "xDtDckA0RGvdP8q1Z4L8g"
+uri = "file://artifacts/scene1-film/public/audio/triumph.mp3"
+type = "audio"
+title = "triumph"

@@ -1,0 +1,31 @@
+kind = "video"
+previewPath = "/scene1-film/"
+title = "Scene 1 — The Struggle"
+version = "1.0.0"
+id = "artifacts/scene1-film"
+router = "path"
+
+[[integratedSkills]]
+name = "video-js"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/scene1-film/" ]
+localPort = 19012
+
+[services.development]
+run = "pnpm --filter @workspace/scene1-film run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/scene1-film", "run", "build" ]
+publicDir = "artifacts/scene1-film/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19012"
+BASE_PATH = "/scene1-film/"

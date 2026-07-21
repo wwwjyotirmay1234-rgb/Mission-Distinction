@@ -1,0 +1,1396 @@
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import ModelViewer3D from "./anatomy/ModelViewer3D";
+import CadavericViewer from "./anatomy/CadavericViewer";
+import CrossSectionViewer from "./anatomy/CrossSectionViewer";
+import AnatomyQuizPanel from "./anatomy/AnatomyQuizPanel";
+import CadavericGallery from "./anatomy/CadavericGallery";
+import {
+  ANATOMY_SYSTEMS,
+  searchStructures,
+  type AnatomySystem,
+  type AnatomyStructure,
+  type StructureLabel,
+} from "@/data/anatomyData";
+import { ChevronDown, ChevronUp, X, Search, ArrowLeft, List, BookOpen, Sparkles, RefreshCw, BookMarked, ZoomIn } from "lucide-react";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// System brand colours
+// ─────────────────────────────────────────────────────────────────────────────
+const SYSTEM_COLORS: Record<string, { bg: string; text: string; border: string; glow: string }> = {
+  cardiovascular: { bg: "rgba(239,68,68,0.12)",  text: "#f87171", border: "rgba(239,68,68,0.3)",  glow: "rgba(239,68,68,0.4)" },
+  skeletal:       { bg: "rgba(245,158,11,0.12)", text: "#fbbf24", border: "rgba(245,158,11,0.3)", glow: "rgba(245,158,11,0.4)" },
+  nervous:        { bg: "rgba(168,85,247,0.12)", text: "#c084fc", border: "rgba(168,85,247,0.3)", glow: "rgba(168,85,247,0.4)" },
+  respiratory:    { bg: "rgba(6,182,212,0.12)",  text: "#22d3ee", border: "rgba(6,182,212,0.3)",  glow: "rgba(6,182,212,0.4)" },
+  muscular:       { bg: "rgba(249,115,22,0.12)", text: "#fb923c", border: "rgba(249,115,22,0.3)", glow: "rgba(249,115,22,0.4)" },
+  digestive:      { bg: "rgba(34,197,94,0.12)",  text: "#4ade80", border: "rgba(34,197,94,0.3)",  glow: "rgba(34,197,94,0.4)" },
+  "digestive-viscera": { bg: "rgba(16,185,129,0.12)", text: "#34d399", border: "rgba(16,185,129,0.3)", glow: "rgba(16,185,129,0.4)" },
+  endocrine:      { bg: "rgba(234,179,8,0.12)",  text: "#facc15", border: "rgba(234,179,8,0.3)",  glow: "rgba(234,179,8,0.4)" },
+  urinary:        { bg: "rgba(59,130,246,0.12)", text: "#60a5fa", border: "rgba(59,130,246,0.3)", glow: "rgba(59,130,246,0.4)" },
+  lymphatic:      { bg: "rgba(16,185,129,0.12)", text: "#34d399", border: "rgba(16,185,129,0.3)", glow: "rgba(16,185,129,0.4)" },
+  reproductive:   { bg: "rgba(236,72,153,0.12)", text: "#f472b6", border: "rgba(236,72,153,0.3)", glow: "rgba(236,72,153,0.4)" },
+  sensory:        { bg: "rgba(20,184,166,0.12)", text: "#2dd4bf", border: "rgba(20,184,166,0.3)", glow: "rgba(20,184,166,0.4)" },
+};
+
+const INFO_TABS: { id: TabId; label: string; icon: string }[] = [
+  { id: "labels",       label: "Labels",    icon: "⬡" },
+  { id: "ai",           label: "AI",        icon: "✨" },
+  { id: "clinical",     label: "Clinical",  icon: "🏥" },
+  { id: "quiz",         label: "Quiz",      icon: "✍️" },
+  { id: "relations",    label: "Relations", icon: "🔗" },
+  { id: "mnemonics",    label: "Mnemonics", icon: "💡" },
+  { id: "cadaveric",    label: "Cadaveric", icon: "🔬" },
+  { id: "crosssection", label: "CT/MRI",   icon: "📡" },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
+type TabId = "labels" | "cadaveric" | "crosssection" | "clinical" | "quiz" | "relations" | "mnemonics" | "ai";
+type HubPage = "landing" | "system";
+type SheetState = "closed" | "peek" | "full";
+type RegionId = "head" | "trunk" | "upper_limb" | "lower_limb";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Region configuration
+// ─────────────────────────────────────────────────────────────────────────────
+const BODY_REGIONS: { id: RegionId; label: string }[] = [
+  { id: "head",       label: "Head" },
+  { id: "trunk",      label: "Trunk" },
+  { id: "upper_limb", label: "Upper Limb" },
+  { id: "lower_limb", label: "Lower Limb" },
+];
+
+// X-offset of each region panel inside region-icons.png (4 equal panels side-by-side)
+const REGION_IMG_POS: Record<RegionId, string> = {
+  head:       "0%",
+  trunk:      "33.33%",
+  upper_limb: "66.67%",
+  lower_limb: "100%",
+};
+
+// Accent colour matching each panel border in the reference image
+const REGION_ACCENT: Record<RegionId, string> = {
+  head:       "#3b82f6",   // blue
+  trunk:      "#14b8a6",   // teal
+  upper_limb: "#8b5cf6",   // purple
+  lower_limb: "#f59e0b",   // amber
+};
+
+const REGION_SYSTEM_IDS: Record<RegionId, string[]> = {
+  head:       ["skeletal", "nervous", "lymphatic", "sensory"],
+  trunk:      ["skeletal", "cardiovascular", "nervous", "respiratory", "digestive", "digestive-viscera", "urinary", "reproductive", "lymphatic"],
+  upper_limb: ["skeletal", "muscular"],
+  lower_limb: ["skeletal", "muscular"],
+};
+
+// Section heading overrides when viewing the Head region — mirrors the reference app labels
+const HEAD_SECTION_LABELS: Partial<Record<string, string>> = {
+  skeletal:      "Musculoskeletal system",
+  nervous:       "Nervous system",
+  lymphatic:     "Lymphatic system",
+  sensory:       "Sense organs",
+};
+
+// Section heading overrides when viewing the Trunk region — mirrors the reference app labels
+const TRUNK_SECTION_LABELS: Partial<Record<string, string>> = {
+  skeletal:      "Musculoskeletal system",
+  cardiovascular:"Cardiovascular system",
+  nervous:       "Nervous system",
+  respiratory:   "Respiratory system",
+  digestive:     "Digestive system",
+  "digestive-viscera": "Abdominal viscera",
+  urinary:       "Urogenital system",
+  reproductive:  "Urogenital system",
+  lymphatic:     "Lymphatic system",
+};
+
+// BASE_URL is '/' in dev, '/mission-distinction/' in production build
+const REGION_ICONS_URL = `${import.meta.env.BASE_URL}region-icons.png`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Region image tile (cropped from region-icons.png)
+// ─────────────────────────────────────────────────────────────────────────────
+function RegionTile({ id, active, size = 72 }: { id: RegionId; active: boolean; size?: number }) {
+  const accent = REGION_ACCENT[id];
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 14,
+        backgroundImage: `url(${REGION_ICONS_URL})`,
+        backgroundSize: "400% auto",
+        backgroundPosition: `${REGION_IMG_POS[id]} center`,
+        backgroundRepeat: "no-repeat",
+        border: `2.5px solid ${active ? accent : "rgba(255,255,255,0.1)"}`,
+        boxShadow: active
+          ? `0 0 0 3px ${accent}30, 0 6px 24px rgba(0,0,0,0.55)`
+          : "0 2px 10px rgba(0,0,0,0.4)",
+        transition: "border-color 0.2s, box-shadow 0.2s",
+        overflow: "hidden",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Model card (structure thumbnail)
+// ─────────────────────────────────────────────────────────────────────────────
+function ModelCard({ system, structure, onClick }: {
+  system: AnatomySystem;
+  structure: AnatomyStructure;
+  onClick: () => void;
+}) {
+  const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
+  const [pressed, setPressed] = useState(false);
+
+  /* Short region label shown in the footer — mirrors the reference app's
+     "HEAD / Muscles and bones" pattern where the top line is a category
+     and the second line is a descriptor. Use explicit cardLabel/cardSubtitle
+     when provided; otherwise derive from the structure name. */
+  const structIcon = structure.icon ?? system.icon;
+  const topLabel   = structure.cardLabel   ?? structure.name.toUpperCase();
+  const bottomLabel = structure.cardSubtitle !== undefined
+    ? structure.cardSubtitle
+    : system.name.replace(" System", "").replace(" Organs", "");
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => setPressed(false)}
+      className="flex-shrink-0 flex flex-col overflow-hidden text-left transition-all duration-150"
+      style={{
+        width: 152,
+        height: 194,
+        borderRadius: 12,
+        background: "#23232f",
+        border: `1px solid ${c.border}`,
+        boxShadow: `0 6px 22px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.04)`,
+        transform: pressed ? "scale(0.95)" : "scale(1)",
+      }}
+    >
+      {/* ── Illustration area (≈ 62 % of card height) ── */}
+      <div
+        className="relative overflow-hidden"
+        style={{ height: 120, background: "#1a1a26" }}
+      >
+        {/* Strong system-colour wash that fills most of the image area */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(ellipse at 50% 60%, ${c.glow.replace("0.4","0.35")} 0%, ${c.glow.replace("0.4","0.08")} 55%, transparent 80%)`,
+          }}
+        />
+        {/* Light-grey diffuse "light source" at top to brighten illustration area */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.07) 0%, transparent 65%)",
+          }}
+        />
+        {/* Faint hex dot texture */}
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)",
+            backgroundSize: "12px 12px",
+          }}
+        />
+        {/* Soft circular halo behind emoji */}
+        <div
+          className="absolute"
+          style={{
+            width: 80, height: 80,
+            borderRadius: "50%",
+            background: c.bg,
+            top: "50%", left: "50%",
+            transform: "translate(-50%, -46%)",
+            filter: "blur(12px)",
+          }}
+        />
+        {/* Main illustration — structure-specific or system emoji */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span
+            className="select-none"
+            style={{
+              fontSize: 58,
+              lineHeight: 1,
+              filter: `drop-shadow(0 4px 16px ${c.glow.replace("0.4","0.75")}) drop-shadow(0 0 6px ${c.glow.replace("0.4","0.4")})`,
+            }}
+          >
+            {structIcon}
+          </span>
+        </div>
+        {/* Top-right system colour chip */}
+        <div
+          className="absolute top-2 right-2 rounded-full"
+          style={{ width: 7, height: 7, background: c.text, opacity: 0.6 }}
+        />
+      </div>
+
+      {/* ── Footer strip — dark charcoal, matches reference "poster" footer ── */}
+      <div
+        className="flex-1 flex flex-col justify-center"
+        style={{
+          padding: "7px 10px 8px",
+          background: "#101018",
+          borderTop: `1px solid ${c.border}`,
+        }}
+      >
+        {/* Top line: bold uppercase label (reference: "HEAD", "SKULL", "BRAIN") */}
+        <p
+          className="leading-tight line-clamp-1"
+          style={{
+            fontSize: 11,
+            fontWeight: 800,
+            color: "#ffffff",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+          }}
+        >
+          {topLabel}
+        </p>
+        {/* Bottom line: subtitle / view descriptor */}
+        {bottomLabel ? (
+          <p
+            className="mt-0.5 line-clamp-1"
+            style={{
+              fontSize: 10,
+              fontWeight: 400,
+              color: c.text,
+              opacity: 0.9,
+            }}
+          >
+            {bottomLabel}
+          </p>
+        ) : null}
+        {/* Mini metadata */}
+        <p className="mt-1.5 text-[9px] text-slate-600">
+          {structure.labels.length} labels · {structure.quiz.length} Q
+        </p>
+      </div>
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// System section (heading + horizontal card scroll)
+// ─────────────────────────────────────────────────────────────────────────────
+function SystemSection({ system, onSelectStructure, selectedRegion, sectionLabel }: {
+  system: AnatomySystem;
+  onSelectStructure: (sys: AnatomySystem, struct: AnatomyStructure) => void;
+  selectedRegion: RegionId;
+  sectionLabel?: string;
+}) {
+  const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
+  // Head is a curated catalog — only show explicitly head-tagged structures.
+  // For all other regions keep the original rule: tagged structures match their region;
+  // untagged structures fall back to showing everywhere (trunk default).
+  const visibleStructures = system.structures.filter(s =>
+    selectedRegion === "head"
+      ? (s.regions?.includes("head") ?? false)
+      : (!s.regions || s.regions.includes(selectedRegion))
+  );
+  if (visibleStructures.length === 0) return null;
+
+  const heading = sectionLabel ?? system.name;
+
+  return (
+    <div>
+      {/* Section heading row */}
+      <div className="px-4 mb-3 flex items-center gap-2.5">
+        <span
+          className="text-lg"
+          style={{ filter: `drop-shadow(0 0 6px ${c.glow})` }}
+        >
+          {system.icon}
+        </span>
+        <h2
+          style={{
+            fontSize: 16,
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.92)",
+            letterSpacing: "0.005em",
+            lineHeight: 1.3,
+          }}
+        >
+          {heading}
+        </h2>
+        <div
+          className="ml-auto text-[11px] font-medium px-2 py-0.5 rounded-full"
+          style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
+        >
+          {visibleStructures.length}
+        </div>
+      </div>
+      <div
+        className="flex gap-3 pl-4 pr-4 overflow-x-auto"
+        style={{ scrollbarWidth: "none", paddingBottom: 4 }}
+      >
+        {visibleStructures.map(struct => (
+          <ModelCard
+            key={struct.id}
+            system={system}
+            structure={struct}
+            onClick={() => onSelectStructure(system, struct)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hub landing — region selector + system cards
+// ─────────────────────────────────────────────────────────────────────────────
+function HubLanding({ onSelectSystem, onSelectResult, globalSearch, setGlobalSearch }: {
+  onSelectSystem: (s: AnatomySystem, struct?: AnatomyStructure) => void;
+  onSelectResult: (sys: AnatomySystem, struct: AnatomyStructure) => void;
+  globalSearch: string;
+  setGlobalSearch: (v: string) => void;
+}) {
+  const [selectedRegion, setSelectedRegion] = useState<RegionId>("head");
+
+  const searchResults = useMemo(
+    () => (globalSearch.trim().length > 1 ? searchStructures(globalSearch) : []),
+    [globalSearch],
+  );
+
+  const systemsForRegion = useMemo(() => {
+    const ids = REGION_SYSTEM_IDS[selectedRegion];
+    return ANATOMY_SYSTEMS.filter(s => ids.includes(s.id));
+  }, [selectedRegion]);
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+
+      {/* ── Region selector row ── */}
+      <div
+        className="flex items-start justify-center gap-4 sm:gap-7 px-4 py-4 shrink-0 border-b border-white/8"
+        style={{ background: "rgba(0,0,0,0.3)" }}
+      >
+        {BODY_REGIONS.map(region => {
+          const active = selectedRegion === region.id && !globalSearch;
+          const accent = REGION_ACCENT[region.id];
+          return (
+            <button
+              key={region.id}
+              onClick={() => { setSelectedRegion(region.id); setGlobalSearch(""); }}
+              className="flex flex-col items-center gap-2 transition-all active:scale-95"
+              style={{ minWidth: 68 }}
+            >
+              <RegionTile id={region.id} active={active} size={72} />
+              <span
+                className="text-[11px] font-bold leading-tight text-center"
+                style={{ color: active ? accent : "#6b7280" }}
+              >
+                {region.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Search bar ── */}
+      <div className="px-4 py-2.5 border-b border-white/5 shrink-0" style={{ background: "rgba(0,0,0,0.15)" }}>
+        <div className="relative max-w-lg mx-auto">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          <input
+            value={globalSearch}
+            onChange={e => setGlobalSearch(e.target.value)}
+            placeholder="Search any structure — heart, humerus, nephron…"
+            className="w-full pl-8 pr-8 py-2 rounded-xl text-sm placeholder-slate-600 focus:outline-none transition-all"
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#fff",
+            }}
+            onFocus={e => { e.currentTarget.style.borderColor = "rgba(124,58,237,0.5)"; }}
+            onBlur={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+          />
+          {globalSearch && (
+            <button
+              onClick={() => setGlobalSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Content ── */}
+      <div
+        className="flex-1 overflow-y-auto py-5 space-y-7"
+        style={{ scrollbarWidth: "thin", scrollbarColor: "#3b0764 transparent" }}
+      >
+        {globalSearch ? (
+          /* Search results */
+          <div className="px-4">
+            <p className="text-[11px] text-slate-500 mb-3">
+              {searchResults.length} result{searchResults.length !== 1 ? "s" : ""} for &quot;{globalSearch}&quot;
+            </p>
+            {searchResults.length === 0 ? (
+              <p className="text-center text-slate-600 py-10 text-sm">No structures found. Try a different term.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {searchResults.map(({ system, structure }) => {
+                  const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
+                  return (
+                    <button
+                      key={`${system.id}-${structure.id}`}
+                      onClick={() => onSelectResult(system, structure)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all hover:brightness-110"
+                      style={{ background: c.bg, borderColor: c.border }}
+                    >
+                      <span className="text-xl">{system.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-sm text-white truncate">{structure.name}</div>
+                        <div className="text-[11px] truncate" style={{ color: c.text }}>{system.name}</div>
+                      </div>
+                      <span className="text-slate-500 text-xs shrink-0">→</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : systemsForRegion.length === 0 ? (
+          /* Coming soon */
+          <div className="flex flex-col items-center justify-center py-24 px-8 gap-5">
+            <RegionTile id={selectedRegion} active={false} size={80} />
+            <div className="text-center">
+              <p className="font-bold text-white text-base mb-2">Coming Soon</p>
+              <p className="text-slate-500 text-sm max-w-xs">
+                3D anatomy models for the {BODY_REGIONS.find(r => r.id === selectedRegion)?.label} region are being added. Check back soon!
+              </p>
+            </div>
+          </div>
+        ) : (
+          systemsForRegion.map(sys => (
+            <SystemSection
+              key={sys.id}
+              system={sys}
+              onSelectStructure={onSelectResult}
+              selectedRegion={selectedRegion}
+              sectionLabel={selectedRegion === "head" ? HEAD_SECTION_LABELS[sys.id] : selectedRegion === "trunk" ? TRUNK_SECTION_LABELS[sys.id] : undefined}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// By-System picker — InnerBody.com-style system-first browsing.
+// Lists every body system as a single card, independent of body region,
+// and jumps straight into its 3D SystemView on tap.
+// ─────────────────────────────────────────────────────────────────────────────
+function SystemPickerCard({ system, onClick }: { system: AnatomySystem; onClick: () => void }) {
+  const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onPointerDown={() => setPressed(true)}
+      onPointerUp={() => setPressed(false)}
+      onPointerLeave={() => setPressed(false)}
+      className="flex flex-col items-start text-left gap-2 p-4 rounded-2xl transition-transform"
+      style={{
+        background: c.bg,
+        border: `1.5px solid ${c.border}`,
+        boxShadow: pressed ? "none" : `0 4px 18px rgba(0,0,0,0.35)`,
+        transform: pressed ? "scale(0.97)" : "scale(1)",
+      }}
+    >
+      <span
+        className="text-2xl"
+        style={{ filter: `drop-shadow(0 0 8px ${c.glow})` }}
+      >
+        {system.icon}
+      </span>
+      <span style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.94)", lineHeight: 1.25 }}>
+        {system.name}
+      </span>
+      <span
+        className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+        style={{ background: "rgba(0,0,0,0.25)", color: c.text, border: `1px solid ${c.border}` }}
+      >
+        {system.structures.length} structure{system.structures.length === 1 ? "" : "s"}
+      </span>
+    </button>
+  );
+}
+
+function SystemPicker({ onSelectSystem }: { onSelectSystem: (s: AnatomySystem) => void }) {
+  return (
+    <div className="flex-1 overflow-y-auto px-4 py-5">
+      <p className="text-[13px] text-slate-400 mb-4">
+        Explore anatomy one body system at a time — pick a system below to dive straight into its 3D model.
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {ANATOMY_SYSTEMS.map(sys => (
+          <SystemPickerCard key={sys.id} system={sys} onClick={() => onSelectSystem(sys)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Info tab content panels
+// ─────────────────────────────────────────────────────────────────────────────
+function LabelsPanel({ structure, selectedLabel, onLabelSelect, onAskAI }: {
+  structure: AnatomyStructure;
+  selectedLabel: string | null;
+  onLabelSelect: (l: StructureLabel) => void;
+  onAskAI: (label: StructureLabel) => void;
+}) {
+  const layerColors: Record<string, string> = {
+    bone: "text-amber-400", muscle: "text-orange-400", vessel: "text-red-400", nerve: "text-yellow-400", organ: "text-violet-400",
+  };
+  if (structure.labels.length === 0) {
+    return <div className="flex flex-col items-center justify-center h-32 text-slate-600 gap-2"><span className="text-3xl">⬡</span><p className="text-sm">No 3D labels for this structure.</p></div>;
+  }
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] text-slate-500 px-0.5">Tap a label to highlight it in the 3D viewer</p>
+      {structure.labels.map(label => (
+        <button key={label.id} onClick={() => onLabelSelect(label)}
+          className={`w-full flex items-start gap-2.5 p-2.5 rounded-lg text-left border transition-all ${
+            selectedLabel === label.id ? "bg-violet-900/30 border-violet-500/40" : "bg-white/3 border-white/6 hover:bg-white/6"
+          }`}
+        >
+          <span className={`text-xs mt-0.5 shrink-0 ${layerColors[label.layer ?? "organ"] ?? "text-violet-400"}`}>◆</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] font-semibold text-white leading-tight">{label.name}</p>
+            <p className="text-[11px] text-slate-500 mt-0.5 leading-snug line-clamp-2">{label.description}</p>
+            {label.clinicalNote && selectedLabel === label.id && (
+              <p className="text-[11px] text-red-300 mt-1.5 bg-red-900/15 rounded px-1.5 py-1 border border-red-500/15 leading-snug">⚕ {label.clinicalNote}</p>
+            )}
+            {selectedLabel === label.id && (label.origin || label.insertion || label.innervation || label.action) && (
+              <div className="mt-2.5 space-y-2 bg-black/25 rounded-lg px-2.5 py-2 border border-white/5">
+                {OIIA_ROWS.map(({ key, label: rowLabel, dot, glow, text }) => {
+                  const val = label[key];
+                  if (!val) return null;
+                  return (
+                    <div key={key} className="flex items-start gap-2">
+                      <div
+                        className="rounded-full shrink-0"
+                        style={{ width: 8, height: 8, background: dot, boxShadow: `0 0 5px ${glow}`, marginTop: 3 }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] font-black tracking-widest uppercase mr-1.5" style={{ color: text }}>{rowLabel}</span>
+                        <span className="text-[10px] text-slate-400 leading-snug">{val}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {selectedLabel === label.id && (
+              <button
+                onClick={e => { e.stopPropagation(); onAskAI(label); }}
+                className="mt-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all"
+                style={{
+                  background: "linear-gradient(135deg, rgba(124,58,237,0.3), rgba(109,40,217,0.2))",
+                  borderColor: "rgba(124,58,237,0.45)",
+                  color: "#c4b5fd",
+                }}
+              >
+                <Sparkles size={10} />
+                Ask AI about {label.name}
+              </button>
+            )}
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ClinicalPanel({ structure }: { structure: AnatomyStructure }) {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-violet-500/20 bg-violet-900/10 p-4">
+        <h4 className="text-[10px] font-bold uppercase tracking-wider text-violet-400 mb-2">📖 Study Notes</h4>
+        <p className="text-sm text-slate-300 leading-relaxed">{structure.studyNotes}</p>
+      </div>
+      <div>
+        <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">🏥 High-Yield Clinical Points</h4>
+        <div className="space-y-1.5">
+          {structure.clinicalPoints.map((pt, i) => (
+            <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-white/4 border border-white/6">
+              <span className="text-red-400 text-xs font-black shrink-0 mt-0.5">{i + 1}.</span>
+              <p className="text-sm text-slate-300 leading-snug">{pt}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RelationsPanel({ structure }: { structure: AnatomyStructure }) {
+  const hasContent = structure.relations?.length || structure.bloodSupply || structure.nerveSupply || structure.lymphDrainage || structure.origin;
+  if (!hasContent) return <div className="flex flex-col items-center justify-center h-40 text-slate-600 gap-2"><span className="text-3xl">🔗</span><p className="text-sm">Relations data coming soon.</p></div>;
+  return (
+    <div className="space-y-4">
+      {(structure.relations?.length ?? 0) > 0 && (
+        <div>
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">🔗 Anatomical Relations</h4>
+          <div className="space-y-1.5">
+            {structure.relations!.map((rel, i) => (
+              <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-white/4 border border-white/6">
+                <span className="text-violet-400 text-xs shrink-0 mt-0.5">◆</span>
+                <p className="text-sm text-slate-300">{rel}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {structure.bloodSupply && <div className="rounded-xl border border-red-500/20 bg-red-900/10 p-4"><h4 className="text-[10px] font-bold uppercase tracking-wider text-red-400 mb-2">🩸 Blood Supply</h4><p className="text-sm text-slate-300">{structure.bloodSupply}</p></div>}
+      {structure.nerveSupply && <div className="rounded-xl border border-yellow-500/20 bg-yellow-900/10 p-4"><h4 className="text-[10px] font-bold uppercase tracking-wider text-yellow-400 mb-2">⚡ Nerve Supply</h4><p className="text-sm text-slate-300">{structure.nerveSupply}</p></div>}
+      {structure.lymphDrainage && <div className="rounded-xl border border-green-500/20 bg-green-900/10 p-4"><h4 className="text-[10px] font-bold uppercase tracking-wider text-green-400 mb-2">🫐 Lymph Drainage</h4><p className="text-sm text-slate-300">{structure.lymphDrainage}</p></div>}
+      {(structure.origin || structure.insertion || structure.action) && (
+        <div className="rounded-xl border border-orange-500/20 bg-orange-900/10 p-4">
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-orange-400 mb-3">💪 Origin / Insertion / Action</h4>
+          <div className="space-y-1.5">
+            {structure.origin && <p className="text-sm"><span className="text-orange-300 font-semibold">Origin: </span><span className="text-slate-300">{structure.origin}</span></p>}
+            {structure.insertion && <p className="text-sm"><span className="text-orange-300 font-semibold">Insertion: </span><span className="text-slate-300">{structure.insertion}</span></p>}
+            {structure.action && <p className="text-sm"><span className="text-orange-300 font-semibold">Action: </span><span className="text-slate-300">{structure.action}</span></p>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI Explain Panel — streams textbook-quality explanation from OpenAI
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAIContent(text: string) {
+  return text.split("\n").map((line, i) => {
+    if (!line.trim()) return <div key={i} className="h-2" />;
+    // Split by **bold** markers
+    const parts = line.split(/(\*\*[^*]+\*\*)/g);
+    const rendered = parts.map((p, j) => {
+      if (p.startsWith("**") && p.endsWith("**")) {
+        const inner = p.slice(2, -2);
+        // Section heading: **Heading:**
+        if (inner.endsWith(":")) {
+          return (
+            <span key={j} className="block text-[12px] font-black text-violet-300 mt-3 mb-0.5 uppercase tracking-wide">
+              {inner.slice(0, -1)}
+            </span>
+          );
+        }
+        return <strong key={j} className="text-white font-semibold">{inner}</strong>;
+      }
+      return p;
+    });
+    // Check if line is purely a heading
+    const isHeadingLine = line.startsWith("**") && line.trimEnd().endsWith(":**");
+    if (isHeadingLine) {
+      return <div key={i}>{rendered}</div>;
+    }
+    // Bullet point
+    if (line.startsWith("- ") || line.startsWith("• ")) {
+      return (
+        <div key={i} className="flex items-start gap-2 pl-1">
+          <span className="text-violet-400 text-xs mt-0.5 shrink-0">◆</span>
+          <p className="text-[12px] text-slate-300 leading-relaxed">{rendered.slice(1)}</p>
+        </div>
+      );
+    }
+    return <p key={i} className="text-[12px] text-slate-300 leading-relaxed">{rendered}</p>;
+  });
+}
+
+function AIExplainPanel({ system, structure, selectedLabel }: {
+  system: AnatomySystem;
+  structure: AnatomyStructure;
+  selectedLabel: string | null;
+}) {
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [generated, setGenerated] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // When structure or selected label changes, reset so user can re-generate
+  useEffect(() => {
+    setContent("");
+    setGenerated(false);
+    setError(null);
+    setLoading(false);
+    abortRef.current?.abort();
+  }, [structure.id, selectedLabel]);
+
+  const selectedLabelObj = selectedLabel
+    ? structure.labels.find(l => l.id === selectedLabel)
+    : null;
+
+  const generate = useCallback(async () => {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setContent("");
+    setError(null);
+    setLoading(true);
+    setGenerated(true);
+
+    try {
+      const res = await fetch("/api/anatomy/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        signal: ctrl.signal,
+        body: JSON.stringify({
+          structureName: structure.name,
+          systemName: system.name,
+          labelName: selectedLabelObj?.name ?? null,
+        }),
+      });
+
+      if (!res.ok || !res.body) {
+        setError("Failed to reach AI. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const json = JSON.parse(line.slice(6));
+            if (json.error) { setError(json.error); break; }
+            if (json.done) break;
+            if (json.content) setContent(prev => prev + json.content);
+          } catch { /* ignore parse errors */ }
+        }
+      }
+    } catch (e: any) {
+      if (e.name !== "AbortError") setError("Connection error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [structure.name, system.name, selectedLabelObj?.name]);
+
+  const target = selectedLabelObj?.name ?? structure.name;
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Header card */}
+      <div className="rounded-xl border border-violet-500/20 bg-violet-900/10 p-3.5">
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles size={13} className="text-violet-400 shrink-0" />
+          <span className="text-[10px] font-black text-violet-400 uppercase tracking-wider">AI Anatomy Tutor</span>
+        </div>
+        <p className="text-[12px] text-slate-300 leading-snug">
+          Explaining <span className="font-bold text-white">"{target}"</span> using{" "}
+          <span className="text-violet-300 font-semibold">BD Chaurasia</span> &{" "}
+          <span className="text-violet-300 font-semibold">Gray's Anatomy</span>
+        </p>
+        {selectedLabelObj && (
+          <p className="text-[10px] text-slate-500 mt-1">
+            Label selected on {structure.name} · {system.name}
+          </p>
+        )}
+      </div>
+
+      {/* Generate / Regenerate button */}
+      {!generated || (!loading && !content) ? (
+        <button
+          onClick={generate}
+          disabled={loading}
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-[13px] transition-all border"
+          style={{
+            background: "linear-gradient(135deg, rgba(124,58,237,0.25), rgba(109,40,217,0.15))",
+            borderColor: "rgba(124,58,237,0.4)",
+            color: "#c4b5fd",
+          }}
+        >
+          <Sparkles size={14} />
+          Generate Explanation
+        </button>
+      ) : null}
+
+      {/* Streaming / rendered content */}
+      {(loading || content) && (
+        <div className="space-y-0.5 rounded-xl bg-white/3 border border-white/6 p-3.5">
+          {content && <div>{renderAIContent(content)}</div>}
+          {loading && (
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+              <span className="text-[10px] text-slate-500">Generating from textbooks…</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="rounded-xl bg-red-900/15 border border-red-500/20 p-3 text-[12px] text-red-300">
+          ⚠ {error}
+        </div>
+      )}
+
+      {/* Regenerate button after content */}
+      {generated && !loading && (content || error) && (
+        <button
+          onClick={generate}
+          className="flex items-center justify-center gap-2 w-full py-2 rounded-xl text-[11px] font-bold text-slate-500 hover:text-slate-300 border border-white/6 hover:border-white/12 transition-all"
+        >
+          <RefreshCw size={11} />
+          Regenerate
+        </button>
+      )}
+
+      {/* Source note */}
+      {content && !loading && (
+        <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-white/3 border border-white/5">
+          <BookMarked size={11} className="text-slate-600 shrink-0" />
+          <p className="text-[10px] text-slate-600 leading-snug">
+            AI-generated based on BD Chaurasia &amp; Gray's Anatomy. Always verify with your textbooks.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MnemonicsPanel({ structure }: { structure: AnatomyStructure }) {
+  if (!structure.mnemonics?.length) return <div className="flex flex-col items-center justify-center h-40 text-slate-600 gap-2"><span className="text-3xl">💡</span><p className="text-sm">No mnemonics yet.</p></div>;
+  return (
+    <div className="space-y-4">
+      <p className="text-[11px] text-slate-500">High-yield exam mnemonics — commit these to memory!</p>
+      {structure.mnemonics.map((m, i) => (
+        <div key={i} className="rounded-xl border border-violet-500/20 bg-violet-900/15 p-4">
+          <div className="flex items-start gap-3 mb-3"><span className="text-2xl shrink-0">💡</span><p className="font-black text-violet-300 text-base leading-tight">{m.mnemonic}</p></div>
+          <p className="text-sm text-slate-300 leading-relaxed mb-2">{m.meaning}</p>
+          {m.tip && <div className="flex items-start gap-2 bg-amber-900/20 rounded-lg p-2.5 border border-amber-500/20 mt-3"><span className="text-amber-400 text-xs shrink-0 mt-0.5">⚡ Tip:</span><p className="text-amber-200 text-xs leading-snug">{m.tip}</p></div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OIIA Card — Complete Anatomy-style overlay shown over the 3D canvas
+// when a label is selected. Shows Origin / Insertion / Innervation / Action.
+// ─────────────────────────────────────────────────────────────────────────────
+const OIIA_ROWS = [
+  { key: "origin",      label: "ORIGIN",      dot: "#ef4444", glow: "rgba(239,68,68,0.5)",   text: "#fca5a5" },
+  { key: "insertion",   label: "INSERTION",   dot: "#3b82f6", glow: "rgba(59,130,246,0.5)",  text: "#93c5fd" },
+  { key: "innervation", label: "INNERVATION", dot: "#eab308", glow: "rgba(234,179,8,0.5)",   text: "#fde047" },
+  { key: "action",      label: "ACTION",      dot: "#22c55e", glow: "rgba(34,197,94,0.5)",   text: "#86efac" },
+] as const;
+
+function OIIACard({ label, parentStructure, onClose }: {
+  label: StructureLabel;
+  parentStructure?: AnatomyStructure;
+  onClose: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Per-label OIIA takes priority; fall back to parent structure fields
+  const oiia = {
+    origin:      label.origin      ?? parentStructure?.origin,
+    insertion:   label.insertion   ?? parentStructure?.insertion,
+    innervation: label.innervation ?? parentStructure?.innervation ?? parentStructure?.nerveSupply,
+    action:      label.action      ?? parentStructure?.action,
+  };
+  const hasOIIA = Object.values(oiia).some(Boolean);
+
+  return (
+    <div className="absolute top-0 left-0 right-0 z-30 pointer-events-none select-none">
+      <div
+        className="pointer-events-auto"
+        style={{
+          background: "rgba(5,3,18,0.93)",
+          backdropFilter: "blur(14px)",
+          borderBottom: "1px solid rgba(255,255,255,0.07)",
+        }}
+      >
+        {/* ── Name row ── */}
+        <div className="flex items-start justify-between gap-2 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[13px] font-black text-white leading-tight tracking-tight">{label.name}</h2>
+            {label.latinName && (
+              <p className="text-[10px] text-slate-500 mt-0.5 italic leading-snug">{label.latinName}</p>
+            )}
+            {!label.latinName && label.description && (
+              <p className="text-[10px] text-slate-500 mt-0.5 leading-snug line-clamp-1">{label.description}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+            {hasOIIA && (
+              <button
+                onClick={() => setExpanded(e => !e)}
+                className="flex items-center gap-1 text-[9px] font-black tracking-widest uppercase text-slate-400 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/8"
+              >
+                {expanded ? "COLLAPSE" : "EXPAND"}
+                {expanded ? <ChevronUp size={9} /> : <ChevronDown size={9} />}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1 text-slate-600 hover:text-slate-300 transition-colors rounded-lg hover:bg-white/8"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        </div>
+
+        {/* ── OIIA rows (expanded) ── */}
+        {expanded && hasOIIA && (
+          <div className="px-4 pb-3 space-y-2.5 border-t border-white/5 pt-2.5">
+            {OIIA_ROWS.map(({ key, label: rowLabel, dot, glow, text }) => {
+              const val = oiia[key];
+              if (!val) return null;
+              return (
+                <div key={key} className="flex items-start gap-3">
+                  <div
+                    className="mt-0.5 shrink-0 rounded-full"
+                    style={{
+                      width: 10, height: 10,
+                      background: dot,
+                      boxShadow: `0 0 7px ${glow}`,
+                      marginTop: 3,
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[9px] font-black tracking-widest uppercase mb-0.5" style={{ color: text }}>
+                      {rowLabel}
+                    </p>
+                    <p className="text-[11px] text-slate-300 leading-snug">{val}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Structure info panel (shared between right panel and bottom sheet)
+// ─────────────────────────────────────────────────────────────────────────────
+function StructureInfoPanel({ system, structure, activeTab, setActiveTab, selectedLabel, onLabelSelect }: {
+  system: AnatomySystem; structure: AnatomyStructure;
+  activeTab: TabId; setActiveTab: (t: TabId) => void;
+  selectedLabel: string | null; onLabelSelect: (l: StructureLabel) => void;
+}) {
+  const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
+
+  function handleAskAI(label: StructureLabel) {
+    onLabelSelect(label);
+    setActiveTab("ai");
+  }
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="px-4 pt-3 pb-2.5 border-b border-white/6 shrink-0">
+        <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color: c.text }}>{system.name}</p>
+        <h2 className="font-black text-white text-sm leading-tight">{structure.name}</h2>
+        <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">{structure.description.slice(0, 110)}…</p>
+      </div>
+      <div className="flex overflow-x-auto shrink-0 border-b border-white/6" style={{ scrollbarWidth: "none" }}>
+        {INFO_TABS.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-1 px-2.5 py-2.5 text-[11px] font-bold whitespace-nowrap shrink-0 border-b-2 transition-colors ${
+              activeTab === tab.id
+                ? tab.id === "ai"
+                  ? "border-violet-400 text-violet-300"
+                  : "border-violet-500 text-violet-300"
+                : "border-transparent text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            <span className="text-[13px] leading-none">{tab.icon}</span>
+            <span>{tab.label}</span>
+          </button>
+        ))}
+      </div>
+      <div className="flex-1 overflow-y-auto p-4" style={{ scrollbarWidth: "thin", scrollbarColor: "#3b0764 transparent" }}>
+        {activeTab === "labels"       && <LabelsPanel structure={structure} selectedLabel={selectedLabel} onLabelSelect={onLabelSelect} onAskAI={handleAskAI} />}
+        {activeTab === "ai"           && <AIExplainPanel system={system} structure={structure} selectedLabel={selectedLabel} />}
+        {activeTab === "clinical"     && <ClinicalPanel structure={structure} />}
+        {activeTab === "quiz"         && <AnatomyQuizPanel questions={structure.quiz} title={structure.name} />}
+        {activeTab === "relations"    && <RelationsPanel structure={structure} />}
+        {activeTab === "mnemonics"    && <MnemonicsPanel structure={structure} />}
+        {activeTab === "cadaveric"    && <CadavericViewer system={system} />}
+        {activeTab === "crosssection" && <CrossSectionViewer system={system} />}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// System View — full-screen 3D + professional controls
+// ─────────────────────────────────────────────────────────────────────────────
+function SystemView({ system, onBack, initialStructure }: {
+  system: AnatomySystem; onBack: () => void; initialStructure?: AnatomyStructure | null;
+}) {
+  const [selectedStructure, setSelectedStructure] = useState<AnatomyStructure>(initialStructure ?? system.structures[0]);
+  const [activeTab, setActiveTab] = useState<TabId>("labels");
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
+  const [sheetState, setSheetState] = useState<SheetState>("closed");
+  const [showSearch, setShowSearch] = useState(false);
+  const [structSearch, setStructSearch] = useState("");
+  const [showStructList, setShowStructList] = useState(false);
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
+
+  const filtered = useMemo(
+    () => system.structures.filter(s => s.name.toLowerCase().includes(structSearch.toLowerCase()) || s.description.toLowerCase().includes(structSearch.toLowerCase())),
+    [system.structures, structSearch],
+  );
+
+  function handleLabelSelect(label: StructureLabel) {
+    setSelectedLabel(prev => prev === label.id ? null : label.id);
+    setActiveTab("labels");
+    setSheetState(prev => prev === "closed" ? "peek" : prev);
+  }
+
+  function handleStructureSelect(s: AnatomyStructure) {
+    setSelectedStructure(s);
+    setSelectedLabel(null);
+    setActiveTab("labels");
+    setShowStructList(false);
+    setStructSearch("");
+    setSheetState(prev => prev === "closed" ? "peek" : prev);
+    setTimeout(() => {
+      const btn = document.getElementById(`struct-btn-${s.id}`);
+      btn?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }, 50);
+  }
+
+  function handleSheetOpen(tab?: TabId) {
+    if (tab) setActiveTab(tab);
+    setSheetState(prev => prev === "closed" ? "peek" : "full");
+  }
+
+  const sheetHeight = sheetState === "full" ? "72vh" : sheetState === "peek" ? "260px" : "0px";
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+
+      {/* ─── Top bar ─── */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-white/8 bg-black/40 backdrop-blur-md shrink-0 z-10">
+        <button onClick={onBack}
+          className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-sm group shrink-0"
+        >
+          <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+          <span className="hidden sm:inline text-xs font-medium">Regions</span>
+        </button>
+        <span className="text-slate-700">/</span>
+        <span className="text-lg shrink-0">{system.icon}</span>
+        <span className="font-bold text-sm truncate" style={{ color: c.text }}>{system.name}</span>
+        <span className="text-[10px] text-slate-600 hidden sm:inline">·</span>
+        <span className="text-[10px] text-slate-600 hidden sm:inline truncate">{selectedStructure.name}</span>
+
+        <div className="ml-auto flex items-center gap-1.5">
+          <button onClick={() => setShowSearch(p => !p)}
+            className={`p-2 rounded-xl transition-colors ${showSearch ? "bg-violet-700/40 text-violet-300" : "text-slate-500 hover:bg-white/8 hover:text-white"}`}
+          >
+            <Search size={14} />
+          </button>
+          <button onClick={() => setShowStructList(p => !p)}
+            className={`p-2 rounded-xl transition-colors ${showStructList ? "bg-violet-700/40 text-violet-300" : "text-slate-500 hover:bg-white/8 hover:text-white"}`}
+          >
+            <List size={14} />
+          </button>
+          <button
+            onClick={() => handleSheetOpen("clinical")}
+            className="md:hidden p-2 rounded-xl text-slate-500 hover:bg-white/8 hover:text-white transition-colors"
+          >
+            <BookOpen size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* ─── Search bar ─── */}
+      {showSearch && (
+        <div className="px-3 py-2 border-b border-white/6 bg-black/30 shrink-0 z-10">
+          <div className="relative max-w-md mx-auto">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input autoFocus value={structSearch} onChange={e => setStructSearch(e.target.value)}
+              placeholder={`Search structures in ${system.name}…`}
+              className="w-full pl-8 pr-8 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-[12px] placeholder-slate-600 focus:outline-none focus:border-violet-500/60"
+            />
+            {structSearch && <button onClick={() => setStructSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-white"><X size={12} /></button>}
+          </div>
+          {structSearch && (
+            <div className="max-w-md mx-auto mt-1.5 space-y-1 max-h-40 overflow-y-auto">
+              {filtered.map(s => (
+                <button key={s.id} onClick={() => { handleStructureSelect(s); setShowSearch(false); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left bg-white/4 border border-white/6 hover:bg-white/8 transition-colors"
+                >
+                  <span className="text-base">{system.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-white truncate">{s.name}</p>
+                    <p className="text-[10px] text-slate-500">{s.labels.length} labels · {s.quiz.length} questions</p>
+                  </div>
+                </button>
+              ))}
+              {filtered.length === 0 && <p className="text-[11px] text-slate-600 text-center py-3">No match</p>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Structures dropdown ─── */}
+      {showStructList && (
+        <div className="absolute top-14 right-3 z-30 w-64 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/12 shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
+            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">{system.name} Structures</span>
+            <button onClick={() => setShowStructList(false)} className="text-slate-600 hover:text-white p-0.5"><X size={12} /></button>
+          </div>
+          <div className="max-h-72 overflow-y-auto py-1.5" style={{ scrollbarWidth: "thin" }}>
+            {system.structures.map(s => (
+              <button key={s.id} onClick={() => handleStructureSelect(s)}
+                className={`w-full flex items-start gap-2.5 px-4 py-2.5 text-left transition-colors border-l-2 ${
+                  selectedStructure.id === s.id ? "bg-violet-900/25 border-l-violet-500 text-white" : "border-l-transparent text-slate-400 hover:bg-white/4 hover:text-white"
+                }`}
+              >
+                <span className="text-sm shrink-0 mt-0.5">{system.icon}</span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold truncate leading-tight">{s.name}</p>
+                  <p className="text-[10px] text-slate-600 mt-0.5">{s.labels.length} labels</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Main content row ─── */}
+      <div className="flex-1 flex min-h-0 overflow-hidden relative">
+
+        <div className="flex-1 min-w-0 relative">
+          <ModelViewer3D
+            system={system}
+            selectedLabel={selectedLabel}
+            onLabelSelect={handleLabelSelect}
+            structureGlbPath={selectedStructure?.glbPath}
+          />
+
+          {selectedLabel && (() => {
+            const allLabels = system.structures.flatMap(s => s.labels);
+            const lbl = allLabels.find(l => l.id === selectedLabel);
+            const parentStruct = system.structures.find(s => s.labels.some(l => l.id === selectedLabel));
+            return lbl ? (
+              <OIIACard
+                label={lbl}
+                parentStructure={parentStruct}
+                onClose={() => { setSelectedLabel(null); }}
+              />
+            ) : null;
+          })()}
+
+          <button
+            onClick={() => handleSheetOpen()}
+            className="absolute bottom-16 right-3 md:hidden bg-violet-600 hover:bg-violet-500 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-xl shadow-violet-900/40 border border-violet-400/30 transition-colors z-10"
+          >
+            <BookOpen size={18} />
+          </button>
+        </div>
+
+        {/* ─── Desktop right panel — only when a label is selected ─── */}
+        {selectedLabel && (
+          <aside className="w-72 xl:w-[300px] shrink-0 hidden md:flex flex-col border-l border-white/8 bg-black/25 overflow-hidden animate-in slide-in-from-right duration-200">
+            <StructureInfoPanel
+              system={system}
+              structure={selectedStructure}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              selectedLabel={selectedLabel}
+              onLabelSelect={handleLabelSelect}
+            />
+          </aside>
+        )}
+      </div>
+
+      {/* ─── Bottom structure strip ─── */}
+      <div
+        ref={stripRef}
+        className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto border-t border-white/8 bg-black/40 backdrop-blur-md shrink-0"
+        style={{ scrollbarWidth: "none", minHeight: 54 }}
+      >
+        {system.structures.map(s => (
+          <button
+            id={`struct-btn-${s.id}`}
+            key={s.id}
+            onClick={() => handleStructureSelect(s)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 border transition-all ${
+              selectedStructure.id === s.id
+                ? "text-white border-violet-500/50 shadow-lg"
+                : "text-slate-500 border-white/8 hover:text-slate-200 hover:border-white/20 hover:bg-white/5"
+            }`}
+            style={selectedStructure.id === s.id ? { background: c.bg, borderColor: c.border, color: c.text } : {}}
+          >
+            <span className="text-sm leading-none">{system.icon}</span>
+            <span>{s.name}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ─── Mobile bottom sheet ─── */}
+      <div
+        className="md:hidden fixed inset-x-0 bottom-0 z-40 flex flex-col"
+        style={{
+          height: sheetHeight,
+          transition: "height 0.3s cubic-bezier(0.4,0,0.2,1)",
+          background: "rgba(8,5,24,0.97)",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+          boxShadow: "0 -8px 40px rgba(0,0,0,0.5)",
+        }}
+      >
+        {sheetState !== "closed" && (
+          <>
+            <div className="flex items-center justify-between px-4 pt-3 pb-1 shrink-0">
+              <button onClick={() => setSheetState(prev => prev === "full" ? "peek" : "full")}
+                className="flex flex-col items-center gap-1 flex-1"
+              >
+                <div className="w-10 h-1 rounded-full bg-white/20" />
+              </button>
+              <button onClick={() => setSheetState("closed")} className="text-slate-600 hover:text-white p-1 rounded-lg hover:bg-white/8 transition-colors ml-2">
+                <X size={14} />
+              </button>
+            </div>
+            <div className="shrink-0">
+              <button
+                onClick={() => setSheetState(prev => prev === "full" ? "peek" : "full")}
+                className="w-full flex items-center justify-center gap-1.5 text-[10px] text-slate-600 hover:text-slate-400 pb-1 transition-colors"
+              >
+                {sheetState === "full" ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+                <span>{sheetState === "full" ? "Collapse" : "Expand"}</span>
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <StructureInfoPanel
+                system={system}
+                structure={selectedStructure}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                selectedLabel={selectedLabel}
+                onLabelSelect={handleLabelSelect}
+              />
+            </div>
+          </>
+        )}
+      </div>
+
+      {sheetState !== "closed" && (
+        <div className="md:hidden fixed inset-0 z-30 bg-black/20 backdrop-blur-[1px]" onClick={() => setSheetState("closed")} />
+      )}
+    </div>
+  );
+}
+
+type HubMode = "3d" | "system" | "cadaveric";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Root
+// ─────────────────────────────────────────────────────────────────────────────
+export default function AnatomyHub() {
+  const [page, setPage] = useState<HubPage>("landing");
+  const [hubMode, setHubMode] = useState<HubMode>("3d");
+  const [selectedSystem, setSelectedSystem] = useState<AnatomySystem | null>(null);
+  const [initialStructure, setInitialStructure] = useState<AnatomyStructure | null>(null);
+  const [globalSearch, setGlobalSearch] = useState("");
+
+  function handleSelectSystem(s: AnatomySystem, structure?: AnatomyStructure) {
+    setSelectedSystem(s); setInitialStructure(structure ?? null); setPage("system"); setGlobalSearch("");
+  }
+  function handleBack() {
+    setPage("landing"); setSelectedSystem(null); setInitialStructure(null);
+  }
+
+  const MODE_TABS: { id: HubMode; label: string; icon: string }[] = [
+    { id: "3d",        label: "3D Models", icon: "⬡" },
+    { id: "system",    label: "By System", icon: "🧬" },
+    { id: "cadaveric", label: "Cadaveric", icon: "🔬" },
+  ];
+
+  return (
+    <div className="flex flex-col w-full h-full overflow-hidden" style={{ background: "linear-gradient(135deg,#060414 0%,#0a0520 50%,#060318 100%)" }}>
+      <nav className="flex items-center justify-between px-4 py-2.5 border-b border-white/8 bg-black/50 backdrop-blur-md shrink-0 z-10">
+        <div className="flex items-center gap-2.5">
+          {page === "system" && (
+            <button onClick={handleBack} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors mr-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+          )}
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black text-white select-none" style={{ background: "linear-gradient(135deg,#7c3aed,#a21caf)" }}>A</div>
+          <span className="font-black text-white text-sm tracking-tight">Anatomy Hub</span>
+        </div>
+
+        {/* Mode toggle — only on landing */}
+        {page === "landing" && (
+          <div className="flex items-center gap-1 p-0.5 rounded-lg" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            {MODE_TABS.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setHubMode(t.id)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all"
+                style={hubMode === t.id
+                  ? { background: "#7c3aed", color: "#fff" }
+                  : { color: "#6b7280" }
+                }
+              >
+                <span className="text-sm leading-none">{t.icon}</span>
+                <span className="hidden sm:inline">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 text-[10px] text-slate-500">
+          <span className="text-violet-400 font-bold hidden sm:inline">{ANATOMY_SYSTEMS.length} Systems</span>
+        </div>
+      </nav>
+
+      {page === "landing" && hubMode === "3d" && (
+        <HubLanding
+          onSelectSystem={handleSelectSystem}
+          onSelectResult={(sys, struct) => handleSelectSystem(sys, struct)}
+          globalSearch={globalSearch}
+          setGlobalSearch={setGlobalSearch}
+        />
+      )}
+      {page === "landing" && hubMode === "system" && (
+        <SystemPicker onSelectSystem={s => handleSelectSystem(s)} />
+      )}
+      {page === "landing" && hubMode === "cadaveric" && (
+        <CadavericGallery />
+      )}
+      {page === "system" && selectedSystem && (
+        <SystemView system={selectedSystem} onBack={handleBack} initialStructure={initialStructure} />
+      )}
+    </div>
+  );
+}

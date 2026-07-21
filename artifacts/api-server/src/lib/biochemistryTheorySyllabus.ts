@@ -1,0 +1,35 @@
+/**
+ * Baseline syllabus for the "Theory" Biochemistry viva type — the complete
+ * 1st-year / Phase-I MBBS Biochemistry theory curriculum under NMC CBME.
+ *
+ * Grounded in the gold-standard Indian/international theory references:
+ * - Harper's Illustrated Biochemistry
+ * - Lippincott's Illustrated Reviews: Biochemistry
+ * - DM Vasudevan's Textbook of Biochemistry for Medical Students
+ * - U Satyanarayana's Biochemistry
+ */
+export const BIOCHEMISTRY_THEORY_SYLLABUS = `
+Baseline Theory viva syllabus — the FULL 1st-year/Phase-I MBBS Biochemistry curriculum (reference: Harper's Illustrated Biochemistry, Lippincott's Illustrated Reviews: Biochemistry, DM Vasudevan's Textbook of Biochemistry, U Satyanarayana's Biochemistry). This is a theory viva covering the whole syllabus — rotate broadly across topics across the session rather than staying on one area:
+
+1. Cell Biology & Biomolecules: structure and function of cell organelles relevant to biochemistry (mitochondria, ribosomes, ER, Golgi, lysosomes); water and its biological importance, pH and buffers, Henderson-Hasselbalch equation; structure and classification of carbohydrates, lipids, amino acids, and proteins; primary/secondary/tertiary/quaternary protein structure, denaturation.
+
+2. Enzymes: classification and nomenclature (IUB), enzyme kinetics (Michaelis-Menten equation, Km, Vmax), factors affecting enzyme activity (temperature, pH, substrate/enzyme concentration), enzyme inhibition (competitive, non-competitive, uncompetitive), coenzymes and cofactors, isoenzymes and their clinical significance (CK-MB, LDH isoenzymes), diagnostic/clinical enzymology (SGOT/AST, SGPT/ALT, ALP, amylase, lipase — which conditions raise them), enzyme regulation (allosteric regulation, covalent modification, feedback inhibition).
+
+3. Carbohydrate Metabolism: digestion and absorption of carbohydrates; glycolysis — steps, enzymes, energetics, regulation; pyruvate oxidation (pyruvate dehydrogenase complex); citric acid cycle (Krebs cycle) — steps, enzymes, energetics, regulation, amphibolic role; electron transport chain and oxidative phosphorylation, chemiosmotic theory, uncouplers; gluconeogenesis — pathway, regulation, substrates; glycogenesis and glycogenolysis — enzymes, regulation, glycogen storage diseases; HMP shunt (pentose phosphate pathway) — reactions, significance (NADPH, ribose-5-phosphate), G6PD deficiency; galactose and fructose metabolism, hereditary fructose intolerance, galactosemia; regulation of blood glucose — hormonal control (insulin, glucagon, cortisol, epinephrine, growth hormone); diabetes mellitus — biochemical basis, types, complications, glycosylated hemoglobin (HbA1c).
+
+4. Lipid Metabolism: digestion, absorption, and transport of lipids (chylomicrons, VLDL, LDL, HDL and their metabolism); beta-oxidation of fatty acids — steps, energetics; ketone body formation and utilization, ketosis in diabetes/starvation; fatty acid synthesis (de novo lipogenesis) and its regulation; cholesterol synthesis (HMG-CoA reductase pathway) and its regulation, statins mechanism; lipoprotein metabolism and dyslipidemias, atherosclerosis biochemical basis; phospholipids and their functions, sphingolipids and sphingolipidoses (Tay-Sachs, Niemann-Pick, Gaucher's disease); eicosanoids — prostaglandins, thromboxanes, leukotrienes and their synthesis/functions; fatty liver and lipotropic factors.
+
+5. Protein & Amino Acid Metabolism: digestion and absorption of proteins; general reactions of amino acids (transamination, oxidative deamination, decarboxylation); urea cycle — steps, enzymes, regulation, hyperammonemia and urea cycle disorders; individual amino acid metabolism and inborn errors (phenylketonuria, alkaptonuria, maple syrup urine disease, homocystinuria, albinism); one-carbon metabolism and folate/vitamin B12 role; synthesis of specialized products from amino acids (creatine, melanin, catecholamines, serotonin, histamine, GABA); plasma proteins — types, functions, electrophoretic pattern, clinical significance of albumin/globulin ratio.
+
+6. Nucleic Acid Metabolism & Molecular Biology: structure of DNA and RNA, Watson-Crick model; DNA replication — enzymes, mechanism (prokaryotic and eukaryotic basics); transcription — RNA polymerases, mechanism, post-transcriptional modifications; translation — genetic code, ribosomes, initiation/elongation/termination, post-translational modifications; mutations and DNA repair mechanisms; purine and pyrimidine metabolism, disorders (gout, Lesch-Nyhan syndrome, orotic aciduria); recombinant DNA technology basics — PCR, restriction enzymes, gene cloning, applications in medicine.
+
+7. Vitamins & Minerals: fat-soluble vitamins (A, D, E, K) — sources, functions, deficiency manifestations, toxicity; water-soluble vitamins (B-complex, C) — coenzyme roles, deficiency diseases (beriberi, pellagra, scurvy, megaloblastic anemia); major minerals (calcium, phosphorus, magnesium, sodium, potassium) — regulation, deficiency/excess states; trace elements (iron, zinc, copper, iodine, selenium, fluoride) — functions and deficiency disorders; iron metabolism, absorption, storage (ferritin, transferrin), anemia of chronic disease vs iron deficiency anemia.
+
+8. Hormones & Endocrine Biochemistry: classification of hormones, mechanism of hormone action (membrane-bound vs intracellular receptors, second messengers — cAMP, IP3/DAG, tyrosine kinase); hypothalamo-pituitary axis; thyroid hormones — synthesis, regulation, hypo/hyperthyroidism biochemistry; adrenal cortex/medulla hormones; pancreatic hormones (insulin, glucagon) and their signaling; calcium-regulating hormones (PTH, calcitonin, vitamin D) and calcium homeostasis.
+
+9. Water, Electrolyte & Acid-Base Balance: body fluid compartments, water balance regulation (ADH, thirst mechanism); electrolyte balance (sodium, potassium) and disorders (hyponatremia, hyperkalemia); acid-base balance — buffer systems (bicarbonate, phosphate, protein buffers), respiratory and renal compensation; interpretation of arterial blood gas (ABG) values, metabolic/respiratory acidosis and alkalosis with clinical correlation.
+
+10. Clinical & Applied Biochemistry: liver function tests and their interpretation, renal function tests (blood urea, serum creatinine, creatinine clearance, GFR), cardiac markers (troponin, CK-MB) and their diagnostic use, tumor markers overview, free radicals and antioxidants (SOD, catalase, glutathione peroxidase, vitamin E/C role), oxidative stress and disease, nutrition — balanced diet, BMR, protein energy malnutrition (kwashiorkor, marasmus), obesity biochemistry basics, xenobiotic metabolism (Phase I/II reactions, cytochrome P450) and detoxification, cancer biology basics (oncogenes, tumor suppressor genes, cell cycle regulation).
+
+Ask about mechanisms, enzyme names, regulation points, and clinical correlations — not just definitions. Prefer application/case-based questions ("what would happen if this enzyme is deficient", "why does this condition cause this lab finding") once the basics are established, consistent with CBME's Knows/Knows How level for theory.
+`.trim();
