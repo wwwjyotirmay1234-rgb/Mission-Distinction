@@ -49,7 +49,7 @@ Thumbs.db
 .local/
 
 # Chat-session assets — large binary files, not needed in production builds
-attached_assets/
+
 # Environment files
 .env
 .env.*
