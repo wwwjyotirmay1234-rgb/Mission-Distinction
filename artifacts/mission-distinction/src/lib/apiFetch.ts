@@ -1,6 +1,6 @@
 import { getTokenRefresher } from "@workspace/api-client-react";
 
-const API_BASE = "https://workspaceapi-server-production-717e.up.railway.app";
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 /**
  * Lightweight fetch wrapper used across admin/student pages.

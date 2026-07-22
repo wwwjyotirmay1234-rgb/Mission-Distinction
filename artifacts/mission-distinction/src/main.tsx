@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/react";
 import { createRoot } from "react-dom/client";
+import { setBaseUrl } from "@workspace/api-client-react";
 import App from "./App";
 import "./index.css";
 import { initAnalytics } from "./lib/analytics";
@@ -31,6 +32,8 @@ if (SENTRY_DSN) {
 }
 
 initAnalytics();
+
+setBaseUrl(import.meta.env.VITE_API_URL);
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
@@ -66,5 +69,5 @@ window.addEventListener("vite:preloadError", () => {
     window.location.reload();
   }
 });
-
+setBaseUrl(import.meta.env.VITE_API_URL || null);
 createRoot(document.getElementById("root")!).render(<App />);
