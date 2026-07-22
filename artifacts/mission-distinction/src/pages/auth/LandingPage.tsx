@@ -130,7 +130,9 @@ export default function LandingPage() {
   // finishGoogleAuth is a plain async function — not a hook.
   // It must be defined before useEffect so the effect closure captures it.
   const finishGoogleAuth = async (idToken: string) => {
-    const res = await fetch(`/api/auth/google`, {
+const API_URL = import.meta.env.VITE_API_URL || "";
+
+const res = await fetch(`${API_URL}/api/auth/google`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
