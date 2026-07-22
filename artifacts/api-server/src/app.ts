@@ -59,6 +59,7 @@ app.use(
 app.use(
   helmet({
     crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
     referrerPolicy: { policy: "strict-origin-when-cross-origin" },
     hsts: {
       maxAge: 31536000,
@@ -72,7 +73,10 @@ app.use(
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://lh3.googleusercontent.com"],
-        connectSrc: ["'self'"],
+        connectSrc: [
+  "'self'",
+  "https://workspaceapi-server-production-717e.up.railway.app"
+],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         frameSrc: ["'none'"],
         frameAncestors: ["'none'"],
@@ -85,22 +89,35 @@ app.use(
   }),
 );
 
-const allowedOrigins: string[] | boolean =
-  process.env.NODE_ENV === "production"
-    ? [
-        ...(process.env.REPLIT_DOMAINS || "")
-          .split(",")
-          .map((d) => d.trim())
-          .filter(Boolean)
-          .map((d) => `https://${d}`),
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
 
-        "https://mission-distinction-git-840289-wwwjyotirmay1234-9716s-projects.vercel.app",
-        "https://mission-distinction.com",
-        "https://www.mission-distinction.com",
-      ]
-    : true;
+  ...(process.env.REPLIT_DOMAINS || "")
+    .split(",")
+    .map((d) => d.trim())
+    .filter(Boolean)
+    .map((d) => `https://${d}`),
 
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+  "https://mission-distinction-git-840289-wwwjyotirmay1234-9716s-projects.vercel.app",
+  "https://mission-distinction.com",
+  "https://www.mission-distinction.com",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
