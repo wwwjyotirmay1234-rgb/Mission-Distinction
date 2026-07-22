@@ -69,5 +69,4 @@ window.addEventListener("vite:preloadError", () => {
     window.location.reload();
   }
 });
-setBaseUrl(import.meta.env.VITE_API_URL || null);
 createRoot(document.getElementById("root")!).render(<App />);
