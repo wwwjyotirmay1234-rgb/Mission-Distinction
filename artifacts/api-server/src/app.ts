@@ -87,11 +87,17 @@ app.use(
 
 const allowedOrigins: string[] | boolean =
   process.env.NODE_ENV === "production"
-    ? (process.env.REPLIT_DOMAINS || "")
-        .split(",")
-        .map((d) => d.trim())
-        .filter(Boolean)
-        .map((d) => `https://${d}`)
+    ? [
+        ...(process.env.REPLIT_DOMAINS || "")
+          .split(",")
+          .map((d) => d.trim())
+          .filter(Boolean)
+          .map((d) => `https://${d}`),
+
+        "https://mission-distinction-git-840289-wwwjyotirmay1234-9716s-projects.vercel.app",
+        "https://mission-distinction.com",
+        "https://www.mission-distinction.com",
+      ]
     : true;
 
 app.use(cors({ origin: allowedOrigins, credentials: true }));
