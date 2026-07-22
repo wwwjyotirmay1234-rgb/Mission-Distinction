@@ -1,5 +1,7 @@
 import { getTokenRefresher } from "@workspace/api-client-react";
 
+const API_BASE = "https://workspaceapi-server-production-717e.up.railway.app";
+
 /**
  * Lightweight fetch wrapper used across admin/student pages.
  *
@@ -37,7 +39,16 @@ export async function apiFetch(
     headers.set("content-type", "application/json");
   }
 
-  const response = await fetch(input, { ...init, headers, credentials: init.credentials ?? "include" });
+  const url =
+  typeof input === "string" && input.startsWith("/")
+    ? `${API_BASE}${input}`
+    : input;
+
+const response = await fetch(url, {
+  ...init,
+  headers,
+  credentials: init.credentials ?? "include",
+});
   if (response.status !== 401) return response;
 
   // Use the shared refresher registered by AuthContext (includes the Promise
@@ -54,7 +65,16 @@ export async function apiFetch(
 
     const retryHeaders = new Headers(headers); // inherit auto-set content-type
     retryHeaders.set("authorization", `Bearer ${newToken}`);
-    return fetch(input, { ...init, headers: retryHeaders, credentials: init.credentials ?? "include" });
+    const retryUrl =
+  typeof input === "string" && input.startsWith("/")
+    ? `${API_BASE}${input}`
+    : input;
+
+return fetch(retryUrl, {
+  ...init,
+  headers: retryHeaders,
+  credentials: init.credentials ?? "include",
+});
   } catch {
     window.dispatchEvent(new Event("auth:logout"));
     return response;

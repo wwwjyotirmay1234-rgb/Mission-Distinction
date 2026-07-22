@@ -349,7 +349,7 @@ function useMaintenance() {
 
     async function check() {
       try {
-        const res = await fetch("/api/health", { cache: "no-store" });
+        const res = await fetch("https://workspaceapi-server-production-717e.up.railway.app/api/health", { cache: "no-store" });
         const data = await res.json().catch(() => ({}));
         setMaintenance(!!data.maintenance);
         // If still in maintenance, poll every 15s; otherwise every 60s
