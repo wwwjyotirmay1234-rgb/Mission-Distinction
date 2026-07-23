@@ -413,8 +413,9 @@ export default function StudentDashboard() {
           <p className="text-sm text-muted-foreground">Kick off your study session — match day is every day.</p>
         </div>
         <div className="flex flex-row flex-wrap gap-2 items-center">
-          {/* Academic Year selector */}
-          <div className="flex items-center gap-2 bg-card border border-border/60 rounded-xl px-3 py-2 shadow-sm">
+
+          {user?.role === "student" && (
+  <div className="flex items-center gap-2 bg-card border border-border/60 rounded-xl px-3 py-2 shadow-sm">
             <GraduationCap size={15} className="text-primary shrink-0" />
             <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Academic Year</span>
             <Select
@@ -424,8 +425,8 @@ export default function StudentDashboard() {
             >
               <SelectTrigger className="h-7 px-2 text-xs border-0 bg-transparent p-0 shadow-none focus:ring-0 gap-1 font-semibold text-foreground w-auto min-w-[90px]">
                 <SelectValue placeholder="Select year" />
-                <ChevronDown size={12} className="text-muted-foreground" />
               </SelectTrigger>
+
               <SelectContent>
                 {YEAR_OPTIONS.map((y) => (
                   <SelectItem key={y} value={y} className="text-sm">
@@ -434,9 +435,22 @@ export default function StudentDashboard() {
                 ))}
               </SelectContent>
             </Select>
-            {savingYear && <span className="text-[10px] text-muted-foreground animate-pulse">Saving…</span>}
+
           </div>
-          <Badge variant="outline" className="px-2 py-1.5 bg-card/50 max-w-[180px] truncate text-xs">{user?.college || "My College"}</Badge>
+            )}
+            
+            {savingYear && (
+               <span className="text-[10px] text-muted-foreground animate-pulse">
+                 Saving…
+              </span>
+            )}
+          
+          <Badge
+           variant="outline"
+            className="px-2 py-1.5 bg-card/50 max-w-[180px] truncate text-xs"
+            >
+              {user?.college || "My College"}
+              </Badge>
         </div>
 
         {/* Year change confirmation dialog */}
