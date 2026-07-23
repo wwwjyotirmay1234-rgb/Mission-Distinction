@@ -93,27 +93,33 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 
+  "https://missiondistinction.com",
+  "https://www.missiondistinction.com",
+
+  "https://mission-distinction-git-840289-wwwjyotirmay1234-9716s-projects.vercel.app",
+
   ...(process.env.REPLIT_DOMAINS || "")
     .split(",")
     .map((d) => d.trim())
     .filter(Boolean)
     .map((d) => `https://${d}`),
-
-  "https://mission-distinction-git-840289-wwwjyotirmay1234-9716s-projects.vercel.app",
-  "https://mission-distinction.com",
-  "https://www.mission-distinction.com",
 ];
 
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin(origin, callback) {
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+      if (origin.endsWith(".vercel.app")) {
+        return callback(null, true);
       }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.error("Blocked CORS Origin:", origin);
+      return callback(null, false);
     },
     credentials: true,
   })
