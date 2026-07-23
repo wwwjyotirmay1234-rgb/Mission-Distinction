@@ -96,6 +96,8 @@ const allowedOrigins = [
   "https://missiondistinction.com",
   "https://www.missiondistinction.com",
 
+  "https://workspacemission-distinction-production.up.railway.app",
+
   "https://mission-distinction-git-840289-wwwjyotirmay1234-9716s-projects.vercel.app",
 
   ...(process.env.REPLIT_DOMAINS || "")
