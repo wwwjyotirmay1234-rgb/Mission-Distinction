@@ -112,17 +112,6 @@ export default function AdminDashboard() {
           className="gap-2 bg-card/40 border-border/40"
           disabled={qodSending}
           onClick={async () => {
-            setQodSending(true);
-            try {
-              const res = await apiFetch("/api/analytics/question-of-day/broadcast", { method: "POST" });
-              const data = await res.json();
-              if (!res.ok) throw new Error(data?.error || "Failed to send");
-              toast.success(`Sent today's question to ${data.pushesSent}/${data.totalStudents} students`);
-            } catch (e: any) {
-              toast.error(e?.message || "Failed to send question of the day");
-            } finally {
-              setQodSending(false);
-            }
           }}
         >
           <Brain size={16} className="text-primary" />

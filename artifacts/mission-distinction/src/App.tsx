@@ -78,7 +78,6 @@ const StudentCalendar      = lazy(() => import("@/pages/student/Calendar"));
 const StudentSettings      = lazy(() => import("@/pages/student/Settings"));
 const StudentAnnouncements = lazy(() => import("@/pages/student/Announcements"));
 const StudentLeaderboard   = lazy(() => import("@/pages/student/Leaderboard"));
-const StudentDoubts        = lazy(() => import("@/pages/student/Doubts"));
 const StudentTools         = lazy(() => import("@/pages/student/Tools"));
 const StudentMusic         = lazy(() => import("@/pages/student/Music"));
 const StudentCheatCodes    = lazy(() => import("@/pages/student/CheatCodes"));
@@ -86,7 +85,6 @@ const StudentExams         = lazy(() => import("@/pages/student/Exams"));
 const StudentConfessions   = lazy(() => import("@/pages/student/Confessions"));
 const StudentStudyRooms    = lazy(() => import("@/pages/student/StudyRooms"));
 const StudentAITools       = lazy(() => import("@/pages/student/AITools"));
-const StudentGames         = lazy(() => import("@/pages/student/Games"));
 const StudentQuizAnalysis  = lazy(() => import("@/pages/student/QuizAnalysis"));
 const StudentScholarHub    = lazy(() => import("@/pages/student/ScholarHub"));
 const StudentClinicalCase  = lazy(() => import("@/pages/student/ClinicalCase"));
@@ -207,7 +205,6 @@ function Router() {
                 <Route path="/student/progress"     component={StudentMyProgress} />
                 <Route path="/student/old-progress"     component={StudentProgress} />
                 <Route path="/student/leaderboard"  component={StudentLeaderboard} />
-                <Route path="/student/doubts"       component={StudentDoubts} />
                 <Route path="/student/calendar"     component={StudentCalendar} />
                 <Route path="/student/settings"     component={StudentSettings} />
                 <Route path="/student/tools"        component={StudentTools} />
@@ -218,8 +215,6 @@ function Router() {
                 <Route path="/student/exams"        component={StudentExams} />
                 <Route path="/student/confessions"  component={StudentConfessions} />
                 <Route path="/student/study-rooms"  component={StudentStudyRooms} />
-                <Route path="/student/ai-tools"     component={StudentAITools} />
-                <Route path="/student/games"        component={StudentGames} />
                 <Route path="/student/scholar-hub" component={StudentScholarHub} />
                 <Route path="/student/clinical-case"     component={StudentClinicalCase} />
                 <Route path="/student/bookmarks"         component={StudentBookmarks} />

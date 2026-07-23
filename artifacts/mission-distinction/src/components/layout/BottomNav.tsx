@@ -90,7 +90,6 @@ const LEARN_SECTIONS: DrawerSection[] = [
     links: [
       { icon: CalendarIcon,  label: "Calendar",       href: "/student/calendar" },
       { icon: Timer,         label: "Study Tools",    href: "/student/tools" },
-      { icon: Gamepad2,      label: "Games",          href: "/student/games" },
       { icon: Music,         label: "Music",          href: "/student/music" },
       { icon: Settings,      label: "Settings",       href: "/student/settings" },
     ],

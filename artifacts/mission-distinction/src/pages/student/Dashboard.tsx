@@ -21,9 +21,8 @@ import {
   getListCommunityGroupsQueryKey,
 } from "@workspace/api-client-react";
 import { 
-  FileText, File, CheckCircle, Flame, Play, BookOpen, Bookmark, 
-  Calendar, ArrowRight, MessageSquare, Bell, GraduationCap, 
-  ChevronDown, Brain, CheckCircle2, XCircle, RotateCcw, Sparkles,
+  FileText, File, CheckCircle, Flame, Bookmark, 
+  Calendar, ArrowRight, MessageSquare, Bell, GraduationCap,
   Stethoscope, Share2,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -73,131 +72,6 @@ function is1stYear(year: string | undefined | null) {
   return !year || year.toLowerCase().startsWith("1st");
 }
 
-function QuestionOfDayWidget() {
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [question, setQuestion] = useState<any>(null);
-  const [selected, setSelected] = useState<number | null>(null);
-
-  const fetchQuestion = async () => {
-    setLoading(true);
-    try {
-      const res = await apiFetch("/api/analytics/question-of-day");
-      if (res.ok) {
-        const data = await res.json();
-        setQuestion(data);
-        if (data.answered) {
-          setSelected(data.wasCorrect ? data.questionJson.correctOption : -1); // Simple logic for display
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchQuestion();
-  }, []);
-
-  const handleAnswer = async (index: number) => {
-    if (!question || question.answered || submitting) return;
-    setSubmitting(true);
-    setSelected(index);
-    try {
-      const res = await apiFetch(`/api/analytics/question-of-day/${question.id}/answer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedOption: index }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setQuestion({ ...question, answered: true, wasCorrect: data.wasCorrect });
-        if (data.wasCorrect) {
-          toast.success("Correct answer! +5 XP earned 🧠");
-        } else {
-          toast.error("Not quite right, check the explanation!");
-        }
-      }
-    } catch (e) {
-      toast.error("Failed to submit answer");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (loading) return <Skeleton className="h-64 w-full rounded-2xl" />;
-  if (!question) return null;
-
-  const q = question.questionJson;
-  const isAnswered = question.answered;
-
-  return (
-    <Card className="bg-card/40 border-blue-500/20 overflow-hidden relative group">
-      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-        <Brain size={60} className="text-blue-400" />
-      </div>
-      <CardHeader className="p-4 pb-2 border-b border-blue-500/20 bg-blue-500/10">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <Sparkles size={16} className="text-blue-400" /> Question of the Day
-          </CardTitle>
-          <Badge variant="outline" className="text-[10px] uppercase border-blue-500/30 text-blue-300 bg-blue-500/10">
-            {question.subject}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 space-y-4">
-        <p className="text-sm font-medium leading-relaxed">{q.text}</p>
-        
-        <div className="space-y-2">
-          {q.options.map((option: string, i: number) => {
-            const isSelected = selected === i;
-            const isCorrect = isAnswered && i === q.correctOption;
-            const isWrong = isAnswered && isSelected && !question.wasCorrect;
-            
-            let variantCls = "border-border/40 bg-background/40 hover:bg-muted/40";
-            if (isAnswered) {
-              if (isCorrect) variantCls = "border-green-500/50 bg-green-500/10 text-green-300";
-              else if (isWrong) variantCls = "border-red-500/40 bg-red-500/10 text-red-400";
-              else if (isSelected) variantCls = "border-primary/40 bg-primary/10";
-            } else if (isSelected) {
-              variantCls = "border-primary/50 bg-primary/10";
-            }
-
-            return (
-              <button
-                key={i}
-                disabled={isAnswered || submitting}
-                onClick={() => handleAnswer(i)}
-                className={`w-full text-left text-xs px-3 py-2.5 rounded-xl border transition-all flex items-center gap-2 ${variantCls} ${!isAnswered && !submitting ? 'active:scale-[0.98]' : ''}`}
-              >
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                  isSelected ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
-                }`}>
-                  {String.fromCharCode(65 + i)}
-                </span>
-                <span className="flex-1">{option}</span>
-                {isCorrect && <CheckCircle2 size={14} className="text-green-400 shrink-0" />}
-                {isWrong && <XCircle size={14} className="text-red-400 shrink-0" />}
-              </button>
-            );
-          })}
-        </div>
-
-        {isAnswered && (
-          <div className="mt-4 p-3 rounded-xl bg-primary/5 border border-primary/10 animate-in fade-in slide-in-from-top-2 duration-300">
-            <p className="text-[10px] font-bold text-primary uppercase mb-1">Explanation</p>
-            <p className="text-[11px] text-muted-foreground leading-relaxed italic">{q.explanation}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// Day 0=Sun,1=Mon,...6=Sat — weekly MBBS subject rotation
 const WEEKLY_PLAN: { subject: string; topic: string; icon: string; color: string; href: string }[][] = [
   // Sunday
   [
@@ -438,7 +312,7 @@ export default function StudentDashboard() {
 
           </div>
             )}
-            
+
             {savingYear && (
                <span className="text-[10px] text-muted-foreground animate-pulse">
                  Saving…
@@ -560,9 +434,8 @@ export default function StudentDashboard() {
       <TodayStudyPlanWidget />
 
       {/* Clinical Case + Question of Day — full width, visible immediately on all screens */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <ClinicalCaseWidget />
-        <QuestionOfDayWidget />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
