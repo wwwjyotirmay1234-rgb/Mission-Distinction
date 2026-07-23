@@ -76,7 +76,7 @@ export const RANKS: Rank[] = [
     textClass: "text-amber-400",
     borderClass: "border-amber-500/30",
     glowClass: "shadow-amber-500/20",
-    unlocksLabel: "AI Tools & Medical Games",
+    unlocksLabel: "Advanced Study Features",
   },
   {
     level: 6,
