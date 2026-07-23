@@ -8,7 +8,7 @@ import {
   LayoutDashboard, FileText, File, Users, Newspaper, TrendingUp,
   Calendar as CalendarIcon, Settings, Trophy, MessageSquare,
   Timer, Music, MessageCircleHeart,
-  Bot, Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight, BarChart2,
+  Bot, Lock, Microscope, ChevronLeft, ChevronRight, BarChart2,
   GraduationCap, Stethoscope, Zap, ChevronDown, MoreHorizontal,
   Wand2, Camera, Store,
 } from "lucide-react";

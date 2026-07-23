@@ -6,7 +6,7 @@ import {
   Home, CheckCircle, Users, User, GraduationCap,
   Microscope, Stethoscope, FileText, File, GraduationCap as ScholarIcon,
   Zap, BarChart2, TrendingUp, Trophy, Bot, Calendar as CalendarIcon,
-  Timer, Gamepad2, Music, Settings, MessageSquare, MessageCircleHeart,
+  Timer, Music, Settings, MessageSquare, MessageCircleHeart,
   Wand2, Camera, Store,
 } from "lucide-react";
 import { getSectionColor } from "@/lib/sectionColors";
