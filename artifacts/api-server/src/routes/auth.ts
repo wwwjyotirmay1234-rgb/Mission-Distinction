@@ -259,10 +259,10 @@ router.post("/admin/login", loginLimiter, perCredentialLimiter, async (req: Requ
     }
     const email = rawAdminEmail.trim().toLowerCase();
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
-    if (!user || user.role !== "admin") {
-      res.status(401).json({ error: "Invalid credentials" });
-      return;
-    }
+    if (!user || (user.role !== "admin" && user.role !== "super_admin")) {
+  res.status(401).json({ error: "Invalid credentials" });
+  return;
+}
     if (!await verifyPassword(password, user.passwordHash)) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
