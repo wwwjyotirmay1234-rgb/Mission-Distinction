@@ -22,13 +22,8 @@ type PdfItem = { id: number; title: string; subject: string; year?: string | nul
 async function uploadPdfFile(file: File, onProgress: (p: number) => void): Promise<string> {
   // Step 1: ask the server for a presigned GCS PUT URL (small JSON request — not blocked by proxy)
   const token = localStorage.getItem("mission_token");
-  const presignResp = await fetch("/api/upload/pdf/request-upload-url", {
+  const presignResp = await customFetch("/api/upload/pdf/request-upload-url", {
     method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
     body: JSON.stringify({ fileName: file.name }),
   });
   if (!presignResp.ok) {
