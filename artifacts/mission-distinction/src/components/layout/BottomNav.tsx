@@ -66,7 +66,6 @@ const LEARN_SECTIONS: DrawerSection[] = [
   {
     heading: "AI Tools",
     links: [
-      { icon: Camera,        label: "Photo Doubt",    href: "/student/photo-doubt" },
       { icon: Bot,           label: "AI Tools",       href: "/student/ai-tools" },
     ],
   },
@@ -74,7 +73,6 @@ const LEARN_SECTIONS: DrawerSection[] = [
     heading: "Community",
     links: [
       { icon: Store,         label: "Notes Market",   href: "/student/notes-marketplace" },
-      { icon: MessageSquare, label: "Doubt Board",    href: "/student/doubts" },
       { icon: MessageCircleHeart, label: "Confessions", href: "/student/confessions" },
     ],
   },
