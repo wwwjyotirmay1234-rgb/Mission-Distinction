@@ -124,7 +124,6 @@ const AdminClinicalCases = lazy(() => import("@/pages/admin/ClinicalCases"));
 const AdminGrandTests         = lazy(() => import("@/pages/admin/GrandTests"));
 const StudentGrandTests       = lazy(() => import("@/pages/student/GrandTests"));
 const StudentCustomQuiz       = lazy(() => import("@/pages/student/CustomQuizBuilder"));
-const StudentPhotoDoubt       = lazy(() => import("@/pages/student/PhotoDoubtSolver"));
 const StudentNotesMarketplace = lazy(() => import("@/pages/student/NotesMarketplace"));
 const StudentGrandRounds      = lazy(() => import("@/pages/student/GrandRounds"));
 const AdminNotesMarketplace   = lazy(() => import("@/pages/admin/NotesMarketplace"));
@@ -220,7 +219,6 @@ function Router() {
                 <Route path="/student/bookmarks"         component={StudentBookmarks} />
                 <Route path="/student/grand-tests"       component={StudentGrandTests} />
                 <Route path="/student/custom-quiz"       component={StudentCustomQuiz} />
-                <Route path="/student/photo-doubt"       component={StudentPhotoDoubt} />
                 <Route path="/student/notes-marketplace" component={StudentNotesMarketplace} />
                 <Route path="/student/grand-rounds"      component={StudentGrandRounds} />
                 <Route component={NotFound} />
