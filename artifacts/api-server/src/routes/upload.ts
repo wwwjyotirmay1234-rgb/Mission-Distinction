@@ -4,9 +4,6 @@ import rateLimit from "express-rate-limit";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { Readable } from "stream";
-import { gcsClient } from "../lib/gcs";
-
-const REPLIT_SIDECAR = "http://127.0.0.1:1106";
 
 const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
 const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
@@ -99,17 +96,6 @@ function uploadToCloudinary(buffer: Buffer, options: Record<string, any>): Promi
 
 // ─── PDF: request a presigned PUT URL so the browser uploads directly to GCS ──
 // This bypasses the Replit proxy body-size limit — files go browser → GCS directly.
-async function signPdfUploadURL(bucketId: string, fileName: string): Promise<string> {
-  const body = {
-    bucket_name: bucketId,
-    object_name: `pdfs/${fileName}`,
-    method: "PUT",
-    // 15 minutes was too tight for large textbook PDFs (200MB+) on anything but a
-    // fast connection — the signed URL expired mid-upload and GCS rejected the PUT,
-    // which surfaced to admins as "can't upload files bigger than ~200MB". Matched
-    // to (and slightly above) the 30-minute window vivaSources.ts uses for book uploads.
-    expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-  };
   const resp = await fetch(`${REPLIT_SIDECAR}/object-storage/signed-object-url`, { // nosemgrep: react-insecure-request
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -139,23 +125,6 @@ router.post("/submission/request-upload-url", authMiddleware, async (req: Reques
   }
 });
 
-router.post("/pdf/request-upload-url", adminMiddleware, async (req: Request, res: Response) => {
-  try {
-    const rawName = String(req.body?.fileName ?? "file.pdf");
-    const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
-    if (!bucketId) { res.status(500).json({ error: "Storage not configured" }); return; }
-    const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const fileName = `${Date.now()}_${safeName}`;
-    const signedUrl = await signPdfUploadURL(bucketId, fileName);
-    const proto = req.get("x-forwarded-proto") || req.protocol;
-    const host = req.get("x-forwarded-host") || req.get("host");
-    const serveUrl = `${proto}://${host}/api/upload/pdf/serve/${fileName}`;
-    res.json({ signedUrl, serveUrl, fileName });
-  } catch (err: any) {
-    console.error("PDF presign error:", err);
-    res.status(500).json({ error: "Failed to generate upload URL. Please try again." });
-  }
-});
 
 // ─── PDF serve (streams from GCS — any authenticated user can view) ───────────
 router.get("/pdf/serve/:fileName", pdfAuthMiddleware, async (req: Request, res: Response) => {
