@@ -1,0 +1,6 @@
+{
+  "installCommand": "cd ../.. && pnpm install --no-frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter @workspace/mission-distinction run build",
+  "outputDirectory": "dist/public",
+  "framework": null
+}
