@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { User, setTokenRefresher, setAuthTokenGetter } from "@workspace/api-client-react";
+import { User, setTokenRefresher, setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 import { signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { API_BASE } from "@/lib/apiConfig";
@@ -73,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setAuthTokenGetter(() => localStorage.getItem("mission_token"));
+    setBaseUrl(API_BASE || null);
 
     // Refresh lock — prevents parallel 401s from each triggering a rotation,
     // which would invalidate all but the first (single-use tokens).
