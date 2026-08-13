@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { notesTable, activityTable, xpTransactionsTable } from "@workspace/db";
-import { eq, and, gte, count } from "drizzle-orm";
+import { eq, and, gte, count, or, isNull } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
@@ -25,7 +25,16 @@ const noteReadLimiter = rateLimit({
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { subject, search } = req.query;
-    let notes = await db.select().from(notesTable).limit(500);
+    const user = (req as any).user;
+    const isAdmin = user?.role === "admin";
+
+    const batchFilter = isAdmin
+      ? undefined
+      : user?.sessionYear
+        ? or(isNull(notesTable.sessionYear), eq(notesTable.sessionYear, user.sessionYear))
+        : isNull(notesTable.sessionYear);
+
+    let notes = await db.select().from(notesTable).where(batchFilter).limit(500);
     if (subject) notes = notes.filter(n => n.subject.toLowerCase() === (subject as string).toLowerCase());
     if (search) notes = notes.filter(n => n.title.toLowerCase().includes((search as string).toLowerCase()));
     res.json(notes);
@@ -37,7 +46,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 router.post("/", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const admin = (req as any).user;
-    const { title, subject, content, fileUrl, fileType } = req.body;
+    const { title, subject, content, fileUrl, fileType, sessionYear } = req.body;
     if (!title || !subject) { res.status(400).json({ error: "Title and subject are required." }); return; }
     if (!content && !fileUrl) { res.status(400).json({ error: "Either text content or a file upload is required." }); return; }
     const safeTitle = stripHtml(String(title));
@@ -51,7 +60,8 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
       fileUrl: fileUrl || null,
       fileType: fileType || (content ? "text" : null),
       createdBy: admin.id,
-    }).returning();
+      sessionYear: sessionYear || null,
+    } as any).returning();
     res.status(201).json(note);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
@@ -62,7 +72,14 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const id = parseId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
-    const [note] = await db.select().from(notesTable).where(eq(notesTable.id, id));
+    const user = (req as any).user;
+    const isAdmin = user?.role === "admin";
+    const batchCond = isAdmin
+      ? eq(notesTable.id, id)
+      : user?.sessionYear
+        ? and(eq(notesTable.id, id), or(isNull(notesTable.sessionYear), eq(notesTable.sessionYear, user.sessionYear)))
+        : and(eq(notesTable.id, id), isNull(notesTable.sessionYear));
+    const [note] = await db.select().from(notesTable).where(batchCond);
     if (!note) { res.status(404).json({ error: "Not found" }); return; }
     res.json(note);
   } catch (err) {
@@ -80,7 +97,7 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     if (existing.createdBy !== null && existing.createdBy !== admin.id) {
       res.status(403).json({ error: "You can only edit notes you created" }); return;
     }
-    const { title, subject, content, fileUrl, fileType } = req.body;
+    const { title, subject, content, fileUrl, fileType, sessionYear } = req.body;
     const safeTitle = title !== undefined ? stripHtml(String(title)) : undefined;
     const safeSubject = subject !== undefined ? stripHtml(String(subject)) : undefined;
     if (safeTitle !== undefined && !safeTitle) { res.status(400).json({ error: "Invalid title" }); return; }
@@ -92,8 +109,9 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
         content: content !== undefined ? (content || null) : existing.content,
         fileUrl: fileUrl !== undefined ? (fileUrl || null) : existing.fileUrl,
         fileType: fileType !== undefined ? (fileType || null) : existing.fileType,
+        ...("sessionYear" in req.body ? { sessionYear: sessionYear || null } : {}),
         updatedAt: new Date(),
-      })
+      } as any)
       .where(eq(notesTable.id, id))
       .returning();
     res.json(note);
@@ -124,7 +142,13 @@ router.post("/:id/read", authMiddleware, noteReadLimiter, async (req: Request, r
     const id = parseId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const user = (req as any).user;
-    const [note] = await db.select().from(notesTable).where(eq(notesTable.id, id));
+    const isAdmin = user?.role === "admin";
+    const batchCond = isAdmin
+      ? eq(notesTable.id, id)
+      : user?.sessionYear
+        ? and(eq(notesTable.id, id), or(isNull(notesTable.sessionYear), eq(notesTable.sessionYear, user.sessionYear)))
+        : and(eq(notesTable.id, id), isNull(notesTable.sessionYear));
+    const [note] = await db.select().from(notesTable).where(batchCond);
     if (!note) { res.status(404).json({ error: "Not found" }); return; }
 
     // Always update streak — reading a note is study activity regardless of XP cap

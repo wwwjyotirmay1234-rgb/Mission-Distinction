@@ -226,14 +226,15 @@ export default function AdminNotes() {
   const [editPending, setEditPending] = useState(false);
 
   const [addMode, setAddMode] = useState<NoteMode>("text");
-  const [addForm, setAddForm] = useState({ title: "", subject: "", content: "", fileUrl: "", fileType: "" });
+  const [addForm, setAddForm] = useState({ title: "", subject: "", content: "", fileUrl: "", fileType: "", sessionYear: "2025-26" });
   const [addUploading, setAddUploading] = useState(false);
   const addFileRef = useRef<HTMLInputElement>(null);
 
   const [editMode, setEditMode] = useState<NoteMode>("text");
-  const [editForm, setEditForm] = useState({ title: "", subject: "", content: "", fileUrl: "", fileType: "" });
+  const [editForm, setEditForm] = useState({ title: "", subject: "", content: "", fileUrl: "", fileType: "", sessionYear: "2025-26" });
   const [editUploading, setEditUploading] = useState(false);
   const editFileRef = useRef<HTMLInputElement>(null);
+  const [batchFilter, setBatchFilter] = useState<"all" | "2025-26" | "2026-27" | "shared">("all");
 
   const queryClient = useQueryClient();
 
@@ -244,7 +245,7 @@ export default function AdminNotes() {
   const deleteNote = useDeleteNote();
 
   const resetAdd = () => {
-    setAddForm({ title: "", subject: "", content: "", fileUrl: "", fileType: "" });
+    setAddForm({ title: "", subject: "", content: "", fileUrl: "", fileType: "", sessionYear: "2025-26" });
     setAddMode("text");
     setOpen(false);
   };
@@ -266,6 +267,7 @@ export default function AdminNotes() {
           content: addMode === "text" ? addForm.content : undefined,
           fileUrl: addMode !== "text" ? addForm.fileUrl : undefined,
           fileType: addMode === "text" ? "text" : addForm.fileType || addMode,
+          sessionYear: addForm.sessionYear === "shared" ? null : (addForm.sessionYear || null),
         }),
       });
       toast.success("Note added successfully!");
@@ -289,6 +291,7 @@ export default function AdminNotes() {
       content: note.content || "",
       fileUrl: note.fileUrl || "",
       fileType: note.fileType || "",
+      sessionYear: (note as any).sessionYear ?? "shared",
     });
     setEditOpen(true);
   };
@@ -310,6 +313,7 @@ export default function AdminNotes() {
           content: editMode === "text" ? editForm.content : null,
           fileUrl: editMode !== "text" ? editForm.fileUrl : null,
           fileType: editMode === "text" ? "text" : editForm.fileType || editMode,
+          sessionYear: editForm.sessionYear === "shared" ? null : (editForm.sessionYear || null),
         }),
       });
       toast.success("Note updated!");
@@ -333,7 +337,10 @@ export default function AdminNotes() {
     });
   };
 
-  const notesList = Array.isArray(notes) ? notes : [];
+  const allNotes = Array.isArray(notes) ? notes : [];
+  const notesList = batchFilter === "all" ? allNotes
+    : batchFilter === "shared" ? allNotes.filter((n: any) => !n.sessionYear)
+    : allNotes.filter((n: any) => n.sessionYear === batchFilter);
 
   return (
     <div className="space-y-6">
@@ -354,6 +361,15 @@ export default function AdminNotes() {
         </div>
       </div>
 
+      {/* Batch filter tabs */}
+      <div className="flex gap-1.5 flex-wrap">
+        {(["all","2025-26","2026-27","shared"] as const).map(f => (
+          <button key={f} onClick={() => setBatchFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${batchFilter === f ? "bg-primary/20 border-primary/40 text-primary font-medium" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
+            {f === "all" ? "All Batches" : f === "shared" ? "Shared" : f}
+          </button>
+        ))}
+      </div>
+
       <Card className="bg-card/40 border-border/40">
         <div className="overflow-x-auto">
           <Table>
@@ -361,6 +377,7 @@ export default function AdminNotes() {
               <TableRow className="border-border/40">
                 <TableHead>Title</TableHead>
                 <TableHead>Subject</TableHead>
+                <TableHead>Batch</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Downloads</TableHead>
                 <TableHead>Created</TableHead>
@@ -381,7 +398,7 @@ export default function AdminNotes() {
                 ))
               ) : notesList.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <FileText className="h-8 w-8 opacity-30" />
                       <span>No notes yet. Click "Add Note" to get started.</span>
@@ -404,6 +421,11 @@ export default function AdminNotes() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary">{n.subject}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {(n as any).sessionYear
+                          ? <Badge variant="outline" className={`text-[10px] px-1.5 ${(n as any).sessionYear === "2025-26" ? "text-blue-400 border-blue-500/30 bg-blue-500/10" : "text-purple-400 border-purple-500/30 bg-purple-500/10"}`}>{(n as any).sessionYear}</Badge>
+                          : <Badge variant="outline" className="text-[10px] px-1.5 text-green-400 border-green-500/30 bg-green-500/10">Shared</Badge>}
                       </TableCell>
                       <TableCell>{fileTypeBadge(ft)}</TableCell>
                       <TableCell className="text-sm">{n.downloadCount ?? 0}</TableCell>
@@ -448,6 +470,17 @@ export default function AdminNotes() {
               setUploading={setAddUploading}
               fileRef={addFileRef as React.RefObject<HTMLInputElement>}
             />
+            <div className="space-y-1.5">
+              <Label>Batch</Label>
+              <Select value={addForm.sessionYear} onValueChange={v => setAddForm({ ...addForm, sessionYear: v })}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">All Batches (shared)</SelectItem>
+                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
+                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={resetAdd}>Cancel</Button>
@@ -474,6 +507,17 @@ export default function AdminNotes() {
               setUploading={setEditUploading}
               fileRef={editFileRef as React.RefObject<HTMLInputElement>}
             />
+            <div className="space-y-1.5">
+              <Label>Batch</Label>
+              <Select value={editForm.sessionYear} onValueChange={v => setEditForm({ ...editForm, sessionYear: v })}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">All Batches (shared)</SelectItem>
+                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
+                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setEditOpen(false); setEditTarget(null); }}>Cancel</Button>

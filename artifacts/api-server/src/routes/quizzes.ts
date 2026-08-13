@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { quizzesTable, questionsTable, quizAttemptsTable, activityTable, questionReportsTable, quizSubmissionsTable, quizAnswersTable } from "@workspace/db";
-import { eq, sql, desc, and } from "drizzle-orm";
+import { eq, sql, desc, and, or, isNull } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, superAdminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { updateStreak } from "../lib/streak";
@@ -37,7 +37,17 @@ function normalizeAnswer(s: string): string {
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { subject, difficulty } = req.query;
-    let quizzes = await db.select().from(quizzesTable).limit(500);
+    const user = (req as any).user;
+    const isAdmin = user?.role === "admin";
+
+    // Students only see quizzes for their batch + shared (NULL) quizzes; fail closed if sessionYear unknown
+    const batchFilter = isAdmin
+      ? undefined
+      : user?.sessionYear
+        ? or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear))
+        : isNull(quizzesTable.sessionYear);
+
+    let quizzes = await db.select().from(quizzesTable).where(batchFilter).limit(500);
     if (subject) quizzes = quizzes.filter(q => q.subject.toLowerCase() === (subject as string).toLowerCase());
     if (difficulty) quizzes = quizzes.filter(q => q.difficulty === difficulty);
     res.json(quizzes);
@@ -48,17 +58,19 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 
 router.post("/", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const { title, subject, description, difficulty, durationMinutes, isFeatured } = req.body;
+    const { title, subject, description, difficulty, durationMinutes, isFeatured, sessionYear } = req.body;
     if (!title || !subject || !difficulty) { res.status(400).json({ error: "Missing fields" }); return; }
     const safeTitle = stripHtml(String(title));
     const safeSubject = stripHtml(String(subject));
     const safeDescription = description ? stripHtml(String(description)) : null;
     if (!safeTitle) { res.status(400).json({ error: "Invalid title" }); return; }
     if (!safeSubject) { res.status(400).json({ error: "Invalid subject" }); return; }
+    const safeSessionYear = sessionYear ? String(sessionYear) : null;
     const [quiz] = await db.insert(quizzesTable).values({
       title: safeTitle, subject: safeSubject, description: safeDescription, difficulty,
       durationMinutes: durationMinutes || null,
       isFeatured: isFeatured || false,
+      sessionYear: safeSessionYear || null,
     }).returning();
     res.status(201).json(quiz);
   } catch (err) {
@@ -127,8 +139,29 @@ router.post("/explain", authMiddleware, explainLimiter, async (req: Request, res
       return;
     }
 
-    // Fetch the question
-    const [question] = await db.select().from(questionsTable).where(eq(questionsTable.id, qid));
+    // Fetch the question — also verify its parent quiz is accessible to this batch
+    const isAdmin = user?.role === "admin";
+    const quizBatchCond = isAdmin
+      ? undefined
+      : user?.sessionYear
+        ? or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear))
+        : isNull(quizzesTable.sessionYear);
+
+    const [question] = await db
+      .select({
+        id: questionsTable.id,
+        text: questionsTable.text,
+        questionType: questionsTable.questionType,
+        options: questionsTable.options,
+        correctOption: questionsTable.correctOption,
+        correctAnswer: questionsTable.correctAnswer,
+        explanation: questionsTable.explanation,
+      })
+      .from(questionsTable)
+      .innerJoin(quizzesTable, eq(questionsTable.quizId, quizzesTable.id))
+      .where(quizBatchCond
+        ? and(eq(questionsTable.id, qid), quizBatchCond)
+        : eq(questionsTable.id, qid));
     if (!question) { res.status(404).json({ error: "Question not found" }); return; }
 
     // Build a label for the correct answer only — we never reveal options via client data
@@ -185,11 +218,17 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const id = parseId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
-    const [quiz] = await db.select().from(quizzesTable).where(eq(quizzesTable.id, id));
-    if (!quiz) { res.status(404).json({ error: "Not found" }); return; }
-    const questions = await db.select().from(questionsTable).where(eq(questionsTable.quizId, id));
     const requestingUser = (req as any).user;
     const isAdmin = requestingUser?.role === "admin";
+    // Students may only access quizzes for their batch or shared; fail closed when sessionYear unknown
+    const batchCond = isAdmin
+      ? eq(quizzesTable.id, id)
+      : requestingUser?.sessionYear
+        ? and(eq(quizzesTable.id, id), or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, requestingUser.sessionYear)))
+        : and(eq(quizzesTable.id, id), isNull(quizzesTable.sessionYear));
+    const [quiz] = await db.select().from(quizzesTable).where(batchCond);
+    if (!quiz) { res.status(404).json({ error: "Not found" }); return; }
+    const questions = await db.select().from(questionsTable).where(eq(questionsTable.quizId, id));
     const sanitizedQuestions = isAdmin
       ? questions
       : questions.map(({ correctOption, correctAnswer, explanation, ...rest }) => rest);
@@ -204,11 +243,12 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     const id = parseId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
     const caller = (req as any).user;
-    const { title, subject, description, difficulty, durationMinutes, isFeatured, isProctored } = req.body;
+    const { title, subject, description, difficulty, durationMinutes, isFeatured, isProctored, sessionYear } = req.body;
     const safeTitle = title !== undefined ? stripHtml(String(title)) : undefined;
     const safeSubject = subject !== undefined ? stripHtml(String(subject)) : undefined;
     const safeDescription = description !== undefined ? (description ? stripHtml(String(description)) : null) : undefined;
     const updates: Record<string, any> = { title: safeTitle, subject: safeSubject, description: safeDescription, difficulty, durationMinutes, isFeatured };
+    if (sessionYear !== undefined) updates.sessionYear = sessionYear || null;
     // Only super admins can change proctored status
     if (caller.isSuperAdmin && isProctored !== undefined) {
       updates.isProctored = isProctored;
@@ -425,6 +465,14 @@ router.get("/attempts/:id/review", authMiddleware, async (req: Request, res: Res
     if (!attempt) { res.status(404).json({ error: "Attempt not found" }); return; }
     if (attempt.userId !== user.id) { res.status(403).json({ error: "Forbidden" }); return; }
 
+    // Also verify the quiz is accessible to the student's batch (fail closed)
+    const isAdmin = user?.role === "admin";
+    const batchCond = isAdmin
+      ? eq(quizzesTable.id, attempt.quizId)
+      : user?.sessionYear
+        ? and(eq(quizzesTable.id, attempt.quizId), or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear)))
+        : and(eq(quizzesTable.id, attempt.quizId), isNull(quizzesTable.sessionYear));
+
     const [quiz] = await db.select({
       id: quizzesTable.id,
       title: quizzesTable.title,
@@ -432,7 +480,7 @@ router.get("/attempts/:id/review", authMiddleware, async (req: Request, res: Res
       difficulty: quizzesTable.difficulty,
       durationMinutes: quizzesTable.durationMinutes,
       description: quizzesTable.description,
-    }).from(quizzesTable).where(eq(quizzesTable.id, attempt.quizId));
+    }).from(quizzesTable).where(batchCond);
 
     if (!quiz) { res.status(404).json({ error: "Quiz not found" }); return; }
 
@@ -456,7 +504,12 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
       res.status(400).json({ error: "Invalid answers payload" }); return;
     }
 
-    const [quiz] = await db.select().from(quizzesTable).where(eq(quizzesTable.id, quizId));
+    const batchCond = user?.role === "admin"
+      ? eq(quizzesTable.id, quizId)
+      : user?.sessionYear
+        ? and(eq(quizzesTable.id, quizId), or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear)))
+        : and(eq(quizzesTable.id, quizId), isNull(quizzesTable.sessionYear));
+    const [quiz] = await db.select().from(quizzesTable).where(batchCond);
     if (!quiz) { res.status(404).json({ error: "Quiz not found" }); return; }
     const questions = await db.select().from(questionsTable).where(eq(questionsTable.quizId, quizId));
 

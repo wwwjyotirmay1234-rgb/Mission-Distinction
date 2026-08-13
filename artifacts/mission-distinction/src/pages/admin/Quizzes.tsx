@@ -28,8 +28,9 @@ export default function AdminQuizzes() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     title: "", subject: "", description: "", difficulty: "medium",
-    durationMinutes: "", isFeatured: false, isProctored: false,
+    durationMinutes: "", isFeatured: false, isProctored: false, sessionYear: "2025-26",
   });
+  const [batchFilter, setBatchFilter] = useState<"all" | "2025-26" | "2026-27" | "shared">("all");
   const queryClient = useQueryClient();
 
   const { data: quizzes, isLoading } = useListQuizzes(
@@ -54,13 +55,14 @@ export default function AdminQuizzes() {
         durationMinutes: form.durationMinutes ? parseInt(form.durationMinutes) : undefined,
         isFeatured: form.isFeatured,
         isProctored: form.isProctored,
-      }
+        sessionYear: form.sessionYear === "shared" ? null : (form.sessionYear || null),
+      } as any
     }, {
       onSuccess: () => {
         toast.success("Quiz created! You can now add questions from the quiz detail page.");
         queryClient.invalidateQueries({ queryKey: getListQuizzesQueryKey() });
         setOpen(false);
-        setForm({ title: "", subject: "", description: "", difficulty: "medium", durationMinutes: "", isFeatured: false, isProctored: false });
+        setForm({ title: "", subject: "", description: "", difficulty: "medium", durationMinutes: "", isFeatured: false, isProctored: false, sessionYear: "2025-26" });
       },
       onError: () => toast.error("Failed to create quiz."),
     });
@@ -77,7 +79,10 @@ export default function AdminQuizzes() {
   };
 
   const quizList = Array.isArray(quizzes) ? quizzes : [];
-  const filtered = search ? quizList.filter(q => q.title.toLowerCase().includes(search.toLowerCase()) || q.subject.toLowerCase().includes(search.toLowerCase())) : quizList;
+  const batchFiltered = batchFilter === "all" ? quizList
+    : batchFilter === "shared" ? quizList.filter((q: any) => !q.sessionYear)
+    : quizList.filter((q: any) => q.sessionYear === batchFilter);
+  const filtered = search ? batchFiltered.filter(q => q.title.toLowerCase().includes(search.toLowerCase()) || q.subject.toLowerCase().includes(search.toLowerCase())) : batchFiltered;
 
   return (
     <div className="space-y-6">
@@ -98,6 +103,15 @@ export default function AdminQuizzes() {
         </div>
       </div>
 
+      {/* Batch filter tabs */}
+      <div className="flex gap-1.5">
+        {(["all","2025-26","2026-27","shared"] as const).map(f => (
+          <button key={f} onClick={() => setBatchFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${batchFilter === f ? "bg-primary/20 border-primary/40 text-primary font-medium" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
+            {f === "all" ? "All Batches" : f === "shared" ? "Shared" : f}
+          </button>
+        ))}
+      </div>
+
       <Card className="bg-card/40 border-border/40">
         <div className="overflow-x-auto">
           <Table>
@@ -107,6 +121,7 @@ export default function AdminQuizzes() {
                 <TableHead>Subject</TableHead>
                 <TableHead>Questions / Time</TableHead>
                 <TableHead>Difficulty</TableHead>
+                <TableHead>Batch</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -158,6 +173,11 @@ export default function AdminQuizzes() {
                       }>
                         {quiz.difficulty}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {(() => { const sy = (quiz as any).sessionYear; return sy
+                        ? <Badge variant="outline" className={`text-[10px] px-1.5 ${sy === "2025-26" ? "text-blue-400 border-blue-500/30 bg-blue-500/10" : "text-purple-400 border-purple-500/30 bg-purple-500/10"}`}>{sy}</Badge>
+                        : <Badge variant="outline" className="text-[10px] px-1.5 text-green-400 border-green-500/30 bg-green-500/10">Shared</Badge>; })()}
                     </TableCell>
                     <TableCell>
                       {quiz.isFeatured
@@ -218,6 +238,17 @@ export default function AdminQuizzes() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Batch</Label>
+              <Select value={form.sessionYear} onValueChange={v => setForm({ ...form, sessionYear: v })}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">All Batches (shared)</SelectItem>
+                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
+                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Description</Label>

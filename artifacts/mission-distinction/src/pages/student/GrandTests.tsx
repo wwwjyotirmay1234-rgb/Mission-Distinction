@@ -28,6 +28,7 @@ type AnswerResult = {
   ai_marks: number | null; ai_feedback: string | null;
   ai_key_points_covered: string | null; ai_key_points_missed: string | null;
   status: string; question_text: string; max_marks: number; order_index: number; question_type: string;
+  model_answer?: string | null;
 };
 type SubmissionResult = GrandTestDetail & {
   status: string; total_marks_obtained: number | null; total_marks_possible: number | null;

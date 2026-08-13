@@ -11,6 +11,7 @@ export const notesTable = pgTable("notes", {
   fileType: text("file_type"),
   downloadCount: integer("download_count").default(0).notNull(),
   createdBy: integer("created_by"),
+  sessionYear: text("session_year"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at"),
 });

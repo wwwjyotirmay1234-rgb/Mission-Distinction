@@ -10,6 +10,7 @@ export const videosTable = pgTable("videos", {
   thumbnailUrl: text("thumbnail_url"),
   durationSeconds: integer("duration_seconds"),
   isPublished: boolean("is_published").notNull().default(false),
+  sessionYear: text("session_year"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

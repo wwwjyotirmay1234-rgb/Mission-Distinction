@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { questionsTable, quizzesTable, quizAttemptsTable, quizAnswersTable } from "@workspace/db";
-import { eq, sql, and, inArray } from "drizzle-orm";
+import { eq, sql, and, inArray, or, isNull } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { awardXp, XP_VALUES } from "../lib/xp";
 import { updateStreak } from "../lib/streak";
@@ -27,20 +27,37 @@ const SUBJECTS = [
 ];
 
 // ─── GET /custom/meta — available subjects + topic tags for the builder ────────
-router.get("/custom/meta", authMiddleware, async (_req: Request, res: Response) => {
+router.get("/custom/meta", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const rows = await db
-      .select({
-        subject: questionsTable.quizId,
-        topicTags: questionsTable.topicTags,
-        questionType: questionsTable.questionType,
-      })
-      .from(questionsTable)
-      .limit(5000);
+    const user = (req as any).user;
+    const isAdmin = user?.role === "admin";
 
-    // Collect subjects from quizzes
-    const quizzes = await db.select({ id: quizzesTable.id, subject: quizzesTable.subject }).from(quizzesTable);
+    // Batch filter: students only see quizzes for their batch + shared; fail closed
+    const batchCond = isAdmin
+      ? undefined
+      : user?.sessionYear
+        ? or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear))
+        : isNull(quizzesTable.sessionYear);
+
+    // Collect subjects from accessible quizzes only
+    const quizzes = await db.select({ id: quizzesTable.id, subject: quizzesTable.subject })
+      .from(quizzesTable)
+      .where(batchCond);
     const quizSubjectMap = new Map(quizzes.map(q => [q.id, q.subject]));
+    const accessibleQuizIds = quizzes.map(q => q.id);
+
+    // Only fetch questions from accessible quizzes
+    const rows = accessibleQuizIds.length > 0
+      ? await db
+          .select({
+            subject: questionsTable.quizId,
+            topicTags: questionsTable.topicTags,
+            questionType: questionsTable.questionType,
+          })
+          .from(questionsTable)
+          .where(inArray(questionsTable.quizId, accessibleQuizIds))
+          .limit(5000)
+      : [];
 
     const subjectSet = new Set<string>();
     const tagsBySubject: Record<string, Set<string>> = {};
@@ -67,17 +84,27 @@ router.get("/custom/meta", authMiddleware, async (_req: Request, res: Response) 
 // ─── POST /custom/build — generate a custom quiz session ─────────────────────
 router.post("/custom/build", authMiddleware, buildLimiter, async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
+    const isAdmin = user?.role === "admin";
     const { subject, topicTags, questionTypes, difficulty, count } = req.body;
 
     if (!subject) { res.status(400).json({ error: "subject is required" }); return; }
 
     const requestedCount = Math.min(Math.max(parseInt(String(count || 10)), 5), 50);
 
-    // Find all quizzes for this subject
+    // Batch predicate: students only see their batch + shared quizzes; fail closed
+    const batchCond = isAdmin
+      ? undefined
+      : user?.sessionYear
+        ? or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear))
+        : isNull(quizzesTable.sessionYear);
+
+    // Find all accessible quizzes for this subject
+    const subjectCond = sql`LOWER(${quizzesTable.subject}) = LOWER(${subject})`;
     let quizList = await db
       .select({ id: quizzesTable.id })
       .from(quizzesTable)
-      .where(sql`LOWER(${quizzesTable.subject}) = LOWER(${subject})`);
+      .where(batchCond ? and(subjectCond, batchCond) : subjectCond);
 
     if (quizList.length === 0) {
       res.status(404).json({ error: `No questions found for subject: ${subject}` });
@@ -150,6 +177,29 @@ router.post("/custom/submit", authMiddleware, async (req: Request, res: Response
 
     if (questionIds.length !== answers.length) {
       res.status(400).json({ error: "questionIds and answers must have the same length" });
+      return;
+    }
+
+    // Verify all supplied question IDs belong to accessible quizzes (batch isolation)
+    const isAdmin = user?.role === "admin";
+    const batchCond = isAdmin
+      ? undefined
+      : user?.sessionYear
+        ? or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear))
+        : isNull(quizzesTable.sessionYear);
+
+    const accessibleQuestions = await db
+      .select({ id: questionsTable.id })
+      .from(questionsTable)
+      .innerJoin(quizzesTable, eq(questionsTable.quizId, quizzesTable.id))
+      .where(batchCond
+        ? and(inArray(questionsTable.id, questionIds), batchCond)
+        : inArray(questionsTable.id, questionIds));
+
+    const accessibleIds = new Set(accessibleQuestions.map(q => q.id));
+    const inaccessible = questionIds.filter((id: number) => !accessibleIds.has(id));
+    if (inaccessible.length > 0) {
+      res.status(403).json({ error: "One or more questions are not accessible for your batch." });
       return;
     }
 

@@ -27,6 +27,7 @@ type GrandTest = {
   id: number; title: string; subject: string; description: string | null;
   duration_minutes: number; available_from: string | null; available_until: string | null;
   is_published: boolean; question_count: number; submission_count: number; created_at: string;
+  session_year: string | null; answers_released?: boolean;
 };
 type Question = {
   id: number; test_id: number; question_text: string; question_type: string;
@@ -59,7 +60,7 @@ function useTestDetail(id: number | null) {
   });
 }
 
-const EMPTY_FORM = { title: "", subject: "", description: "", durationMinutes: "180", availableFrom: "", availableUntil: "", isPublished: false };
+const EMPTY_FORM = { title: "", subject: "", description: "", durationMinutes: "180", availableFrom: "", availableUntil: "", isPublished: false, sessionYear: "2025-26" };
 const EMPTY_Q = { questionText: "", questionType: "long", maxMarks: "10", modelAnswer: "" };
 
 export default function AdminGrandTests() {
@@ -81,6 +82,7 @@ export default function AdminGrandTests() {
   const [qForm, setQForm] = useState({ ...EMPTY_Q });
   const [editQId, setEditQId] = useState<number | null>(null);
 
+  const [batchFilter, setBatchFilter] = useState<"all" | "2025-26" | "2026-27" | "shared">("all");
   const [submissionsOpen, setSubmissionsOpen] = useState(false);
   const [subTestId, setSubTestId] = useState<number | null>(null);
   const { data: submissions, isLoading: subLoading, refetch: refetchSubs } = useQuery<any[]>({
@@ -164,6 +166,7 @@ export default function AdminGrandTests() {
           durationMinutes: parseInt(data.durationMinutes),
           availableFrom: data.availableFrom || null,
           availableUntil: data.availableUntil || null,
+          sessionYear: data.sessionYear === "shared" ? null : (data.sessionYear || null),
         }),
       });
       if (!r.ok) throw new Error("Failed");
@@ -184,6 +187,7 @@ export default function AdminGrandTests() {
           availableFrom: data.availableFrom || null,
           availableUntil: data.availableUntil || null,
           isPublished: data.isPublished,
+          sessionYear: data.sessionYear === "shared" ? null : (data.sessionYear || null),
         }),
       });
       if (!r.ok) throw new Error("Failed");
@@ -258,6 +262,7 @@ export default function AdminGrandTests() {
       availableFrom: t.available_from ? t.available_from.slice(0, 16) : "",
       availableUntil: t.available_until ? t.available_until.slice(0, 16) : "",
       isPublished: t.is_published,
+      sessionYear: t.session_year ?? "shared",
     });
     setEditOpen(true);
   };
@@ -265,7 +270,10 @@ export default function AdminGrandTests() {
   const openQuestions = (id: number) => { setSelectedTestId(id); setQuestionsOpen(true); };
   const openSubmissions = (id: number) => { setSubTestId(id); setSubmissionsOpen(true); };
 
-  const list = tests || [];
+  const allTests = tests || [];
+  const list = batchFilter === "all" ? allTests
+    : batchFilter === "shared" ? allTests.filter(t => !t.session_year)
+    : allTests.filter(t => t.session_year === batchFilter);
 
   function fmtDate(d: string | null) {
     if (!d) return "—";
@@ -282,6 +290,15 @@ export default function AdminGrandTests() {
           <p className="text-muted-foreground text-sm mt-1">Full-length timed mock exams — AI-graded, CBME-aligned.</p>
         </div>
         <Button onClick={() => setCreateOpen(true)}><Plus className="mr-2 h-4 w-4" /> Create Grand Test</Button>
+      </div>
+
+      {/* Batch filter tabs */}
+      <div className="flex gap-1.5">
+        {(["all","2025-26","2026-27","shared"] as const).map(f => (
+          <button key={f} onClick={() => setBatchFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${batchFilter === f ? "bg-primary/20 border-primary/40 text-primary font-medium" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
+            {f === "all" ? "All Batches" : f === "shared" ? "Shared" : f}
+          </button>
+        ))}
       </div>
 
       <Card className="bg-card/40 border-border/40">
@@ -347,6 +364,9 @@ export default function AdminGrandTests() {
                       {t.answers_released && (
                         <Badge className="bg-amber-500/20 text-amber-400 border-none text-[10px]"><KeyRound size={9} className="mr-1" />Key Released</Badge>
                       )}
+                      {t.session_year
+                        ? <Badge variant="outline" className={`text-[10px] px-1.5 ${t.session_year === "2025-26" ? "text-blue-400 border-blue-500/30 bg-blue-500/10" : "text-purple-400 border-purple-500/30 bg-purple-500/10"}`}>{t.session_year}</Badge>
+                        : <Badge variant="outline" className="text-[10px] px-1.5 text-green-400 border-green-500/30 bg-green-500/10">Shared</Badge>}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -418,6 +438,17 @@ export default function AdminGrandTests() {
                 <Input type="datetime-local" className="bg-background/50" value={form.availableUntil} onChange={e => setForm({ ...form, availableUntil: e.target.value })} />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label>Batch</Label>
+              <Select value={form.sessionYear} onValueChange={v => setForm({ ...form, sessionYear: v })}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">All Batches (shared)</SelectItem>
+                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
+                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
@@ -467,6 +498,17 @@ export default function AdminGrandTests() {
             <div className="flex items-center gap-3 pt-1">
               <Switch checked={editForm.isPublished} onCheckedChange={v => setEditForm({ ...editForm, isPublished: v })} />
               <Label className="cursor-pointer">Published (visible to students)</Label>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Batch</Label>
+              <Select value={editForm.sessionYear} onValueChange={v => setEditForm({ ...editForm, sessionYear: v })}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">All Batches (shared)</SelectItem>
+                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
+                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

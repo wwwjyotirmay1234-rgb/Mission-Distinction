@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { quizSubmissionsTable, questionsTable, quizzesTable } from "@workspace/db";
-import { eq, desc, and, inArray } from "drizzle-orm";
+import { eq, desc, and, inArray, or, isNull } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { pool } from "@workspace/db";
@@ -17,6 +17,10 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
 
     const client = await pool.connect();
     try {
+      // Batch predicate: students only see submissions linked to their batch or shared quizzes
+      const isAdmin = user?.role === "admin";
+      const sessionYear: string | null = user?.sessionYear || null;
+
       const conditions: string[] = [`qs.user_id = $1`];
       const params: any[] = [user.id];
       let idx = 2;
@@ -27,6 +31,12 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
       if (attemptId) {
         const aid = parseInt(attemptId as string);
         if (!isNaN(aid)) { conditions.push(`qs.attempt_id = $${idx++}`); params.push(aid); }
+      }
+      // Fail-closed batch isolation on the parent quiz:
+      // custom-quiz submissions (quiz_id=0) always pass (no session_year row, LEFT JOIN yields NULL → IS NULL true)
+      if (!isAdmin) {
+        conditions.push(`(qz.session_year IS NULL OR qz.session_year = $${idx++})`);
+        params.push(sessionYear);
       }
 
       const result = await client.query(

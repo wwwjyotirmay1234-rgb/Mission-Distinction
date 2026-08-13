@@ -10,6 +10,7 @@ export const pyqsTable = pgTable("pyqs", {
   createdBy: integer("created_by"),
   college: text("college").notNull().default("VIMSAR"),
   topicTags: text("topic_tags").array().notNull().default([]),
+  sessionYear: text("session_year"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

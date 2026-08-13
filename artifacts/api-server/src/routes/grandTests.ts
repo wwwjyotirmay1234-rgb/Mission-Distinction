@@ -35,14 +35,15 @@ router.get("/admin/:id", adminMiddleware, async (req: Request, res: Response) =>
 
 // ─── Admin: create grand test ─────────────────────────────────────────────────
 router.post("/", adminMiddleware, async (req: Request, res: Response) => {
-  const { title, subject, description, durationMinutes, availableFrom, availableUntil } = req.body;
+  const { title, subject, description, durationMinutes, availableFrom, availableUntil, sessionYear } = req.body;
   if (!title || !subject) { res.status(400).json({ error: "title and subject required" }); return; }
+  const safeSessionYear = sessionYear || null;
   const client = await pool.connect();
   try {
     const { rows } = await client.query(
-      `INSERT INTO grand_tests (title, subject, description, duration_minutes, available_from, available_until, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [title, subject, description || null, durationMinutes || 180, availableFrom || null, availableUntil || null, (req as any).user?.id]
+      `INSERT INTO grand_tests (title, subject, description, duration_minutes, available_from, available_until, session_year, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [title, subject, description || null, durationMinutes || 180, availableFrom || null, availableUntil || null, safeSessionYear || null, (req as any).user?.id]
     );
     res.status(201).json(rows[0]);
   } finally { client.release(); }
@@ -50,16 +51,25 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
 
 // ─── Admin: update grand test ─────────────────────────────────────────────────
 router.put("/:id", adminMiddleware, async (req: Request, res: Response) => {
-  const { title, subject, description, durationMinutes, availableFrom, availableUntil, isPublished } = req.body;
+  const { title, subject, description, durationMinutes, availableFrom, availableUntil, isPublished, sessionYear } = req.body;
   const client = await pool.connect();
   try {
     const { rows } = await client.query(
-      `UPDATE grand_tests SET title=COALESCE($1,title), subject=COALESCE($2,subject),
-       description=COALESCE($3,description), duration_minutes=COALESCE($4,duration_minutes),
-       available_from=$5, available_until=$6,
-       is_published=COALESCE($7,is_published)
-       WHERE id=$8 RETURNING *`,
-      [title, subject, description, durationMinutes, availableFrom || null, availableUntil || null, isPublished, req.params.id]
+      sessionYear !== undefined
+        ? `UPDATE grand_tests SET title=COALESCE($1,title), subject=COALESCE($2,subject),
+           description=COALESCE($3,description), duration_minutes=COALESCE($4,duration_minutes),
+           available_from=$5, available_until=$6,
+           is_published=COALESCE($7,is_published),
+           session_year=$9
+           WHERE id=$8 RETURNING *`
+        : `UPDATE grand_tests SET title=COALESCE($1,title), subject=COALESCE($2,subject),
+           description=COALESCE($3,description), duration_minutes=COALESCE($4,duration_minutes),
+           available_from=$5, available_until=$6,
+           is_published=COALESCE($7,is_published)
+           WHERE id=$8 RETURNING *`,
+      sessionYear !== undefined
+        ? [title, subject, description, durationMinutes, availableFrom || null, availableUntil || null, isPublished, req.params.id, sessionYear || null]
+        : [title, subject, description, durationMinutes, availableFrom || null, availableUntil || null, isPublished, req.params.id]
     );
     if (!rows[0]) { res.status(404).json({ error: "not found" }); return; }
     res.json(rows[0]);
@@ -148,8 +158,17 @@ router.get("/:id/submissions", adminMiddleware, async (req: Request, res: Respon
 
 // ─── Leaderboard: top scores for a test ──────────────────────────────────────
 router.get("/:id/leaderboard", authMiddleware, async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const sessionYear = user?.sessionYear || null;
   const client = await pool.connect();
   try {
+    // Verify this test is accessible to the user's batch before exposing rankings
+    const accessCheck = await client.query(
+      "SELECT id FROM grand_tests WHERE id=$1 AND is_published=true AND (session_year IS NULL OR session_year=$2)",
+      [req.params.id, sessionYear]
+    );
+    if (!accessCheck.rows[0]) { res.status(404).json({ error: "not found" }); return; }
+
     const { rows } = await client.query(`
       SELECT
         ROW_NUMBER() OVER (ORDER BY gts.total_marks_obtained DESC NULLS LAST, gts.submitted_at ASC) AS rank,
@@ -169,7 +188,9 @@ router.get("/:id/leaderboard", authMiddleware, async (req: Request, res: Respons
 
 // ─── Student: list published grand tests ──────────────────────────────────────
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
+  const user = (req as any).user;
+  const userId = user?.id;
+  const sessionYear = user?.sessionYear || null;
   const client = await pool.connect();
   try {
     const { rows } = await client.query(`
@@ -184,18 +205,24 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
       FROM grand_tests gt
       LEFT JOIN grand_test_questions gtq ON gtq.test_id = gt.id
       WHERE gt.is_published = true
+        AND (gt.session_year IS NULL OR gt.session_year = $2)
       GROUP BY gt.id
       ORDER BY gt.available_from DESC NULLS LAST, gt.created_at DESC
-    `, [userId]);
+    `, [userId, sessionYear]);
     res.json(rows);
   } finally { client.release(); }
 });
 
 // ─── Student: get test detail + questions (no model answers) ──────────────────
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const sessionYear = user?.sessionYear || null;
   const client = await pool.connect();
   try {
-    const testRes = await client.query("SELECT * FROM grand_tests WHERE id=$1 AND is_published=true", [req.params.id]);
+    const testRes = await client.query(
+      "SELECT * FROM grand_tests WHERE id=$1 AND is_published=true AND (session_year IS NULL OR session_year=$2)",
+      [req.params.id, sessionYear]
+    );
     if (!testRes.rows[0]) { res.status(404).json({ error: "not found" }); return; }
     const qRes = await client.query(
       "SELECT id, question_text, question_type, max_marks, order_index FROM grand_test_questions WHERE test_id=$1 ORDER BY order_index",
@@ -207,10 +234,16 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 
 // ─── Student: start attempt ───────────────────────────────────────────────────
 router.post("/:id/start", authMiddleware, async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
+  const user = (req as any).user;
+  const userId = user?.id;
+  const sessionYear = user?.sessionYear || null;
   const client = await pool.connect();
   try {
-    const testRes = await client.query("SELECT * FROM grand_tests WHERE id=$1 AND is_published=true", [req.params.id]);
+    // Enforce batch isolation — student can only start tests for their batch or shared tests
+    const testRes = await client.query(
+      "SELECT * FROM grand_tests WHERE id=$1 AND is_published=true AND (session_year IS NULL OR session_year=$2)",
+      [req.params.id, sessionYear]
+    );
     if (!testRes.rows[0]) { res.status(404).json({ error: "not found" }); return; }
 
     // Enforce 24-hr availability window
@@ -241,19 +274,23 @@ router.post("/:id/start", authMiddleware, async (req: Request, res: Response) =>
 
 // ─── Student: submit (AI grading removed — saves answers, marks as submitted) ─
 router.post("/submissions/:submissionId/submit", authMiddleware, async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
+  const user = (req as any).user;
+  const userId = user?.id;
+  const sessionYear = user?.sessionYear || null;
   const { answers } = req.body as {
     answers: { questionId: number; answerText: string; imageUrl?: string }[];
   };
   const client = await pool.connect();
 
   try {
+    // Verify ownership and batch access in one query; fail closed for unknown sessionYear
     const subRes = await client.query(
       `SELECT gts.*, gt.duration_minutes, gt.title, gt.subject
        FROM grand_test_submissions gts
        JOIN grand_tests gt ON gt.id=gts.test_id
-       WHERE gts.id=$1 AND gts.user_id=$2`,
-      [req.params.submissionId, userId]
+       WHERE gts.id=$1 AND gts.user_id=$2
+         AND (gt.session_year IS NULL OR gt.session_year=$3)`,
+      [req.params.submissionId, userId, sessionYear]
     );
     if (!subRes.rows[0]) { res.status(404).json({ error: "not found" }); return; }
     if (subRes.rows[0].status !== "in_progress") { res.status(409).json({ error: "already_submitted" }); return; }
@@ -304,15 +341,19 @@ router.post("/submissions/:submissionId/submit", authMiddleware, async (req: Req
 
 // ─── Student: get submission result ──────────────────────────────────────────
 router.get("/submissions/:submissionId", authMiddleware, async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
+  const user = (req as any).user;
+  const userId = user?.id;
+  const sessionYear = user?.sessionYear || null;
   const client = await pool.connect();
   try {
+    // Verify ownership and batch access; fail closed for unknown sessionYear
     const subRes = await client.query(
       `SELECT gts.*, gt.title, gt.subject, gt.duration_minutes, gt.answers_released
        FROM grand_test_submissions gts
        JOIN grand_tests gt ON gt.id = gts.test_id
-       WHERE gts.id=$1 AND gts.user_id=$2`,
-      [req.params.submissionId, userId]
+       WHERE gts.id=$1 AND gts.user_id=$2
+         AND (gt.session_year IS NULL OR gt.session_year=$3)`,
+      [req.params.submissionId, userId, sessionYear]
     );
     if (!subRes.rows[0]) { res.status(404).json({ error: "not found" }); return; }
     const answersReleased = subRes.rows[0].answers_released;

@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import { quizAnswersTable, questionsTable, quizzesTable, examsTable, studyPlansTable, dailyQuestionsTable, usersTable, vivaHistoryTable, pyqsTable, pyqInsightsCacheTable } from "@workspace/db";
 import { sendPushToUser } from "./push";
 import { adminMiddleware } from "../middlewares/auth";
-import { eq, and, gte, sql, desc } from "drizzle-orm";
+import { eq, and, gte, sql, desc, or, isNull } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 
 const router = Router();
@@ -63,14 +63,22 @@ router.get("/mistakes", authMiddleware, async (req: Request, res: Response) => {
     const questionMap = new Map(questions.map(q => [q.id, q]));
 
     const quizIds = [...new Set(wrongAnswers.map(w => w.quizId))];
-    const quizzes = await db.select().from(quizzesTable).where(sql`${quizzesTable.id} = ANY(${quizIds})`);
+    // Apply batch filter when fetching quizzes — students only see their batch + shared
+    const isAdmin = user?.role === "admin";
+    const quizBatchCond = isAdmin
+      ? sql`${quizzesTable.id} = ANY(${quizIds})`
+      : user?.sessionYear
+        ? and(sql`${quizzesTable.id} = ANY(${quizIds})`, or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear)))
+        : and(sql`${quizzesTable.id} = ANY(${quizIds})`, isNull(quizzesTable.sessionYear));
+    const quizzes = await db.select().from(quizzesTable).where(quizBatchCond);
     const quizMap = new Map(quizzes.map(q => [q.id, q]));
 
     const mistakes = wrongAnswers
       .map(w => {
         const q = questionMap.get(w.questionId);
         const quiz = quizMap.get(w.quizId);
-        if (!q) return null;
+        // Exclude questions from quizzes outside the student's batch
+        if (!q || (!isAdmin && !quiz)) return null;
         return {
           id: w.id,
           questionId: q.id,
@@ -126,11 +134,20 @@ router.get("/exam-readiness", authMiddleware, async (req: Request, res: Response
         .where(eq(vivaHistoryTable.userId, user.id))
         .orderBy(desc(vivaHistoryTable.createdAt))
         .limit(20),
-      db.select({ examDate: examsTable.examDate })
-        .from(examsTable)
-        .where(and(eq(examsTable.isGlobal, true), gte(examsTable.examDate, new Date())))
-        .orderBy(examsTable.examDate)
-        .limit(1),
+      (() => {
+        // Filter upcoming exams by batch — shared (NULL session_year) or matching; fail closed
+        const examIsAdmin = (user as any)?.role === "admin";
+        const examSessionCond = examIsAdmin
+          ? undefined
+          : (user as any)?.sessionYear
+            ? or(isNull(examsTable.sessionYear), eq(examsTable.sessionYear, (user as any).sessionYear))
+            : isNull(examsTable.sessionYear);
+        return db.select({ examDate: examsTable.examDate })
+          .from(examsTable)
+          .where(and(eq(examsTable.isGlobal, true), gte(examsTable.examDate, new Date()), examSessionCond))
+          .orderBy(examsTable.examDate)
+          .limit(1);
+      })(),
     ]);
 
     const total = rows[0]?.total ?? 0;
@@ -290,13 +307,21 @@ router.get("/per-quiz-breakdown", authMiddleware, async (req: Request, res: Resp
     if (filtered.length === 0) { res.json({ breakdown: [] }); return; }
 
     const quizIds = [...new Set(filtered.map(r => r.quizId))];
+    const isAdmin = user?.role === "admin";
+    const breakdownBatchCond = isAdmin
+      ? sql`${quizzesTable.id} = ANY(${quizIds})`
+      : user?.sessionYear
+        ? and(sql`${quizzesTable.id} = ANY(${quizIds})`, or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear)))
+        : and(sql`${quizzesTable.id} = ANY(${quizIds})`, isNull(quizzesTable.sessionYear));
     const quizzes = await db
       .select({ id: quizzesTable.id, title: quizzesTable.title })
       .from(quizzesTable)
-      .where(sql`${quizzesTable.id} = ANY(${quizIds})`);
+      .where(breakdownBatchCond);
     const quizMap = new Map(quizzes.map(q => [q.id, q.title]));
 
+    // Only show breakdown rows for accessible quizzes
     const breakdown = filtered
+      .filter(r => quizMap.has(r.quizId))
       .map(r => ({
         quizId: r.quizId,
         quizTitle: quizMap.get(r.quizId) ?? `Quiz #${r.quizId}`,
@@ -318,8 +343,20 @@ router.get("/pyq-patterns", authMiddleware, async (req: Request, res: Response) 
   try {
     const user = (req as any).user;
 
-    // 1. All PYQs with their topic tags
-    const allPyqs = await db.select({ subject: pyqsTable.subject, year: pyqsTable.year, topicTags: pyqsTable.topicTags }).from(pyqsTable);
+    // 1. All PYQs with their topic tags — batch-filtered so only accessible content is used
+    const isAdmin = user?.role === "admin";
+    const pyqBatchCond = isAdmin
+      ? undefined
+      : user?.sessionYear
+        ? or(isNull(pyqsTable.sessionYear), eq(pyqsTable.sessionYear, user.sessionYear))
+        : isNull(pyqsTable.sessionYear);
+    const quizBatchCond = isAdmin
+      ? undefined
+      : user?.sessionYear
+        ? or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear))
+        : isNull(quizzesTable.sessionYear);
+    const allPyqs = await db.select({ subject: pyqsTable.subject, year: pyqsTable.year, topicTags: pyqsTable.topicTags })
+      .from(pyqsTable).where(pyqBatchCond);
 
     // 2. Build PYQ tag → { subject, years } frequency map
     const tagPyqMap = new Map<string, { subject: string; years: Set<string>; pyqCount: number }>();
@@ -338,11 +375,15 @@ router.get("/pyq-patterns", authMiddleware, async (req: Request, res: Response) 
       return;
     }
 
-    // 3. Get quiz questions that carry any PYQ tag
+    // 3. Get quiz questions that carry any PYQ tag — only from accessible quizzes
     const taggedQuestions = await db
       .select({ id: questionsTable.id, topicTags: questionsTable.topicTags })
       .from(questionsTable)
-      .where(sql`${questionsTable.topicTags} IS NOT NULL AND array_length(${questionsTable.topicTags}, 1) > 0`);
+      .innerJoin(quizzesTable, eq(questionsTable.quizId, quizzesTable.id))
+      .where(and(
+        sql`${questionsTable.topicTags} IS NOT NULL AND array_length(${questionsTable.topicTags}, 1) > 0`,
+        quizBatchCond
+      ));
 
     // 4. Build questionId → tags lookup
     const questionTagMap = new Map<number, string[]>();

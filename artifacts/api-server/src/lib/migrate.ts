@@ -755,7 +755,46 @@ export async function runStartupMigrations() {
         updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
       CREATE UNIQUE INDEX IF NOT EXISTS video_progress_unique ON video_progress(user_id, video_id);
+
+      -- ── Migration version tracking ────────────────────────────────────────────
+      -- One-time migrations are recorded here so they are never re-run on restart.
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        key TEXT PRIMARY KEY,
+        applied_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      -- ── Batch isolation: session_year on content tables ───────────────────────
+      -- NULL = shared with all batches; '2025-26' / '2026-27' = batch-specific
+      -- ADD COLUMN is idempotent; the backfill is guarded below (one-time only).
+      ALTER TABLE quizzes     ADD COLUMN IF NOT EXISTS session_year TEXT;
+      ALTER TABLE grand_tests ADD COLUMN IF NOT EXISTS session_year TEXT;
+      ALTER TABLE videos      ADD COLUMN IF NOT EXISTS session_year TEXT;
+      ALTER TABLE notes       ADD COLUMN IF NOT EXISTS session_year TEXT;
+      ALTER TABLE pyqs        ADD COLUMN IF NOT EXISTS session_year TEXT;
     `);
+
+    // ── One-time backfill: assign all pre-existing rows to '2025-26' ─────────
+    // Runs exactly once, tracked in schema_migrations.  Rows with
+    // session_year IS NULL created AFTER this point are intentionally shared
+    // (visible to all batches) and must never be touched on subsequent boots.
+    const BACKFILL_KEY = 'batch_isolation_backfill_2025-26_v1';
+    const { rows: applied } = await client.query(
+      "SELECT 1 FROM schema_migrations WHERE key = $1",
+      [BACKFILL_KEY]
+    );
+    if (applied.length === 0) {
+      await client.query(
+        `UPDATE quizzes     SET session_year = '2025-26' WHERE session_year IS NULL;
+         UPDATE grand_tests SET session_year = '2025-26' WHERE session_year IS NULL;
+         UPDATE videos      SET session_year = '2025-26' WHERE session_year IS NULL;
+         UPDATE notes       SET session_year = '2025-26' WHERE session_year IS NULL;
+         UPDATE pyqs        SET session_year = '2025-26' WHERE session_year IS NULL;`
+      );
+      await client.query(
+        "INSERT INTO schema_migrations (key) VALUES ($1)",
+        [BACKFILL_KEY]
+      );
+    }
   } finally {
     client.release();
   }

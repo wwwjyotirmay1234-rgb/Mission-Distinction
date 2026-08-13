@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { videosTable, videoConceptsTable, videoQuestionsTable, videoProgressTable } from "@workspace/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, or, isNull } from "drizzle-orm";
 import { v2 as cloudinary } from "cloudinary";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { awardXp } from "../lib/xp";
@@ -24,10 +24,18 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
       ? String(req.query.subject[0] ?? "")
       : String(req.query.subject ?? "");
 
+    // Students see published videos for their batch + shared; fail closed when sessionYear unknown
+    const isAdmin = user?.role === "admin";
+    const batchFilter = isAdmin
+      ? eq(videosTable.isPublished, true)
+      : user?.sessionYear
+        ? and(eq(videosTable.isPublished, true), or(isNull(videosTable.sessionYear), eq(videosTable.sessionYear, user.sessionYear)))
+        : and(eq(videosTable.isPublished, true), isNull(videosTable.sessionYear));
+
     const videos = await db
       .select()
       .from(videosTable)
-      .where(eq(videosTable.isPublished, true))
+      .where(batchFilter)
       .orderBy(desc(videosTable.createdAt));
 
     const filtered = subject && subject !== "all"
@@ -59,8 +67,14 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
     const id = parseInt(String(req.params.id));
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
 
-    const [video] = await db.select().from(videosTable).where(eq(videosTable.id, id));
-    if (!video || !video.isPublished) { res.status(404).json({ error: "Video not found" }); return; }
+    const isAdmin = user?.role === "admin";
+    const batchCond = isAdmin
+      ? and(eq(videosTable.id, id), eq(videosTable.isPublished, true))
+      : user?.sessionYear
+        ? and(eq(videosTable.id, id), eq(videosTable.isPublished, true), or(isNull(videosTable.sessionYear), eq(videosTable.sessionYear, user.sessionYear)))
+        : and(eq(videosTable.id, id), eq(videosTable.isPublished, true), isNull(videosTable.sessionYear));
+    const [video] = await db.select().from(videosTable).where(batchCond);
+    if (!video) { res.status(404).json({ error: "Video not found" }); return; }
 
     const concepts = await db
       .select()
@@ -103,6 +117,15 @@ router.post("/:id/progress", authMiddleware, async (req: Request, res: Response)
     const id = parseInt(String(req.params.id));
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
 
+    // Verify student can access this video (batch isolation)
+    if (user?.role !== "admin") {
+      const accessCond = user?.sessionYear
+        ? and(eq(videosTable.id, id), eq(videosTable.isPublished, true), or(isNull(videosTable.sessionYear), eq(videosTable.sessionYear, user.sessionYear)))
+        : and(eq(videosTable.id, id), eq(videosTable.isPublished, true), isNull(videosTable.sessionYear));
+      const [accessible] = await db.select({ id: videosTable.id }).from(videosTable).where(accessCond);
+      if (!accessible) { res.status(404).json({ error: "Video not found" }); return; }
+    }
+
     const { watchedPercent } = req.body;
     const pct = Math.min(100, Math.max(0, parseInt(String(watchedPercent ?? 0))));
     const completed = pct >= 80;
@@ -144,6 +167,15 @@ router.post("/:id/quiz", authMiddleware, async (req: Request, res: Response) => 
     const { answers } = req.body; // { [questionId]: selectedOption }
     if (!answers || typeof answers !== "object") {
       res.status(400).json({ error: "answers object required" }); return;
+    }
+
+    // Verify student can access this video (batch isolation)
+    if (user?.role !== "admin") {
+      const accessCond = user?.sessionYear
+        ? and(eq(videosTable.id, id), eq(videosTable.isPublished, true), or(isNull(videosTable.sessionYear), eq(videosTable.sessionYear, user.sessionYear)))
+        : and(eq(videosTable.id, id), eq(videosTable.isPublished, true), isNull(videosTable.sessionYear));
+      const [accessible] = await db.select({ id: videosTable.id }).from(videosTable).where(accessCond);
+      if (!accessible) { res.status(404).json({ error: "Video not found" }); return; }
     }
 
     // Verify video is completed
@@ -206,7 +238,7 @@ router.get("/admin/list", adminMiddleware, async (_req: Request, res: Response) 
 // POST /api/videos/admin — create video
 router.post("/admin", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const { title, subject, description } = req.body;
+    const { title, subject, description, sessionYear } = req.body;
     if (!title?.trim() || !subject?.trim()) {
       res.status(400).json({ error: "title and subject are required" }); return;
     }
@@ -214,6 +246,7 @@ router.post("/admin", adminMiddleware, async (req: Request, res: Response) => {
       title: String(title).trim(),
       subject: String(subject).trim(),
       description: description ? String(description).trim() : null,
+      sessionYear: sessionYear || null,
     }).returning();
     res.status(201).json(video);
   } catch (err) {
@@ -225,7 +258,7 @@ router.post("/admin", adminMiddleware, async (req: Request, res: Response) => {
 router.put("/admin/:id", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const id = parseInt(String(req.params.id));
-    const { title, subject, description, videoUrl, cloudinaryPublicId, thumbnailUrl, durationSeconds, isPublished } = req.body;
+    const { title, subject, description, videoUrl, cloudinaryPublicId, thumbnailUrl, durationSeconds, isPublished, sessionYear } = req.body;
     const [updated] = await db.update(videosTable).set({
       ...(title != null && { title: String(title).trim() }),
       ...(subject != null && { subject: String(subject).trim() }),
@@ -235,6 +268,7 @@ router.put("/admin/:id", adminMiddleware, async (req: Request, res: Response) =>
       ...(thumbnailUrl !== undefined && { thumbnailUrl: thumbnailUrl || null }),
       ...(durationSeconds !== undefined && { durationSeconds: durationSeconds ? Number(durationSeconds) : null }),
       ...(isPublished !== undefined && { isPublished: Boolean(isPublished) }),
+      ...(sessionYear !== undefined && { sessionYear: sessionYear || null }),
     }).where(eq(videosTable.id, id)).returning();
     if (!updated) { res.status(404).json({ error: "Video not found" }); return; }
     res.json(updated);

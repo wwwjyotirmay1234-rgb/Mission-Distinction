@@ -12,6 +12,7 @@ export const quizzesTable = pgTable("quizzes", {
   durationMinutes: integer("duration_minutes"),
   isFeatured: boolean("is_featured").default(false).notNull(),
   isProctored: boolean("is_proctored").default(false).notNull(),
+  sessionYear: text("session_year"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { usersTable, quizAttemptsTable } from "@workspace/db";
-import { eq, sql, desc, and } from "drizzle-orm";
+import { eq, sql, desc, and, isNull } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { getCache, setCache } from "../lib/cache";
 import { logger } from "../lib/logger";
@@ -24,11 +24,17 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
       return;
     }
 
+    // Fail closed: if the requester has no sessionYear, show only users who also have none
+    // (in practice all active students have a sessionYear; this prevents cross-batch exposure)
+    const sessionYearCond = user.sessionYear
+      ? eq(usersTable.sessionYear, user.sessionYear)
+      : isNull(usersTable.sessionYear);
+
     const visibleStudents = and(
       eq(usersTable.role, "student"),
       eq(usersTable.isSuperAdmin, false),
       ...(user.year ? [eq(usersTable.year, user.year)] : []),
-      ...(user.sessionYear ? [eq(usersTable.sessionYear, user.sessionYear)] : []),
+      sessionYearCond,
     );
 
     const [scoreStats, streakStats] = await Promise.all([
@@ -39,6 +45,13 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
           quizzesAttempted: sql<number>`COUNT(*)`.as("quizzes_attempted"),
         })
         .from(quizAttemptsTable)
+        .innerJoin(usersTable, and(
+          eq(quizAttemptsTable.userId, usersTable.id),
+          eq(usersTable.role, "student"),
+          eq(usersTable.isSuperAdmin, false),
+          ...(user.year ? [eq(usersTable.year, user.year)] : []),
+          sessionYearCond,
+        ))
         .groupBy(quizAttemptsTable.userId)
         .orderBy(desc(sql`avg_score`))
         .limit(50),

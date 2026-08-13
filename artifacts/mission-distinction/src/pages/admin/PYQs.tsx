@@ -69,7 +69,7 @@ async function uploadPYQPdf(file: File, onProgress: (p: number) => void): Promis
   });
 }
 
-const EMPTY = { title: "", subject: "", year: "", url: "", uploadedFileName: "" };
+const EMPTY = { title: "", subject: "", year: "", url: "", uploadedFileName: "", sessionYear: "2025-26" };
 
 export default function AdminPYQs() {
   const [search, setSearch] = useState("");
@@ -85,6 +85,7 @@ export default function AdminPYQs() {
   const [editUploading, setEditUploading] = useState(false);
   const [editProgress, setEditProgress] = useState(0);
   const [editPending, setEditPending] = useState(false);
+  const [batchFilter, setBatchFilter] = useState<"all" | "2025-26" | "2026-27" | "shared">("all");
   const [tagTarget, setTagTarget] = useState<PYQ | null>(null);
   const [tagInput, setTagInput] = useState("");
   const [savingTags, setSavingTags] = useState(false);
@@ -99,7 +100,7 @@ export default function AdminPYQs() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: { title: string; subject: string; year: string; url: string }) =>
+    mutationFn: (data: { title: string; subject: string; year: string; url: string; sessionYear?: string }) =>
       customFetch("/api/pyqs", { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => {
       toast.success("PYQ added successfully!");
@@ -145,14 +146,14 @@ export default function AdminPYQs() {
       toast.error("Title, subject, year and a PDF/URL are required.");
       return;
     }
-    createMutation.mutate({ title: form.title, subject: form.subject, year: form.year, url: form.url });
+    createMutation.mutate({ title: form.title, subject: form.subject, year: form.year, url: form.url, sessionYear: form.sessionYear === "shared" ? undefined : (form.sessionYear || undefined) });
   };
 
   const openEdit = (p: PYQ) => {
     setEditTarget(p);
     const isDrive = p.url.includes("drive.google.com");
     setEditUseUrl(isDrive);
-    setEditForm({ title: p.title, subject: p.subject, year: p.year, url: p.url, uploadedFileName: isDrive ? "" : "Current file" });
+    setEditForm({ title: p.title, subject: p.subject, year: p.year, url: p.url, uploadedFileName: isDrive ? "" : "Current file", sessionYear: (p as any).sessionYear ?? "shared" });
     setEditOpen(true);
   };
 
@@ -165,7 +166,10 @@ export default function AdminPYQs() {
     try {
       await customFetch(`/api/pyqs/${editTarget.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ title: editForm.title, subject: editForm.subject, year: editForm.year, url: editForm.url }),
+        body: JSON.stringify({
+          title: editForm.title, subject: editForm.subject, year: editForm.year, url: editForm.url,
+          sessionYear: editForm.sessionYear === "shared" ? null : (editForm.sessionYear || null),
+        }),
       });
       toast.success("PYQ updated!");
       qc.invalidateQueries({ queryKey: PYQS_KEY });
@@ -175,7 +179,10 @@ export default function AdminPYQs() {
     finally { setEditPending(false); }
   };
 
-  const list = Array.isArray(pyqs) ? pyqs : [];
+  const allPyqs = Array.isArray(pyqs) ? pyqs : [];
+  const list = batchFilter === "all" ? allPyqs
+    : batchFilter === "shared" ? allPyqs.filter((p: any) => !p.sessionYear)
+    : allPyqs.filter((p: any) => p.sessionYear === batchFilter);
 
   return (
     <div className="space-y-6">
@@ -193,6 +200,15 @@ export default function AdminPYQs() {
         </div>
       </div>
 
+      {/* Batch filter tabs */}
+      <div className="flex gap-1.5 flex-wrap">
+        {(["all","2025-26","2026-27","shared"] as const).map(f => (
+          <button key={f} onClick={() => setBatchFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${batchFilter === f ? "bg-primary/20 border-primary/40 text-primary font-medium" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
+            {f === "all" ? "All Batches" : f === "shared" ? "Shared" : f}
+          </button>
+        ))}
+      </div>
+
       <Card className="bg-card/40 border-border/40">
         <div className="overflow-x-auto">
           <Table>
@@ -201,6 +217,7 @@ export default function AdminPYQs() {
                 <TableHead>Title</TableHead>
                 <TableHead>Subject</TableHead>
                 <TableHead>Year</TableHead>
+                <TableHead>Batch</TableHead>
                 <TableHead>Opens</TableHead>
                 <TableHead>Added</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -220,7 +237,7 @@ export default function AdminPYQs() {
                 ))
               ) : list.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <ClipboardList className="h-8 w-8 opacity-30" />
                       <span>No PYQs yet. Click "Add PYQ" to get started.</span>
@@ -243,6 +260,11 @@ export default function AdminPYQs() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="bg-amber-500/5 border-amber-500/20 text-amber-400">{p.year}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {(p as any).sessionYear
+                        ? <Badge variant="outline" className={`text-[10px] px-1.5 ${(p as any).sessionYear === "2025-26" ? "text-blue-400 border-blue-500/30 bg-blue-500/10" : "text-purple-400 border-purple-500/30 bg-purple-500/10"}`}>{(p as any).sessionYear}</Badge>
+                        : <Badge variant="outline" className="text-[10px] px-1.5 text-green-400 border-green-500/30 bg-green-500/10">Shared</Badge>}
                     </TableCell>
                     <TableCell className="text-sm">{p.downloadCount ?? 0}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{new Date(p.createdAt).toLocaleDateString()}</TableCell>
@@ -299,6 +321,17 @@ export default function AdminPYQs() {
                   <SelectContent>{YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Batch</Label>
+              <Select value={form.sessionYear} onValueChange={v => setForm({ ...form, sessionYear: v })}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">All Batches (shared)</SelectItem>
+                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
+                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -424,6 +457,17 @@ export default function AdminPYQs() {
                   <SelectContent>{YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Batch</Label>
+              <Select value={editForm.sessionYear} onValueChange={v => setEditForm({ ...editForm, sessionYear: v })}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">All Batches (shared)</SelectItem>
+                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
+                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">

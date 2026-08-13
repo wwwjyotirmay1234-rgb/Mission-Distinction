@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 import { db } from "@workspace/db";
 import { pyqsTable } from "@workspace/db";
-import { eq, and, gte, count } from "drizzle-orm";
+import { eq, and, gte, count, or, isNull } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
@@ -23,7 +23,16 @@ function isValidHttpsUrl(url: string): boolean {
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { subject, year, search, college } = req.query;
-    let pyqs = await db.select().from(pyqsTable).orderBy(pyqsTable.createdAt).limit(500);
+    const user = (req as any).user;
+    const isAdmin = user?.role === "admin";
+
+    const batchFilter = isAdmin
+      ? undefined
+      : user?.sessionYear
+        ? or(isNull(pyqsTable.sessionYear), eq(pyqsTable.sessionYear, user.sessionYear))
+        : isNull(pyqsTable.sessionYear);
+
+    let pyqs = await db.select().from(pyqsTable).where(batchFilter).orderBy(pyqsTable.createdAt).limit(500);
     if (subject) pyqs = pyqs.filter(p => p.subject.toLowerCase() === (subject as string).toLowerCase());
     if (year) pyqs = pyqs.filter(p => p.year === (year as string));
     if (college) pyqs = pyqs.filter(p => (p as any).college === (college as string));
@@ -39,7 +48,13 @@ router.post("/:id/read", authMiddleware, async (req: Request, res: Response) => 
     const user = (req as any).user;
     const id = parseId(req.params.id);
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
-    const [pyq] = await db.select().from(pyqsTable).where(eq(pyqsTable.id, id));
+    const isAdmin = user?.role === "admin";
+    const batchCond = isAdmin
+      ? eq(pyqsTable.id, id)
+      : user?.sessionYear
+        ? and(eq(pyqsTable.id, id), or(isNull(pyqsTable.sessionYear), eq(pyqsTable.sessionYear, user.sessionYear)))
+        : and(eq(pyqsTable.id, id), isNull(pyqsTable.sessionYear));
+    const [pyq] = await db.select().from(pyqsTable).where(batchCond);
     if (!pyq) { res.status(404).json({ error: "PYQ not found" }); return; }
 
     const dayStart = new Date();
@@ -71,7 +86,7 @@ router.post("/:id/read", authMiddleware, async (req: Request, res: Response) => 
 router.post("/", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const admin = (req as any).user;
-    const { title, subject, year, url, college } = req.body;
+    const { title, subject, year, url, college, sessionYear } = req.body;
     if (!title || !subject || !year || !url) { res.status(400).json({ error: "Missing fields" }); return; }
     if (!isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
     const safeTitle = stripHtml(String(title));
@@ -83,6 +98,7 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
       title: safeTitle, subject: safeSubject, year: safeYear, url,
       college: safeCollege,
       createdBy: admin.id,
+      sessionYear: sessionYear || null,
     } as any).returning();
     res.status(201).json(pyq);
   } catch {
@@ -96,7 +112,7 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
     const [existing] = await db.select().from(pyqsTable).where(eq(pyqsTable.id, id));
     if (!existing) { res.status(404).json({ error: "Not found" }); return; }
-    const { title, subject, year, url, college } = req.body;
+    const { title, subject, year, url, college, sessionYear } = req.body;
     if (url && !isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
     const updates: any = {};
     if (title !== undefined) updates.title = stripHtml(String(title));
@@ -104,6 +120,7 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     if (year !== undefined) updates.year = stripHtml(String(year));
     if (url !== undefined) updates.url = url;
     if (college !== undefined) updates.college = stripHtml(String(college));
+    if ("sessionYear" in req.body) updates.sessionYear = sessionYear || null;
     const [pyq] = await db.update(pyqsTable).set(updates).where(eq(pyqsTable.id, id)).returning();
     res.json(pyq);
   } catch {

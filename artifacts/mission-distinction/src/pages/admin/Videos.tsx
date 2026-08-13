@@ -21,6 +21,7 @@ interface VideoItem {
   thumbnailUrl?: string;
   durationSeconds?: number;
   isPublished: boolean;
+  sessionYear?: string | null;
   createdAt: string;
 }
 
@@ -67,6 +68,8 @@ export default function AdminVideos() {
   const [formTitle, setFormTitle] = useState("");
   const [formSubject, setFormSubject] = useState(SUBJECTS[0]);
   const [formDesc, setFormDesc] = useState("");
+  const [formSessionYear, setFormSessionYear] = useState("2025-26");
+  const [batchFilter, setBatchFilter] = useState<"all" | "2025-26" | "2026-27" | "shared">("all");
 
   // Concepts / questions state for expanded panel
   const [editConcepts, setEditConcepts] = useState<Concept[]>([]);
@@ -81,6 +84,11 @@ export default function AdminVideos() {
     queryKey: ["admin-videos"],
     queryFn: () => apiFetchJson("/api/videos/admin/list"),
   });
+
+  const allVideos: VideoItem[] = Array.isArray(videos) ? videos : [];
+  const filteredVideos = batchFilter === "all" ? allVideos
+    : batchFilter === "shared" ? allVideos.filter(v => !v.sessionYear)
+    : allVideos.filter(v => v.sessionYear === batchFilter);
 
   const { data: expandedDetail } = useQuery<any>({
     queryKey: ["admin-video-detail", expandedId],
@@ -100,7 +108,7 @@ export default function AdminVideos() {
       qc.invalidateQueries({ queryKey: ["admin-videos"] });
       toast.success("Video created!");
       setShowForm(false);
-      setFormTitle(""); setFormDesc("");
+      setFormTitle(""); setFormDesc(""); setFormSessionYear("2025-26");
       setExpandedId(video.id);
     },
     onError: (e: any) => toast.error(e.message),
@@ -186,6 +194,14 @@ export default function AdminVideos() {
               >
                 {SUBJECTS.map(s => <option key={s}>{s}</option>)}
               </select>
+              <select
+                value={formSessionYear} onChange={e => setFormSessionYear(e.target.value)}
+                className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm outline-none"
+              >
+                <option value="shared">All Batches (shared)</option>
+                <option value="2025-26">2025-26 Batch</option>
+                <option value="2026-27">2026-27 Batch</option>
+              </select>
               <textarea
                 value={formDesc} onChange={e => setFormDesc(e.target.value)}
                 placeholder="Description (optional)"
@@ -193,7 +209,7 @@ export default function AdminVideos() {
                 className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm outline-none resize-none focus:border-primary/50"
               />
               <Button
-                onClick={() => createMutation.mutate({ title: formTitle, subject: formSubject, description: formDesc })}
+                onClick={() => createMutation.mutate({ title: formTitle, subject: formSubject, description: formDesc, sessionYear: formSessionYear === "shared" ? null : (formSessionYear || null) })}
                 disabled={!formTitle.trim() || createMutation.isPending}
                 size="sm" className="w-full"
               >
@@ -203,16 +219,25 @@ export default function AdminVideos() {
           </Card>
         )}
 
+        {/* Batch filter tabs */}
+        <div className="flex gap-1.5 flex-wrap">
+          {(["all","2025-26","2026-27","shared"] as const).map(f => (
+            <button key={f} onClick={() => setBatchFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${batchFilter === f ? "bg-primary/20 border-primary/40 text-primary font-medium" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
+              {f === "all" ? "All Batches" : f === "shared" ? "Shared" : f}
+            </button>
+          ))}
+        </div>
+
         {isLoading ? (
           <div className="space-y-2">
             {[...Array(3)].map((_, i) => <div key={i} className="h-16 rounded-xl bg-card/40 border border-border/40 animate-pulse" />)}
           </div>
-        ) : videos.length === 0 ? (
+        ) : filteredVideos.length === 0 ? (
           <div className="text-center py-16">
             <PlayCircle size={40} className="mx-auto mb-3 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">No videos yet. Add one above.</p>
+            <p className="text-sm text-muted-foreground">{allVideos.length === 0 ? "No videos yet. Add one above." : "No videos match this filter."}</p>
           </div>
-        ) : videos.map(v => {
+        ) : filteredVideos.map(v => {
           const ytId = v.videoUrl ? getYouTubeId(v.videoUrl) : null;
           const autoThumb = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null;
           const thumb = v.thumbnailUrl || autoThumb;
@@ -239,6 +264,9 @@ export default function AdminVideos() {
                       <Badge variant={v.isPublished ? "default" : "secondary"} className="text-[9px] px-1.5">
                         {v.isPublished ? "Published" : "Draft"}
                       </Badge>
+                      {v.sessionYear
+                        ? <Badge variant="outline" className={`text-[9px] px-1.5 ${v.sessionYear === "2025-26" ? "text-blue-400 border-blue-500/30 bg-blue-500/10" : "text-purple-400 border-purple-500/30 bg-purple-500/10"}`}>{v.sessionYear}</Badge>
+                        : <Badge variant="outline" className="text-[9px] px-1.5 text-green-400 border-green-500/30 bg-green-500/10">Shared</Badge>}
                       {platform && (
                         <span className="text-[9px] text-primary flex items-center gap-0.5">
                           <Link2 size={9} /> {platform}
@@ -448,3 +476,4 @@ export default function AdminVideos() {
     </div>
   );
 }
+
