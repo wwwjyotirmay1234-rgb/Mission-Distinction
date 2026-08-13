@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiFetch } from "@/lib/apiFetch";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Mic, Sparkles, Save, Upload, FileText, Trash2, BookOpen } from "lucide-react";
+import { Mic, Save, FileText, Trash2, BookOpen } from "lucide-react";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"] as const;
 type Subject = (typeof SUBJECTS)[number];
@@ -36,11 +36,7 @@ export default function VivaQuestionBank() {
   const [activeSubject, setActiveSubject] = useState<Subject>("Anatomy");
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadingBook, setUploadingBook] = useState(false);
   const [deletingBookId, setDeletingBookId] = useState<number | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const bookInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: sources, isLoading } = useQuery<VivaSource[]>({
@@ -88,116 +84,6 @@ export default function VivaQuestionBank() {
     }
   }
 
-  async function handlePdfSelected(file: File) {
-    if (file.type !== "application/pdf") {
-      toast.error("Please select a PDF file.");
-      return;
-    }
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await apiFetch("/api/admin/viva-sources/extract-pdf", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? "Failed to extract text from PDF");
-        return;
-      }
-      setDraft((prev) => {
-        const trimmedPrev = prev.trim();
-        return trimmedPrev ? `${trimmedPrev}\n\n${data.text}` : data.text;
-      });
-      toast.success(
-        data.truncated
-          ? `Extracted text from "${file.name}" (truncated to fit). Review below and click Save Notes.`
-          : `Extracted text from "${file.name}". Review below and click Save Notes.`
-      );
-    } catch {
-      toast.error("Failed to extract text from PDF");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  // Books upload straight from the browser to object storage via a signed
-  // URL, bypassing the Replit proxy's request body-size limit — the old
-  // multipart path silently failed for anything much above ~100MB even
-  // though the server's multer config allowed up to 500MB. Files are
-  // processed one at a time (not in parallel) to keep this predictable and
-  // to surface a clear per-file error if one large upload fails.
-  async function uploadOneBook(file: File): Promise<{ fileName: string } | { fileName: string; error: string }> {
-    try {
-      const urlRes = await apiFetch(`/api/admin/viva-sources/${activeSubject}/documents/request-upload-url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName: file.name }),
-      });
-      const urlData = await urlRes.json();
-      if (!urlRes.ok) {
-        return { fileName: file.name, error: urlData.error ?? "Failed to prepare upload." };
-      }
-
-      const putRes = await fetch(urlData.signedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": "application/pdf" },
-        body: file,
-      });
-      if (!putRes.ok) {
-        return { fileName: file.name, error: "Upload to storage failed. Please try again." };
-      }
-
-      const processRes = await apiFetch(`/api/admin/viva-sources/${activeSubject}/documents/process-uploaded`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ objectName: urlData.objectName, fileName: file.name }),
-      });
-      const processData = await processRes.json();
-      if (!processRes.ok) {
-        return { fileName: file.name, error: processData.error ?? "Failed to process this file." };
-      }
-      return { fileName: processData.saved?.fileName ?? file.name };
-    } catch {
-      return { fileName: file.name, error: "Failed to upload this file. Please try again." };
-    }
-  }
-
-  async function handleBooksSelected(files: File[]) {
-    const pdfFiles = files.filter((f) => f.type === "application/pdf");
-    if (pdfFiles.length === 0) {
-      toast.error("Please select at least one PDF file.");
-      return;
-    }
-    if (pdfFiles.length < files.length) {
-      toast.error("Some selected files were skipped — only PDF files are allowed.");
-    }
-    setUploadingBook(true);
-    try {
-      const saved: string[] = [];
-      const failed: Array<{ fileName: string; error: string }> = [];
-      for (const file of pdfFiles) {
-        const result = await uploadOneBook(file);
-        if ("error" in result) failed.push(result);
-        else saved.push(result.fileName);
-      }
-      if (saved.length > 0) {
-        toast.success(
-          saved.length === 1
-            ? `"${saved[0]}" added to the ${activeSubject} book library.`
-            : `${saved.length} books added to the ${activeSubject} book library.`
-        );
-      }
-      failed.forEach((f) => toast.error(`"${f.fileName}": ${f.error}`));
-      if (saved.length > 0) {
-        queryClient.invalidateQueries({ queryKey: ["viva-source-documents", activeSubject] });
-      }
-    } finally {
-      setUploadingBook(false);
-    }
-  }
-
   async function handleDeleteBook(id: number) {
     setDeletingBookId(id);
     try {
@@ -219,15 +105,14 @@ export default function VivaQuestionBank() {
     <div className="space-y-6 pb-12">
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Mic className="w-6 h-6 text-primary" /> Practical Hub — Viva Examiners
+          <Mic className="w-6 h-6 text-primary" /> Viva Question Bank
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Each subject has its own named AI examiner who writes and asks the viva questions live —{" "}
+          Manage source notes for each subject's viva examiner —{" "}
           <span className="font-medium text-foreground">{EXAMINER_NAMES.Anatomy}</span> (Anatomy),{" "}
           <span className="font-medium text-foreground">{EXAMINER_NAMES.Physiology}</span> (Physiology), and{" "}
           <span className="font-medium text-foreground">{EXAMINER_NAMES.Biochemistry}</span> (Biochemistry).
-          You don't need to write exact questions. Optionally share focus areas or reference notes below — the examiner
-          will use them as inspiration while still writing every question in its own words.
+          Share focus areas or reference notes below as optional guidance.
         </p>
       </div>
 
@@ -246,55 +131,17 @@ export default function VivaQuestionBank() {
       ) : (
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-5 space-y-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span>
-                {EXAMINER_NAMES[activeSubject]} generates {activeSubject} questions itself — notes below are optional guidance, not a script.
-              </span>
-            </div>
             <Textarea
               placeholder={`e.g. Focus on lower limb osteology and femoral triangle this term; emphasize NEET PG high-yield topics for ${activeSubject}...`}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               className="bg-muted/30 resize-none min-h-[220px]"
             />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/pdf"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handlePdfSelected(file);
-                e.target.value = "";
-              }}
-            />
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={uploading}
-                onClick={() => fileInputRef.current?.click()}
-                className="gap-1.5 w-fit"
-              >
-                {uploading ? (
-                  <>
-                    <FileText className="w-4 h-4 animate-pulse" /> Extracting text…
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" /> Upload PDF (textbook/reference)
-                  </>
-                )}
-              </Button>
+            <div className="flex justify-end">
               <Button onClick={handleSave} disabled={saving} className="gap-1.5">
                 <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Notes"}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Uploading a PDF extracts its text and appends it to the notes above — nothing is saved until you click "Save Notes".
-            </p>
           </CardContent>
         </Card>
       )}
@@ -304,9 +151,7 @@ export default function VivaQuestionBank() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <BookOpen className="w-4 h-4 text-primary" />
             <span>
-              {activeSubject} book library — upload full textbooks/reference books. {EXAMINER_NAMES[activeSubject]} draws
-              relevant excerpts from these automatically while asking questions, so the whole book stays usable without
-              being crammed into a single notes field.
+              {activeSubject} book library — textbooks and reference books uploaded for {EXAMINER_NAMES[activeSubject]}.
             </span>
           </div>
 
@@ -343,43 +188,8 @@ export default function VivaQuestionBank() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">No books uploaded yet for {activeSubject}.</p>
+            <p className="text-sm text-muted-foreground">No books in the {activeSubject} library yet.</p>
           )}
-
-          <input
-            ref={bookInputRef}
-            type="file"
-            accept="application/pdf"
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              const files = Array.from(e.target.files ?? []);
-              if (files.length > 0) handleBooksSelected(files);
-              e.target.value = "";
-            }}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={uploadingBook}
-            onClick={() => bookInputRef.current?.click()}
-            className="gap-1.5 w-fit"
-          >
-            {uploadingBook ? (
-              <>
-                <FileText className="w-4 h-4 animate-pulse" /> Uploading & extracting…
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4" /> Upload textbooks (PDF, up to 500MB each)
-              </>
-            )}
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            Select multiple PDFs to upload them all at once (up to 10 files, 500MB each). Full books are stored completely
-            (no truncation) and are added to the library immediately — no separate save step.
-          </p>
         </CardContent>
       </Card>
     </div>

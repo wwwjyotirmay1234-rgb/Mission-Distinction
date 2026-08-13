@@ -5,9 +5,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import {
   Home, CheckCircle, Users, User, GraduationCap,
   Microscope, Stethoscope, FileText, File, GraduationCap as ScholarIcon,
-  Zap, BarChart2, TrendingUp, Trophy, Bot, Calendar as CalendarIcon,
+  Zap, BarChart2, TrendingUp, Trophy, Calendar as CalendarIcon,
   Timer, Gamepad2, Music, Settings, MessageSquare, MessageCircleHeart,
-  Wand2, Camera, Store,
+  Wand2, Store,
 } from "lucide-react";
 import { getSectionColor } from "@/lib/sectionColors";
 import { useSidebar } from "@/contexts/SidebarContext";
@@ -47,7 +47,6 @@ const LEARN_SECTIONS: DrawerSection[] = [
     heading: "Study",
     links: [
       { icon: Microscope,    label: "Anatomy Hub",    href: "/student/anatomy" },
-      { icon: Stethoscope,   label: "Practical Hub",  href: "/student/practical-hub" },
       { icon: FileText,      label: "Notes & Books",  href: "/student/notes" },
       { icon: File,          label: "PDF Library",    href: "/student/pdfs" },
       { icon: ScholarIcon,   label: "Scholar Hub",    href: "/student/scholar-hub" },
@@ -62,13 +61,6 @@ const LEARN_SECTIONS: DrawerSection[] = [
       { icon: Stethoscope,   label: "Clinical Cases", href: "/student/clinical-case" },
       { icon: Stethoscope,   label: "Grand Rounds",   href: "/student/grand-rounds" },
       { icon: BarChart2,     label: "Quiz Analysis",  href: "/student/quiz-analysis" },
-    ],
-  },
-  {
-    heading: "AI Tools",
-    links: [
-      { icon: Camera,        label: "Photo Doubt",    href: "/student/photo-doubt" },
-      { icon: Bot,           label: "AI Tools",       href: "/student/ai-tools" },
     ],
   },
   {

@@ -55,28 +55,11 @@ function statusBadge(status: string) {
 
 function SubmissionCard({ sub, onGraded }: { sub: Submission; onGraded: () => void }) {
   const [expanded, setExpanded] = useState(false);
-  const [aiGrading, setAiGrading] = useState(false);
   const [gradeOpen, setGradeOpen] = useState(false);
   const [marks, setMarks] = useState(String(sub.admin_marks ?? sub.ai_marks ?? ""));
   const [feedback, setFeedback] = useState(sub.admin_feedback ?? sub.ai_feedback ?? "");
   const [lacking, setLacking] = useState(sub.admin_lacking ?? sub.ai_lacking ?? "");
   const [saving, setSaving] = useState(false);
-
-  const handleAiGrade = async () => {
-    setAiGrading(true);
-    try {
-      const result = await customFetch<Submission>(`/api/quiz-submissions/${sub.id}/ai-grade`, { method: "POST" });
-      toast.success(`AI graded: ${result.ai_marks}/${sub.max_marks} marks`);
-      setMarks(String(result.ai_marks ?? ""));
-      setFeedback(result.ai_feedback ?? "");
-      setLacking(result.ai_lacking ?? "");
-      onGraded();
-    } catch {
-      toast.error("AI grading failed. Please try again.");
-    } finally {
-      setAiGrading(false);
-    }
-  };
 
   const handleSaveGrade = async () => {
     const m = parseInt(marks);
@@ -150,12 +133,6 @@ function SubmissionCard({ sub, onGraded }: { sub: Submission; onGraded: () => vo
           </div>
 
           <div className="flex gap-2 shrink-0 flex-wrap">
-            {sub.status !== "graded" && (
-              <Button variant="outline" size="sm" onClick={handleAiGrade} disabled={aiGrading} className="gap-1.5 text-blue-400 border-blue-500/30 hover:bg-blue-500/10">
-                {aiGrading ? <RefreshCw size={13} className="animate-spin" /> : <Brain size={13} />}
-                {aiGrading ? "Grading…" : "AI Grade"}
-              </Button>
-            )}
             <Button size="sm" onClick={() => setGradeOpen(true)} className="gap-1.5">
               <CheckCircle size={13} /> {sub.status === "graded" ? "Edit Grade" : "Grade"}
             </Button>

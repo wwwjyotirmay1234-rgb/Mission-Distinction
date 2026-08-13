@@ -3,7 +3,6 @@ import { db } from "@workspace/db";
 import { clinicalCasesTable, clinicalCaseAttemptsTable, usersTable } from "@workspace/db";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
-import { openai } from "@workspace/integrations-openai-ai-server";
 import { awardXp } from "../lib/xp";
 import rateLimit from "express-rate-limit";
 
@@ -33,8 +32,6 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
       res.json({ cases: [] });
       return;
     }
-
-    const caseIds = cases.map(c => c.id);
 
     // Get user's own attempts for these cases
     const myAttempts = await db
@@ -165,7 +162,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// ─── POST /grand-rounds/:id/attempt — submit answer ──────────────────────────
+// ─── POST /grand-rounds/:id/attempt — submit answer (AI feedback removed) ────
 router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
@@ -199,58 +196,19 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
       return;
     }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      temperature: 0.3,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: `You are a senior consultant evaluating a medical student's Grand Round case answer. Grand Rounds demand higher-level clinical reasoning than routine clinical cases. Evaluate comprehensively for a 1st-3rd year MBBS student. Be rigorous but constructive. Reference standard textbooks (Gray's, Guyton, Robbins, Harrison's, etc.).`,
-        },
-        {
-          role: "user",
-          content: `Grand Round Clinical Case: ${clinicalCase.scenario}
-
-Model Answer (confidential — do NOT reveal verbatim): ${clinicalCase.modelAnswer}
-
-Student's Answer: ${answerText}
-
-Evaluate and return ONLY valid JSON:
-{
-  "score": number (0-10),
-  "diagnosis": string (accuracy of their primary diagnosis/finding),
-  "pathway": string (quality of pathophysiological/anatomical reasoning),
-  "clinicalCorrelates": string (clinical application and management understanding),
-  "investigations": string (appropriate investigations suggested, if relevant),
-  "missedPoints": string[] (3-5 key clinical points missed),
-  "strengths": string[] (2-3 things they did well),
-  "verdict": string (one motivating sentence with specific study direction),
-  "grade": string ("Distinction" | "Merit" | "Pass" | "Needs Revision")
-}`,
-        },
-      ],
-    });
-
-    const content = completion.choices[0]?.message?.content;
-    if (!content) { res.status(500).json({ error: "AI feedback unavailable" }); return; }
-    const feedback = JSON.parse(content);
-
     const dateKey = new Date().toISOString().slice(0, 10);
     const [saved] = await db.insert(clinicalCaseAttemptsTable).values({
       userId: user.id,
       caseId,
       dateKey,
       answerText: String(answerText).slice(0, 8000),
-      aiFeedback: feedback,
+      aiFeedback: null,
     }).returning();
 
-    // Award XP based on grade
-    const xpMap: Record<string, number> = { Distinction: 40, Merit: 30, Pass: 20, "Needs Revision": 10 };
-    const xp = xpMap[feedback.grade ?? "Pass"] ?? 15;
-    awardXp(user.id, xp, "grand_round_attempt", `Grand Round: ${feedback.grade} on "${clinicalCase.subject}" case`).catch(() => {});
+    // Award base XP for attempting
+    awardXp(user.id, 15, "grand_round_attempt", `Grand Round attempt on "${clinicalCase.subject}" case`).catch(() => {});
 
-    res.json({ feedback, id: saved.id });
+    res.json({ feedback: null, id: saved.id });
   } catch (err: any) {
     console.error("grand-rounds attempt error:", err);
     res.status(500).json({ error: err?.message || "Internal server error" });

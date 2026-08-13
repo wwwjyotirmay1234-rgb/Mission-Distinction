@@ -5,18 +5,8 @@ import { sendPushToUser } from "./push";
 import { adminMiddleware } from "../middlewares/auth";
 import { eq, and, gte, sql, desc } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
-import { openai } from "@workspace/integrations-openai-ai-server";
-import rateLimit from "express-rate-limit";
 
 const router = Router();
-
-const aiLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: 10,
-  message: { error: "Too many requests. Please wait a few minutes." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 // ── Weak-topic tracker ──────────────────────────────────────────────────────
 router.get("/weak-topics", authMiddleware, async (req: Request, res: Response) => {
@@ -215,69 +205,8 @@ router.get("/exam-readiness", authMiddleware, async (req: Request, res: Response
 });
 
 // ── Personalized daily study plan ────────────────────────────────────────────
-router.post("/study-plan/generate", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user;
-
-    const rows = await db
-      .select({
-        subject: quizAnswersTable.subject,
-        total: sql<number>`count(*)::int`,
-        correctCount: sql<number>`sum(case when ${quizAnswersTable.correct} then 1 else 0 end)::int`,
-      })
-      .from(quizAnswersTable)
-      .where(eq(quizAnswersTable.userId, user.id))
-      .groupBy(quizAnswersTable.subject);
-
-    const subjectStats = rows
-      .map(r => ({ subject: r.subject, total: r.total, accuracy: r.total > 0 ? Math.round((r.correctCount / r.total) * 100) : 0 }))
-      .sort((a, b) => a.accuracy - b.accuracy);
-    const weakSubjects = subjectStats.filter(s => s.total >= 3 && s.accuracy < 70).slice(0, 5).map(s => s.subject);
-
-    const upcomingExams = await db
-      .select()
-      .from(examsTable)
-      .where(gte(examsTable.examDate, new Date()))
-      .orderBy(examsTable.examDate)
-      .limit(5);
-
-    const examSummary = upcomingExams.length > 0
-      ? upcomingExams.map(e => `${e.title} (${e.subject}) on ${e.examDate.toISOString().slice(0, 10)}`).join("; ")
-      : "No specific exam date set — build a general revision plan.";
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.5,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert MBBS academic advisor for 1st Year students in India preparing for university exams and NEET PG/INI-CET foundation. Build realistic, motivating daily revision plans.",
-        },
-        {
-          role: "user",
-          content: `Student's weak subjects (lowest accuracy first): ${weakSubjects.length ? weakSubjects.join(", ") : "none identified yet — assume general 1st Year MBBS subjects (Anatomy, Physiology, Biochemistry)"}.
-Upcoming exams: ${examSummary}
-Build a 7-day study plan starting tomorrow. Return ONLY valid JSON:
-{ "summary": string (1-2 sentence encouraging overview), "days": [ { "day": string (e.g. "Day 1 - Mon"), "focus": string (main subject/topic), "tasks": string[] (3-4 concrete tasks, e.g. "Revise Brachial Plexus - 45 min", "Attempt 10 MCQs on Renal Physiology") } ] }`,
-        },
-      ],
-    });
-    const content = completion.choices[0]?.message?.content;
-    if (!content) { res.status(500).json({ error: "No response from AI" }); return; }
-    const plan = JSON.parse(content);
-
-    const [saved] = await db.insert(studyPlansTable).values({
-      userId: user.id,
-      planJson: plan,
-      weakSubjects,
-    }).returning();
-
-    res.json({ plan, weakSubjects, id: saved?.id, generatedAt: saved?.generatedAt });
-  } catch (err: any) {
-    console.error("study-plan generate error:", err);
-    res.status(500).json({ error: err?.message || "Failed to generate study plan. Please try again." });
-  }
+router.post("/study-plan/generate", authMiddleware, async (req: Request, res: Response) => {
+  res.status(503).json({ error: "Study plan generation is currently unavailable." });
 });
 
 router.get("/study-plan/latest", authMiddleware, async (req: Request, res: Response) => {
@@ -301,61 +230,19 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-async function getOrCreateDailyQuestion(userId: number) {
-  const dateKey = todayKey();
-  const [existing] = await db
-    .select()
-    .from(dailyQuestionsTable)
-    .where(and(eq(dailyQuestionsTable.userId, userId), eq(dailyQuestionsTable.dateKey, dateKey)));
-  if (existing) return existing;
-
-  const rows = await db
-    .select({
-      subject: quizAnswersTable.subject,
-      total: sql<number>`count(*)::int`,
-      correctCount: sql<number>`sum(case when ${quizAnswersTable.correct} then 1 else 0 end)::int`,
-    })
-    .from(quizAnswersTable)
-    .where(eq(quizAnswersTable.userId, userId))
-    .groupBy(quizAnswersTable.subject);
-
-  const stats = rows
-    .map(r => ({ subject: r.subject, total: r.total, accuracy: r.total > 0 ? Math.round((r.correctCount / r.total) * 100) : 0 }))
-    .filter(r => r.total >= 3)
-    .sort((a, b) => a.accuracy - b.accuracy);
-
-  const subject = stats[0]?.subject || "Anatomy";
-
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    temperature: 1.0,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: "You are an expert Indian medical educator writing one high-yield NEET PG style MCQ per day for a 1st Year MBBS student." },
-      {
-        role: "user",
-        content: `Write ONE high-yield single-best-answer MCQ for Subject: ${subject}. Return ONLY valid JSON: { "text": string, "options": string[4], "correctOption": number (0-3 index), "explanation": string }`,
-      },
-    ],
-  });
-  const content = completion.choices[0]?.message?.content;
-  const question = content ? JSON.parse(content) : { text: "Question unavailable today.", options: [], correctOption: 0, explanation: "" };
-
-  const [saved] = await db.insert(dailyQuestionsTable).values({
-    userId, dateKey, subject, questionJson: question,
-  }).onConflictDoNothing().returning();
-
-  if (saved) return saved;
-  const [fallback] = await db.select().from(dailyQuestionsTable).where(and(eq(dailyQuestionsTable.userId, userId), eq(dailyQuestionsTable.dateKey, dateKey)));
-  return fallback;
-}
-
 router.get("/question-of-day", authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const q = await getOrCreateDailyQuestion(user.id);
-    if (!q) { res.status(500).json({ error: "Failed to generate today's question" }); return; }
-    res.json(q);
+    const dateKey = todayKey();
+    const [existing] = await db
+      .select()
+      .from(dailyQuestionsTable)
+      .where(and(eq(dailyQuestionsTable.userId, user.id), eq(dailyQuestionsTable.dateKey, dateKey)));
+    if (!existing) {
+      res.status(404).json({ error: "No question available today." });
+      return;
+    }
+    res.json(existing);
   } catch (err: any) {
     console.error("question-of-day error:", err);
     res.status(500).json({ error: err?.message || "Internal server error" });
@@ -379,28 +266,8 @@ router.post("/question-of-day/:id/answer", authMiddleware, async (req: Request, 
   }
 });
 
-// Admin/cron-triggered broadcast: generates + pushes today's question to every subscribed student.
-// Since this environment has no background scheduler, trigger this daily via an external cron
-// (e.g. a scheduled deployment or third-party uptime-cron) hitting this endpoint with an admin JWT.
 router.post("/question-of-day/broadcast", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
-  try {
-    const students = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.role, "student"));
-    let sent = 0;
-    for (const s of students) {
-      try {
-        const q = await getOrCreateDailyQuestion(s.id);
-        if (!q) continue;
-        const ok = await sendPushToUser(s.id, "🧠 Today's high-yield question", `Subject: ${q.subject} — tap to answer and keep your streak going!`, "/ai-tools");
-        if (ok) sent++;
-      } catch (e) {
-        console.error(`question-of-day broadcast failed for user ${s.id}:`, e);
-      }
-    }
-    res.json({ totalStudents: students.length, pushesSent: sent });
-  } catch (err) {
-    console.error("question-of-day broadcast error:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
+  res.status(503).json({ error: "Question broadcast is currently unavailable." });
 });
 
 // ── Per-quiz accuracy breakdown ──────────────────────────────────────────────
@@ -528,115 +395,9 @@ router.get("/pyq-patterns", authMiddleware, async (req: Request, res: Response) 
   }
 });
 
-// ── PYQ AI Insights (cached 24h) ─────────────────────────────────────────────
-router.get("/pyq-insights", authMiddleware, aiLimiter, async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user;
-    const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-
-    // Serve cache if fresh
-    const [cached] = await db.select().from(pyqInsightsCacheTable).where(eq(pyqInsightsCacheTable.userId, user.id));
-    if (cached && Date.now() - cached.generatedAt.getTime() < CACHE_TTL_MS) {
-      res.json({ insights: cached.insightsJson as string[], cached: true, generatedAt: cached.generatedAt });
-      return;
-    }
-
-    // Fetch patterns to build AI prompt — question-level accuracy
-    const allPyqs = await db.select({ subject: pyqsTable.subject, year: pyqsTable.year, topicTags: pyqsTable.topicTags }).from(pyqsTable);
-
-    const tagPyqMap = new Map<string, { subject: string; years: Set<string> }>();
-    for (const pyq of allPyqs) {
-      for (const tag of ((pyq.topicTags as string[]) ?? [])) {
-        if (!tagPyqMap.has(tag)) tagPyqMap.set(tag, { subject: pyq.subject, years: new Set() });
-        tagPyqMap.get(tag)!.years.add(pyq.year);
-      }
-    }
-
-    // Question-level tag accuracy
-    const tagAccMap = new Map<string, { correct: number; total: number }>();
-    if (tagPyqMap.size > 0) {
-      const taggedQuestions = await db
-        .select({ id: questionsTable.id, topicTags: questionsTable.topicTags })
-        .from(questionsTable)
-        .where(sql`${questionsTable.topicTags} IS NOT NULL AND array_length(${questionsTable.topicTags}, 1) > 0`);
-
-      const questionTagMap = new Map<number, string[]>();
-      for (const q of taggedQuestions) questionTagMap.set(q.id, (q.topicTags as string[]) ?? []);
-
-      const taggedQIds = taggedQuestions.map(q => q.id);
-      if (taggedQIds.length > 0) {
-        const studentAnswers = await db
-          .select({ questionId: quizAnswersTable.questionId, correct: quizAnswersTable.correct })
-          .from(quizAnswersTable)
-          .where(and(eq(quizAnswersTable.userId, user.id), sql`${quizAnswersTable.questionId} = ANY(${taggedQIds})`));
-
-        for (const ans of studentAnswers) {
-          for (const tag of (questionTagMap.get(ans.questionId) ?? [])) {
-            if (!tagAccMap.has(tag)) tagAccMap.set(tag, { correct: 0, total: 0 });
-            const a = tagAccMap.get(tag)!;
-            a.total++;
-            if (ans.correct) a.correct++;
-          }
-        }
-      }
-    }
-
-    const totalYears = new Set(allPyqs.map(p => p.year)).size || 1;
-    const topPatterns = Array.from(tagPyqMap.entries())
-      .map(([tag, { subject, years }]) => {
-        const acc = tagAccMap.get(tag);
-        return {
-          tag, subject, years: years.size,
-          acc: acc && acc.total >= 1 ? Math.round((acc.correct / acc.total) * 100) : null,
-          questionCount: acc?.total ?? 0,
-        };
-      })
-      .sort((a, b) => b.years - a.years)
-      .slice(0, 12);
-
-    let insights: string[] = [
-      "Complete more quizzes to unlock personalised PYQ insights. Each quiz session helps the AI calibrate your strengths and gaps.",
-    ];
-
-    if (topPatterns.length > 0) {
-      const patternSummary = topPatterns
-        .map(p => `"${p.tag}" (${p.subject}): appeared in ${p.years}/${totalYears} exam years${p.acc !== null ? `, your accuracy on tagged questions: ${p.acc}% (${p.questionCount} questions)` : ", no tagged questions attempted yet"}`)
-        .join("\n");
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        temperature: 0.4,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert MBBS academic advisor for 1st Year Indian medical students. Analyse PYQ frequency data and the student's quiz accuracy to generate honest, specific, actionable study insights.",
-          },
-          {
-            role: "user",
-            content: `Here is the PYQ frequency data and this student's quiz accuracy:\n${patternSummary}\n\nGenerate 3-5 concise, specific, actionable insight bullets. Each bullet should mention the topic name, its exam frequency, and what the student should do. Be direct and honest about weaknesses. Return ONLY valid JSON: { "insights": string[] }`,
-          },
-        ],
-      });
-      const content = completion.choices[0]?.message?.content;
-      if (content) {
-        const parsed = JSON.parse(content);
-        if (Array.isArray(parsed.insights) && parsed.insights.length > 0) {
-          insights = parsed.insights;
-        }
-      }
-    }
-
-    // Upsert cache
-    await db.insert(pyqInsightsCacheTable)
-      .values({ userId: user.id, insightsJson: insights, generatedAt: new Date() })
-      .onConflictDoUpdate({ target: pyqInsightsCacheTable.userId, set: { insightsJson: insights, generatedAt: new Date() } });
-
-    res.json({ insights, cached: false, generatedAt: new Date() });
-  } catch (err: any) {
-    console.error("pyq-insights error:", err);
-    res.status(500).json({ error: err?.message || "Internal server error" });
-  }
+// ── PYQ AI Insights — disabled (AI removed) ──────────────────────────────────
+router.get("/pyq-insights", authMiddleware, async (req: Request, res: Response) => {
+  res.status(503).json({ error: "PYQ AI insights are currently unavailable." });
 });
 
 export { router as analyticsRouter };

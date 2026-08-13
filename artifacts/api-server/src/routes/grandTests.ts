@@ -1,7 +1,6 @@
 import { Router, Request, Response } from "express";
 import { pool } from "@workspace/db";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
-import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router = Router();
 
@@ -229,77 +228,7 @@ router.post("/:id/start", authMiddleware, async (req: Request, res: Response) =>
   } finally { client.release(); }
 });
 
-// ─── Advanced AI grading helper ───────────────────────────────────────────────
-async function gradeAnswer(opts: {
-  subject: string;
-  questionText: string;
-  questionType: string;
-  maxMarks: number;
-  modelAnswer: string | null;
-  answerText: string;
-  imageUrl: string | null;
-}): Promise<{ marks: number; feedback: string; covered: string; missed: string; extractedText: string }> {
-  const { subject, questionText, questionType, maxMarks, modelAnswer, answerText, imageUrl } = opts;
-
-  const systemPrompt = `You are a strict but fair MBBS university examiner grading a ${questionType === "long" ? "Long Answer Question (LAQ)" : "Short Answer Question (SAQ)"}.
-Subject: ${subject}
-You grade against CBME (Competency-Based Medical Education) standards.
-${modelAnswer ? `Key points / model answer to look for:\n${modelAnswer}` : ""}
-
-Grading rubric:
-- Award marks for each valid key point covered, clinical correlation, mechanisms explained
-- Deduct for missing key points, wrong facts, vague answers
-- For diagrams/drawings in images: evaluate labelling accuracy, completeness, neatness
-- For handwritten text in images: read carefully even if messy, give benefit of doubt for legible content
-- If both typed text AND image are provided, consider them together as one combined answer
-- Never penalise for language imperfection — medical accuracy is what matters
-
-Respond ONLY with a valid JSON object:
-{
-  "marks": <integer 0 to ${maxMarks}>,
-  "feedback": "<3-4 sentences: what was good, what was missing, clinical relevance comment>",
-  "keyPointsCovered": "<comma-separated key points covered, or 'None'>",
-  "keyPointsMissed": "<comma-separated key points missing, or 'None'>",
-  "extractedText": "<if image present, transcribe any handwritten text or describe any diagram you see; else empty string>"
-}`;
-
-  const userContent: any[] = [];
-
-  userContent.push({
-    type: "text",
-    text: `Question: ${questionText}\nMaximum Marks: ${maxMarks}\n\n${answerText ? `Student's typed answer:\n${answerText}` : "(No typed answer — answer is in the uploaded image only)"}`,
-  });
-
-  if (imageUrl) {
-    userContent.push({
-      type: "image_url",
-      image_url: { url: imageUrl, detail: "high" },
-    });
-  }
-
-  const model = imageUrl ? "gpt-4o" : "gpt-4o-mini";
-
-  const completion = await openai.chat.completions.create({
-    model,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: imageUrl ? userContent : userContent[0].text },
-    ],
-    response_format: { type: "json_object" },
-    max_tokens: 600,
-  });
-
-  const parsed = JSON.parse(completion.choices[0].message.content || "{}");
-  return {
-    marks: Math.max(0, Math.min(maxMarks, parseInt(parsed.marks) || 0)),
-    feedback: parsed.feedback || "",
-    covered: parsed.keyPointsCovered || "None",
-    missed: parsed.keyPointsMissed || "None",
-    extractedText: parsed.extractedText || "",
-  };
-}
-
-// ─── Student: submit + AI grade via SSE ──────────────────────────────────────
+// ─── Student: submit (AI grading removed — saves answers, marks as submitted) ─
 router.post("/submissions/:submissionId/submit", authMiddleware, async (req: Request, res: Response) => {
   const userId = (req as any).user?.id;
   const { answers } = req.body as {
@@ -315,8 +244,8 @@ router.post("/submissions/:submissionId/submit", authMiddleware, async (req: Req
        WHERE gts.id=$1 AND gts.user_id=$2`,
       [req.params.submissionId, userId]
     );
-    if (!subRes.rows[0]) { client.release(); res.status(404).json({ error: "not found" }); return; }
-    if (subRes.rows[0].status !== "in_progress") { client.release(); res.status(409).json({ error: "already_submitted" }); return; }
+    if (!subRes.rows[0]) { res.status(404).json({ error: "not found" }); return; }
+    if (subRes.rows[0].status !== "in_progress") { res.status(409).json({ error: "already_submitted" }); return; }
     const sub = subRes.rows[0];
 
     const qRes = await client.query(
@@ -325,90 +254,40 @@ router.post("/submissions/:submissionId/submit", authMiddleware, async (req: Req
     );
     const questions = qRes.rows;
 
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.flushHeaders();
-
-    const send = (data: object) => res.write(`data: ${JSON.stringify(data)}\n\n`);
-
-    send({ type: "status", message: "Saving your answers…" });
-
     await client.query(
       "UPDATE grand_test_submissions SET status='submitted', submitted_at=NOW() WHERE id=$1",
       [sub.id]
     );
 
     const totalPossible = questions.reduce((s: number, q: any) => s + q.max_marks, 0);
-    let totalObtained = 0;
 
-    for (let i = 0; i < questions.length; i++) {
-      const q = questions[i];
+    for (const q of questions) {
       const submitted = answers?.find((a: any) => a.questionId === q.id);
       const studentText = submitted?.answerText || "";
       const imageUrl = submitted?.imageUrl || null;
-      const hasImage = !!imageUrl;
-
-      send({
-        type: "grading",
-        questionIndex: i,
-        total: questions.length,
-        message: `Grading Q${i + 1}/${questions.length}${hasImage ? " (with handwritten sheet)" : ""}…`,
-      });
-
-      let result = { marks: 0, feedback: "Could not grade.", covered: "None", missed: "None", extractedText: "" };
-      try {
-        result = await gradeAnswer({
-          subject: sub.subject,
-          questionText: q.question_text,
-          questionType: q.question_type,
-          maxMarks: q.max_marks,
-          modelAnswer: q.model_answer,
-          answerText: studentText,
-          imageUrl,
-        });
-      } catch (e: any) {
-        console.error("[GrandTest grading error]", e?.message);
-      }
 
       await client.query(
         `INSERT INTO grand_test_answers
-         (submission_id, question_id, answer_text, answer_image_url, ai_marks, ai_feedback,
-          ai_key_points_covered, ai_key_points_missed, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'graded')`,
-        [sub.id, q.id, studentText, imageUrl, result.marks, result.feedback, result.covered, result.missed]
+         (submission_id, question_id, answer_text, answer_image_url, status)
+         VALUES ($1,$2,$3,$4,'pending')`,
+        [sub.id, q.id, studentText, imageUrl]
       );
-
-      totalObtained += result.marks;
-      send({ type: "graded", questionIndex: i, marks: result.marks, maxMarks: q.max_marks });
     }
-
-    const pct = totalPossible > 0 ? Math.round((totalObtained / totalPossible) * 100) : 0;
-
-    let overallFeedback = `You scored ${totalObtained}/${totalPossible} (${pct}%).`;
-    try {
-      const oc = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{
-          role: "user",
-          content: `You are an MBBS examiner. A student scored ${totalObtained}/${totalPossible} (${pct}%) on the "${sub.title}" grand test (${sub.subject}). Write 2-3 sentences of overall performance feedback and one specific, actionable improvement tip for MBBS preparation.`,
-        }],
-        max_tokens: 200,
-      });
-      overallFeedback = oc.choices[0].message.content || overallFeedback;
-    } catch { /* keep default */ }
 
     await client.query(
       `UPDATE grand_test_submissions
-       SET status='graded', total_marks_obtained=$1, total_marks_possible=$2, ai_overall_feedback=$3
-       WHERE id=$4`,
-      [totalObtained, totalPossible, overallFeedback, sub.id]
+       SET status='submitted', total_marks_possible=$1
+       WHERE id=$2`,
+      [totalPossible, sub.id]
     );
 
-    send({ type: "done", submissionId: sub.id, totalObtained, totalPossible, percentage: pct, overallFeedback });
-    res.end();
+    res.json({
+      submissionId: sub.id,
+      totalPossible,
+      message: "Submission saved. Manual grading by admin required.",
+    });
   } catch (err) {
-    try { res.write(`data: ${JSON.stringify({ type: "error", message: "Grading failed." })}\n\n`); res.end(); } catch { /* already closed */ }
+    res.status(500).json({ error: "Submission failed." });
   } finally { client.release(); }
 });
 

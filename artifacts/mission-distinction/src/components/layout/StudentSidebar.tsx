@@ -8,9 +8,9 @@ import {
   LayoutDashboard, FileText, File, Users, Newspaper, TrendingUp,
   Calendar as CalendarIcon, Settings, Trophy, MessageSquare,
   Timer, Music, MessageCircleHeart,
-  Bot, Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight, BarChart2,
+  Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight, BarChart2,
   GraduationCap, Stethoscope, Zap, ChevronDown, MoreHorizontal,
-  Wand2, Camera, Store,
+  Wand2, Store,
 } from "lucide-react";
 import { useXPStats } from "@/hooks/useXPStats";
 import { XPProgressBar } from "@/components/XPProgressBar";
@@ -86,7 +86,6 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
       label: "Learn",
       items: [
         { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy", comingSoon: !canSeeAnatomy },
-        { icon: Stethoscope, label: "Practical Hub", href: "/student/practical-hub" },
         { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
         { icon: Trophy, label: "Grand Tests", href: "/student/grand-tests" },
         { icon: FileText, label: "Notes & Books", href: "/student/notes" },
@@ -126,8 +125,6 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
       label: "More",
       collapsible: true,
       items: [
-        { icon: Camera, label: "Photo Doubt Solver", href: "/student/photo-doubt" },
-        { icon: Bot, label: "AI Tools", href: "/student/ai-tools" },
         { icon: CalendarIcon, label: "Calendar", href: "/student/calendar" },
         { icon: Timer, label: "Study Tools", href: "/student/tools" },
         { icon: Gamepad2, label: "Medical Games", href: "/student/games" },

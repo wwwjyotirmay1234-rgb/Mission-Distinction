@@ -3,7 +3,6 @@ import { db, pool } from "@workspace/db";
 import { clinicalCasesTable, clinicalCaseAttemptsTable } from "@workspace/db";
 import { eq, sql, desc, and } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
-import { openai } from "@workspace/integrations-openai-ai-server";
 import { awardXp } from "../lib/xp";
 import rateLimit from "express-rate-limit";
 
@@ -75,7 +74,7 @@ async function getTodaysCase() {
   return { todayCase, dateKey };
 }
 
-// ─── Submit attempt + get AI feedback ────────────────────────────────────────
+// ─── Submit attempt (AI feedback removed) ─────────────────────────────────────
 router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
@@ -94,7 +93,6 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
       res.status(403).json({ error: "You can only submit an attempt for today's clinical case" });
       return;
     }
-    const clinicalCase = todayCase;
 
     // Check for duplicate attempt: same user + same case + same calendar day
     const [existing] = await db
@@ -111,57 +109,18 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
       return;
     }
 
-    // Generate AI feedback
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.4,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: `You are a senior MBBS clinical tutor evaluating a 1st year student's answer to a clinical case scenario. Your job is to give structured, educational feedback. Be encouraging but clinically accurate. Always reference standard Indian medical textbook knowledge (Gray's, Guyton, Harper's, etc.).`,
-        },
-        {
-          role: "user",
-          content: `Clinical Case: ${clinicalCase.scenario}
-
-Model Answer (confidential — do NOT reveal verbatim): ${clinicalCase.modelAnswer}
-
-Student's Answer: ${answerText}
-
-Evaluate the student's answer and return ONLY valid JSON:
-{
-  "score": number (0-10),
-  "diagnosis": string (1-2 sentences on whether they identified the diagnosis/nerve/concept correctly),
-  "pathway": string (1-2 sentences on anatomical/physiological pathway — correct or what was missed),
-  "clinicalCorrelates": string (1-2 sentences on clinical relevance and application),
-  "missedPoints": string[] (2-4 key points the student missed or got wrong),
-  "strengths": string[] (1-3 things the student got right),
-  "verdict": string (one motivating sentence: 'Good attempt!' or 'Needs revision — focus on...')
-}`,
-        },
-      ],
-    });
-
-    const content = completion.choices[0]?.message?.content;
-    if (!content) { res.status(500).json({ error: "AI feedback unavailable" }); return; }
-    const feedback = JSON.parse(content);
-
     const [saved] = await db.insert(clinicalCaseAttemptsTable).values({
       userId: user.id,
       caseId,
       dateKey,
       answerText: String(answerText).slice(0, 5000),
-      aiFeedback: feedback,
+      aiFeedback: null,
     }).returning();
 
     // Award XP for attempting
     awardXp(user.id, 15, "clinical_case_attempt", `Attempted Clinical Case of the Day`).catch(() => {});
-    if (feedback.score >= 7) {
-      awardXp(user.id, 10, "clinical_case_bonus", `High score on clinical case (${feedback.score}/10)`).catch(() => {});
-    }
 
-    res.json({ feedback, id: saved?.id });
+    res.json({ feedback: null, id: saved?.id });
   } catch (err: any) {
     console.error("clinical-cases attempt error:", err);
     res.status(500).json({ error: err?.message || "Internal server error" });

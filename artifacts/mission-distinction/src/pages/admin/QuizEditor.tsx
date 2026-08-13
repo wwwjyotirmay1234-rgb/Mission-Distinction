@@ -21,7 +21,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft, Plus, Pencil, Trash2, CheckCircle2, Brain,
-  Clock, BookOpen, Sparkles, AlertCircle, Upload, HelpCircle, Wand2, Loader2, Tag,
+  Clock, BookOpen, Sparkles, AlertCircle, Upload, HelpCircle, Loader2, Tag,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -93,8 +93,6 @@ export default function QuizEditor() {
   const [bulkImporting, setBulkImporting] = useState(false);
   const [bulkPreview, setBulkPreview] = useState<any[] | null>(null);
   const [bulkError, setBulkError] = useState("");
-  const [bulkMode, setBulkMode] = useState<"ai" | "manual">("ai");
-  const [aiParsing, setAiParsing] = useState(false);
   const csvFileRef = useRef<HTMLInputElement>(null);
 
   const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,29 +165,6 @@ export default function QuizEditor() {
     if (error && parsed.length === 0) { setBulkError(error); setBulkPreview(null); return; }
     if (error) setBulkError(error);
     setBulkPreview(parsed);
-  };
-
-  const handleAIParse = async () => {
-    if (!bulkText.trim()) return;
-    setAiParsing(true);
-    setBulkError("");
-    setBulkPreview(null);
-    try {
-      const data = await customFetch<{ questions: any[] }>("/api/quizzes/ai-parse", {
-        method: "POST",
-        body: JSON.stringify({ rawText: bulkText }),
-      });
-      if (!data.questions || data.questions.length === 0) {
-        setBulkError("AI found no questions in the pasted text. Try adding more structure (e.g. label the correct answer).");
-      } else {
-        setBulkPreview(data.questions);
-        toast.success(`AI parsed ${data.questions.length} question${data.questions.length !== 1 ? "s" : ""}!`);
-      }
-    } catch (err: any) {
-      setBulkError(err?.message || "AI parsing failed. Please try again or use Manual Format.");
-    } finally {
-      setAiParsing(false);
-    }
   };
 
   const handleBulkImport = async () => {
@@ -796,114 +771,50 @@ export default function QuizEditor() {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Mode toggle */}
-            <div className="flex gap-1 p-1 rounded-lg bg-muted/30 border border-border/30 w-fit">
-              <button
-                onClick={() => { setBulkMode("ai"); setBulkPreview(null); setBulkError(""); }}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${bulkMode === "ai" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <Wand2 className="h-3.5 w-3.5" /> AI Parse
-              </button>
-              <button
-                onClick={() => { setBulkMode("manual"); setBulkPreview(null); setBulkError(""); }}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${bulkMode === "manual" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <HelpCircle className="h-3.5 w-3.5" /> Manual Format
-              </button>
-            </div>
-
-            {/* AI mode */}
-            {bulkMode === "ai" && (
-              <div className="space-y-3">
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3.5">
-                  <p className="text-sm font-medium text-primary flex items-center gap-2 mb-1">
-                    <Wand2 className="h-4 w-4 shrink-0" /> Paste questions in any format — or upload a CSV
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    MCQs, SAQs, fill-in-the-blank, true/false, name-the-following — any format works.
-                    AI will identify the question type, options, correct answer, and explanation automatically.
-                    Or upload a CSV with columns: <code className="font-mono text-[10px] bg-muted/40 px-1 rounded">question, A, B, C, D, correct (A–D), explanation</code>
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 border-dashed border-primary/30 text-primary hover:bg-primary/5"
-                    onClick={() => csvFileRef.current?.click()}
-                  >
-                    <Upload className="h-3.5 w-3.5" /> Upload CSV
-                  </Button>
-                  <span className="text-[11px] text-muted-foreground">CSV will be loaded into the text box below for AI parsing</span>
-                  <input ref={csvFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvUpload} />
-                </div>
-                <Textarea
-                  className="bg-background/50 resize-none min-h-[200px] text-sm"
-                  placeholder={`Paste your questions here. Examples:
-
-1. Which nerve supplies the skin of the anterior thigh?
-a) Femoral nerve  b) Obturator nerve  c) Sciatic nerve  d) Lateral cutaneous nerve
-Answer: a) Femoral nerve
-Explanation: The femoral nerve (L2-L4) provides cutaneous supply to the anterior thigh.
-
-2. The femoral nerve arises from L2, L3, L4 nerve roots. True or False?
-Answer: True
-
-3. Fill in the blank: The main arterial supply of the femoral head is the ___ artery.
-Answer: medial circumflex femoral`}
-                  value={bulkText}
-                  onChange={(e) => { setBulkText(e.target.value); setBulkPreview(null); setBulkError(""); }}
-                />
-                {!bulkPreview && (
-                  <Button
-                    className="w-full gap-2"
-                    onClick={handleAIParse}
-                    disabled={!bulkText.trim() || aiParsing}
-                  >
-                    {aiParsing ? (
-                      <><Loader2 className="h-4 w-4 animate-spin" /> Parsing with AI…</>
-                    ) : (
-                      <><Wand2 className="h-4 w-4" /> Parse with AI</>
-                    )}
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {/* Manual mode */}
-            {bulkMode === "manual" && (
-              <div className="space-y-3">
-                <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 space-y-2">
-                  <p className="text-sm font-medium text-blue-300 flex items-center gap-2">
-                    <HelpCircle className="h-4 w-4 shrink-0" /> Accepted formats
-                  </p>
-                  <div className="space-y-2 text-xs text-blue-200/70">
-                    <p className="font-semibold text-blue-300/80">① Pipe-separated (one question per line):</p>
-                    <code className="block bg-background/40 rounded p-2 font-mono leading-relaxed whitespace-pre">
+            {/* Manual format */}
+            <div className="space-y-3">
+              <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4 space-y-2">
+                <p className="text-sm font-medium text-blue-300 flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4 shrink-0" /> Accepted formats
+                </p>
+                <div className="space-y-2 text-xs text-blue-200/70">
+                  <p className="font-semibold text-blue-300/80">① Pipe-separated (one question per line):</p>
+                  <code className="block bg-background/40 rounded p-2 font-mono leading-relaxed whitespace-pre">
 {`Question text | Option A | Option B | Option C | Option D | A | Explanation (optional)
 Which nerve supplies the skin of the anterior thigh? | Femoral | Obturator | Sciatic | Lateral cutaneous | A | Femoral nerve (L2-L4)`}
-                    </code>
-                    <p className="font-semibold text-blue-300/80 pt-1">② JSON array:</p>
-                    <code className="block bg-background/40 rounded p-2 font-mono leading-relaxed whitespace-pre">
+                  </code>
+                  <p className="font-semibold text-blue-300/80 pt-1">② JSON array:</p>
+                  <code className="block bg-background/40 rounded p-2 font-mono leading-relaxed whitespace-pre">
 {`[{"text":"Question?","options":["A","B","C","D"],"correctOption":0,"explanation":"..."}]`}
-                    </code>
-                    <p className="text-blue-200/50">For correct answer: use A/B/C/D or 0/1/2/3. Lines starting with # are ignored.</p>
-                  </div>
+                  </code>
+                  <p className="text-blue-200/50">For correct answer: use A/B/C/D or 0/1/2/3. Lines starting with # are ignored.</p>
                 </div>
-                <Textarea
-                  className="bg-background/50 font-mono text-xs resize-none min-h-[160px]"
-                  placeholder={"Which nerve supplies the skin of the anterior thigh? | Femoral | Obturator | Sciatic | Lateral cutaneous | A | Femoral nerve (L2–L4)"}
-                  value={bulkText}
-                  onChange={(e) => { setBulkText(e.target.value); setBulkPreview(null); setBulkError(""); }}
-                />
-                {!bulkPreview && (
-                  <Button onClick={handleBulkPreview} disabled={!bulkText.trim()}>
-                    Preview Questions
-                  </Button>
-                )}
               </div>
-            )}
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-dashed border-primary/30 text-primary hover:bg-primary/5"
+                  onClick={() => csvFileRef.current?.click()}
+                >
+                  <Upload className="h-3.5 w-3.5" /> Upload CSV
+                </Button>
+                <span className="text-[11px] text-muted-foreground">CSV columns: question, A, B, C, D, correct (A–D), explanation</span>
+                <input ref={csvFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvUpload} />
+              </div>
+              <Textarea
+                className="bg-background/50 font-mono text-xs resize-none min-h-[160px]"
+                placeholder={"Which nerve supplies the skin of the anterior thigh? | Femoral | Obturator | Sciatic | Lateral cutaneous | A | Femoral nerve (L2–L4)"}
+                value={bulkText}
+                onChange={(e) => { setBulkText(e.target.value); setBulkPreview(null); setBulkError(""); }}
+              />
+              {!bulkPreview && (
+                <Button onClick={handleBulkPreview} disabled={!bulkText.trim()}>
+                  Preview Questions
+                </Button>
+              )}
+            </div>
 
             {/* Error */}
             {bulkError && (

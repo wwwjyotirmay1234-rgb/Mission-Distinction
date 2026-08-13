@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Plus, Trash2, Sparkles, Shield, ChevronLeft, ChevronRight } from "lucide-react";
+import { BookOpen, Plus, Trash2, Shield, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 
@@ -20,12 +20,8 @@ interface Flashcard { id: number; front: string; back: string; }
 
 function DeckManager({ deckId, deckTitle, onBack }: { deckId: number; deckTitle: string; onBack: () => void }) {
   const [showAdd, setShowAdd] = useState(false);
-  const [showAiGen, setShowAiGen] = useState(false);
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
-  const [aiTopic, setAiTopic] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiCards, setAiCards] = useState<{ front: string; back: string }[]>([]);
   const [confirmCardId, setConfirmCardId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
@@ -42,35 +38,10 @@ function DeckManager({ deckId, deckTitle, onBack }: { deckId: number; deckTitle:
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-deck-cards", deckId] }); queryClient.invalidateQueries({ queryKey: ["admin-flashcard-decks"] }); setShowAdd(false); setFront(""); setBack(""); toast.success("Card added!"); },
   });
 
-  const bulkAddMutation = useMutation({
-    mutationFn: async (cards: { front: string; back: string }[]) => {
-      for (const card of cards) {
-        await apiFetch(`/api/admin/content/flashcard-decks/${deckId}/cards`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(card) });
-      }
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-deck-cards", deckId] }); queryClient.invalidateQueries({ queryKey: ["admin-flashcard-decks"] }); setShowAiGen(false); setAiCards([]); setAiTopic(""); toast.success(`${aiCards.length} cards added!`); },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (cardId: number) => apiFetch(`/api/admin/content/flashcard-cards/${cardId}`, { method: "DELETE" }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-deck-cards", deckId] }); queryClient.invalidateQueries({ queryKey: ["admin-flashcard-decks"] }); },
   });
-
-  async function generateAiCards() {
-    if (!aiTopic.trim() || !data?.deck) return;
-    setAiLoading(true);
-    try {
-      const res = await apiFetch("/api/ai/flashcards", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: data.deck.subject, topic: aiTopic, count: 8 }),
-      });
-      if (!res.ok) { toast.error("AI generation failed"); return; }
-      const result = await res.json();
-      setAiCards(result.cards ?? []);
-      toast.success(`${result.cards?.length ?? 0} flashcards generated!`);
-    } catch { toast.error("AI generation failed"); }
-    finally { setAiLoading(false); }
-  }
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
@@ -92,7 +63,6 @@ function DeckManager({ deckId, deckTitle, onBack }: { deckId: number; deckTitle:
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShowAiGen(true)}><Sparkles size={14} /> AI Cards</Button>
               <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShowAdd(true)}><Plus size={14} /> Add Card</Button>
             </div>
           </div>
@@ -100,7 +70,7 @@ function DeckManager({ deckId, deckTitle, onBack }: { deckId: number; deckTitle:
           {data?.cards.length === 0 ? (
             <div className="py-12 text-center border border-dashed rounded-xl text-muted-foreground text-sm">
               <BookOpen size={28} className="mx-auto mb-3 opacity-30" />
-              No cards yet. Add cards manually or use AI to generate them.
+              No cards yet. Add cards manually to get started.
             </div>
           ) : (
             <div className="space-y-2">
@@ -157,41 +127,6 @@ function DeckManager({ deckId, deckTitle, onBack }: { deckId: number; deckTitle:
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showAiGen} onOpenChange={v => { setShowAiGen(v); if (!v) { setAiCards([]); setAiTopic(""); } }}>
-        <DialogContent className="bg-card border-border/60 sm:max-w-lg">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles size={16} className="text-primary" /> AI Flashcard Generator</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic</label>
-              <div className="flex gap-2">
-                <Input value={aiTopic} onChange={e => setAiTopic(e.target.value)} placeholder="e.g. Brachial Plexus…" className="bg-background/50 border-border/50" />
-                <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                  onClick={generateAiCards} disabled={aiLoading || !aiTopic.trim()}>
-                  <Sparkles size={13} /> {aiLoading ? "…" : "Generate"}
-                </Button>
-              </div>
-            </div>
-            {aiCards.length > 0 && (
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {aiCards.map((c, i) => (
-                  <div key={i} className="bg-background/40 rounded-lg p-3 text-sm">
-                    <p className="font-medium">{c.front}</p>
-                    <p className="text-muted-foreground text-xs mt-1">{c.back}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowAiGen(false); setAiCards([]); setAiTopic(""); }}>Cancel</Button>
-            {aiCards.length > 0 && (
-              <Button disabled={bulkAddMutation.isPending} onClick={() => bulkAddMutation.mutate(aiCards)}>
-                {bulkAddMutation.isPending ? "Adding…" : `Add ${aiCards.length} Cards`}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -225,7 +160,7 @@ export default function AdminFlashcards() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><BookOpen size={22} className="text-primary" /> Official Flashcard Decks</h1>
-          <p className="text-muted-foreground text-sm mt-1">Create study decks visible to all students — use AI to populate cards quickly.</p>
+          <p className="text-muted-foreground text-sm mt-1">Create study decks visible to all students.</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="gap-2 shrink-0"><Plus size={16} /> New Deck</Button>
       </div>
@@ -235,7 +170,7 @@ export default function AdminFlashcards() {
       ) : decks.length === 0 ? (
         <div className="py-16 text-center border border-dashed rounded-xl text-muted-foreground">
           <BookOpen size={32} className="mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No official decks yet. Create one and add cards with AI.</p>
+          <p className="text-sm">No official decks yet. Create one and add cards.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -4,9 +4,7 @@ import { quizSubmissionsTable, questionsTable, quizzesTable } from "@workspace/d
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
-import { openai } from "@workspace/integrations-openai-ai-server";
 import { pool } from "@workspace/db";
-import { CBME_CONTEXT } from "../lib/cbmeContext";
 
 const router = Router();
 
@@ -107,91 +105,9 @@ router.get("/admin/all", adminMiddleware, async (req: Request, res: Response) =>
   }
 });
 
-router.post("/:id/ai-grade", adminMiddleware, async (req: Request, res: Response) => {
-  try {
-    const id = parseId(req.params.id as string);
-    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
-
-    const [submission] = await db.select().from(quizSubmissionsTable).where(eq(quizSubmissionsTable.id, id));
-    if (!submission) { res.status(404).json({ error: "Submission not found" }); return; }
-
-    const [question] = await db.select().from(questionsTable).where(eq(questionsTable.id, submission.questionId));
-    if (!question) { res.status(404).json({ error: "Question not found" }); return; }
-
-    const maxMarks = submission.maxMarks;
-    const modelAnswer = question.modelAnswer || "";
-    const studentAnswer = submission.answerText || "";
-
-    if (!studentAnswer && !submission.answerImageUrl) {
-      await db.update(quizSubmissionsTable)
-        .set({ aiMarks: 0, aiFeedback: "No answer provided.", status: "ai_graded", gradedAt: new Date() })
-        .where(eq(quizSubmissionsTable.id, id));
-      res.json({ aiMarks: 0, aiFeedback: "No answer provided.", status: "ai_graded" });
-      return;
-    }
-
-    const questionType = question.questionType === "short_answer" ? "Short Answer (SAQ)" : "Long Answer (LAQ)";
-    const systemPrompt = `You are a medical examiner grading a ${questionType} question for 1st Year MBBS students in India. Grade objectively and fairly. Always return valid JSON only.\n\n${CBME_CONTEXT}`;
-
-    const userPrompt = `Question: ${question.text}
-
-${modelAnswer ? `Model Answer / Key Points:\n${modelAnswer}` : "No model answer provided — use your medical knowledge to evaluate."}
-
-Student's Answer: ${studentAnswer || "(No typed answer — see image if provided)"}
-
-Maximum Marks: ${maxMarks}
-
-Evaluate this answer carefully. Consider:
-- Accuracy of medical facts
-- Completeness of key points from the model answer
-- Clarity of expression
-- For partial answers, award partial marks proportionally
-
-Return JSON only with these exact keys:
-{
-  "marks": <integer 0–${maxMarks}>,
-  "feedback": "<1-2 sentences of overall feedback on the answer quality>",
-  "lacking": "<bullet-point list of specific points/concepts that were missing or incorrect, starting each bullet with '• '. If the answer is complete, write 'None — all key points covered.'>"
-}`;
-
-    const messages: any[] = [{ role: "user", content: userPrompt }];
-
-    if (submission.answerImageUrl) {
-      messages[0].content = [
-        { type: "text", text: userPrompt },
-        { type: "image_url", image_url: { url: submission.answerImageUrl } },
-      ];
-    }
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
-      max_completion_tokens: 500,
-      response_format: { type: "json_object" },
-    });
-
-    const raw = completion.choices[0]?.message?.content || '{"marks":0,"feedback":"Unable to grade.","lacking":""}';
-    let parsed: { marks: number; feedback: string; lacking?: string };
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      parsed = { marks: 0, feedback: "AI grading failed — please grade manually.", lacking: "" };
-    }
-
-    const aiMarks = Math.max(0, Math.min(maxMarks, Math.round(parsed.marks)));
-    const aiFeedback = parsed.feedback || "";
-    const aiLacking = parsed.lacking || "";
-
-    const [updated] = await db.update(quizSubmissionsTable)
-      .set({ aiMarks, aiFeedback, aiLacking, status: "ai_graded", gradedAt: new Date() })
-      .where(eq(quizSubmissionsTable.id, id))
-      .returning();
-
-    res.json(updated);
-  } catch (err) {
-    console.error("AI grading error:", err);
-    res.status(500).json({ error: "AI grading failed" });
-  }
+// AI grading removed — endpoint returns 503
+router.post("/:id/ai-grade", adminMiddleware, (_req: Request, res: Response) => {
+  res.status(503).json({ error: "AI grading is currently unavailable. Please grade manually." });
 });
 
 router.patch("/:id/grade", adminMiddleware, async (req: Request, res: Response) => {

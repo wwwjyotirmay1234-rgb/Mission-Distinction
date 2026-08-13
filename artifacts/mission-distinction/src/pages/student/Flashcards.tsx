@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Plus, ChevronLeft, Trash2, RotateCcw, CheckCircle2, X, Brain, Sparkles, Shield, Lock } from "lucide-react";
+import { BookOpen, Plus, ChevronLeft, Trash2, CheckCircle2, X, Brain, Shield, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
 
@@ -159,12 +159,8 @@ function BrowseSession({ cards, onDone }: { cards: Flashcard[]; onDone: () => vo
 
 function DeckView({ deckId, isAdminDeck, onBack }: { deckId: number; isAdminDeck: boolean; onBack: () => void }) {
   const [showAdd, setShowAdd] = useState(false);
-  const [showAiGen, setShowAiGen] = useState(false);
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
-  const [aiTopic, setAiTopic] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiCards, setAiCards] = useState<{ front: string; back: string }[]>([]);
   const [reviewing, setReviewing] = useState(false);
   const [browsing, setBrowsing] = useState(false);
   const queryClient = useQueryClient();
@@ -183,41 +179,12 @@ function DeckView({ deckId, isAdminDeck, onBack }: { deckId: number; isAdminDeck
     onError: () => toast.error("Failed to add card"),
   });
 
-  const bulkAddMutation = useMutation({
-    mutationFn: async (cards: { front: string; back: string }[]) => {
-      for (const card of cards) {
-        await apiFetch(`/api/flashcards/decks/${deckId}/cards`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(card) });
-      }
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["deck-cards", deckId] }); queryClient.invalidateQueries({ queryKey: ["flashcard-decks"] }); setShowAiGen(false); setAiCards([]); setAiTopic(""); toast.success(`${aiCards.length} AI cards added!`); },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (cardId: number) => apiFetch(`/api/flashcards/cards/${cardId}`, { method: "DELETE" }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["deck-cards", deckId] }); queryClient.invalidateQueries({ queryKey: ["flashcard-decks"] }); },
   });
 
   const dueCards = data?.cards.filter(isDue) ?? [];
-
-  async function generateAiCards() {
-    if (!aiTopic.trim() || !data?.deck) return;
-    setAiLoading(true);
-    try {
-      const res = await apiFetch("/api/ai/flashcards", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: data.deck.subject, topic: aiTopic, count: 8 }),
-      });
-      if (!res.ok) { toast.error("AI generation failed"); return; }
-      const result = await res.json();
-      setAiCards(result.cards ?? []);
-      toast.success(`${result.cards?.length ?? 0} flashcards generated!`);
-    } catch {
-      toast.error("AI generation failed");
-    } finally {
-      setAiLoading(false);
-    }
-  }
 
   if (reviewing && dueCards.length > 0) return <ReviewSession cards={dueCards} deckId={deckId} onDone={() => { setReviewing(false); queryClient.invalidateQueries({ queryKey: ["deck-cards", deckId] }); }} />;
   if (browsing) return <BrowseSession cards={data?.cards ?? []} onDone={() => setBrowsing(false)} />;
@@ -247,7 +214,6 @@ function DeckView({ deckId, isAdminDeck, onBack }: { deckId: number; isAdminDeck
                 <Button size="sm" className="gap-1.5" onClick={() => setBrowsing(true)}><Brain size={14} /> Study</Button>
               ) : (
                 <>
-                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShowAiGen(true)}><Sparkles size={14} /> AI Cards</Button>
                   <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShowAdd(true)}><Plus size={14} /> Add Card</Button>
                   {dueCards.length > 0 && <Button size="sm" className="gap-1.5" onClick={() => setReviewing(true)}><Brain size={14} /> Review ({dueCards.length})</Button>}
                 </>
@@ -258,7 +224,7 @@ function DeckView({ deckId, isAdminDeck, onBack }: { deckId: number; isAdminDeck
           {data?.cards.length === 0 ? (
             <div className="py-12 text-center border border-dashed rounded-xl text-muted-foreground text-sm">
               <BookOpen size={28} className="mx-auto mb-3 opacity-30" />
-              {isAdminDeck ? "No cards added to this deck yet." : "No cards yet. Add your first card or generate with AI."}
+              {isAdminDeck ? "No cards added to this deck yet." : "No cards yet. Add your first card to start studying."}
             </div>
           ) : (
             <div className="space-y-2">
@@ -303,42 +269,6 @@ function DeckView({ deckId, isAdminDeck, onBack }: { deckId: number; isAdminDeck
         </DialogContent>
       </Dialog>
 
-      {/* AI Generate Cards */}
-      <Dialog open={showAiGen} onOpenChange={v => { setShowAiGen(v); if (!v) { setAiCards([]); setAiTopic(""); } }}>
-        <DialogContent className="bg-card border-border/60 sm:max-w-lg">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles size={16} className="text-primary" /> AI Flashcard Generator</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic to generate cards for</label>
-              <div className="flex gap-2">
-                <Input value={aiTopic} onChange={e => setAiTopic(e.target.value)} placeholder="e.g. Brachial Plexus, Krebs Cycle…" className="bg-background/50 border-border/50" />
-                <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                  onClick={generateAiCards} disabled={aiLoading || !aiTopic.trim()}>
-                  <Sparkles size={13} /> {aiLoading ? "…" : "Generate"}
-                </Button>
-              </div>
-            </div>
-            {aiCards.length > 0 && (
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                {aiCards.map((c, i) => (
-                  <div key={i} className="bg-background/40 rounded-lg p-3 text-sm">
-                    <p className="font-medium">{c.front}</p>
-                    <p className="text-muted-foreground text-xs mt-1">{c.back}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowAiGen(false); setAiCards([]); setAiTopic(""); }}>Cancel</Button>
-            {aiCards.length > 0 && (
-              <Button disabled={bulkAddMutation.isPending} onClick={() => bulkAddMutation.mutate(aiCards)}>
-                {bulkAddMutation.isPending ? "Adding…" : `Add ${aiCards.length} Cards`}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

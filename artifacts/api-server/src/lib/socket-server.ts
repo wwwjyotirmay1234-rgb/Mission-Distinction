@@ -6,7 +6,6 @@ import { usersTable, communityGroupsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { awardXp } from "./xp";
 import { updateStreak } from "./streak";
-import { openai } from "@workspace/integrations-openai-ai-server";
 import { registerChessHandlers } from "./game-socket-chess";
 import { registerLudoHandlers } from "./game-socket-ludo";
 import { registerSNLHandlers } from "./game-socket-snl";
@@ -73,27 +72,9 @@ function roomPlayers(room: GameRoom) {
   }));
 }
 
-async function generateGameQuestions(subject: string): Promise<GameQuestion[]> {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    max_completion_tokens: 2000,
-    messages: [
-      {
-        role: "system",
-        content: `You are a medical education expert for 1st year MBBS (India). Generate exactly ${TOTAL_QUESTIONS} multiple choice questions about ${subject} for competitive quiz play. Each question must have exactly 4 options and one correct answer.
-
-Return ONLY valid JSON array, no markdown:
-[{"text":"...","options":["A text","B text","C text","D text"],"correctOption":0},...]
-
-correctOption is 0-indexed. Make questions challenging but fair for 1st year MBBS students. Cover different topics within ${subject}.`,
-      },
-    ],
-  });
-
-  const content = response.choices[0]?.message?.content ?? "[]";
-  const clean = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-  const parsed = JSON.parse(clean);
-  return Array.isArray(parsed) ? parsed.slice(0, TOTAL_QUESTIONS) : [];
+async function generateGameQuestions(_subject: string): Promise<GameQuestion[]> {
+  // AI question generation has been removed
+  return [];
 }
 
 function advanceQuestion(room: GameRoom, code: string) {

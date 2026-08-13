@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, Plus, ThumbsUp, Trash2, Sparkles, Shield } from "lucide-react";
+import { Lightbulb, Plus, ThumbsUp, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
@@ -35,7 +35,6 @@ export default function StudentMnemonics({ hideHeader }: { hideHeader?: boolean 
   const [filterSubject, setFilterSubject] = useState("All");
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ subject: "Anatomy", topic: "", mnemonic: "", description: "" });
-  const [aiLoading, setAiLoading] = useState(false);
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -63,26 +62,6 @@ export default function StudentMnemonics({ hideHeader }: { hideHeader?: boolean 
     mutationFn: (id: number) => apiFetch(`/api/mnemonics/${id}`, { method: "DELETE" }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["mnemonics"] }); toast.success("Deleted"); },
   });
-
-  async function generateWithAI() {
-    if (!form.topic.trim()) { toast.error("Enter a topic first"); return; }
-    setAiLoading(true);
-    try {
-      const res = await apiFetch("/api/ai/mnemonic", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: form.subject, topic: form.topic }),
-      });
-      if (!res.ok) { toast.error("AI generation failed"); return; }
-      const data = await res.json();
-      setForm(p => ({ ...p, mnemonic: data.mnemonic ?? "", description: data.description ?? "" }));
-      toast.success("AI mnemonic generated!");
-    } catch {
-      toast.error("AI generation failed");
-    } finally {
-      setAiLoading(false);
-    }
-  }
 
   return (
     <div className={hideHeader ? "space-y-6" : "space-y-6 max-w-3xl mx-auto"}>
@@ -163,15 +142,7 @@ export default function StudentMnemonics({ hideHeader }: { hideHeader?: boolean 
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic</label>
-              <div className="flex gap-2">
-                <Input value={form.topic} onChange={e => setForm(p => ({ ...p, topic: e.target.value }))} placeholder="e.g. Cranial Nerves in order" className="bg-background/50 border-border/50" />
-                <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                  onClick={generateWithAI} disabled={aiLoading || !form.topic.trim()}>
-                  <Sparkles size={13} />
-                  {aiLoading ? "…" : "AI"}
-                </Button>
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-1">Enter a topic then click AI to auto-generate a mnemonic</p>
+              <Input value={form.topic} onChange={e => setForm(p => ({ ...p, topic: e.target.value }))} placeholder="e.g. Cranial Nerves in order" className="bg-background/50 border-border/50" />
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">The Mnemonic</label>

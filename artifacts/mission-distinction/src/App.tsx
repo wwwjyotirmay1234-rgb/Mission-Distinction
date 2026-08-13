@@ -85,8 +85,6 @@ const StudentCheatCodes    = lazy(() => import("@/pages/student/CheatCodes"));
 const StudentExams         = lazy(() => import("@/pages/student/Exams"));
 const StudentConfessions   = lazy(() => import("@/pages/student/Confessions"));
 const StudentStudyRooms    = lazy(() => import("@/pages/student/StudyRooms"));
-const StudentAITools       = lazy(() => import("@/pages/student/AITools"));
-const StudentPracticalHub  = lazy(() => import("@/pages/student/PracticalHub"));
 const StudentGames         = lazy(() => import("@/pages/student/Games"));
 const StudentQuizAnalysis  = lazy(() => import("@/pages/student/QuizAnalysis"));
 const StudentScholarHub    = lazy(() => import("@/pages/student/ScholarHub"));
@@ -127,7 +125,6 @@ const AdminClinicalCases = lazy(() => import("@/pages/admin/ClinicalCases"));
 const AdminGrandTests         = lazy(() => import("@/pages/admin/GrandTests"));
 const StudentGrandTests       = lazy(() => import("@/pages/student/GrandTests"));
 const StudentCustomQuiz       = lazy(() => import("@/pages/student/CustomQuizBuilder"));
-const StudentPhotoDoubt       = lazy(() => import("@/pages/student/PhotoDoubtSolver"));
 const StudentNotesMarketplace = lazy(() => import("@/pages/student/NotesMarketplace"));
 const StudentGrandRounds      = lazy(() => import("@/pages/student/GrandRounds"));
 const AdminNotesMarketplace   = lazy(() => import("@/pages/admin/NotesMarketplace"));
@@ -219,15 +216,12 @@ function Router() {
                 <Route path="/student/exams"        component={StudentExams} />
                 <Route path="/student/confessions"  component={StudentConfessions} />
                 <Route path="/student/study-rooms"  component={StudentStudyRooms} />
-                <Route path="/student/ai-tools"     component={StudentAITools} />
-                <Route path="/student/practical-hub" component={StudentPracticalHub} />
                 <Route path="/student/games"        component={StudentGames} />
                 <Route path="/student/scholar-hub" component={StudentScholarHub} />
                 <Route path="/student/clinical-case"     component={StudentClinicalCase} />
                 <Route path="/student/bookmarks"         component={StudentBookmarks} />
                 <Route path="/student/grand-tests"       component={StudentGrandTests} />
                 <Route path="/student/custom-quiz"       component={StudentCustomQuiz} />
-                <Route path="/student/photo-doubt"       component={StudentPhotoDoubt} />
                 <Route path="/student/notes-marketplace" component={StudentNotesMarketplace} />
                 <Route path="/student/grand-rounds"      component={StudentGrandRounds} />
                 <Route component={NotFound} />

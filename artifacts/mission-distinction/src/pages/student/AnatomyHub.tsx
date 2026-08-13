@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import ModelViewer3D from "./anatomy/ModelViewer3D";
 import CadavericViewer from "./anatomy/CadavericViewer";
 import CrossSectionViewer from "./anatomy/CrossSectionViewer";
@@ -11,7 +11,7 @@ import {
   type AnatomyStructure,
   type StructureLabel,
 } from "@/data/anatomyData";
-import { ChevronDown, ChevronUp, X, Search, ArrowLeft, List, BookOpen, Sparkles, RefreshCw, BookMarked, ZoomIn } from "lucide-react";
+import { ChevronDown, ChevronUp, X, Search, ArrowLeft, List, BookOpen } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // System brand colours
@@ -33,7 +33,6 @@ const SYSTEM_COLORS: Record<string, { bg: string; text: string; border: string; 
 
 const INFO_TABS: { id: TabId; label: string; icon: string }[] = [
   { id: "labels",       label: "Labels",    icon: "⬡" },
-  { id: "ai",           label: "AI",        icon: "✨" },
   { id: "clinical",     label: "Clinical",  icon: "🏥" },
   { id: "quiz",         label: "Quiz",      icon: "✍️" },
   { id: "relations",    label: "Relations", icon: "🔗" },
@@ -45,7 +44,7 @@ const INFO_TABS: { id: TabId; label: string; icon: string }[] = [
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
-type TabId = "labels" | "cadaveric" | "crosssection" | "clinical" | "quiz" | "relations" | "mnemonics" | "ai";
+type TabId = "labels" | "cadaveric" | "crosssection" | "clinical" | "quiz" | "relations" | "mnemonics";
 type HubPage = "landing" | "system";
 type SheetState = "closed" | "peek" | "full";
 type RegionId = "head" | "trunk" | "upper_limb" | "lower_limb";
@@ -546,11 +545,10 @@ function SystemPicker({ onSelectSystem }: { onSelectSystem: (s: AnatomySystem) =
 // ─────────────────────────────────────────────────────────────────────────────
 // Info tab content panels
 // ─────────────────────────────────────────────────────────────────────────────
-function LabelsPanel({ structure, selectedLabel, onLabelSelect, onAskAI }: {
+function LabelsPanel({ structure, selectedLabel, onLabelSelect }: {
   structure: AnatomyStructure;
   selectedLabel: string | null;
   onLabelSelect: (l: StructureLabel) => void;
-  onAskAI: (label: StructureLabel) => void;
 }) {
   const layerColors: Record<string, string> = {
     bone: "text-amber-400", muscle: "text-orange-400", vessel: "text-red-400", nerve: "text-yellow-400", organ: "text-violet-400",
@@ -593,20 +591,6 @@ function LabelsPanel({ structure, selectedLabel, onLabelSelect, onAskAI }: {
                   );
                 })}
               </div>
-            )}
-            {selectedLabel === label.id && (
-              <button
-                onClick={e => { e.stopPropagation(); onAskAI(label); }}
-                className="mt-2 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all"
-                style={{
-                  background: "linear-gradient(135deg, rgba(124,58,237,0.3), rgba(109,40,217,0.2))",
-                  borderColor: "rgba(124,58,237,0.45)",
-                  color: "#c4b5fd",
-                }}
-              >
-                <Sparkles size={10} />
-                Ask AI about {label.name}
-              </button>
             )}
           </div>
         </button>
@@ -666,213 +650,6 @@ function RelationsPanel({ structure }: { structure: AnatomyStructure }) {
             {structure.insertion && <p className="text-sm"><span className="text-orange-300 font-semibold">Insertion: </span><span className="text-slate-300">{structure.insertion}</span></p>}
             {structure.action && <p className="text-sm"><span className="text-orange-300 font-semibold">Action: </span><span className="text-slate-300">{structure.action}</span></p>}
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// AI Explain Panel — streams textbook-quality explanation from OpenAI
-// ─────────────────────────────────────────────────────────────────────────────
-function renderAIContent(text: string) {
-  return text.split("\n").map((line, i) => {
-    if (!line.trim()) return <div key={i} className="h-2" />;
-    // Split by **bold** markers
-    const parts = line.split(/(\*\*[^*]+\*\*)/g);
-    const rendered = parts.map((p, j) => {
-      if (p.startsWith("**") && p.endsWith("**")) {
-        const inner = p.slice(2, -2);
-        // Section heading: **Heading:**
-        if (inner.endsWith(":")) {
-          return (
-            <span key={j} className="block text-[12px] font-black text-violet-300 mt-3 mb-0.5 uppercase tracking-wide">
-              {inner.slice(0, -1)}
-            </span>
-          );
-        }
-        return <strong key={j} className="text-white font-semibold">{inner}</strong>;
-      }
-      return p;
-    });
-    // Check if line is purely a heading
-    const isHeadingLine = line.startsWith("**") && line.trimEnd().endsWith(":**");
-    if (isHeadingLine) {
-      return <div key={i}>{rendered}</div>;
-    }
-    // Bullet point
-    if (line.startsWith("- ") || line.startsWith("• ")) {
-      return (
-        <div key={i} className="flex items-start gap-2 pl-1">
-          <span className="text-violet-400 text-xs mt-0.5 shrink-0">◆</span>
-          <p className="text-[12px] text-slate-300 leading-relaxed">{rendered.slice(1)}</p>
-        </div>
-      );
-    }
-    return <p key={i} className="text-[12px] text-slate-300 leading-relaxed">{rendered}</p>;
-  });
-}
-
-function AIExplainPanel({ system, structure, selectedLabel }: {
-  system: AnatomySystem;
-  structure: AnatomyStructure;
-  selectedLabel: string | null;
-}) {
-  const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [generated, setGenerated] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
-
-  // When structure or selected label changes, reset so user can re-generate
-  useEffect(() => {
-    setContent("");
-    setGenerated(false);
-    setError(null);
-    setLoading(false);
-    abortRef.current?.abort();
-  }, [structure.id, selectedLabel]);
-
-  const selectedLabelObj = selectedLabel
-    ? structure.labels.find(l => l.id === selectedLabel)
-    : null;
-
-  const generate = useCallback(async () => {
-    abortRef.current?.abort();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-    setContent("");
-    setError(null);
-    setLoading(true);
-    setGenerated(true);
-
-    try {
-      const res = await fetch("/api/anatomy/explain", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        signal: ctrl.signal,
-        body: JSON.stringify({
-          structureName: structure.name,
-          systemName: system.name,
-          labelName: selectedLabelObj?.name ?? null,
-        }),
-      });
-
-      if (!res.ok || !res.body) {
-        setError("Failed to reach AI. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const json = JSON.parse(line.slice(6));
-            if (json.error) { setError(json.error); break; }
-            if (json.done) break;
-            if (json.content) setContent(prev => prev + json.content);
-          } catch { /* ignore parse errors */ }
-        }
-      }
-    } catch (e: any) {
-      if (e.name !== "AbortError") setError("Connection error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [structure.name, system.name, selectedLabelObj?.name]);
-
-  const target = selectedLabelObj?.name ?? structure.name;
-
-  return (
-    <div className="flex flex-col gap-3">
-      {/* Header card */}
-      <div className="rounded-xl border border-violet-500/20 bg-violet-900/10 p-3.5">
-        <div className="flex items-center gap-2 mb-1">
-          <Sparkles size={13} className="text-violet-400 shrink-0" />
-          <span className="text-[10px] font-black text-violet-400 uppercase tracking-wider">AI Anatomy Tutor</span>
-        </div>
-        <p className="text-[12px] text-slate-300 leading-snug">
-          Explaining <span className="font-bold text-white">"{target}"</span> using{" "}
-          <span className="text-violet-300 font-semibold">BD Chaurasia</span> &{" "}
-          <span className="text-violet-300 font-semibold">Gray's Anatomy</span>
-        </p>
-        {selectedLabelObj && (
-          <p className="text-[10px] text-slate-500 mt-1">
-            Label selected on {structure.name} · {system.name}
-          </p>
-        )}
-      </div>
-
-      {/* Generate / Regenerate button */}
-      {!generated || (!loading && !content) ? (
-        <button
-          onClick={generate}
-          disabled={loading}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-[13px] transition-all border"
-          style={{
-            background: "linear-gradient(135deg, rgba(124,58,237,0.25), rgba(109,40,217,0.15))",
-            borderColor: "rgba(124,58,237,0.4)",
-            color: "#c4b5fd",
-          }}
-        >
-          <Sparkles size={14} />
-          Generate Explanation
-        </button>
-      ) : null}
-
-      {/* Streaming / rendered content */}
-      {(loading || content) && (
-        <div className="space-y-0.5 rounded-xl bg-white/3 border border-white/6 p-3.5">
-          {content && <div>{renderAIContent(content)}</div>}
-          {loading && (
-            <div className="flex items-center gap-2 mt-2">
-              <div className="flex gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-              <span className="text-[10px] text-slate-500">Generating from textbooks…</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
-        <div className="rounded-xl bg-red-900/15 border border-red-500/20 p-3 text-[12px] text-red-300">
-          ⚠ {error}
-        </div>
-      )}
-
-      {/* Regenerate button after content */}
-      {generated && !loading && (content || error) && (
-        <button
-          onClick={generate}
-          className="flex items-center justify-center gap-2 w-full py-2 rounded-xl text-[11px] font-bold text-slate-500 hover:text-slate-300 border border-white/6 hover:border-white/12 transition-all"
-        >
-          <RefreshCw size={11} />
-          Regenerate
-        </button>
-      )}
-
-      {/* Source note */}
-      {content && !loading && (
-        <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-white/3 border border-white/5">
-          <BookMarked size={11} className="text-slate-600 shrink-0" />
-          <p className="text-[10px] text-slate-600 leading-snug">
-            AI-generated based on BD Chaurasia &amp; Gray's Anatomy. Always verify with your textbooks.
-          </p>
         </div>
       )}
     </div>
@@ -1005,11 +782,6 @@ function StructureInfoPanel({ system, structure, activeTab, setActiveTab, select
 }) {
   const c = SYSTEM_COLORS[system.id] ?? SYSTEM_COLORS.cardiovascular;
 
-  function handleAskAI(label: StructureLabel) {
-    onLabelSelect(label);
-    setActiveTab("ai");
-  }
-
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-4 pt-3 pb-2.5 border-b border-white/6 shrink-0">
@@ -1022,9 +794,7 @@ function StructureInfoPanel({ system, structure, activeTab, setActiveTab, select
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-1 px-2.5 py-2.5 text-[11px] font-bold whitespace-nowrap shrink-0 border-b-2 transition-colors ${
               activeTab === tab.id
-                ? tab.id === "ai"
-                  ? "border-violet-400 text-violet-300"
-                  : "border-violet-500 text-violet-300"
+                ? "border-violet-500 text-violet-300"
                 : "border-transparent text-slate-500 hover:text-slate-300"
             }`}
           >
@@ -1034,8 +804,7 @@ function StructureInfoPanel({ system, structure, activeTab, setActiveTab, select
         ))}
       </div>
       <div className="flex-1 overflow-y-auto p-4" style={{ scrollbarWidth: "thin", scrollbarColor: "#3b0764 transparent" }}>
-        {activeTab === "labels"       && <LabelsPanel structure={structure} selectedLabel={selectedLabel} onLabelSelect={onLabelSelect} onAskAI={handleAskAI} />}
-        {activeTab === "ai"           && <AIExplainPanel system={system} structure={structure} selectedLabel={selectedLabel} />}
+        {activeTab === "labels"       && <LabelsPanel structure={structure} selectedLabel={selectedLabel} onLabelSelect={onLabelSelect} />}
         {activeTab === "clinical"     && <ClinicalPanel structure={structure} />}
         {activeTab === "quiz"         && <AnatomyQuizPanel questions={structure.quiz} title={structure.name} />}
         {activeTab === "relations"    && <RelationsPanel structure={structure} />}

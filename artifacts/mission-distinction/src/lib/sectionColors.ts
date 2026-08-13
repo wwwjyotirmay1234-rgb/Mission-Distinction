@@ -76,7 +76,6 @@ export const SECTION_COLORS: Record<SectionKey, SectionColor> = {
 export const ROUTE_SECTION: Record<string, SectionKey> = {
   "/student/anatomy": "anatomy",
   "/student/dashboard": "learning",
-  "/student/practical-hub": "clinical",
   "/student/quiz": "exams",
   "/student/quiz-analysis": "progress",
   "/student/notes": "learning",
@@ -93,7 +92,6 @@ export const ROUTE_SECTION: Record<string, SectionKey> = {
   "/student/confessions": "community",
   "/student/study-rooms": "community",
   "/student/clinical-case": "clinical",
-  "/student/ai-tools": "tools",
   "/student/games": "tools",
   "/student/music": "tools",
   "/student/settings": "tools",

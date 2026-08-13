@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, Plus, Trash2, Sparkles, Shield } from "lucide-react";
+import { Lightbulb, Plus, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
 
@@ -22,7 +22,6 @@ interface Mnemonic {
 export default function AdminMnemonics() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ subject: "Anatomy", topic: "", mnemonic: "", description: "" });
-  const [aiLoading, setAiLoading] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
@@ -45,22 +44,6 @@ export default function AdminMnemonics() {
     mutationFn: (id: number) => apiFetch(`/api/admin/content/mnemonics/${id}`, { method: "DELETE" }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-mnemonics"] }); toast.success("Mnemonic removed"); },
   });
-
-  async function generateWithAI() {
-    if (!form.topic.trim()) { toast.error("Enter a topic first"); return; }
-    setAiLoading(true);
-    try {
-      const res = await apiFetch("/api/ai/mnemonic", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: form.subject, topic: form.topic }),
-      });
-      if (!res.ok) { toast.error("AI generation failed"); return; }
-      const data = await res.json();
-      setForm(p => ({ ...p, mnemonic: data.mnemonic ?? "", description: data.description ?? "" }));
-      toast.success("AI mnemonic generated!");
-    } catch { toast.error("AI generation failed"); }
-    finally { setAiLoading(false); }
-  }
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -137,13 +120,7 @@ export default function AdminMnemonics() {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Topic</label>
-              <div className="flex gap-2">
-                <Input value={form.topic} onChange={e => setForm(p => ({ ...p, topic: e.target.value }))} placeholder="e.g. Cranial Nerves in order" className="bg-background/50 border-border/50" />
-                <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
-                  onClick={generateWithAI} disabled={aiLoading || !form.topic.trim()}>
-                  <Sparkles size={13} /> {aiLoading ? "…" : "AI"}
-                </Button>
-              </div>
+              <Input value={form.topic} onChange={e => setForm(p => ({ ...p, topic: e.target.value }))} placeholder="e.g. Cranial Nerves in order" className="bg-background/50 border-border/50" />
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Mnemonic</label>
