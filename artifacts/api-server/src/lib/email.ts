@@ -10,6 +10,11 @@ function escapeHtml(s: string): string {
 }
 
 export function getAppUrl(): string {
+  // APP_URL takes priority — set this on Railway/Vercel/any host.
+  // Example: APP_URL=https://www.missiondistinction.com
+  const appUrl = process.env.APP_URL;
+  if (appUrl) return appUrl.replace(/\/$/, "");
+  // Fallback for Replit-hosted deployments
   const domains = process.env.REPLIT_DOMAINS;
   if (domains) {
     const first = domains.split(",")[0].trim();

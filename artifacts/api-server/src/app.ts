@@ -85,14 +85,24 @@ app.use(
   }),
 );
 
-const allowedOrigins: string[] | boolean =
-  process.env.NODE_ENV === "production"
-    ? (process.env.REPLIT_DOMAINS || "")
-        .split(",")
-        .map((d) => d.trim())
-        .filter(Boolean)
-        .map((d) => `https://${d}`)
-    : true;
+// ALLOWED_ORIGINS takes priority (set this on Railway/Vercel/any host).
+// Example: ALLOWED_ORIGINS=https://missiondistinction.com,https://www.missiondistinction.com
+// Falls back to REPLIT_DOMAINS for Replit-hosted deployments.
+// In development, all origins are allowed.
+function buildAllowedOrigins(): string[] | boolean {
+  if (process.env.NODE_ENV !== "production") return true;
+  const explicit = process.env.ALLOWED_ORIGINS;
+  if (explicit) {
+    return explicit.split(",").map((o) => o.trim()).filter(Boolean);
+  }
+  const replitDomains = process.env.REPLIT_DOMAINS;
+  if (replitDomains) {
+    return replitDomains.split(",").map((d) => `https://${d.trim()}`).filter(Boolean);
+  }
+  return true; // fallback: allow all (should not happen in a real production deploy)
+}
+
+const allowedOrigins = buildAllowedOrigins();
 
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(cookieParser());

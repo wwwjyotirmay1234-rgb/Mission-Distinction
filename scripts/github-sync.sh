@@ -1,6 +1,6 @@
 #!/bin/bash
 # Watches for new git commits and automatically pushes them to GitHub.
-# Before each push, fetches remote main and rebases local commits on top of it
+# Before each push, fetches remote master and rebases local commits on top of it
 # so non-fast-forward rejections are resolved automatically.
 # Token is NEVER embedded in logged URLs — credential helper only.
 # Runs as a background workflow — no manual pushes needed.
@@ -23,7 +23,7 @@ fi
 BARE_URL="${REPO_URL#https://}"
 CLEAN_URL="https://${BARE_URL}"
 # Auth is supplied exclusively via a short-lived credential-store file.
-REMOTE_TRACKING_REF="refs/remotes/github-sync/main"
+REMOTE_TRACKING_REF="refs/remotes/github-sync/master"
 
 # Redact any accidental token echo from git stderr before logging.
 sanitize() {
@@ -49,7 +49,7 @@ verify_sha_parity() {
   CRED_FILE=$(make_cred_file)
   local LOCAL_SHA REMOTE_SHA
   LOCAL_SHA=$(git rev-parse main 2>/dev/null)
-  REMOTE_SHA=$(git_with_creds "$CRED_FILE" ls-remote "$CLEAN_URL" refs/heads/main 2>/dev/null | awk '{print $1}')
+  REMOTE_SHA=$(git_with_creds "$CRED_FILE" ls-remote "$CLEAN_URL" refs/heads/master 2>/dev/null | awk '{print $1}')
   rm -f "$CRED_FILE"
   if [ -n "$LOCAL_SHA" ] && [ "$LOCAL_SHA" = "$REMOTE_SHA" ]; then
     echo "[github-sync] ✓ SHA parity confirmed: local=remote=${LOCAL_SHA:0:8}"
@@ -60,7 +60,7 @@ verify_sha_parity() {
   fi
 }
 
-# Fetch remote main into a local tracking ref, rebase local commits on top,
+# Fetch remote master into a local tracking ref, rebase local commits on top,
 # then push. Falls back to a merge commit if rebase has conflicts.
 reconcile_and_push() {
   local CRED_FILE
@@ -68,7 +68,7 @@ reconcile_and_push() {
 
   # ── Step 1: Try a normal fast-forward push first ──────────────────────────
   local PUSH_OUT PUSH_CODE
-  PUSH_OUT=$(git_with_creds "$CRED_FILE" push "$CLEAN_URL" main:main 2>&1)
+  PUSH_OUT=$(git_with_creds "$CRED_FILE" push "$CLEAN_URL" main:master 2>&1)
   PUSH_CODE=$?
 
   if [ $PUSH_CODE -eq 0 ]; then
@@ -80,11 +80,11 @@ reconcile_and_push() {
 
   # ── Step 2: If rejected due to diverged history, fetch and reconcile ──────
   if echo "$PUSH_OUT" | grep -qE "rejected.*(non-fast-forward|fetch first)"; then
-    echo "[github-sync] History diverged — fetching remote main..."
+    echo "[github-sync] History diverged — fetching remote master..."
 
     local FETCH_OUT FETCH_CODE
     FETCH_OUT=$(git_with_creds "$CRED_FILE" \
-      fetch "$CLEAN_URL" "refs/heads/main:${REMOTE_TRACKING_REF}" 2>&1)
+      fetch "$CLEAN_URL" "refs/heads/master:${REMOTE_TRACKING_REF}" 2>&1)
     FETCH_CODE=$?
 
     if [ $FETCH_CODE -ne 0 ]; then
@@ -93,16 +93,16 @@ reconcile_and_push() {
       return 1
     fi
 
-    # Ensure we are on main before rewriting its history
+    # Ensure we are on master before rewriting its history
     git checkout main 2>/dev/null || true
 
-    echo "[github-sync] Fetch OK — attempting rebase of main onto ${REMOTE_TRACKING_REF}..."
+    echo "[github-sync] Fetch OK — attempting rebase of master onto ${REMOTE_TRACKING_REF}..."
     local REBASE_OUT REBASE_CODE
     REBASE_OUT=$(git rebase "$REMOTE_TRACKING_REF" main 2>&1)
     REBASE_CODE=$?
 
     if [ $REBASE_CODE -ne 0 ]; then
-      echo "[github-sync] Rebase had conflicts — aborting, falling back to merge on main..."
+      echo "[github-sync] Rebase had conflicts — aborting, falling back to merge on master..."
       git rebase --abort 2>/dev/null
       git checkout main 2>/dev/null || true
       local MERGE_OUT MERGE_CODE
@@ -121,7 +121,7 @@ reconcile_and_push() {
 
     # ── Step 3: Retry push after reconciliation ────────────────────────────
     echo "[github-sync] Retrying push after reconciliation..."
-    PUSH_OUT=$(git_with_creds "$CRED_FILE" push "$CLEAN_URL" main:main 2>&1)
+    PUSH_OUT=$(git_with_creds "$CRED_FILE" push "$CLEAN_URL" main:master 2>&1)
     PUSH_CODE=$?
     if [ $PUSH_CODE -ne 0 ]; then
       echo "[github-sync] Push after reconciliation failed: $(echo "$PUSH_OUT" | sanitize)"
@@ -143,7 +143,7 @@ else
   FAIL_COUNT=$((FAIL_COUNT + 1))
 fi
 
-echo "[github-sync] Watching for new commits on main..."
+echo "[github-sync] Watching for new commits on main (pushing to remote: master)..."
 
 while true; do
   if [ -f "$REF_FILE" ]; then
