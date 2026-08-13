@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
+import { apiFetchJson } from "@/lib/apiFetch";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Play, CheckCircle, Lock, ChevronLeft, BookOpen,
   HelpCircle, Clock, Trophy, RefreshCw, PlayCircle,
+  ExternalLink, CheckCircle2,
 } from "lucide-react";
 
 const SUBJECTS = ["all", "Anatomy", "Physiology", "Biochemistry", "NEET PG", "University Exams"];
@@ -29,23 +30,51 @@ interface VideoSummary {
   } | null;
 }
 
-interface Concept {
-  id: number;
-  heading: string;
-  content: string;
-}
-
+interface Concept { id: number; heading: string; content: string }
 interface Question {
-  id: number;
-  text: string;
-  options: string[];
-  correctOption?: number;
-  explanation?: string;
+  id: number; text: string; options: string[];
+  correctOption?: number; explanation?: string;
+}
+interface VideoDetail extends VideoSummary { concepts: Concept[]; questions: Question[] }
+
+// ── URL helpers ─────────────────────────────────────────────────────────────
+
+function getYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m?.[1] ?? null;
 }
 
-interface VideoDetail extends VideoSummary {
-  concepts: Concept[];
-  questions: Question[];
+function getVimeoId(url: string): string | null {
+  const m = url.match(/vimeo\.com\/(\d+)/);
+  return m?.[1] ?? null;
+}
+
+function getEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  const ytId = getYouTubeId(url);
+  if (ytId) return `https://www.youtube.com/embed/${ytId}?enablejsapi=1&rel=0&modestbranding=1`;
+  const vimeoId = getVimeoId(url);
+  if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}?dnt=1`;
+  return null;
+}
+
+function getPlatformName(url: string): string {
+  if (!url) return "Video";
+  if (/youtube\.com|youtu\.be/.test(url)) return "YouTube";
+  if (/instagram\.com/.test(url)) return "Instagram";
+  if (/vimeo\.com/.test(url)) return "Vimeo";
+  if (/tiktok\.com/.test(url)) return "TikTok";
+  if (/twitter\.com|x\.com/.test(url)) return "X (Twitter)";
+  if (/facebook\.com/.test(url)) return "Facebook";
+  return "External Link";
+}
+
+function getPlatformColor(url: string): string {
+  if (/youtube\.com|youtu\.be/.test(url)) return "bg-red-500";
+  if (/instagram\.com/.test(url)) return "bg-pink-500";
+  if (/tiktok\.com/.test(url)) return "bg-neutral-900 border border-white/10";
+  if (/vimeo\.com/.test(url)) return "bg-blue-400";
+  return "bg-primary";
 }
 
 function formatDuration(secs?: number) {
@@ -55,6 +84,171 @@ function formatDuration(secs?: number) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+// ── YouTube IFrame API singleton ──────────────────────────────────────────────
+let ytApiLoaded = false;
+const ytReadyCallbacks: Array<() => void> = [];
+
+function loadYouTubeAPI(cb: () => void) {
+  if ((window as any).YT?.Player) { cb(); return; }
+  ytReadyCallbacks.push(cb);
+  if (!ytApiLoaded) {
+    ytApiLoaded = true;
+    (window as any).onYouTubeIframeAPIReady = () => {
+      ytReadyCallbacks.forEach(fn => fn());
+      ytReadyCallbacks.length = 0;
+    };
+    const script = document.createElement("script");
+    script.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(script);
+  }
+}
+
+// ── Smart Video Player ────────────────────────────────────────────────────────
+
+interface VideoPlayerProps {
+  url: string;
+  onProgress: (pct: number) => void;
+  onMarkWatched: () => void;
+  isCompleted: boolean;
+  isMarkingWatched: boolean;
+}
+
+function VideoPlayer({ url, onProgress, onMarkWatched, isCompleted, isMarkingWatched }: VideoPlayerProps) {
+  const embedUrl = getEmbedUrl(url);
+  const ytId = getYouTubeId(url);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const playerRef = useRef<any>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastReportedRef = useRef(0);
+  const platform = getPlatformName(url);
+  const platformColor = getPlatformColor(url);
+
+  const startPolling = useCallback((player: any) => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      try {
+        const state = player.getPlayerState?.();
+        if (state === 0) { // ended
+          clearInterval(intervalRef.current!);
+          intervalRef.current = null;
+          onProgress(100);
+          return;
+        }
+        if (state === 1) { // playing
+          const current = player.getCurrentTime?.() ?? 0;
+          const duration = player.getDuration?.() ?? 0;
+          if (duration > 0) {
+            const pct = Math.round((current / duration) * 100);
+            if (pct >= lastReportedRef.current + 10 || pct >= 80) {
+              lastReportedRef.current = pct;
+              onProgress(pct);
+            }
+          }
+        }
+      } catch {}
+    }, 5000);
+  }, [onProgress]);
+
+  useEffect(() => {
+    if (!ytId) return;
+    lastReportedRef.current = 0;
+
+    const init = () => {
+      const YT = (window as any).YT;
+      if (!YT?.Player || !iframeRef.current) return;
+      try {
+        playerRef.current = new YT.Player(iframeRef.current, {
+          events: {
+            onReady: (e: any) => startPolling(e.target),
+            onStateChange: (e: any) => {
+              if (e.data === 0) onProgress(100);
+              if (e.data === 1) startPolling(e.target);
+            },
+          },
+        });
+      } catch {}
+    };
+
+    loadYouTubeAPI(init);
+
+    return () => {
+      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+      try { playerRef.current?.destroy?.(); } catch {}
+      playerRef.current = null;
+    };
+  }, [ytId, startPolling, onProgress]);
+
+  // Embeddable (YouTube / Vimeo)
+  if (embedUrl) {
+    return (
+      <div className="space-y-2">
+        <div className="rounded-2xl overflow-hidden bg-black aspect-video">
+          <iframe
+            ref={iframeRef}
+            src={embedUrl}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+          />
+        </div>
+        {!isCompleted && (
+          <button
+            onClick={onMarkWatched}
+            disabled={isMarkingWatched}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-border/50 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+          >
+            {isMarkingWatched ? <RefreshCw size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+            Finished watching? Mark as watched to unlock quiz
+          </button>
+        )}
+        {isCompleted && (
+          <div className="flex items-center justify-center gap-1.5 py-2 text-xs text-green-400">
+            <CheckCircle size={12} /> Video completed — quiz is unlocked!
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Non-embeddable (Instagram, TikTok, etc.)
+  return (
+    <div className="rounded-2xl bg-card/40 border border-border/40 overflow-hidden">
+      <div className="aspect-video flex flex-col items-center justify-center gap-3 px-6">
+        <div className={`w-12 h-12 rounded-2xl ${platformColor} flex items-center justify-center`}>
+          <Play size={22} className="text-white ml-0.5" />
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-semibold">Hosted on {platform}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Opens in a new tab</p>
+        </div>
+        <a href={url} target="_blank" rel="noopener noreferrer">
+          <Button size="sm" className="gap-2">
+            <ExternalLink size={13} /> Watch on {platform}
+          </Button>
+        </a>
+      </div>
+      <div className="border-t border-border/30 px-4 py-3">
+        {isCompleted ? (
+          <div className="flex items-center justify-center gap-1.5 text-xs text-green-400">
+            <CheckCircle size={12} /> Video completed — quiz is unlocked!
+          </div>
+        ) : (
+          <button
+            onClick={onMarkWatched}
+            disabled={isMarkingWatched}
+            className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {isMarkingWatched ? <RefreshCw size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+            After watching, tap here to unlock the quiz
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
 export default function Videos() {
   const qc = useQueryClient();
   const [subject, setSubject] = useState("all");
@@ -62,8 +256,6 @@ export default function Videos() {
   const [activeTab, setActiveTab] = useState<"concepts" | "quiz">("concepts");
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [quizResult, setQuizResult] = useState<{ score: number; total: number; results: any[] } | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const lastReportedRef = useRef(0);
 
   const { data: videos = [], isLoading } = useQuery<VideoSummary[]>({
     queryKey: ["videos", subject],
@@ -97,10 +289,7 @@ export default function Videos() {
         body: JSON.stringify({ answers }),
       }),
     onSuccess: (data) => {
-      if (data.alreadySubmitted) {
-        toast.info("You already submitted this quiz.");
-        return;
-      }
+      if (data.alreadySubmitted) { toast.info("You already submitted this quiz."); return; }
       setQuizResult(data);
       qc.invalidateQueries({ queryKey: ["videos"] });
       qc.invalidateQueries({ queryKey: ["video-detail", selectedId] });
@@ -110,14 +299,14 @@ export default function Videos() {
     onError: (e: any) => toast.error(e.message ?? "Submit failed"),
   });
 
-  const handleTimeUpdate = useCallback(() => {
-    const vid = videoRef.current;
-    if (!vid || !selectedId || !vid.duration) return;
-    const pct = Math.round((vid.currentTime / vid.duration) * 100);
-    // Report every 10% increment
-    if (pct >= lastReportedRef.current + 10 || pct >= 80) {
-      lastReportedRef.current = pct;
-      progressMutation.mutate({ videoId: selectedId, watchedPercent: pct });
+  const handleProgress = useCallback((pct: number) => {
+    if (selectedId) progressMutation.mutate({ videoId: selectedId, watchedPercent: pct });
+  }, [selectedId]);
+
+  const handleMarkWatched = useCallback(() => {
+    if (selectedId) {
+      progressMutation.mutate({ videoId: selectedId, watchedPercent: 100 });
+      toast.success("Marked as watched — quiz unlocked!");
     }
   }, [selectedId]);
 
@@ -126,20 +315,14 @@ export default function Videos() {
     setActiveTab("concepts");
     setQuizAnswers({});
     setQuizResult(null);
-    lastReportedRef.current = 0;
   };
 
-  const closeVideo = () => {
-    setSelectedId(null);
-    setQuizResult(null);
-    setQuizAnswers({});
-  };
+  const closeVideo = () => { setSelectedId(null); setQuizResult(null); setQuizAnswers({}); };
 
   const submitQuiz = () => {
     if (!selectedId || !detail) return;
     if (Object.keys(quizAnswers).length < detail.questions.length) {
-      toast.error("Please answer all questions before submitting.");
-      return;
+      toast.error("Please answer all questions before submitting."); return;
     }
     quizMutation.mutate({ videoId: selectedId, answers: quizAnswers });
   };
@@ -167,20 +350,16 @@ export default function Videos() {
           <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4">
             {/* Video player */}
             {detail.videoUrl ? (
-              <div className="rounded-2xl overflow-hidden bg-black aspect-video">
-                <video
-                  ref={videoRef}
-                  src={detail.videoUrl}
-                  controls
-                  className="w-full h-full"
-                  onTimeUpdate={handleTimeUpdate}
-                  onEnded={() => progressMutation.mutate({ videoId: selectedId, watchedPercent: 100 })}
-                  controlsList="nodownload"
-                />
-              </div>
+              <VideoPlayer
+                url={detail.videoUrl}
+                onProgress={handleProgress}
+                onMarkWatched={handleMarkWatched}
+                isCompleted={completed}
+                isMarkingWatched={progressMutation.isPending}
+              />
             ) : (
               <div className="rounded-2xl bg-card/40 border border-border/40 aspect-video flex items-center justify-center">
-                <p className="text-sm text-muted-foreground">Video not uploaded yet</p>
+                <p className="text-sm text-muted-foreground">Video link not added yet</p>
               </div>
             )}
 
@@ -211,7 +390,7 @@ export default function Videos() {
                 <BookOpen size={13} /> Concepts
               </button>
               <button
-                onClick={() => completed || alreadyQuizzed ? setActiveTab("quiz") : toast.error("Watch 80% of the video first to unlock the quiz.")}
+                onClick={() => completed || alreadyQuizzed ? setActiveTab("quiz") : toast.error("Watch the video first, then mark it as watched to unlock the quiz.")}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${activeTab === "quiz" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"} ${!completed && !alreadyQuizzed ? "opacity-50" : ""}`}
               >
                 {completed || alreadyQuizzed ? <HelpCircle size={13} /> : <Lock size={13} />}
@@ -223,7 +402,7 @@ export default function Videos() {
             {activeTab === "concepts" && (
               <div className="space-y-3 pb-4">
                 {detail.concepts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">No concepts added yet.</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">No concept notes added yet.</p>
                 ) : detail.concepts.map(c => (
                   <Card key={c.id} className="bg-card/40 border-border/40">
                     <CardHeader className="p-4 pb-2">
@@ -243,7 +422,6 @@ export default function Videos() {
                 {detail.questions.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">No questions added yet.</p>
                 ) : quizResult || alreadyQuizzed ? (
-                  // Results view
                   <div className="space-y-4">
                     <div className="p-4 rounded-2xl bg-primary/5 border border-primary/15 text-center">
                       <Trophy size={28} className="mx-auto mb-2 text-primary" />
@@ -273,7 +451,6 @@ export default function Videos() {
                     })}
                   </div>
                 ) : (
-                  // Quiz input view
                   <div className="space-y-4">
                     {detail.questions.map((q, qi) => (
                       <Card key={q.id} className="bg-card/40 border-border/40">
@@ -333,7 +510,7 @@ export default function Videos() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 rounded-2xl bg-card/40 border border-border/40 animate-pulse" />
+              <div key={i} className="h-40 rounded-2xl bg-card/40 border border-border/40 animate-pulse" />
             ))}
           </div>
         ) : videos.length === 0 ? (
@@ -347,15 +524,26 @@ export default function Videos() {
               const prog = v.myProgress;
               const done = prog?.completed;
               const quizzed = prog?.quizTotal != null;
+              const platform = v.videoUrl ? getPlatformName(v.videoUrl) : null;
+              const ytId = v.videoUrl ? getYouTubeId(v.videoUrl) : null;
+              const autoThumb = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null;
+              const thumb = v.thumbnailUrl || autoThumb;
+
               return (
                 <button key={v.id} onClick={() => openVideo(v.id)} className="text-left">
                   <Card className={`border transition-all hover:border-primary/40 hover:shadow-md ${done ? "border-green-500/30 bg-green-500/5" : "border-border/40 bg-card/40"}`}>
-                    {/* Thumbnail / placeholder */}
+                    {/* Thumbnail */}
                     <div className="relative aspect-video bg-muted/30 rounded-t-xl overflow-hidden flex items-center justify-center">
-                      {v.thumbnailUrl ? (
-                        <img src={v.thumbnailUrl} alt={v.title} className="w-full h-full object-cover" />
+                      {thumb ? (
+                        <img src={thumb} alt={v.title} className="w-full h-full object-cover" />
                       ) : (
                         <Play size={32} className="text-muted-foreground/40" />
+                      )}
+                      {/* Platform badge */}
+                      {platform && (
+                        <span className="absolute bottom-1.5 left-2 text-[9px] bg-black/70 text-white px-1.5 py-0.5 rounded font-medium">
+                          {platform}
+                        </span>
                       )}
                       {v.durationSeconds && (
                         <span className="absolute bottom-1.5 right-2 text-[10px] bg-black/70 text-white px-1.5 py-0.5 rounded">
@@ -385,7 +573,6 @@ export default function Videos() {
                           )}
                         </div>
                       </div>
-                      {/* Progress bar */}
                       {prog && (
                         <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
                           <div

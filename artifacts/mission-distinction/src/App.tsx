@@ -215,6 +215,7 @@ function Router() {
                 <Route path="/student/custom-quiz"       component={StudentCustomQuiz} />
                 <Route path="/student/notes-marketplace" component={StudentNotesMarketplace} />
                 <Route path="/student/grand-rounds"      component={StudentGrandRounds} />
+                <Route path="/student/videos"            component={StudentVideos} />
                 <Route component={NotFound} />
               </Switch>
             </StudentLayout>
@@ -257,6 +258,7 @@ function Router() {
                 <Route path="/admin/clinical-cases"         component={AdminClinicalCases} />
                 <Route path="/admin/grand-tests"            component={AdminGrandTests} />
                 <Route path="/admin/notes-marketplace"      component={AdminNotesMarketplace} />
+                <Route path="/admin/videos"              component={AdminVideos} />
                 <Route component={NotFound} />
               </Switch>
             </AdminLayout>
