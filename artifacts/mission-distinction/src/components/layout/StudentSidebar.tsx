@@ -105,7 +105,6 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
       items: [
         { icon: Store, label: "Notes Marketplace", href: "/student/notes-marketplace" },
         { icon: Users, label: "Community", href: "/student/community" },
-        { icon: Users, label: "Study Rooms", href: "/student/study-rooms" },
         { icon: MessageSquare, label: "Doubt Board", href: "/student/doubts" },
         { icon: MessageCircleHeart, label: "Confession Board", href: "/student/confessions" },
         { icon: Newspaper, label: "News & Announcements", href: "/student/announcements", badge: unseenCount > 0 ? unseenCount : undefined },
@@ -123,7 +122,6 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
       collapsible: true,
       items: [
         { icon: CalendarIcon, label: "Calendar", href: "/student/calendar" },
-        { icon: Timer, label: "Study Tools", href: "/student/tools" },
         { icon: Gamepad2, label: "Medical Games", href: "/student/games" },
         { icon: Music, label: "Music", href: "/student/music" },
         { icon: Settings, label: "Settings", href: "/student/settings" },
