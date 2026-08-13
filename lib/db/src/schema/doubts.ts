@@ -17,7 +17,7 @@ export const doubtsTable = pgTable("doubts", {
 export const doubtAnswersTable = pgTable("doubt_answers", {
   id: serial("id").primaryKey(),
   doubtId: integer("doubt_id").notNull(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id"),  // nullable: AI-generated answers use null
   authorName: text("author_name").notNull(),
   answer: text("answer").notNull(),
   isAccepted: boolean("is_accepted").default(false).notNull(),

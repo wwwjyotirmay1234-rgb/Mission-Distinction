@@ -704,6 +704,9 @@ export async function runStartupMigrations() {
       ALTER TABLE clinical_cases ADD COLUMN IF NOT EXISTS grand_round_week TEXT;
       ALTER TABLE clinical_cases ADD COLUMN IF NOT EXISTS featured_attempt_id INTEGER;
       ALTER TABLE clinical_cases ADD COLUMN IF NOT EXISTS winner_announced_at TIMESTAMP;
+
+      -- ── AI-generated doubt answers: nullable user_id for proper attribution ──
+      ALTER TABLE doubt_answers ALTER COLUMN user_id DROP NOT NULL;
     `);
   } finally {
     client.release();

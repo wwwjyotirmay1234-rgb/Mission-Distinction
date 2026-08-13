@@ -91,7 +91,7 @@ router.post("/", authMiddleware, doubtPostLimiter, async (req: Request, res: Res
         await db.transaction(async (tx) => {
           await tx.insert(doubtAnswersTable).values({
             doubtId: capturedDoubt.id,
-            userId: capturedDoubt.userId, // FK-safe: use question author's ID
+            userId: null, // null for AI-generated answers — no real user attribution
             authorName: "AI Tutor",
             answer: aiAnswer,
             isAiGenerated: true,

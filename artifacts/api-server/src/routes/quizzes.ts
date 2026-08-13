@@ -106,33 +106,47 @@ const explainLimiter = rateLimit({
 
 router.post("/explain", authMiddleware, explainLimiter, async (req: Request, res: Response) => {
   try {
-    const { questionId, studentAnswer } = req.body;
+    const user = (req as any).user;
+    const { questionId } = req.body;
     const qid = parseId(String(questionId ?? ""));
     if (!qid) { res.status(400).json({ error: "questionId is required" }); return; }
 
-    // Fetch question with correct answer (admin fields)
+    // Verify the caller has a completed, recorded wrong answer for this question
+    const [wrongAnswer] = await db
+      .select()
+      .from(quizAnswersTable)
+      .where(and(
+        eq(quizAnswersTable.userId, user.id),
+        eq(quizAnswersTable.questionId, qid),
+        eq(quizAnswersTable.correct, false)
+      ))
+      .limit(1);
+
+    if (!wrongAnswer) {
+      res.status(403).json({ error: "Explanations are only available for questions you answered incorrectly in a completed quiz." });
+      return;
+    }
+
+    // Fetch the question
     const [question] = await db.select().from(questionsTable).where(eq(questionsTable.id, qid));
     if (!question) { res.status(404).json({ error: "Question not found" }); return; }
 
-    // Build human-readable labels
+    // Build a label for the correct answer only — we never reveal options via client data
     let correctLabel = "";
-    let studentLabel = "";
-
     if (question.questionType === "mcq" || question.questionType === "true-false") {
-      const opts = question.options as string[] | null ?? [];
+      const opts = (question.options as string[] | null) ?? [];
       const correctIdx = question.correctOption ?? 0;
-      correctLabel = opts[correctIdx] ? `${String.fromCharCode(65 + correctIdx)}. ${opts[correctIdx]}` : String(correctIdx);
-      const stuIdx = typeof studentAnswer === "number" ? studentAnswer : parseInt(String(studentAnswer ?? "-1"));
-      studentLabel = (stuIdx >= 0 && opts[stuIdx]) ? `${String.fromCharCode(65 + stuIdx)}. ${opts[stuIdx]}` : "Not answered";
+      correctLabel = opts[correctIdx]
+        ? `${String.fromCharCode(65 + correctIdx)}. ${opts[correctIdx]}`
+        : String(correctIdx);
     } else {
       correctLabel = question.correctAnswer ?? "";
-      studentLabel = typeof studentAnswer === "string" ? studentAnswer : "";
     }
 
     const explanation = await explainQuizAnswer(
       question.text,
       correctLabel,
-      studentLabel,
+      "", // no client-supplied wrong answer — explanation focuses on why correct is right
       question.explanation ?? null
     );
 

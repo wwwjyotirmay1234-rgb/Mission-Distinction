@@ -550,14 +550,14 @@ export default function StudentQuiz() {
 
   const openReport = (qId: number) => { setReportQuestionId(qId); setReportOpen(true); };
 
-  const handleExplain = async (questionId: number, studentAnswer: number | string | undefined) => {
+  const handleExplain = async (questionId: number) => {
     if (loadingExplanation === questionId || explanations[questionId]) return;
     setLoadingExplanation(questionId);
     try {
       const res = await apiFetch("/api/quizzes/explain", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ questionId, studentAnswer }),
+        body: JSON.stringify({ questionId }),
       });
       const data = await res.json();
       if (res.ok && data.explanation) {
@@ -779,10 +779,7 @@ export default function StudentQuiz() {
                         <div className="mt-2">
                           {!explanations[q.id] ? (
                             <button
-                              onClick={() => {
-                                const studentIdx = ca?.selectedOption;
-                                handleExplain(q.id, studentIdx);
-                              }}
+                              onClick={() => handleExplain(q.id)}
                               disabled={loadingExplanation === q.id}
                               className="flex items-center gap-1.5 text-[11px] text-primary/80 hover:text-primary transition-colors disabled:opacity-50"
                             >
