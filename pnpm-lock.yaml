@@ -139,6 +139,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
+      '@workspace/integrations-openai-ai-server':
+        specifier: workspace:*
+        version: link:../../lib/integrations-openai-ai-server
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -5659,7 +5662,6 @@ packages:
   stats-gl@2.4.2:
     resolution: {integrity: sha512-g5O9B0hm9CvnM36+v7SFl39T7hmAlv541tU81ME8YeSb3i1CIP5/QdDeSB3A0la0bKNHpxpwxOVRo2wFTYEosQ==}
     peerDependencies:
-      '@types/three': '*'
       three: '*'
 
   stats.js@0.17.0:
@@ -7972,7 +7974,7 @@ snapshots:
       maath: 0.10.8(@types/three@0.184.1)(three@0.182.0)
       meshline: 3.3.1(three@0.182.0)
       react: 19.1.0
-      stats-gl: 2.4.2(@types/three@0.184.1)(three@0.182.0)
+      stats-gl: 2.4.2(three@0.182.0)
       stats.js: 0.17.0
       suspend-react: 0.1.3(react@19.1.0)
       three: 0.182.0
@@ -11634,7 +11636,7 @@ snapshots:
       '@stablelib/base64': 1.0.1
       fast-sha256: 1.3.0
 
-  stats-gl@2.4.2(@types/three@0.184.1)(three@0.182.0):
+  stats-gl@2.4.2(three@0.182.0):
     dependencies:
       '@types/three': 0.184.1
       three: 0.182.0

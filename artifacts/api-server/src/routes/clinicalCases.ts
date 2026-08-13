@@ -5,6 +5,7 @@ import { eq, sql, desc, and } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { awardXp } from "../lib/xp";
 import rateLimit from "express-rate-limit";
+import { gradeClinicalAnswer } from "../lib/aiGrading";
 
 const router = Router();
 
@@ -74,7 +75,7 @@ async function getTodaysCase() {
   return { todayCase, dateKey };
 }
 
-// ─── Submit attempt (AI feedback removed) ─────────────────────────────────────
+// ─── Submit attempt ───────────────────────────────────────────────────────────
 router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
@@ -117,10 +118,30 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
       aiFeedback: null,
     }).returning();
 
-    // Award XP for attempting
-    awardXp(user.id, 15, "clinical_case_attempt", `Attempted Clinical Case of the Day`).catch(() => {});
+    // AI grading (synchronous — gives immediate feedback to student)
+    let aiFeedback: object | null = null;
+    try {
+      const feedback = await gradeClinicalAnswer(
+        todayCase.scenario,
+        todayCase.subject,
+        todayCase.modelAnswer ?? "",
+        String(answerText)
+      );
+      if (feedback && saved) {
+        aiFeedback = feedback;
+        await db.update(clinicalCaseAttemptsTable)
+          .set({ aiFeedback: feedback })
+          .where(eq(clinicalCaseAttemptsTable.id, saved.id));
+      }
+    } catch (aiErr) {
+      console.error("[clinical-cases] AI grading failed:", aiErr);
+    }
 
-    res.json({ feedback: null, id: saved?.id });
+    // Award XP — bonus 10 XP for high score (grade Distinction)
+    const bonusXp = (aiFeedback as any)?.score >= 8 ? 10 : 0;
+    awardXp(user.id, 15 + bonusXp, "clinical_case_attempt", `Attempted Clinical Case of the Day`).catch(() => {});
+
+    res.json({ feedback: aiFeedback, id: saved?.id });
   } catch (err: any) {
     console.error("clinical-cases attempt error:", err);
     res.status(500).json({ error: err?.message || "Internal server error" });

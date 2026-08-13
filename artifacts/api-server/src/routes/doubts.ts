@@ -8,6 +8,7 @@ import { stripHtml } from "../lib/sanitize";
 import rateLimit from "express-rate-limit";
 import { awardXp, XP_VALUES } from "../lib/xp";
 import { cohortWhere, userCohort } from "../lib/cohort";
+import { generateDoubtAnswer } from "../lib/aiGrading";
 
 const router = Router();
 
@@ -76,6 +77,33 @@ router.post("/", authMiddleware, doubtPostLimiter, async (req: Request, res: Res
     awardXp(user.id, XP_VALUES.DOUBT_ASKED, "doubt_asked", `Asked a doubt: ${safeTitle.slice(0, 60)}`).catch(() => {});
 
     res.status(201).json(doubt);
+
+    // Fire async AI answer after response is sent (non-blocking)
+    const capturedDoubt = doubt;
+    (async () => {
+      try {
+        const aiAnswer = await generateDoubtAnswer(
+          capturedDoubt.subject,
+          capturedDoubt.title,
+          capturedDoubt.question ?? ""
+        );
+        if (!aiAnswer) return;
+        await db.transaction(async (tx) => {
+          await tx.insert(doubtAnswersTable).values({
+            doubtId: capturedDoubt.id,
+            userId: capturedDoubt.userId, // FK-safe: use question author's ID
+            authorName: "AI Tutor",
+            answer: aiAnswer,
+            isAiGenerated: true,
+          });
+          await tx.update(doubtsTable)
+            .set({ answerCount: sql`${doubtsTable.answerCount} + 1` })
+            .where(eq(doubtsTable.id, capturedDoubt.id));
+        });
+      } catch (err) {
+        console.error("[doubts] AI auto-answer failed:", err);
+      }
+    })();
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }

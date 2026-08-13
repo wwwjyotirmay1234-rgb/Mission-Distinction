@@ -5,6 +5,7 @@ import { eq, desc, and, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { awardXp } from "../lib/xp";
 import rateLimit from "express-rate-limit";
+import { gradeClinicalAnswer } from "../lib/aiGrading";
 
 const router = Router();
 
@@ -162,7 +163,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// ─── POST /grand-rounds/:id/attempt — submit answer (AI feedback removed) ────
+// ─── POST /grand-rounds/:id/attempt — submit answer with AI grading ──────────
 router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
@@ -205,10 +206,31 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
       aiFeedback: null,
     }).returning();
 
-    // Award base XP for attempting
-    awardXp(user.id, 15, "grand_round_attempt", `Grand Round attempt on "${clinicalCase.subject}" case`).catch(() => {});
+    // AI grading (synchronous)
+    let aiFeedback: object | null = null;
+    try {
+      const feedback = await gradeClinicalAnswer(
+        clinicalCase.scenario,
+        clinicalCase.subject,
+        clinicalCase.modelAnswer ?? "",
+        String(answerText)
+      );
+      if (feedback && saved) {
+        aiFeedback = feedback;
+        await db.update(clinicalCaseAttemptsTable)
+          .set({ aiFeedback: feedback })
+          .where(eq(clinicalCaseAttemptsTable.id, saved.id));
+      }
+    } catch (aiErr) {
+      console.error("[grand-rounds] AI grading failed:", aiErr);
+    }
 
-    res.json({ feedback: null, id: saved.id });
+    // Award XP: base 15 + grade bonus
+    const score = (aiFeedback as any)?.score ?? 0;
+    const gradeXp = score >= 8 ? 25 : score >= 6 ? 15 : score >= 4 ? 5 : 0;
+    awardXp(user.id, 15 + gradeXp, "grand_round_attempt", `Grand Round attempt on "${clinicalCase.subject}" case`).catch(() => {});
+
+    res.json({ feedback: aiFeedback, id: saved.id });
   } catch (err: any) {
     console.error("grand-rounds attempt error:", err);
     res.status(500).json({ error: err?.message || "Internal server error" });

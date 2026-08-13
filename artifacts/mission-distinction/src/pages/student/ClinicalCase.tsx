@@ -9,8 +9,118 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   Stethoscope, CheckCircle2, ChevronRight, RefreshCw, History,
-  ChevronLeft, ChevronDown, Star,
+  ChevronLeft, ChevronDown, Star, Sparkles, Target, AlertTriangle, Lightbulb,
 } from "lucide-react";
+
+// ─── AI Feedback types & components ─────────────────────────────────────────
+
+interface AiFeedback {
+  score: number;
+  grade: string;
+  diagnosis: string;
+  pathway: string;
+  clinicalCorrelates: string;
+  strengths: string[];
+  missedPoints: string[];
+  verdict: string;
+}
+
+const GRADE_COLORS: Record<string, string> = {
+  Distinction: "text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 border-yellow-500/30",
+  Merit:       "text-green-600 dark:text-green-400 bg-green-500/10 border-green-500/30",
+  Pass:        "text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/30",
+  "Needs Revision": "text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30",
+};
+
+function ScoreRing({ score }: { score: number }) {
+  const pct = score / 10;
+  const r = 28;
+  const circ = 2 * Math.PI * r;
+  const color = score >= 7 ? "#22c55e" : score >= 4 ? "#f59e0b" : "#ef4444";
+  return (
+    <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
+      <svg width="80" height="80" viewBox="0 0 80 80" className="-rotate-90">
+        <circle cx="40" cy="40" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
+        <circle cx="40" cy="40" r={r} fill="none" stroke={color} strokeWidth="6"
+          strokeDasharray={`${circ * pct} ${circ}`} strokeLinecap="round"
+          style={{ transition: "stroke-dasharray 0.8s ease" }} />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-black" style={{ color }}>{score}</span>
+        <span className="text-[9px] text-muted-foreground -mt-1">/ 10</span>
+      </div>
+    </div>
+  );
+}
+
+function FeedbackCard({ feedback, explanation }: { feedback: AiFeedback; explanation: string }) {
+  const gradeClass = GRADE_COLORS[feedback.grade] ?? "";
+  return (
+    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className={`flex items-center gap-4 p-4 rounded-2xl border ${gradeClass}`}>
+        <ScoreRing score={feedback.score} />
+        <div className="flex-1">
+          <Badge className={`mb-1.5 text-xs border ${gradeClass}`}>{feedback.grade}</Badge>
+          <p className="text-sm font-semibold leading-snug">{feedback.verdict}</p>
+        </div>
+      </div>
+      <div className="grid gap-2">
+        <div className="p-3 rounded-xl bg-card/40 border border-border/30">
+          <p className="text-[10px] font-bold text-primary uppercase mb-1 flex items-center gap-1">
+            <Target size={11} /> Diagnosis
+          </p>
+          <p className="text-xs text-foreground/85 leading-relaxed">{feedback.diagnosis}</p>
+        </div>
+        <div className="p-3 rounded-xl bg-card/40 border border-border/30">
+          <p className="text-[10px] font-bold text-blue-400 uppercase mb-1 flex items-center gap-1">
+            <Stethoscope size={11} /> Pathway
+          </p>
+          <p className="text-xs text-foreground/85 leading-relaxed">{feedback.pathway}</p>
+        </div>
+        <div className="p-3 rounded-xl bg-card/40 border border-border/30">
+          <p className="text-[10px] font-bold text-purple-400 uppercase mb-1 flex items-center gap-1">
+            <Lightbulb size={11} /> Clinical Correlates
+          </p>
+          <p className="text-xs text-foreground/85 leading-relaxed">{feedback.clinicalCorrelates}</p>
+        </div>
+      </div>
+      {feedback.strengths?.length > 0 && (
+        <div className="p-3 rounded-xl bg-green-500/5 border border-green-500/20">
+          <p className="text-[10px] font-bold text-green-400 uppercase mb-1.5">
+            <CheckCircle2 size={11} className="inline mr-1" />What you got right
+          </p>
+          <ul className="space-y-1">
+            {feedback.strengths.map((s, i) => (
+              <li key={i} className="text-xs text-foreground/80 flex items-start gap-1.5">
+                <span className="text-green-400 mt-0.5">✓</span> {s}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {feedback.missedPoints?.length > 0 && (
+        <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+          <p className="text-[10px] font-bold text-amber-400 uppercase mb-1.5">
+            <AlertTriangle size={11} className="inline mr-1" />Key points to review
+          </p>
+          <ul className="space-y-1">
+            {feedback.missedPoints.map((p, i) => (
+              <li key={i} className="text-xs text-foreground/80 flex items-start gap-1.5">
+                <span className="text-amber-400 mt-0.5">→</span> {p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {explanation && (
+        <div className="p-3 rounded-xl bg-primary/5 border border-primary/15">
+          <p className="text-[10px] font-bold text-primary uppercase mb-1.5">Full Explanation</p>
+          <p className="text-xs text-foreground/80 leading-relaxed">{explanation}</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface ClinicalCaseData {
   id: number;
@@ -40,7 +150,7 @@ export default function ClinicalCase() {
   const [submitting, setSubmitting] = useState(false);
   const [clinicalCase, setClinicalCase] = useState<ClinicalCaseData | null>(null);
   const [answer, setAnswer] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [feedback, setFeedback] = useState<AiFeedback | null | undefined>(undefined);
   const [view, setView] = useState<"today" | "history">("today");
   const [historyAttempts, setHistoryAttempts] = useState<HistoryAttempt[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -70,7 +180,7 @@ export default function ClinicalCase() {
         setClinicalCase(data);
         if (data.myAttempt?.answerText) {
           setAnswer(data.myAttempt.answerText);
-          setSubmitted(true);
+          setFeedback((data.myAttempt as any).aiFeedback ?? null);
         }
       } else if (res.status === 404) {
         setClinicalCase(null);
@@ -101,9 +211,9 @@ export default function ClinicalCase() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSubmitted(true);
+        setFeedback(data.feedback ?? null);
         setClinicalCase(prev => prev ? { ...prev, attempted: true } : prev);
-        toast.success("Answer submitted! +15 XP earned.");
+        toast.success(data.feedback ? `${data.feedback.grade} — ${data.feedback.score}/10! +${data.feedback.score >= 8 ? 25 : 15} XP earned.` : "Answer submitted! +15 XP earned.");
       } else {
         toast.error(data.error || "Failed to submit answer");
       }
@@ -250,7 +360,7 @@ export default function ClinicalCase() {
       </Card>
 
       {/* Answer Section */}
-      {!submitted ? (
+      {feedback === undefined && !clinicalCase.attempted ? (
         <Card className="bg-card/40 border-border/40">
           <CardHeader className="p-4 pb-2 border-b border-border/30">
             <CardTitle className="text-sm font-bold">Your Answer</CardTitle>
@@ -261,21 +371,21 @@ export default function ClinicalCase() {
               onChange={e => setAnswer(e.target.value)}
               placeholder="Write your clinical reasoning here — mention the diagnosis, pathophysiology, and management. Think step-by-step like a doctor."
               rows={7}
-              disabled={clinicalCase.attempted || submitting}
+              disabled={submitting}
               className="w-full bg-background/60 border border-border/50 rounded-xl p-3 text-sm resize-none outline-none focus:border-primary/50 transition-colors placeholder:text-muted-foreground/50 disabled:opacity-50"
             />
             <div className="flex items-center justify-between gap-3">
               <p className="text-[10px] text-muted-foreground">
-                {answer.length}/5000 · +15 XP on completion
+                {answer.length}/5000 · AI feedback after submission
               </p>
               <Button
                 onClick={handleSubmit}
-                disabled={!answer.trim() || submitting || clinicalCase.attempted}
+                disabled={!answer.trim() || submitting}
                 className="gap-1.5 shrink-0"
                 size="sm"
               >
                 {submitting ? (
-                  <><RefreshCw size={13} className="animate-spin" /> Submitting…</>
+                  <><RefreshCw size={13} className="animate-spin" /> Evaluating…</>
                 ) : (
                   <><ChevronRight size={13} /> Submit Answer</>
                 )}
@@ -289,17 +399,28 @@ export default function ClinicalCase() {
             <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">Your Answer</p>
             <p className="text-sm leading-relaxed text-foreground/80">{answer}</p>
           </div>
-          <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20 text-center">
-            <CheckCircle2 size={24} className="mx-auto mb-1.5 text-green-400" />
-            <p className="text-sm font-semibold text-green-400">Answer submitted — +15 XP earned!</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Come back tomorrow for a new case.</p>
-          </div>
-          {clinicalCase.explanation ? (
-            <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/15">
-              <p className="text-[10px] font-bold text-primary uppercase mb-1.5">Explanation</p>
-              <p className="text-xs text-foreground/80 leading-relaxed">{clinicalCase.explanation}</p>
+          {feedback ? (
+            <div>
+              <p className="text-sm font-bold flex items-center gap-2 mb-3">
+                <Sparkles size={14} className="text-primary" /> AI Feedback
+              </p>
+              <FeedbackCard feedback={feedback} explanation={clinicalCase.explanation ?? ""} />
             </div>
-          ) : null}
+          ) : (
+            <>
+              <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20 text-center">
+                <CheckCircle2 size={24} className="mx-auto mb-1.5 text-green-400" />
+                <p className="text-sm font-semibold text-green-400">Answer submitted — +15 XP earned!</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Come back tomorrow for a new case.</p>
+              </div>
+              {clinicalCase.explanation && (
+                <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/15">
+                  <p className="text-[10px] font-bold text-primary uppercase mb-1.5">Explanation</p>
+                  <p className="text-xs text-foreground/80 leading-relaxed">{clinicalCase.explanation}</p>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

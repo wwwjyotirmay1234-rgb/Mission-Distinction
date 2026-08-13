@@ -8,6 +8,7 @@ import { updateStreak } from "../lib/streak";
 import { stripHtml } from "../lib/sanitize";
 import { awardXp, XP_VALUES } from "../lib/xp";
 import rateLimit from "express-rate-limit";
+import { explainQuizAnswer } from "../lib/aiGrading";
 
 const SUBJECTIVE_TYPES = ["short_answer", "long_answer"];
 
@@ -92,6 +93,59 @@ router.get("/reports", adminMiddleware, async (req: Request, res: Response) => {
 // AI parse removed
 router.post("/ai-parse", adminMiddleware, (_req: Request, res: Response) => {
   res.status(503).json({ error: "AI question parsing is currently unavailable." });
+});
+
+// ─── Wrong-answer explainer ───────────────────────────────────────────────────
+const explainLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many explanation requests. Please slow down." },
+});
+
+router.post("/explain", authMiddleware, explainLimiter, async (req: Request, res: Response) => {
+  try {
+    const { questionId, studentAnswer } = req.body;
+    const qid = parseId(String(questionId ?? ""));
+    if (!qid) { res.status(400).json({ error: "questionId is required" }); return; }
+
+    // Fetch question with correct answer (admin fields)
+    const [question] = await db.select().from(questionsTable).where(eq(questionsTable.id, qid));
+    if (!question) { res.status(404).json({ error: "Question not found" }); return; }
+
+    // Build human-readable labels
+    let correctLabel = "";
+    let studentLabel = "";
+
+    if (question.questionType === "mcq" || question.questionType === "true-false") {
+      const opts = question.options as string[] | null ?? [];
+      const correctIdx = question.correctOption ?? 0;
+      correctLabel = opts[correctIdx] ? `${String.fromCharCode(65 + correctIdx)}. ${opts[correctIdx]}` : String(correctIdx);
+      const stuIdx = typeof studentAnswer === "number" ? studentAnswer : parseInt(String(studentAnswer ?? "-1"));
+      studentLabel = (stuIdx >= 0 && opts[stuIdx]) ? `${String.fromCharCode(65 + stuIdx)}. ${opts[stuIdx]}` : "Not answered";
+    } else {
+      correctLabel = question.correctAnswer ?? "";
+      studentLabel = typeof studentAnswer === "string" ? studentAnswer : "";
+    }
+
+    const explanation = await explainQuizAnswer(
+      question.text,
+      correctLabel,
+      studentLabel,
+      question.explanation ?? null
+    );
+
+    if (!explanation) {
+      res.status(503).json({ error: "Could not generate explanation. Please try again." });
+      return;
+    }
+
+    res.json({ explanation });
+  } catch (err) {
+    console.error("quiz explain error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.patch("/reports/:id/status", adminMiddleware, async (req: Request, res: Response) => {

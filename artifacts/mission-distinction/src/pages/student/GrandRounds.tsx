@@ -7,8 +7,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Stethoscope, Trophy, Star, ChevronRight, ChevronLeft,
-  CheckCircle, Target, Zap, BookOpen
+  CheckCircle, Target, Zap, Award
 } from "lucide-react";
+
+interface AiFeedback {
+  score: number;
+  grade: string;
+  diagnosis: string;
+  pathway: string;
+  clinicalCorrelates: string;
+  strengths: string[];
+  missedPoints: string[];
+  verdict: string;
+}
+
+const GRADE_COLORS: Record<string, string> = {
+  Distinction: "text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 border-yellow-500/30",
+  Merit:       "text-green-600 dark:text-green-400 bg-green-500/10 border-green-500/30",
+  Pass:        "text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/30",
+  "Needs Revision": "text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30",
+};
 
 interface GrandRoundCase {
   id: number;
@@ -19,13 +37,14 @@ interface GrandRoundCase {
   featuredAttemptId: number | null;
   winnerAnnouncedAt: string | null;
   attempted: boolean;
-  myAttempt: { id: number; answerText: string } | null;
+  myAttempt: { id: number; answerText: string; aiFeedback?: AiFeedback | null } | null;
   featuredAnswer: { userName: string; answerText: string } | null;
 }
 
 interface LeaderboardEntry {
   id: number;
   userName: string;
+  score: number;
   createdAt: string;
 }
 
@@ -37,6 +56,7 @@ export default function GrandRounds() {
   const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
   const [answerText, setAnswerText] = useState("");
   const [view, setView] = useState<"list" | "case">("list");
+  const [freshFeedback, setFreshFeedback] = useState<AiFeedback | null>(null);
   const qc = useQueryClient();
 
   const listQuery = useQuery({
@@ -52,15 +72,19 @@ export default function GrandRounds() {
 
   const attemptMutation = useMutation({
     mutationFn: (body: { answerText: string }) =>
-      apiFetchJson<{ id: number }>(
+      apiFetchJson<{ id: number; feedback: AiFeedback | null }>(
         `/api/grand-rounds/${selectedCaseId}/attempt`,
         { method: "POST", body: JSON.stringify(body) }
       ),
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["grand-rounds"] });
       qc.invalidateQueries({ queryKey: ["grand-round", selectedCaseId] });
-      toast.success("Answer submitted! Results will be announced by the admin.");
-      setView("list");
+      setFreshFeedback(data.feedback);
+      if (data.feedback) {
+        toast.success(`${data.feedback.grade} — ${data.feedback.score}/10! AI grading complete.`);
+      } else {
+        toast.success("Answer submitted! Results will be announced by the admin.");
+      }
     },
     onError: (e: any) => toast.error(e.message ?? "Submit failed"),
   });
@@ -71,6 +95,7 @@ export default function GrandRounds() {
   const openCase = (id: number) => {
     setSelectedCaseId(id);
     setAnswerText("");
+    setFreshFeedback(null);
     setView("case");
   };
 
@@ -192,6 +217,9 @@ export default function GrandRounds() {
                     #{i + 1}
                   </span>
                   <span className="flex-1 text-sm text-foreground truncate">{entry.userName}</span>
+                  {entry.score > 0 && (
+                    <span className="text-sm font-bold text-primary">{entry.score}/10</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -199,12 +227,39 @@ export default function GrandRounds() {
         )}
 
         {alreadyAttempted ? (
-          <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <CheckCircle size={14} className="text-green-600 dark:text-green-400" />
-              <p className="text-xs font-semibold text-green-700 dark:text-green-300">You already submitted this Grand Round</p>
+          <div className="space-y-3">
+            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <CheckCircle size={14} className="text-green-600 dark:text-green-400" />
+                <p className="text-xs font-semibold text-green-700 dark:text-green-300">You already submitted this Grand Round</p>
+              </div>
+              {/* Show grade from fresh submit or from stored feedback */}
+              {(() => {
+                const fb: AiFeedback | null | undefined =
+                  freshFeedback ?? (c.myAttempt?.aiFeedback as AiFeedback | null | undefined);
+                if (!fb) return (
+                  <p className="text-xs text-muted-foreground mt-1">Results will be announced by the admin when grading is complete.</p>
+                );
+                const gradeClass = GRADE_COLORS[fb.grade] ?? "";
+                return (
+                  <div className="mt-3 space-y-2">
+                    <div className={`flex items-center gap-3 p-3 rounded-xl border ${gradeClass}`}>
+                      <Award size={24} />
+                      <div>
+                        <p className="text-lg font-black">{fb.score}/10 — {fb.grade}</p>
+                        <p className="text-xs opacity-80">{fb.verdict}</p>
+                      </div>
+                    </div>
+                    {fb.missedPoints?.length > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        <span className="font-semibold">Key points to review: </span>
+                        {fb.missedPoints.slice(0, 2).join(" · ")}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Results will be announced by the admin when grading is complete.</p>
           </div>
         ) : (
           <>

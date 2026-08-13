@@ -19,7 +19,7 @@ import {
   Play, Clock, CheckCircle, ChevronLeft, ChevronRight,
   Timer, Trophy, XCircle, AlertCircle, ArrowLeft, Flag,
   Upload, RefreshCw, ImageIcon, PenLine, FileText, ShieldCheck,
-  BarChart2, GraduationCap,
+  BarChart2, GraduationCap, Lightbulb,
 } from "lucide-react";
 import QuizAnalysisSection from "./QuizAnalysis";
 import ProctorOverlay from "@/components/ProctorOverlay";
@@ -442,6 +442,8 @@ export default function StudentQuiz() {
   const [showProctoringSetup, setShowProctoringSetup] = useState(false);
   const [pendingProctoredQuiz, setPendingProctoredQuiz] = useState<QuizSummary | null>(null);
   const [mockMode, setMockMode] = useState(false);
+  const [explanations, setExplanations] = useState<Record<number, string>>({});
+  const [loadingExplanation, setLoadingExplanation] = useState<number | null>(null);
   const submittedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const doSubmitRef = useRef<() => Promise<void>>(async () => {});
@@ -547,6 +549,28 @@ export default function StudentQuiz() {
   };
 
   const openReport = (qId: number) => { setReportQuestionId(qId); setReportOpen(true); };
+
+  const handleExplain = async (questionId: number, studentAnswer: number | string | undefined) => {
+    if (loadingExplanation === questionId || explanations[questionId]) return;
+    setLoadingExplanation(questionId);
+    try {
+      const res = await apiFetch("/api/quizzes/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ questionId, studentAnswer }),
+      });
+      const data = await res.json();
+      if (res.ok && data.explanation) {
+        setExplanations(prev => ({ ...prev, [questionId]: data.explanation }));
+      } else {
+        toast.error("Couldn't generate explanation. Try again.");
+      }
+    } catch {
+      toast.error("Couldn't generate explanation. Try again.");
+    } finally {
+      setLoadingExplanation(null);
+    }
+  };
 
   // ─── Results Screen ──────────────────────────────────────────────────────────
   if (mode === "results" && result) {
@@ -747,6 +771,35 @@ export default function StudentQuiz() {
                       {ca?.explanation && (
                         <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-300">
                           <span className="font-semibold">Explanation: </span>{ca.explanation}
+                        </div>
+                      )}
+
+                      {/* AI Explain button — wrong MCQ/true-false answers only */}
+                      {!isCorrect && !isWriteIn && (
+                        <div className="mt-2">
+                          {!explanations[q.id] ? (
+                            <button
+                              onClick={() => {
+                                const studentIdx = ca?.selectedOption;
+                                handleExplain(q.id, studentIdx);
+                              }}
+                              disabled={loadingExplanation === q.id}
+                              className="flex items-center gap-1.5 text-[11px] text-primary/80 hover:text-primary transition-colors disabled:opacity-50"
+                            >
+                              {loadingExplanation === q.id ? (
+                                <><RefreshCw size={11} className="animate-spin" /> Generating explanation…</>
+                              ) : (
+                                <><Lightbulb size={11} /> Explain this answer</>
+                              )}
+                            </button>
+                          ) : (
+                            <div className="p-2.5 bg-primary/5 border border-primary/15 rounded-lg text-xs text-foreground/80 leading-relaxed">
+                              <p className="font-semibold text-primary mb-1 flex items-center gap-1">
+                                <Lightbulb size={11} /> AI Explanation
+                              </p>
+                              {explanations[q.id]}
+                            </div>
+                          )}
                         </div>
                       )}
 
