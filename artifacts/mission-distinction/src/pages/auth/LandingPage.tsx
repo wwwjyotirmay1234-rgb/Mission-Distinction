@@ -156,6 +156,8 @@ export default function LandingPage() {
     // onAuthStateChanged fallback below doesn't double-fire.
     let handledByRedirectResult = false;
 
+    if (!auth || !googleProvider) return;
+
     getRedirectResult(auth)
       .then(async (result) => {
         if (!result || !active) {
@@ -218,6 +220,11 @@ export default function LandingPage() {
   }, []);
 
   const handleGoogleSignIn = async () => {
+    if (!auth || !googleProvider) {
+      toast.error("Google sign-in is not configured.");
+      return;
+    }
+
     // Cannot run inside an iframe (Replit canvas preview).
     if (window.self !== window.top) {
       window.open(window.location.href, "_blank");

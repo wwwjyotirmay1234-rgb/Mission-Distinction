@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }).catch(() => {});
     // Sign out of Firebase too so Google-authenticated students
     // are not automatically re-logged in via onAuthStateChanged.
-    firebaseSignOut(auth).catch(() => {});
+    if (auth) firebaseSignOut(auth).catch(() => {});
     setUser(null);
     setToken(null);
     localStorage.removeItem("mission_user");
