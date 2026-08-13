@@ -660,15 +660,35 @@ export default function LandingPage() {
                           <FormField
                             control={studentRegisterForm.control}
                             name="password"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Password <span className="text-destructive">*</span></FormLabel>
-                                <FormControl>
-                                  <Input type="password" autoComplete="new-password" {...field} className="bg-background/50" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                            render={({ field }) => {
+                              const pw = field.value || "";
+                              const hasLen = pw.length >= 8;
+                              const hasUpper = /[A-Z]/.test(pw);
+                              const hasNum = /[0-9]/.test(pw);
+                              const allGood = hasLen && hasUpper && hasNum;
+                              return (
+                                <FormItem>
+                                  <FormLabel>Password <span className="text-destructive">*</span></FormLabel>
+                                  <FormControl>
+                                    <Input type="password" autoComplete="new-password" {...field} className="bg-background/50" />
+                                  </FormControl>
+                                  {!allGood && pw.length > 0 && (
+                                    <ul className="text-xs mt-1 space-y-0.5">
+                                      <li className={hasLen ? "text-green-500" : "text-muted-foreground"}>
+                                        {hasLen ? "✓" : "○"} At least 8 characters
+                                      </li>
+                                      <li className={hasUpper ? "text-green-500" : "text-muted-foreground"}>
+                                        {hasUpper ? "✓" : "○"} At least one uppercase letter (A-Z)
+                                      </li>
+                                      <li className={hasNum ? "text-green-500" : "text-muted-foreground"}>
+                                        {hasNum ? "✓" : "○"} At least one number (0-9)
+                                      </li>
+                                    </ul>
+                                  )}
+                                  <FormMessage />
+                                </FormItem>
+                              );
+                            }}
                           />
                           <FormField
                             control={studentRegisterForm.control}
