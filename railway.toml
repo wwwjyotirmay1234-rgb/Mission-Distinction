@@ -1,0 +1,12 @@
+[deploy]
+# Watch all source paths that affect the API server build.
+# Without this, Railway only watched /artifacts/api-server/** and skipped
+# commits that only touched shared libraries (lib/**).
+watchPatterns = [
+  "artifacts/api-server/**",
+  "lib/**",
+  "nixpacks.toml",
+  "railway.toml",
+  "pnpm-workspace.yaml",
+  "package.json"
+]
