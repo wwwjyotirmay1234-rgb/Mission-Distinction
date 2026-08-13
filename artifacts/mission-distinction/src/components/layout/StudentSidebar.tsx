@@ -97,7 +97,6 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
         { icon: Stethoscope, label: "Grand Rounds", href: "/student/grand-rounds" },
         { icon: Stethoscope, label: "Clinical Cases", href: "/student/clinical-case" },
         { icon: BarChart2, label: "Quiz Analysis", href: "/student/quiz-analysis" },
-        { icon: GraduationCap, label: "Scholar Hub", href: "/student/scholar-hub" },
         { icon: Zap, label: "Cheat Codes", href: "/student/cheat-codes" },
       ],
     },
