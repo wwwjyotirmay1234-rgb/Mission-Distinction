@@ -24,7 +24,7 @@ import {
   FileText, File, CheckCircle, Flame, Play, BookOpen, Bookmark, 
   Calendar, ArrowRight, MessageSquare, Bell, GraduationCap, 
   ChevronDown, Brain, CheckCircle2, XCircle, RotateCcw, Sparkles,
-  Stethoscope, Share2,
+  Stethoscope, Share2, AlarmClock,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -273,6 +273,55 @@ function TodayStudyPlanWidget() {
         <p className="text-[11px] text-muted-foreground mt-3 text-center">
           Suggested topics rotate daily — adapt to your own schedule as needed.
         </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ExamCountdownWidget() {
+  const [exams, setExams] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch("/api/exams")
+      .then(r => r.ok ? r.json() : [])
+      .then((data: any[]) => setExams(data.filter(e => e.isGlobal)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton className="h-28 w-full rounded-2xl" />;
+  if (exams.length === 0) return null;
+
+  return (
+    <Card className="bg-card/40 border-red-500/20">
+      <CardHeader className="p-4 pb-2 border-b border-red-500/10">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <AlarmClock size={15} className="text-red-400" /> Upcoming Exams
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-3 space-y-2">
+        {exams.slice(0, 4).map(exam => {
+          const days = Math.ceil((new Date(exam.examDate).getTime() - Date.now()) / 86400000);
+          const urgent = days <= 7;
+          const warning = days <= 30;
+          const color = urgent ? "text-red-400" : warning ? "text-amber-400" : "text-green-400";
+          const bg = urgent ? "border-red-500/25 bg-red-500/5" : warning ? "border-amber-500/25 bg-amber-500/5" : "border-border/40 bg-muted/10";
+          return (
+            <div key={exam.id} className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg border ${bg}`}>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold truncate">{exam.title}</p>
+                <p className="text-[11px] text-muted-foreground truncate">
+                  {exam.subject} · {new Date(exam.examDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                </p>
+              </div>
+              <div className={`text-right shrink-0 ${color}`}>
+                <p className="text-base font-bold leading-none">{days > 0 ? days : "—"}</p>
+                <p className="text-[10px] leading-none mt-0.5">{days > 0 ? "days" : "past"}</p>
+              </div>
+            </div>
+          );
+        })}
       </CardContent>
     </Card>
   );
@@ -624,6 +673,9 @@ export default function StudentDashboard() {
 
         {/* Right Panel */}
         <div className="space-y-6">
+          {/* Exam Countdown */}
+          <ExamCountdownWidget />
+
           {/* Community */}
           <Card className="bg-card/40 border-pink-500/20">
             <CardHeader className="p-4 pb-2 border-b border-pink-500/20 bg-pink-500/10">

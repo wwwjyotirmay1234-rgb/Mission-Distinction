@@ -1,16 +1,18 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { customFetch, type User as ApiUser } from "@workspace/api-client-react";
 import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "sonner";
-import { Shield, Key, User, Info, Eye, EyeOff, CheckCircle2, Camera, Loader2 } from "lucide-react";
+import { Shield, Key, User, Info, Eye, EyeOff, CheckCircle2, Camera, Loader2, CalendarDays, Trash2, Plus } from "lucide-react";
 
 export default function AdminSettings() {
   const { user, login, token, updateUser } = useAuth();
@@ -25,6 +27,52 @@ export default function AdminSettings() {
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Exam schedule ──────────────────────────────────────────────────────────
+  const [globalExams, setGlobalExams] = useState<any[]>([]);
+  const [examsLoading, setExamsLoading] = useState(true);
+  const [examForm, setExamForm] = useState({ title: "", subject: "All Subjects", examDate: "", sessionYear: "2025-26" });
+  const [savingExam, setSavingExam] = useState(false);
+
+  useEffect(() => {
+    apiFetch("/api/exams?all=1")
+      .then(r => r.ok ? r.json() : [])
+      .then((data: any[]) => setGlobalExams(data.filter(e => e.isGlobal).sort((a, b) => new Date(a.examDate).getTime() - new Date(b.examDate).getTime())))
+      .catch(() => {})
+      .finally(() => setExamsLoading(false));
+  }, []);
+
+  const handleAddExam = async () => {
+    if (!examForm.title.trim() || !examForm.examDate) { toast.error("Please fill in title and date."); return; }
+    setSavingExam(true);
+    try {
+      const r = await apiFetch("/api/exams/global", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: examForm.title.trim(),
+          subject: examForm.subject,
+          examDate: examForm.examDate,
+          sessionYear: examForm.sessionYear === "all" ? null : examForm.sessionYear,
+        }),
+      });
+      if (!r.ok) throw new Error();
+      const newExam = await r.json();
+      setGlobalExams(prev => [...prev, newExam].sort((a, b) => new Date(a.examDate).getTime() - new Date(b.examDate).getTime()));
+      setExamForm({ title: "", subject: "All Subjects", examDate: "", sessionYear: "2025-26" });
+      toast.success("Exam date added! Students will see the countdown.");
+    } catch { toast.error("Failed to add exam."); }
+    finally { setSavingExam(false); }
+  };
+
+  const handleDeleteExam = async (id: number) => {
+    try {
+      const r = await apiFetch(`/api/exams/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error();
+      setGlobalExams(prev => prev.filter(e => e.id !== id));
+      toast.success("Exam removed.");
+    } catch { toast.error("Failed to delete exam."); }
+  };
 
   const initials =
     user?.fullName
@@ -283,6 +331,92 @@ export default function AdminSettings() {
             <CheckCircle2 className="h-4 w-4 text-green-400 shrink-0" />
             <span className="text-sm text-green-400">All systems operational</span>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Exam Schedule */}
+      <Card className="bg-card/40 border-border/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-secondary" /> Exam Schedule
+          </CardTitle>
+          <CardDescription>Set exam dates per batch — students see a live countdown on their dashboard.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Add form */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label className="text-xs">Exam Title</Label>
+              <Input className="bg-background/50" placeholder="e.g. Anatomy Theory Exam" value={examForm.title} onChange={e => setExamForm(f => ({ ...f, title: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Subject</Label>
+              <Select value={examForm.subject} onValueChange={v => setExamForm(f => ({ ...f, subject: v }))}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["All Subjects", "Anatomy", "Physiology", "Biochemistry"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Batch</Label>
+              <Select value={examForm.sessionYear} onValueChange={v => setExamForm(f => ({ ...f, sessionYear: v }))}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Batches (shared)</SelectItem>
+                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
+                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label className="text-xs">Exam Date & Time</Label>
+              <Input type="datetime-local" className="bg-background/50" value={examForm.examDate} onChange={e => setExamForm(f => ({ ...f, examDate: e.target.value }))} />
+            </div>
+          </div>
+          <Button onClick={handleAddExam} disabled={savingExam} className="gap-2">
+            {savingExam ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+            {savingExam ? "Adding…" : "Add Exam Date"}
+          </Button>
+
+          <Separator />
+
+          {/* Existing exams */}
+          {examsLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : globalExams.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-3">No exam dates added yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {globalExams.map((exam: any) => {
+                const days = Math.ceil((new Date(exam.examDate).getTime() - Date.now()) / 86400000);
+                return (
+                  <div key={exam.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border/40 bg-muted/10">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{exam.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="text-xs text-muted-foreground">
+                          {exam.subject} · {new Date(exam.examDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        </span>
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${exam.sessionYear ? "border-blue-500/30 text-blue-400" : "border-green-500/30 text-green-400"}`}>
+                          {exam.sessionYear ?? "All Batches"}
+                        </Badge>
+                      </div>
+                    </div>
+                    <span className={`text-xs font-bold shrink-0 ${days <= 7 ? "text-red-400" : days <= 30 ? "text-amber-400" : "text-muted-foreground"}`}>
+                      {days > 0 ? `${days}d left` : "Past"}
+                    </span>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 shrink-0" onClick={() => handleDeleteExam(exam.id)}>
+                      <Trash2 size={12} />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 

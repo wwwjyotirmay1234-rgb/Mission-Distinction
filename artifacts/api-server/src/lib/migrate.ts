@@ -663,6 +663,7 @@ export async function runStartupMigrations() {
       -- Add image support to grand test answers (idempotent)
       ALTER TABLE grand_test_answers ADD COLUMN IF NOT EXISTS answer_image_url TEXT;
       ALTER TABLE grand_tests ADD COLUMN IF NOT EXISTS answers_released BOOLEAN NOT NULL DEFAULT false;
+      ALTER TABLE exams ADD COLUMN IF NOT EXISTS session_year TEXT;
 
       -- Link admin account to personal student account
       ALTER TABLE users ADD COLUMN IF NOT EXISTS linked_student_id INTEGER REFERENCES users(id);

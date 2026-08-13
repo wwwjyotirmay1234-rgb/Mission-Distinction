@@ -19,14 +19,25 @@ const createExamLimiter = rateLimit({
 // List exams (global + user's own, upcoming only unless ?all=1)
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = ((req as any).user.id as number);
+    const user = (req as any).user;
+    const userId = user.id as number;
+    const isAdmin = user?.role === "admin";
+    const userSessionYear: string | null = user?.sessionYear ?? null;
     const showAll = req.query.all === "1";
     const now = new Date();
+
+    // Admins see all global exams; students only see exams for their batch (or "all batches" = NULL)
+    const globalFilter = isAdmin
+      ? eq(examsTable.isGlobal, true)
+      : and(
+          eq(examsTable.isGlobal, true),
+          or(isNull(examsTable.sessionYear), eq(examsTable.sessionYear, userSessionYear!))
+        );
 
     const rows = await db.select().from(examsTable)
       .where(and(
         showAll ? undefined : gte(examsTable.examDate, now),
-        or(eq(examsTable.isGlobal, true), eq(examsTable.userId, userId))
+        or(globalFilter, eq(examsTable.userId, userId))
       ))
       .orderBy(asc(examsTable.examDate));
 
@@ -56,7 +67,7 @@ router.post("/", authMiddleware, createExamLimiter, async (req: Request, res: Re
 router.post("/global", authMiddleware, async (req: Request, res: Response) => {
   try {
     if ((req as any).user?.role !== "admin") { res.status(403).json({ error: "Admin only" }); return; }
-    const { title, subject, examDate, description } = req.body;
+    const { title, subject, examDate, description, sessionYear } = req.body;
     if (!title?.trim() || !subject || !examDate) { res.status(400).json({ error: "title, subject, examDate required" }); return; }
     const [row] = await db.insert(examsTable).values({
       userId: null,
@@ -65,6 +76,8 @@ router.post("/global", authMiddleware, async (req: Request, res: Response) => {
       examDate: new Date(examDate),
       description: description?.trim() || null,
       isGlobal: true,
+      // null = all batches; specific string = that batch only
+      sessionYear: sessionYear || null,
     }).returning();
     res.json(row);
   } catch { res.status(500).json({ error: "Failed to create global exam" }); }
