@@ -5,7 +5,6 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import rateLimit from "express-rate-limit";
-import { awardXp, XP_VALUES } from "../lib/xp";
 import { stripHtml } from "../lib/sanitize";
 import { cohortWhere, userCohort } from "../lib/cohort";
 

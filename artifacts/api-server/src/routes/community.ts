@@ -7,7 +7,6 @@ import { stripHtml } from "../lib/sanitize";
 import { eq, desc, and, count, ne, inArray } from "drizzle-orm";
 import { getIO } from "../lib/socket-server";
 import rateLimit from "express-rate-limit";
-import { awardXp, XP_VALUES } from "../lib/xp";
 import { cohortWhere, userCohort } from "../lib/cohort";
 
 const router = Router();
@@ -118,7 +117,6 @@ router.post("/posts", authMiddleware, postCreateLimiter, async (req: Request, re
       insertValues.mediaType = safeMediaType;
     }
     const [post] = await db.insert(communityPostsTable).values(insertValues).returning();
-    awardXp(user.id, XP_VALUES.COMMUNITY_POST, "community_post", `Posted in community: ${safeTitle.slice(0, 60)}`).catch(() => {});
     res.status(201).json({ ...post, likedByMe: false });
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });
@@ -523,7 +521,6 @@ router.post("/messages/:groupId", authMiddleware, messageLimiter, async (req: Re
       seenBy: JSON.stringify([user.id]),
     }).returning();
     try { getIO().to(`chat:${groupId}`).emit("new-message", message); } catch { }
-    awardXp(user.id, XP_VALUES.COMMUNITY_MESSAGE, "community_message", "Sent a message in a study group").catch(() => {});
     res.status(201).json(message);
   } catch { res.status(500).json({ error: "Internal server error" }); }
 });

@@ -191,7 +191,6 @@ function Router() {
                 <Route path="/student/quiz-analysis" component={StudentQuizAnalysis} />
                 <Route path="/student/notes"        component={StudentNotes} />
                 <Route path="/student/pdfs"         component={StudentPDFs} />
-                <Route path="/student/community"    component={StudentCommunity} />
                 <Route path="/student/announcements" component={StudentAnnouncements} />
                 <Route path="/student/progress"     component={StudentMyProgress} />
                 <Route path="/student/old-progress"     component={StudentProgress} />
@@ -205,9 +204,7 @@ function Router() {
                 <Route path="/student/flashcards"   component={StudentCheatCodes} />
                 <Route path="/student/mnemonics"    component={StudentCheatCodes} />
                 <Route path="/student/exams"        component={StudentExams} />
-                <Route path="/student/confessions"  component={StudentConfessions} />
                 <Route path="/student/study-rooms"  component={StudentStudyRooms} />
-                <Route path="/student/games"        component={StudentGames} />
                 <Route path="/student/scholar-hub" component={StudentScholarHub} />
                 <Route path="/student/clinical-case"     component={StudentClinicalCase} />
                 <Route path="/student/bookmarks"         component={StudentBookmarks} />
