@@ -132,7 +132,7 @@ function ImageUploader({ imageUrl, onUploaded, onRemove }: {
           <X size={12} />
         </button>
         <p className="text-xs text-green-400 mt-1.5 flex items-center gap-1">
-          <CheckCircle2 size={11} /> Handwritten sheet uploaded — AI will read and grade it
+          <CheckCircle2 size={11} /> Handwritten sheet uploaded — teacher will review it
         </p>
       </div>
     );
@@ -165,22 +165,20 @@ function ExamView({ test, submissionId, onDone }: { test: GrandTestDetail; submi
   const [images, setImages] = useState<Record<number, string>>({});
   const [currentQ, setCurrentQ] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [gradingProgress, setGradingProgress] = useState<GradingProgress[]>([]);
-  const [gradingDone, setGradingDone] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const startedAt = useRef(Date.now());
   const endsAt = startedAt.current + test.duration_minutes * 60_000;
 
   const handleExpire = useCallback(() => {
-    if (!submitting && !gradingDone) {
+    if (!submitting && !submitted) {
       toast.warning("Time's up! Submitting automatically…");
       handleSubmit();
     }
-  }, [submitting, gradingDone]);
+  }, [submitting, submitted]);
 
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (submitting || submitted) return;
     setSubmitting(true);
-    setGradingProgress([{ type: "status", message: "Submitting and starting AI grading…" }]);
     try {
       const r = await apiFetch(`/api/grand-tests/submissions/${submissionId}/submit`, {
         method: "POST",
@@ -193,58 +191,44 @@ function ExamView({ test, submissionId, onDone }: { test: GrandTestDetail; submi
           })),
         }),
       });
-      if (!r.ok || !r.body) throw new Error("Failed to submit");
-      const reader = r.body.getReader();
-      const dec = new TextDecoder();
-      let buf = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        const parts = buf.split("\n\n");
-        buf = parts.pop() || "";
-        for (const part of parts) {
-          if (part.startsWith("data: ")) {
-            try {
-              const evt: GradingProgress = JSON.parse(part.slice(6));
-              setGradingProgress(prev => [...prev, evt]);
-              if (evt.type === "done") { setGradingDone(true); setTimeout(() => onDone(submissionId), 1400); }
-            } catch { /* ignore malformed events */ }
-          }
-        }
-      }
+      if (!r.ok) throw new Error("Failed to submit");
+      setSubmitted(true);
     } catch {
       toast.error("Submission failed. Please try again.");
       setSubmitting(false);
-      setGradingProgress([]);
     }
   };
 
   const q = test.questions[currentQ];
   const answered = test.questions.filter(qn => answers[qn.id]?.trim() || images[qn.id]).length;
 
+  if (submitted) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
+        <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center">
+          <CheckCircle2 size={36} className="text-green-400" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold">Test Submitted!</h2>
+          <p className="text-sm text-muted-foreground max-w-xs">Your answers have been saved. Your teacher will review and grade your submission shortly.</p>
+        </div>
+        <Button onClick={() => onDone(submissionId)} className="gap-2">
+          <TrendingUp size={14} /> View Submission Status
+        </Button>
+      </div>
+    );
+  }
+
   if (submitting) {
-    const done = gradingProgress.filter(e => e.type === "graded").length;
-    const total = test.questions.length;
-    const currentMsg = [...gradingProgress].reverse().find(e => e.message)?.message || "Processing…";
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
         <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center">
-          {gradingDone
-            ? <CheckCircle2 size={36} className="text-green-400" />
-            : <Loader2 size={36} className="animate-spin text-amber-400" />}
+          <Loader2 size={36} className="animate-spin text-amber-400" />
         </div>
         <div className="space-y-1">
-          <h2 className="text-xl font-bold">{gradingDone ? "Grading complete!" : "AI is grading your test…"}</h2>
-          <p className="text-sm text-muted-foreground">{currentMsg}</p>
-          <p className="text-xs text-muted-foreground/60">Using GPT-4o vision for handwritten sheets</p>
+          <h2 className="text-xl font-bold">Submitting your test…</h2>
+          <p className="text-sm text-muted-foreground">Please wait, do not close this page.</p>
         </div>
-        {total > 0 && (
-          <div className="w-full max-w-sm space-y-2">
-            <Progress value={(done / total) * 100} className="h-2.5" />
-            <p className="text-xs text-muted-foreground">{done}/{total} answers graded</p>
-          </div>
-        )}
       </div>
     );
   }
@@ -326,7 +310,7 @@ function ExamView({ test, submissionId, onDone }: { test: GrandTestDetail; submi
           <CheckCircle2 size={14} className="mr-2" /> Submit Test
         </Button>
       </div>
-      <p className="text-xs text-center text-muted-foreground">Typed answers + uploaded sheets are both graded by AI using GPT-4o vision.</p>
+      <p className="text-xs text-center text-muted-foreground">Typed answers + uploaded handwritten sheets are both accepted. Your teacher will manually review and grade each answer.</p>
     </div>
   );
 }
@@ -391,6 +375,7 @@ function ResultView({ submissionId, currentUserEmail, onBack }: { submissionId: 
   if (isLoading) return <div className="flex items-center justify-center py-16"><Loader2 size={24} className="animate-spin text-amber-400" /></div>;
   if (!data) return <div className="text-center py-10 text-muted-foreground">Could not load results.</div>;
 
+  const isPending = data.status === "submitted";
   const pct = data.total_marks_possible ? Math.round(((data.total_marks_obtained || 0) / data.total_marks_possible) * 100) : 0;
   const grade = pct >= 75 ? { label: "Distinction", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" }
     : pct >= 60 ? { label: "First Class", color: "text-green-400", bg: "bg-green-500/10 border-green-500/20" }
@@ -404,6 +389,21 @@ function ResultView({ submissionId, currentUserEmail, onBack }: { submissionId: 
         <h2 className="font-bold text-lg truncate">Result — {data.title}</h2>
       </div>
 
+      {/* Pending review state */}
+      {isPending && (
+        <Card className="border-blue-500/20 bg-blue-500/5">
+          <CardContent className="pt-6 text-center space-y-3 pb-6">
+            <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto">
+              <AlarmClock size={28} className="text-blue-400" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">Awaiting Manual Review</h3>
+              <p className="text-sm text-muted-foreground mt-1">Your answers have been submitted. Your teacher will grade and publish your score shortly.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs defaultValue="result">
         <TabsList className="bg-muted/30 border border-border/30">
           <TabsTrigger value="result" className="gap-1.5 text-xs sm:text-sm"><Trophy size={13} /> My Result</TabsTrigger>
@@ -412,21 +412,27 @@ function ResultView({ submissionId, currentUserEmail, onBack }: { submissionId: 
 
         <TabsContent value="result" className="mt-4 space-y-4">
           {/* Score card */}
-          <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+          <Card className={`${isPending ? "border-border/40 bg-muted/10 opacity-60" : "border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent"}`}>
             <CardContent className="pt-6 text-center space-y-4">
-              <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto">
-                <Trophy size={36} className="text-amber-400" />
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto ${isPending ? "bg-muted/30" : "bg-amber-500/20"}`}>
+                <Trophy size={36} className={isPending ? "text-muted-foreground/40" : "text-amber-400"} />
               </div>
               <div>
-                <div className="text-4xl font-bold">{data.total_marks_obtained ?? 0}<span className="text-xl text-muted-foreground">/{data.total_marks_possible ?? 0}</span></div>
-                <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full border text-sm font-semibold ${grade.bg} ${grade.color}`}>
-                  <Star size={13} /> {pct}% · {grade.label}
-                </div>
+                {isPending ? (
+                  <p className="text-muted-foreground text-sm">Score not released yet</p>
+                ) : (
+                  <>
+                    <div className="text-4xl font-bold">{data.total_marks_obtained ?? 0}<span className="text-xl text-muted-foreground">/{data.total_marks_possible ?? 0}</span></div>
+                    <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full border text-sm font-semibold ${grade.bg} ${grade.color}`}>
+                      <Star size={13} /> {pct}% · {grade.label}
+                    </div>
+                  </>
+                )}
               </div>
-              <Progress value={pct} className="h-3 max-w-xs mx-auto" />
-              {data.ai_overall_feedback && (
+              {!isPending && <Progress value={pct} className="h-3 max-w-xs mx-auto" />}
+              {data.ai_overall_feedback && !isPending && (
                 <div className="bg-muted/30 rounded-lg p-4 text-left max-w-xl mx-auto">
-                  <p className="text-xs font-semibold text-amber-400 mb-1.5">AI Examiner's Overall Feedback</p>
+                  <p className="text-xs font-semibold text-amber-400 mb-1.5">Teacher's Overall Feedback</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">{data.ai_overall_feedback}</p>
                 </div>
               )}
@@ -448,7 +454,7 @@ function ResultView({ submissionId, currentUserEmail, onBack }: { submissionId: 
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <Star size={13} className="text-amber-400" />
-                      <span className="text-sm font-bold">{ans.ai_marks ?? "—"}/{ans.max_marks}</span>
+                      <span className="text-sm font-bold">{isPending ? "—" : (ans.ai_marks ?? "—")}/{ans.max_marks}</span>
                     </div>
                   </div>
 
@@ -474,27 +480,24 @@ function ResultView({ submissionId, currentUserEmail, onBack }: { submissionId: 
                     <p className="text-sm text-muted-foreground italic">No answer provided</p>
                   )}
 
-                  {/* AI feedback */}
-                  {ans.ai_feedback && (
-                    <div className="bg-blue-500/5 border border-blue-500/20 rounded p-3 space-y-2">
-                      <p className="text-xs font-semibold text-blue-400">AI Examiner Feedback</p>
+                  {/* Teacher's feedback */}
+                  {!isPending && ans.ai_feedback && (
+                    <div className="bg-blue-500/5 border border-blue-500/20 rounded p-3 space-y-1.5">
+                      <p className="text-xs font-semibold text-blue-400">Teacher's Feedback</p>
                       <p className="text-xs text-muted-foreground leading-relaxed">{ans.ai_feedback}</p>
-                      {ans.ai_key_points_covered && ans.ai_key_points_covered !== "None" && (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          <span className="text-[10px] text-green-400 font-semibold shrink-0 mt-0.5">✓ Covered:</span>
-                          {ans.ai_key_points_covered.split(",").map((pt, j) => (
-                            <span key={j} className="text-[10px] bg-green-500/10 border border-green-500/20 text-green-400 px-1.5 py-0.5 rounded">{pt.trim()}</span>
-                          ))}
-                        </div>
-                      )}
-                      {ans.ai_key_points_missed && ans.ai_key_points_missed !== "None" && (
-                        <div className="flex flex-wrap gap-1.5">
-                          <span className="text-[10px] text-red-400 font-semibold shrink-0 mt-0.5">✗ Missed:</span>
-                          {ans.ai_key_points_missed.split(",").map((pt, j) => (
-                            <span key={j} className="text-[10px] bg-red-500/10 border border-red-500/20 text-red-400 px-1.5 py-0.5 rounded">{pt.trim()}</span>
-                          ))}
-                        </div>
-                      )}
+                    </div>
+                  )}
+                  {isPending && (
+                    <p className="text-xs text-muted-foreground italic">Marks and feedback will appear after grading.</p>
+                  )}
+
+                  {/* Official model answer — shown only after admin releases the answer key */}
+                  {ans.model_answer && (
+                    <div className="bg-green-500/5 border border-green-500/20 rounded p-3 space-y-1.5">
+                      <p className="text-xs font-semibold text-green-400 flex items-center gap-1.5">
+                        <CheckCircle2 size={11} /> Official Model Answer
+                      </p>
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{ans.model_answer}</p>
                     </div>
                   )}
                 </CardContent>
@@ -562,7 +565,7 @@ function TestCard({ t, onStart, onViewResult, currentUserEmail }: {
         <div className="flex gap-2 pt-1">
           {hasResult && t.my_submission_id ? (
             <Button size="sm" className="flex-1 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/20" onClick={() => onViewResult(t.my_submission_id!)}>
-              <TrendingUp size={13} className="mr-1.5" /> View AI Report Card
+              <TrendingUp size={13} className="mr-1.5" /> View Report Card
             </Button>
           ) : inProgress ? (
             <Button size="sm" className="flex-1" onClick={() => onStart(t)}>
@@ -638,7 +641,7 @@ export default function StudentGrandTests() {
           <Trophy size={22} className="text-amber-400" /> Grand Test Series
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Full-length timed mock papers — type or upload handwritten answers, get AI-graded results instantly.
+          Daily timed mock papers — active for 24 hours. Type or upload handwritten answers. Teacher manually reviews and grades each submission.
         </p>
       </div>
 

@@ -11,7 +11,7 @@ import {
   ExternalLink, CheckCircle2,
 } from "lucide-react";
 
-const SUBJECTS = ["all", "Anatomy", "Physiology", "Biochemistry", "NEET PG", "University Exams"];
+const SUBJECTS = ["all", "Anatomy", "Physiology", "Biochemistry", "University Exams"];
 
 interface VideoSummary {
   id: number;

@@ -18,10 +18,10 @@ import { toast } from "sonner";
 import {
   Plus, MoreVertical, Trash2, Pencil, ClipboardList,
   Users, Trophy, Eye, EyeOff, AlarmClock, BookOpen,
-  ChevronDown, ChevronRight, CheckCircle2, Loader2,
+  ChevronDown, ChevronRight, CheckCircle2, Loader2, Star, KeyRound, Lock,
 } from "lucide-react";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Mixed"];
+const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Mixed", "University Exams"];
 
 type GrandTest = {
   id: number; title: string; subject: string; description: string | null;
@@ -83,7 +83,7 @@ export default function AdminGrandTests() {
 
   const [submissionsOpen, setSubmissionsOpen] = useState(false);
   const [subTestId, setSubTestId] = useState<number | null>(null);
-  const { data: submissions, isLoading: subLoading } = useQuery<any[]>({
+  const { data: submissions, isLoading: subLoading, refetch: refetchSubs } = useQuery<any[]>({
     queryKey: ["grand-test-submissions", subTestId],
     queryFn: async () => {
       const r = await apiFetch(`/api/grand-tests/${subTestId}/submissions`);
@@ -93,6 +93,66 @@ export default function AdminGrandTests() {
     enabled: subTestId !== null && submissionsOpen,
   });
   const [expandedSub, setExpandedSub] = useState<number | null>(null);
+  // Grading state: { [submissionId]: { answers: {[answerId]: {marks, feedback}}, overall } }
+  const [gradeInputs, setGradeInputs] = useState<Record<number, { answers: Record<number, { marks: string; feedback: string }>; overall: string }>>({});
+
+  const releaseAnswers = useMutation({
+    mutationFn: async ({ id, release }: { id: number; release: boolean }) => {
+      const r = await apiFetch(`/api/grand-tests/${id}/release-answers`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ release }),
+      });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: (_, { release }) => {
+      toast.success(release ? "Answer key released — students can now see model answers." : "Answer key retracted.");
+      qc.invalidateQueries({ queryKey: QKEY });
+    },
+    onError: () => toast.error("Failed to update answer key visibility."),
+  });
+
+  const gradeMutation = useMutation({
+    mutationFn: async ({ submissionId, answers, overallFeedback }: { submissionId: number; answers: { answerId: number; marks: number; feedback: string }[]; overallFeedback: string }) => {
+      const r = await apiFetch(`/api/grand-tests/submissions/${submissionId}/grade`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers, overallFeedback }),
+      });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => {
+      toast.success("Grades submitted! Student can now see their result.");
+      qc.invalidateQueries({ queryKey: ["grand-test-submissions", subTestId] });
+      qc.invalidateQueries({ queryKey: QKEY });
+      refetchSubs();
+    },
+    onError: () => toast.error("Failed to submit grades."),
+  });
+
+  const initGrading = (sub: any) => {
+    setGradeInputs(prev => {
+      if (prev[sub.id]) return prev; // already initialized
+      const answers: Record<number, { marks: string; feedback: string }> = {};
+      (sub.answers || []).filter((a: any) => a.id).forEach((a: any) => {
+        answers[a.id] = { marks: String(a.aiMarks ?? ""), feedback: a.aiFeedback ?? "" };
+      });
+      return { ...prev, [sub.id]: { answers, overall: sub.ai_overall_feedback ?? "" } };
+    });
+  };
+
+  const submitGrades = (sub: any) => {
+    const data = gradeInputs[sub.id];
+    if (!data) return;
+    const answers = (sub.answers || []).filter((a: any) => a.id).map((a: any) => ({
+      answerId: a.id,
+      marks: parseFloat(data.answers[a.id]?.marks || "0") || 0,
+      feedback: data.answers[a.id]?.feedback || "",
+    }));
+    gradeMutation.mutate({ submissionId: sub.id, answers, overallFeedback: data.overall });
+  };
 
   const create = useMutation({
     mutationFn: async (data: typeof form) => {
@@ -280,9 +340,14 @@ export default function AdminGrandTests() {
                     </Button>
                   </TableCell>
                   <TableCell>
-                    {t.is_published
-                      ? <Badge className="bg-green-500/20 text-green-400 border-none hover:bg-green-500/30"><Eye size={10} className="mr-1" />Live</Badge>
-                      : <Badge variant="secondary" className="bg-muted"><EyeOff size={10} className="mr-1" />Draft</Badge>}
+                    <div className="flex flex-col gap-1">
+                      {t.is_published
+                        ? <Badge className="bg-green-500/20 text-green-400 border-none hover:bg-green-500/30"><Eye size={10} className="mr-1" />Live</Badge>
+                        : <Badge variant="secondary" className="bg-muted"><EyeOff size={10} className="mr-1" />Draft</Badge>}
+                      {t.answers_released && (
+                        <Badge className="bg-amber-500/20 text-amber-400 border-none text-[10px]"><KeyRound size={9} className="mr-1" />Key Released</Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -295,6 +360,11 @@ export default function AdminGrandTests() {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openSubmissions(t.id)}>
                           <ClipboardList className="mr-2 h-4 w-4" /> View Submissions
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => releaseAnswers.mutate({ id: t.id, release: !t.answers_released })}>
+                          {t.answers_released
+                            ? <><Lock className="mr-2 h-4 w-4" /> Retract Answer Key</>
+                            : <><KeyRound className="mr-2 h-4 w-4" /> Release Answer Key</>}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openEdit(t)}>
                           <Pencil className="mr-2 h-4 w-4" /> Edit Settings
@@ -479,8 +549,8 @@ export default function AdminGrandTests() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Model Answer / Key Points (for AI grading)</Label>
-                  <Textarea className="bg-background/50 resize-none text-xs" rows={3} placeholder="Key points the AI should look for when grading…" value={qForm.modelAnswer} onChange={e => setQForm({ ...qForm, modelAnswer: e.target.value })} />
+                  <Label className="text-xs">Model Answer / Key Points (grading reference)</Label>
+                  <Textarea className="bg-background/50 resize-none text-xs" rows={3} placeholder="Key points to look for when manually grading this question…" value={qForm.modelAnswer} onChange={e => setQForm({ ...qForm, modelAnswer: e.target.value })} />
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={() => editQId ? updateQuestion.mutate({ ...qForm, qid: editQId }) : addQuestion.mutate(qForm)} disabled={!qForm.questionText || addQuestion.isPending || updateQuestion.isPending}>
@@ -508,7 +578,7 @@ export default function AdminGrandTests() {
               <div className="text-center py-10 text-muted-foreground text-sm">No submissions yet.</div>
             ) : submissions.map(sub => (
               <div key={sub.id} className="border border-border/40 rounded-lg overflow-hidden">
-                <button className="w-full flex items-center justify-between px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors text-left" onClick={() => setExpandedSub(expandedSub === sub.id ? null : sub.id)}>
+                <button className="w-full flex items-center justify-between px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors text-left" onClick={() => { const opening = expandedSub !== sub.id; setExpandedSub(opening ? sub.id : null); if (opening) initGrading(sub); }}>
                   <div className="flex items-center gap-3 min-w-0">
                     {expandedSub === sub.id ? <ChevronDown size={14} className="shrink-0" /> : <ChevronRight size={14} className="shrink-0" />}
                     <div>
@@ -526,26 +596,113 @@ export default function AdminGrandTests() {
                   </div>
                 </button>
                 {expandedSub === sub.id && (
-                  <div className="px-4 py-3 space-y-3 border-t border-border/30">
-                    {sub.ai_overall_feedback && (
-                      <div className="bg-amber-500/5 border border-amber-500/20 rounded p-3">
-                        <p className="text-xs font-medium text-amber-400 mb-1">AI Overall Feedback</p>
-                        <p className="text-xs text-muted-foreground">{sub.ai_overall_feedback}</p>
+                  <div className="px-4 py-3 space-y-4 border-t border-border/30">
+                    {/* Already graded — read-only */}
+                    {sub.status === "graded" && (
+                      <div className="bg-green-500/5 border border-green-500/20 rounded p-3 flex items-center gap-2">
+                        <CheckCircle2 size={14} className="text-green-400 shrink-0" />
+                        <div>
+                          <p className="text-xs font-medium text-green-400">Graded — {sub.total_marks_obtained}/{sub.total_marks_possible} marks</p>
+                          {sub.ai_overall_feedback && <p className="text-xs text-muted-foreground mt-0.5">{sub.ai_overall_feedback}</p>}
+                        </div>
                       </div>
                     )}
-                    <div className="space-y-2">
-                      {(sub.answers || []).filter((a: any) => a.id).map((ans: any, i: number) => (
-                        <div key={ans.id} className="border border-border/30 rounded p-3 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-[10px]">Q{i + 1}</Badge>
-                            <span className="text-xs font-medium flex-1 min-w-0 truncate">{ans.questionText}</span>
-                            {ans.aiMarks != null && <span className="text-xs font-bold text-amber-400 shrink-0">{ans.aiMarks}/{ans.maxMarks}</span>}
+
+                    {/* Answer-by-answer */}
+                    <div className="space-y-3">
+                      {(sub.answers || []).filter((a: any) => a.id).map((ans: any, i: number) => {
+                        const inp = gradeInputs[sub.id]?.answers[ans.id];
+                        return (
+                          <div key={ans.id} className="border border-border/30 rounded-lg p-3 space-y-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="outline" className="text-[10px] shrink-0">Q{i + 1}</Badge>
+                              <span className="text-xs font-medium flex-1 min-w-0">{ans.questionText}</span>
+                              {sub.status === "graded" && ans.aiMarks != null && (
+                                <span className="text-xs font-bold text-amber-400 shrink-0 flex items-center gap-0.5">
+                                  <Star size={10} />{ans.aiMarks}/{ans.maxMarks}
+                                </span>
+                              )}
+                            </div>
+                            {/* Student's answer */}
+                            {ans.answerText && (
+                              <div className="bg-background/50 rounded p-2">
+                                <p className="text-[10px] text-muted-foreground mb-0.5 font-medium">Student's answer</p>
+                                <p className="text-xs whitespace-pre-wrap">{ans.answerText}</p>
+                              </div>
+                            )}
+                            {ans.answerImageUrl && (
+                              <div>
+                                <p className="text-[10px] text-muted-foreground mb-1 font-medium">Handwritten sheet</p>
+                                <img src={ans.answerImageUrl} alt="Answer sheet" className="max-h-48 rounded border border-border/40 object-contain" />
+                              </div>
+                            )}
+                            {!ans.answerText && !ans.answerImageUrl && (
+                              <p className="text-xs text-muted-foreground italic">No answer provided</p>
+                            )}
+                            {/* Grading inputs — only when status is submitted */}
+                            {sub.status === "submitted" && inp !== undefined && (
+                              <div className="flex gap-2 pt-1">
+                                <div className="flex-none w-20">
+                                  <Label className="text-[10px] text-muted-foreground">Marks/{ans.maxMarks}</Label>
+                                  <Input
+                                    type="number" min={0} max={ans.maxMarks} step={0.5}
+                                    value={inp.marks}
+                                    onChange={e => setGradeInputs(prev => ({
+                                      ...prev,
+                                      [sub.id]: { ...prev[sub.id], answers: { ...prev[sub.id].answers, [ans.id]: { ...inp, marks: e.target.value } } }
+                                    }))}
+                                    className="h-7 text-xs bg-background/50 mt-0.5"
+                                    placeholder="0"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <Label className="text-[10px] text-muted-foreground">Feedback (optional)</Label>
+                                  <Input
+                                    value={inp.feedback}
+                                    onChange={e => setGradeInputs(prev => ({
+                                      ...prev,
+                                      [sub.id]: { ...prev[sub.id], answers: { ...prev[sub.id].answers, [ans.id]: { ...inp, feedback: e.target.value } } }
+                                    }))}
+                                    className="h-7 text-xs bg-background/50 mt-0.5"
+                                    placeholder="Comment on this answer…"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                            {/* Read-only feedback after grading */}
+                            {sub.status === "graded" && ans.aiFeedback && (
+                              <p className="text-xs text-blue-300 italic">{ans.aiFeedback}</p>
+                            )}
                           </div>
-                          <p className="text-xs text-muted-foreground">{ans.answerText || <em>No answer</em>}</p>
-                          {ans.aiFeedback && <p className="text-xs text-blue-300 italic">{ans.aiFeedback}</p>}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
+
+                    {/* Overall feedback + submit — only for submitted */}
+                    {sub.status === "submitted" && gradeInputs[sub.id] && (
+                      <div className="space-y-2 pt-1 border-t border-border/20">
+                        <div>
+                          <Label className="text-xs">Overall Feedback (optional)</Label>
+                          <Textarea
+                            rows={2}
+                            value={gradeInputs[sub.id].overall}
+                            onChange={e => setGradeInputs(prev => ({ ...prev, [sub.id]: { ...prev[sub.id], overall: e.target.value } }))}
+                            placeholder="General comments for the student…"
+                            className="bg-background/50 resize-none text-xs mt-1"
+                          />
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => submitGrades(sub)}
+                          disabled={gradeMutation.isPending}
+                          className="w-full gap-2"
+                        >
+                          {gradeMutation.isPending
+                            ? <><Loader2 size={12} className="animate-spin" /> Submitting…</>
+                            : <><CheckCircle2 size={12} /> Publish Grades</>}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -10,7 +10,7 @@ import {
   Eye, EyeOff, PlayCircle, BookOpen, HelpCircle, X, Link2,
 } from "lucide-react";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "NEET PG", "University Exams"];
+const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "University Exams"];
 
 interface VideoItem {
   id: number;

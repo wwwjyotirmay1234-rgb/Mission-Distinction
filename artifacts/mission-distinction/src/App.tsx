@@ -211,7 +211,6 @@ function Router() {
                 <Route path="/student/grand-tests"       component={StudentGrandTests} />
                 <Route path="/student/custom-quiz"       component={StudentCustomQuiz} />
                 <Route path="/student/notes-marketplace" component={StudentNotesMarketplace} />
-                <Route path="/student/grand-rounds"      component={StudentGrandRounds} />
                 <Route path="/student/videos"            component={StudentVideos} />
                 <Route component={NotFound} />
               </Switch>

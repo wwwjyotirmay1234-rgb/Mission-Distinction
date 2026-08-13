@@ -29,7 +29,7 @@ type Step = BotStep | LockedStep;
 const STEPS: Step[] = [
   {
     kind: "bot",
-    botMessage: "👋 Hey! I'm Meddy, your AI study companion. Welcome to Mission Distinction — built just for 1st Year MBBS students in Odisha. Let me give you a quick tour!",
+    botMessage: "👋 Hey! Welcome to Mission Distinction — built just for 1st Year MBBS students in Odisha. Let me give you a quick tour!",
     features: [
       { icon: <GraduationCap size={16} className="text-purple-400" />, label: "100% Free", desc: "No paywalls, no subscriptions — ever." },
       { icon: <Zap size={16} className="text-amber-400" />, label: "XP & Ranks", desc: "Earn XP and rise from Intern to Consultant." },
@@ -137,7 +137,7 @@ function BotStepView({
         <div className="flex items-start gap-3">
           <BotAvatar />
           <div className="flex-1">
-            <p className="text-[11px] font-semibold text-purple-400 mb-1">Meddy · AI Assistant</p>
+            <p className="text-[11px] font-semibold text-purple-400 mb-1">Mission Distinction</p>
             <div className="bg-muted/60 rounded-2xl rounded-tl-none px-4 py-3 text-sm leading-relaxed text-foreground/90 min-h-[56px]">
               {displayed}
               {!done && <span className="inline-block w-0.5 h-3.5 bg-purple-400 ml-0.5 animate-pulse align-middle" />}

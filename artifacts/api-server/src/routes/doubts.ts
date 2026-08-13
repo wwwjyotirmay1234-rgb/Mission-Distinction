@@ -79,9 +79,20 @@ router.post("/", authMiddleware, doubtPostLimiter, async (req: Request, res: Res
     res.status(201).json(doubt);
 
     // Fire async AI answer after response is sent (non-blocking)
+    // Hard cap: only 1 AI call per doubt — skip if an AI answer already exists
     const capturedDoubt = doubt;
     (async () => {
       try {
+        const [existingAiAnswer] = await db
+          .select({ id: doubtAnswersTable.id })
+          .from(doubtAnswersTable)
+          .where(and(
+            eq(doubtAnswersTable.doubtId, capturedDoubt.id),
+            eq(doubtAnswersTable.isAiGenerated, true)
+          ))
+          .limit(1);
+        if (existingAiAnswer) return; // Already answered — skip AI call
+
         const aiAnswer = await generateDoubtAnswer(
           capturedDoubt.subject,
           capturedDoubt.title,

@@ -79,7 +79,7 @@ interface QuizResult {
   totalXp?: number;
 }
 
-const SUBJECTS = ["all", "Anatomy", "Physiology", "Biochemistry", "NEET PG", "University Exams"];
+const SUBJECTS = ["all", "Anatomy", "Physiology", "Biochemistry", "University Exams"];
 
 const REPORT_REASONS = [
   "Wrong answer",

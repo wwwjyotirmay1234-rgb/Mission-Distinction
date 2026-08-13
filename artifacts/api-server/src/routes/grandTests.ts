@@ -212,6 +212,17 @@ router.post("/:id/start", authMiddleware, async (req: Request, res: Response) =>
   try {
     const testRes = await client.query("SELECT * FROM grand_tests WHERE id=$1 AND is_published=true", [req.params.id]);
     if (!testRes.rows[0]) { res.status(404).json({ error: "not found" }); return; }
+
+    // Enforce 24-hr availability window
+    const test = testRes.rows[0];
+    const now = new Date();
+    if (test.available_from && new Date(test.available_from) > now) {
+      res.status(403).json({ error: "test_not_open", message: "This test hasn't started yet." }); return;
+    }
+    if (test.available_until && new Date(test.available_until) < now) {
+      res.status(403).json({ error: "test_closed", message: "This test window has closed." }); return;
+    }
+
     const existing = await client.query(
       "SELECT * FROM grand_test_submissions WHERE test_id=$1 AND user_id=$2 ORDER BY created_at DESC LIMIT 1",
       [req.params.id, userId]
@@ -297,15 +308,17 @@ router.get("/submissions/:submissionId", authMiddleware, async (req: Request, re
   const client = await pool.connect();
   try {
     const subRes = await client.query(
-      `SELECT gts.*, gt.title, gt.subject, gt.duration_minutes
+      `SELECT gts.*, gt.title, gt.subject, gt.duration_minutes, gt.answers_released
        FROM grand_test_submissions gts
        JOIN grand_tests gt ON gt.id = gts.test_id
        WHERE gts.id=$1 AND gts.user_id=$2`,
       [req.params.submissionId, userId]
     );
     if (!subRes.rows[0]) { res.status(404).json({ error: "not found" }); return; }
+    const answersReleased = subRes.rows[0].answers_released;
     const aRes = await client.query(
       `SELECT gta.*, gtq.question_text, gtq.max_marks, gtq.order_index, gtq.question_type
+         ${answersReleased ? ", gtq.model_answer" : ", NULL::text AS model_answer"}
        FROM grand_test_answers gta
        JOIN grand_test_questions gtq ON gtq.id = gta.question_id
        WHERE gta.submission_id=$1
@@ -313,6 +326,58 @@ router.get("/submissions/:submissionId", authMiddleware, async (req: Request, re
       [req.params.submissionId]
     );
     res.json({ ...subRes.rows[0], answers: aRes.rows });
+  } finally { client.release(); }
+});
+
+// ─── Admin: release / retract the answer key ─────────────────────────────────
+router.patch("/:id/release-answers", adminMiddleware, async (req: Request, res: Response) => {
+  const { release } = req.body as { release: boolean };
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(
+      `UPDATE grand_tests SET answers_released=$1 WHERE id=$2 RETURNING id, answers_released`,
+      [release !== false, req.params.id]
+    );
+    if (!rows[0]) { res.status(404).json({ error: "not found" }); return; }
+    res.json({ ok: true, answers_released: rows[0].answers_released });
+  } finally { client.release(); }
+});
+
+// ─── Admin: manually grade a submission ──────────────────────────────────────
+router.put("/submissions/:submissionId/grade", adminMiddleware, async (req: Request, res: Response) => {
+  const { answers, overallFeedback } = req.body as {
+    answers: { answerId: number; marks: number; feedback?: string }[];
+    overallFeedback?: string;
+  };
+  if (!Array.isArray(answers)) { res.status(400).json({ error: "answers array required" }); return; }
+  const client = await pool.connect();
+  try {
+    const subRes = await client.query(
+      "SELECT * FROM grand_test_submissions WHERE id=$1",
+      [req.params.submissionId]
+    );
+    if (!subRes.rows[0]) { res.status(404).json({ error: "not found" }); return; }
+
+    let totalObtained = 0;
+    for (const a of answers) {
+      const marks = Math.max(0, Number(a.marks) || 0);
+      totalObtained += marks;
+      await client.query(
+        `UPDATE grand_test_answers SET ai_marks=$1, ai_feedback=$2, status='graded' WHERE id=$3`,
+        [marks, a.feedback || null, a.answerId]
+      );
+    }
+
+    await client.query(
+      `UPDATE grand_test_submissions
+       SET status='graded', total_marks_obtained=$1, ai_overall_feedback=$2
+       WHERE id=$3`,
+      [totalObtained, overallFeedback || null, req.params.submissionId]
+    );
+
+    res.json({ ok: true, totalObtained });
+  } catch (err) {
+    res.status(500).json({ error: "Grading failed." });
   } finally { client.release(); }
 });
 
