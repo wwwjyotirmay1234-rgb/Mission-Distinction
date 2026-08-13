@@ -47,6 +47,7 @@ import { grandTestsRouter } from "./grandTests";
 import { customQuizRouter } from "./customQuiz";
 import { notesMarketplaceRouter } from "./notesMarketplace";
 import { grandRoundsRouter } from "./grandRounds";
+import { videosRouter } from "./videos";
 
 const router: IRouter = Router();
 
@@ -106,6 +107,7 @@ router.use("/quizzes", customQuizRouter);
 router.use("/marketplace/notes", notesMarketplaceRouter);
 router.use("/admin/marketplace/notes", notesMarketplaceRouter);
 router.use("/grand-rounds", grandRoundsRouter);
+router.use("/videos", videosRouter);
 router.use("/admin/grand-rounds", grandRoundsRouter);
 
 export default router;

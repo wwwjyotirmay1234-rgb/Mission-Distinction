@@ -707,6 +707,52 @@ export async function runStartupMigrations() {
 
       -- ── AI-generated doubt answers: nullable user_id for proper attribution ──
       ALTER TABLE doubt_answers ALTER COLUMN user_id DROP NOT NULL;
+
+      -- ── Video feature ──────────────────────────────────────────────────────
+      CREATE TABLE IF NOT EXISTS videos (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        description TEXT,
+        cloudinary_public_id TEXT,
+        video_url TEXT,
+        thumbnail_url TEXT,
+        duration_seconds INTEGER,
+        is_published BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS video_concepts (
+        id SERIAL PRIMARY KEY,
+        video_id INTEGER NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+        heading TEXT NOT NULL,
+        content TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0
+      );
+
+      CREATE TABLE IF NOT EXISTS video_questions (
+        id SERIAL PRIMARY KEY,
+        video_id INTEGER NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+        text TEXT NOT NULL,
+        options JSONB NOT NULL,
+        correct_option INTEGER NOT NULL,
+        explanation TEXT,
+        sort_order INTEGER NOT NULL DEFAULT 0
+      );
+
+      CREATE TABLE IF NOT EXISTS video_progress (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        video_id INTEGER NOT NULL,
+        watched_percent INTEGER NOT NULL DEFAULT 0,
+        completed BOOLEAN NOT NULL DEFAULT FALSE,
+        quiz_score INTEGER,
+        quiz_total INTEGER,
+        xp_awarded BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS video_progress_unique ON video_progress(user_id, video_id);
     `);
   } finally {
     client.release();

@@ -10,7 +10,7 @@ import {
   Timer, Music, MessageCircleHeart,
   Gamepad2, Lock, ChevronLeft, ChevronRight, BarChart2,
   GraduationCap, Stethoscope, Zap, ChevronDown, MoreHorizontal,
-  Wand2, Store,
+  Wand2, Store, Play,
 } from "lucide-react";
 import { useXPStats } from "@/hooks/useXPStats";
 import { XPProgressBar } from "@/components/XPProgressBar";
@@ -83,6 +83,7 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
     {
       label: "Learn",
       items: [
+        { icon: Play, label: "Video Lectures", href: "/student/videos" },
         { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
         { icon: Trophy, label: "Grand Tests", href: "/student/grand-tests" },
         { icon: FileText, label: "Notes & Books", href: "/student/notes" },

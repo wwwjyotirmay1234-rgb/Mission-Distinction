@@ -39,3 +39,4 @@ export * from "./teachBackSessions";
 export * from "./aiChatSessions";
 export * from "./notesMarketplace";
 export * from "./photoDoubts";
+export * from "./videos";

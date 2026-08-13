@@ -127,6 +127,8 @@ const StudentGrandTests       = lazy(() => import("@/pages/student/GrandTests"))
 const StudentCustomQuiz       = lazy(() => import("@/pages/student/CustomQuizBuilder"));
 const StudentNotesMarketplace = lazy(() => import("@/pages/student/NotesMarketplace"));
 const StudentGrandRounds      = lazy(() => import("@/pages/student/GrandRounds"));
+const StudentVideos           = lazy(() => import("@/pages/student/Videos"));
+const AdminVideos             = lazy(() => import("@/pages/admin/Videos"));
 const AdminNotesMarketplace   = lazy(() => import("@/pages/admin/NotesMarketplace"));
 
 const queryClient = new QueryClient();
@@ -213,6 +215,7 @@ function Router() {
                 <Route path="/student/custom-quiz"       component={StudentCustomQuiz} />
                 <Route path="/student/notes-marketplace" component={StudentNotesMarketplace} />
                 <Route path="/student/grand-rounds"      component={StudentGrandRounds} />
+                <Route path="/student/videos"            component={StudentVideos} />
                 <Route component={NotFound} />
               </Switch>
             </StudentLayout>
@@ -255,6 +258,7 @@ function Router() {
                 <Route path="/admin/clinical-cases"         component={AdminClinicalCases} />
                 <Route path="/admin/grand-tests"            component={AdminGrandTests} />
                 <Route path="/admin/notes-marketplace"      component={AdminNotesMarketplace} />
+                <Route path="/admin/videos"                 component={AdminVideos} />
                 <Route component={NotFound} />
               </Switch>
             </AdminLayout>

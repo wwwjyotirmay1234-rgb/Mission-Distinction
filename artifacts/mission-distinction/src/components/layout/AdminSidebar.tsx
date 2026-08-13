@@ -31,6 +31,7 @@ import {
   Mic,
   Stethoscope,
   Store,
+  Play,
 } from "lucide-react";
 
 const navItems = [
@@ -69,6 +70,7 @@ const navItems = [
     ],
   },
   { icon: Stethoscope, label: "Clinical Cases", href: "/admin/clinical-cases" },
+  { icon: Play, label: "Videos", href: "/admin/videos" },
   { icon: Store, label: "Notes Marketplace", href: "/admin/notes-marketplace" },
   { icon: Newspaper, label: "News & Discoveries", href: "/admin/news" },
   { icon: Megaphone, label: "Announcements", href: "/admin/announcements" },
