@@ -49,18 +49,26 @@ function getVimeoId(url: string): string | null {
   return m?.[1] ?? null;
 }
 
+function getGoogleDriveId(url: string): string | null {
+  const m = url.match(/drive\.google\.com\/file\/d\/([^/?\s]+)/);
+  return m?.[1] ?? null;
+}
+
 function getEmbedUrl(url: string): string | null {
   if (!url) return null;
   const ytId = getYouTubeId(url);
   if (ytId) return `https://www.youtube.com/embed/${ytId}?enablejsapi=1&rel=0&modestbranding=1`;
   const vimeoId = getVimeoId(url);
   if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}?dnt=1`;
+  const driveId = getGoogleDriveId(url);
+  if (driveId) return `https://drive.google.com/file/d/${driveId}/preview`;
   return null;
 }
 
 function getPlatformName(url: string): string {
   if (!url) return "Video";
   if (/youtube\.com|youtu\.be/.test(url)) return "YouTube";
+  if (/drive\.google\.com/.test(url)) return "Google Drive";
   if (/instagram\.com/.test(url)) return "Instagram";
   if (/vimeo\.com/.test(url)) return "Vimeo";
   if (/tiktok\.com/.test(url)) return "TikTok";
@@ -71,6 +79,7 @@ function getPlatformName(url: string): string {
 
 function getPlatformColor(url: string): string {
   if (/youtube\.com|youtu\.be/.test(url)) return "bg-red-500";
+  if (/drive\.google\.com/.test(url)) return "bg-blue-600";
   if (/instagram\.com/.test(url)) return "bg-pink-500";
   if (/tiktok\.com/.test(url)) return "bg-neutral-900 border border-white/10";
   if (/vimeo\.com/.test(url)) return "bg-blue-400";

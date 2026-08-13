@@ -32,18 +32,26 @@ function getYouTubeId(url: string): string | null {
   return m?.[1] ?? null;
 }
 
+function getGoogleDriveId(url: string): string | null {
+  const m = url.match(/drive\.google\.com\/file\/d\/([^/?\s]+)/);
+  return m?.[1] ?? null;
+}
+
 function getEmbedUrl(url: string): string | null {
   if (!url) return null;
   const ytId = getYouTubeId(url);
   if (ytId) return `https://www.youtube.com/embed/${ytId}?rel=0`;
   const vimeoM = url.match(/vimeo\.com\/(\d+)/);
   if (vimeoM) return `https://player.vimeo.com/video/${vimeoM[1]}?dnt=1`;
+  const driveId = getGoogleDriveId(url);
+  if (driveId) return `https://drive.google.com/file/d/${driveId}/preview`;
   return null;
 }
 
 function getPlatformName(url: string): string {
   if (!url) return "";
   if (/youtube\.com|youtu\.be/.test(url)) return "YouTube";
+  if (/drive\.google\.com/.test(url)) return "Google Drive";
   if (/instagram\.com/.test(url)) return "Instagram";
   if (/vimeo\.com/.test(url)) return "Vimeo";
   if (/tiktok\.com/.test(url)) return "TikTok";
