@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Stethoscope, Trophy, Star, ChevronRight, ChevronLeft,
-  CheckCircle, Target, Award, Users, Zap, BookOpen
+  CheckCircle, Target, Zap, BookOpen
 } from "lucide-react";
 
 interface GrandRoundCase {
@@ -19,35 +19,13 @@ interface GrandRoundCase {
   featuredAttemptId: number | null;
   winnerAnnouncedAt: string | null;
   attempted: boolean;
-  myAttempt: {
-    id: number;
-    answerText: string;
-    aiFeedback: AiFeedback;
-  } | null;
-  featuredAnswer: {
-    userName: string;
-    answerText: string;
-    aiFeedback: AiFeedback;
-  } | null;
-}
-
-interface AiFeedback {
-  score: number;
-  diagnosis: string;
-  pathway: string;
-  clinicalCorrelates: string;
-  investigations?: string;
-  missedPoints: string[];
-  strengths: string[];
-  verdict: string;
-  grade: string;
+  myAttempt: { id: number; answerText: string } | null;
+  featuredAnswer: { userName: string; answerText: string } | null;
 }
 
 interface LeaderboardEntry {
   id: number;
   userName: string;
-  score: number;
-  verdict: string;
   createdAt: string;
 }
 
@@ -55,17 +33,10 @@ interface CaseDetail extends GrandRoundCase {
   leaderboard: LeaderboardEntry[];
 }
 
-const GRADE_COLORS: Record<string, string> = {
-  Distinction: "text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 border-yellow-500/30",
-  Merit: "text-green-600 dark:text-green-400 bg-green-500/10 border-green-500/30",
-  Pass: "text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/30",
-  "Needs Revision": "text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30",
-};
-
 export default function GrandRounds() {
   const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
   const [answerText, setAnswerText] = useState("");
-  const [view, setView] = useState<"list" | "case" | "result">("list");
+  const [view, setView] = useState<"list" | "case">("list");
   const qc = useQueryClient();
 
   const listQuery = useQuery({
@@ -81,14 +52,15 @@ export default function GrandRounds() {
 
   const attemptMutation = useMutation({
     mutationFn: (body: { answerText: string }) =>
-      apiFetchJson<{ feedback: AiFeedback; id: number }>(
+      apiFetchJson<{ id: number }>(
         `/api/grand-rounds/${selectedCaseId}/attempt`,
         { method: "POST", body: JSON.stringify(body) }
       ),
-    onSuccess: (data) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["grand-rounds"] });
       qc.invalidateQueries({ queryKey: ["grand-round", selectedCaseId] });
-      setView("result");
+      toast.success("Answer submitted! Results will be announced by the admin.");
+      setView("list");
     },
     onError: (e: any) => toast.error(e.message ?? "Submit failed"),
   });
@@ -110,7 +82,7 @@ export default function GrandRounds() {
             <Stethoscope className="text-primary" size={20} />
             <h1 className="text-xl font-bold text-primary">Grand Rounds</h1>
           </div>
-          <p className="text-sm text-muted-foreground">Weekly clinical cases with AI grading — compete for the top answer</p>
+          <p className="text-sm text-muted-foreground">Weekly clinical cases — write your best answer and compete for the top spot</p>
         </div>
 
         {listQuery.isLoading ? (
@@ -200,11 +172,9 @@ export default function GrandRounds() {
               <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-300">Featured Answer — {c.featuredAnswer.userName}</p>
             </div>
             <p className="text-sm text-yellow-900 dark:text-yellow-100 leading-relaxed line-clamp-4">{c.featuredAnswer.answerText}</p>
-            {c.featuredAnswer.aiFeedback?.grade && (
-              <Badge className={`mt-2 text-xs border ${GRADE_COLORS[c.featuredAnswer.aiFeedback.grade] ?? ""}`}>
-                {c.featuredAnswer.aiFeedback.grade} · {c.featuredAnswer.aiFeedback.score}/10
-              </Badge>
-            )}
+            <Badge className="mt-2 text-xs border border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300">
+              Featured Answer
+            </Badge>
           </div>
         )}
 
@@ -213,7 +183,7 @@ export default function GrandRounds() {
           <div className="bg-card border border-border/40 rounded-xl p-4 mb-4">
             <div className="flex items-center gap-2 mb-3">
               <Trophy size={14} className="text-yellow-600 dark:text-yellow-400" />
-              <p className="text-xs font-semibold text-foreground">Top Submissions</p>
+              <p className="text-xs font-semibold text-foreground">Submissions</p>
             </div>
             <div className="space-y-2">
               {activeCase.leaderboard.slice(0, 5).map((entry, i) => (
@@ -222,7 +192,6 @@ export default function GrandRounds() {
                     #{i + 1}
                   </span>
                   <span className="flex-1 text-sm text-foreground truncate">{entry.userName}</span>
-                  <span className="text-sm font-bold text-primary">{entry.score}/10</span>
                 </div>
               ))}
             </div>
@@ -235,20 +204,7 @@ export default function GrandRounds() {
               <CheckCircle size={14} className="text-green-600 dark:text-green-400" />
               <p className="text-xs font-semibold text-green-700 dark:text-green-300">You already submitted this Grand Round</p>
             </div>
-            {c.myAttempt?.aiFeedback && (
-              <div className="mt-2">
-                <Badge className={`text-xs border mb-2 ${GRADE_COLORS[c.myAttempt.aiFeedback.grade] ?? ""}`}>
-                  {c.myAttempt.aiFeedback.grade} · {c.myAttempt.aiFeedback.score}/10
-                </Badge>
-                <p className="text-xs text-muted-foreground">{c.myAttempt.aiFeedback.verdict}</p>
-              </div>
-            )}
-            <button
-              onClick={() => setView("result")}
-              className="mt-2 text-xs text-primary hover:underline"
-            >
-              View full feedback →
-            </button>
+            <p className="text-xs text-muted-foreground mt-1">Results will be announced by the admin when grading is complete.</p>
           </div>
         ) : (
           <>
@@ -278,7 +234,7 @@ export default function GrandRounds() {
               {attemptMutation.isPending ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  AI is grading...
+                  Submitting...
                 </span>
               ) : "Submit Answer"}
             </Button>
@@ -287,96 +243,6 @@ export default function GrandRounds() {
             )}
           </>
         )}
-      </div>
-    );
-  }
-
-  if (view === "result") {
-    const c = activeCase ?? cases.find(x => x.id === selectedCaseId);
-    const attempt = c?.myAttempt ?? null;
-    const feedback: AiFeedback | null = (attempt?.aiFeedback as AiFeedback) ?? null;
-
-    if (!feedback) {
-      setView("list");
-      return null;
-    }
-
-    const gradeClass = GRADE_COLORS[feedback.grade] ?? "";
-
-    return (
-      <div className="min-h-screen bg-background text-foreground p-4 max-w-xl mx-auto">
-        <button
-          onClick={() => setView("case")}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-        >
-          <ChevronLeft size={14} /> Back to Case
-        </button>
-
-        {/* Score card */}
-        <div className={`rounded-2xl border p-5 mb-4 text-center ${gradeClass}`}>
-          <Award size={32} className="mx-auto mb-2" />
-          <div className="text-4xl font-black mb-1">{feedback.score}/10</div>
-          <div className="text-lg font-bold mb-1">{feedback.grade}</div>
-          <p className="text-sm opacity-80">{feedback.verdict}</p>
-        </div>
-
-        <div className="space-y-3">
-          {[
-            { label: "Diagnosis", value: feedback.diagnosis, icon: Target },
-            { label: "Pathophysiology / Pathway", value: feedback.pathway, icon: BookOpen },
-            { label: "Clinical Application", value: feedback.clinicalCorrelates, icon: Stethoscope },
-            ...(feedback.investigations ? [{ label: "Investigations", value: feedback.investigations, icon: CheckCircle }] : []),
-          ].map(({ label, value, icon: Icon }) => (
-            <div key={label} className="bg-card border border-border/40 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Icon size={13} className="text-primary" />
-                <p className="text-xs font-semibold text-primary">{label}</p>
-              </div>
-              <p className="text-sm text-foreground">{value}</p>
-            </div>
-          ))}
-
-          {feedback.strengths?.length > 0 && (
-            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
-              <p className="text-xs font-semibold text-green-600 dark:text-green-400 mb-2">✓ Strengths</p>
-              <ul className="space-y-1">
-                {feedback.strengths.map((s, i) => (
-                  <li key={i} className="text-sm text-green-800 dark:text-green-200 flex items-start gap-1">
-                    <span className="mt-0.5 flex-shrink-0">•</span> {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {feedback.missedPoints?.length > 0 && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-              <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-2">✗ Key points missed</p>
-              <ul className="space-y-1">
-                {feedback.missedPoints.map((pt, i) => (
-                  <li key={i} className="text-sm text-red-800 dark:text-red-200 flex items-start gap-1">
-                    <span className="mt-0.5 flex-shrink-0">•</span> {pt}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {c?.explanation && (
-            <div className="bg-card border border-primary/20 rounded-xl p-4">
-              <p className="text-xs font-semibold text-primary mb-2">Model Explanation</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">{c.explanation}</p>
-            </div>
-          )}
-        </div>
-
-        <Button
-          onClick={() => setView("list")}
-          variant="outline"
-          className="w-full mt-4"
-        >
-          Back to Grand Rounds
-        </Button>
       </div>
     );
   }

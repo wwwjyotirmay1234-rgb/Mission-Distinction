@@ -109,7 +109,7 @@ function OneLinersTab() {
       <ListChecks size={40} />
       <div>
         <p className="font-semibold">No one-liners yet</p>
-        <p className="text-sm text-muted-foreground mt-1">Ask your admin to generate AI content from the uploaded books.</p>
+        <p className="text-sm text-muted-foreground mt-1">No content added yet. Check back soon!</p>
       </div>
     </div>
   );
@@ -198,7 +198,7 @@ function KeyTablesTab() {
       <Table2 size={40} />
       <div>
         <p className="font-semibold">No tables yet</p>
-        <p className="text-sm text-muted-foreground mt-1">Ask your admin to generate AI content from the uploaded books.</p>
+        <p className="text-sm text-muted-foreground mt-1">No content added yet. Check back soon!</p>
       </div>
     </div>
   );
@@ -248,7 +248,7 @@ export default function CheatCodes() {
         <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
           <Zap size={20} className="text-primary" /> Cheat Codes
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">Flashcards, mnemonics, AI one-liners &amp; key tables — your fastest revision toolkit.</p>
+        <p className="text-muted-foreground text-sm mt-1">Flashcards, mnemonics, one-liners &amp; key tables — your fastest revision toolkit.</p>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
