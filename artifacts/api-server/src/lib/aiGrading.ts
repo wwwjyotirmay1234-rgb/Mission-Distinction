@@ -1,7 +1,11 @@
 /**
- * Shared AI grading helpers using gpt-5-mini via Replit AI Integrations.
+ * Shared AI grading helpers — calls OpenAI directly using your own API key.
  */
-import { openai } from "@workspace/integrations-openai-ai-server";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export interface ClinicalFeedback {
   score: number;

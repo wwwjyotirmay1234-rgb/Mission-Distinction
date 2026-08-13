@@ -139,9 +139,6 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
-      '@workspace/integrations-openai-ai-server':
-        specifier: workspace:*
-        version: link:../../lib/integrations-openai-ai-server
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -184,6 +181,9 @@ importers:
       multer:
         specifier: ^2.2.0
         version: 2.2.0
+      openai:
+        specifier: ^6.44.0
+        version: 6.44.0(ws@8.21.0)(zod@3.25.76)
       pdf-parse:
         specifier: ^1.1.4
         version: 1.1.4
