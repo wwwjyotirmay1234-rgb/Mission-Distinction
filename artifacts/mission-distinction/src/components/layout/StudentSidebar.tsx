@@ -8,7 +8,7 @@ import {
   LayoutDashboard, FileText, File, Users, Newspaper, TrendingUp,
   Calendar as CalendarIcon, Settings, Trophy, MessageSquare,
   Timer, Music, MessageCircleHeart,
-  Gamepad2, Lock, Microscope, ChevronLeft, ChevronRight, BarChart2,
+  Gamepad2, Lock, ChevronLeft, ChevronRight, BarChart2,
   GraduationCap, Stethoscope, Zap, ChevronDown, MoreHorizontal,
   Wand2, Store,
 } from "lucide-react";
@@ -17,7 +17,7 @@ import { XPProgressBar } from "@/components/XPProgressBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSectionColor } from "@/lib/sectionColors";
 
-const ANATOMY_PREVIEW_EMAIL = "www.jyotirmay1234@gmail.com";
+
 const LAST_SEEN_KEY = "md_announcements_last_seen";
 
 function getUnseenCount(announcements: any[]): number {
@@ -61,8 +61,6 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
 
   const xp = xpStats?.totalXp ?? 0;
   const rankLevel = xpStats?.currentRankLevel ?? 1;
-  const canSeeAnatomy = user?.email === ANATOMY_PREVIEW_EMAIL;
-
   const { data: announcements } = useListAnnouncements(
     {}, { query: { queryKey: getListAnnouncementsQueryKey({}), staleTime: 60_000 } }
   );
@@ -85,7 +83,6 @@ function SidebarContent({ onNavigate, forceExpanded }: { onNavigate?: () => void
     {
       label: "Learn",
       items: [
-        { icon: Microscope, label: "Anatomy Hub", href: "/student/anatomy", comingSoon: !canSeeAnatomy },
         { icon: FileText, label: "Quiz Center", href: "/student/quiz" },
         { icon: Trophy, label: "Grand Tests", href: "/student/grand-tests" },
         { icon: FileText, label: "Notes & Books", href: "/student/notes" },

@@ -5,7 +5,6 @@
  */
 export type SectionKey =
   | "learning"
-  | "anatomy"
   | "progress"
   | "exams"
   | "clinical"
@@ -27,13 +26,6 @@ export const SECTION_COLORS: Record<SectionKey, SectionColor> = {
     border: "border-emerald-500/30",
     gradient: "from-emerald-500/15 to-emerald-500/0",
     ring: "ring-emerald-500/40",
-  },
-  anatomy: {
-    text: "text-blue-400",
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/30",
-    gradient: "from-blue-500/15 to-blue-500/0",
-    ring: "ring-blue-500/40",
   },
   progress: {
     text: "text-yellow-400",
@@ -74,7 +66,6 @@ export const SECTION_COLORS: Record<SectionKey, SectionColor> = {
 
 /** Maps a student route href to its section color key. */
 export const ROUTE_SECTION: Record<string, SectionKey> = {
-  "/student/anatomy": "anatomy",
   "/student/dashboard": "learning",
   "/student/quiz": "exams",
   "/student/quiz-analysis": "progress",

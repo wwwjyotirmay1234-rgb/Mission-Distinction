@@ -66,7 +66,7 @@ import { StudentLayout } from "@/components/layout/StudentLayout";
 import { AdminLayout }   from "@/components/layout/AdminLayout";
 
 // Student pages
-const StudentAnatomyHub    = lazy(() => import("@/pages/student/AnatomyHub"));
+
 const StudentDashboard     = lazy(() => import("@/pages/student/Dashboard"));
 const StudentQuiz          = lazy(() => import("@/pages/student/Quiz"));
 const StudentNotes         = lazy(() => import("@/pages/student/Notes"));
@@ -120,7 +120,7 @@ const QuizSubmissions    = lazy(() => import("@/pages/admin/QuizSubmissions"));
 const ProctoringReport   = lazy(() => import("@/pages/admin/ProctoringReport"));
 const AdminScholarHub    = lazy(() => import("@/pages/admin/ScholarHub"));
 const VivaQuestionBank   = lazy(() => import("@/pages/admin/VivaQuestionBank"));
-const AnatomyVivaImages  = lazy(() => import("@/pages/admin/AnatomyVivaImages"));
+
 const AdminClinicalCases = lazy(() => import("@/pages/admin/ClinicalCases"));
 const AdminGrandTests         = lazy(() => import("@/pages/admin/GrandTests"));
 const StudentGrandTests       = lazy(() => import("@/pages/student/GrandTests"));
@@ -131,16 +131,6 @@ const AdminNotesMarketplace   = lazy(() => import("@/pages/admin/NotesMarketplac
 
 const queryClient = new QueryClient();
 
-const ANATOMY_PREVIEW_EMAIL = "www.jyotirmay1234@gmail.com";
-
-function AnatomyRoute() {
-  const { user } = useAuth();
-  if (user?.email !== ANATOMY_PREVIEW_EMAIL) {
-    window.location.replace("/student/dashboard");
-    return null;
-  }
-  return <StudentAnatomyHub />;
-}
 
 function PageTracker() {
   const [location] = useLocation();
@@ -194,7 +184,6 @@ function Router() {
           <ProtectedRoute>
             <StudentLayout>
               <Switch>
-                <Route path="/student/anatomy" component={AnatomyRoute} />
                 <Route path="/student/dashboard"    component={StudentDashboard} />
                 <Route path="/student/quiz"          component={StudentQuiz} />
                 <Route path="/student/quiz-analysis" component={StudentQuizAnalysis} />
@@ -263,7 +252,6 @@ function Router() {
                 <Route path="/admin/quiz-submissions"       component={QuizSubmissions} />
                 <Route path="/admin/proctoring/:attemptId"  component={ProctoringReport} />
                 <Route path="/admin/scholar-hub"            component={AdminScholarHub} />
-                <Route path="/admin/anatomy-viva-images"    component={AnatomyVivaImages} />
                 <Route path="/admin/clinical-cases"         component={AdminClinicalCases} />
                 <Route path="/admin/grand-tests"            component={AdminGrandTests} />
                 <Route path="/admin/notes-marketplace"      component={AdminNotesMarketplace} />
