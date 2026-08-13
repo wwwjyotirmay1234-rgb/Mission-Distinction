@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { quizzesTable, questionsTable, quizAttemptsTable, activityTable, questionReportsTable, quizSubmissionsTable, quizAnswersTable } from "@workspace/db";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, and } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, superAdminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { updateStreak } from "../lib/streak";
