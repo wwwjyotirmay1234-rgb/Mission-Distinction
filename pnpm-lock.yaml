@@ -18,6 +18,9 @@ catalogs:
     '@tailwindcss/vite':
       specifier: ^4.1.14
       version: 4.3.0
+    '@tanstack/react-query':
+      specifier: ^5.90.21
+      version: 5.100.9
     '@types/node':
       specifier: ^25.3.3
       version: 25.6.2
@@ -30,9 +33,15 @@ catalogs:
     '@vitejs/plugin-react':
       specifier: ^5.0.4
       version: 5.2.0
+    class-variance-authority:
+      specifier: ^0.7.1
+      version: 0.7.1
     clsx:
       specifier: ^2.1.1
       version: 2.1.1
+    drizzle-orm:
+      specifier: ^0.45.2
+      version: 0.45.2
     framer-motion:
       specifier: ^12.23.24
       version: 12.38.0
@@ -51,9 +60,15 @@ catalogs:
     tailwindcss:
       specifier: ^4.1.14
       version: 4.3.0
+    tsx:
+      specifier: ^4.21.0
+      version: 4.21.0
     vite:
       specifier: ^7.3.5
       version: 7.3.5
+    zod:
+      specifier: ^3.25.76
+      version: 3.25.76
 
 overrides:
   qs: 6.15.2
@@ -124,15 +139,6 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
-      '@workspace/integrations-anthropic-ai':
-        specifier: workspace:*
-        version: link:../../lib/integrations-anthropic-ai
-      '@workspace/integrations-gemini-ai':
-        specifier: workspace:*
-        version: link:../../lib/integrations-gemini-ai
-      '@workspace/integrations-openai-ai-server':
-        specifier: workspace:*
-        version: link:../../lib/integrations-openai-ai-server
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -411,9 +417,6 @@ importers:
       '@workspace/api-client-react':
         specifier: workspace:*
         version: link:../../lib/api-client-react
-      '@workspace/integrations-openai-ai-react':
-        specifier: workspace:*
-        version: link:../../lib/integrations-openai-ai-react
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -692,7 +695,7 @@ importers:
         version: 0.0.6
       '@tailwindcss/vite':
         specifier: 'catalog:'
-        version: 4.3.0(vite@7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0))
+        version: 4.3.0(vite@7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4))
       '@types/node':
         specifier: 'catalog:'
         version: 25.6.2
@@ -704,7 +707,7 @@ importers:
         version: 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react':
         specifier: 'catalog:'
-        version: 5.2.0(vite@7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0))
+        version: 5.2.0(vite@7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4))
       clsx:
         specifier: 'catalog:'
         version: 2.1.1
@@ -737,7 +740,7 @@ importers:
         version: 0.182.0
       vite:
         specifier: 'catalog:'
-        version: 7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0)
+        version: 7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4)
 
   artifacts/testing:
     devDependencies:
@@ -5656,6 +5659,7 @@ packages:
   stats-gl@2.4.2:
     resolution: {integrity: sha512-g5O9B0hm9CvnM36+v7SFl39T7hmAlv541tU81ME8YeSb3i1CIP5/QdDeSB3A0la0bKNHpxpwxOVRo2wFTYEosQ==}
     peerDependencies:
+      '@types/three': '*'
       three: '*'
 
   stats.js@0.17.0:
@@ -7968,7 +7972,7 @@ snapshots:
       maath: 0.10.8(@types/three@0.184.1)(three@0.182.0)
       meshline: 3.3.1(three@0.182.0)
       react: 19.1.0
-      stats-gl: 2.4.2(three@0.182.0)
+      stats-gl: 2.4.2(@types/three@0.184.1)(three@0.182.0)
       stats.js: 0.17.0
       suspend-react: 0.1.3(react@19.1.0)
       three: 0.182.0
@@ -8340,13 +8344,6 @@ snapshots:
       tailwindcss: 4.3.0
       vite: 7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4)
 
-  '@tailwindcss/vite@4.3.0(vite@7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0))':
-    dependencies:
-      '@tailwindcss/node': 4.3.0
-      '@tailwindcss/oxide': 4.3.0
-      tailwindcss: 4.3.0
-      vite: 7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0)
-
   '@tanstack/query-core@5.100.9': {}
 
   '@tanstack/react-query@5.100.9(react@19.1.0)':
@@ -8689,16 +8686,6 @@ snapshots:
       '@types/babel__core': 7.20.5
       react-refresh: 0.18.0
       vite: 7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4)
-
-  '@vitejs/plugin-react@5.2.0(vite@7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0))':
-    dependencies:
-      '@babel/core': 8.0.1
-      '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@8.0.1)
-      '@babel/plugin-transform-react-jsx-source': 7.27.1(@babel/core@8.0.1)
-      '@rolldown/pluginutils': 1.0.0-rc.3
-      '@types/babel__core': 7.20.5
-      react-refresh: 0.18.0
-      vite: 7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0)
 
   abort-controller@3.0.0:
     dependencies:
@@ -11647,7 +11634,7 @@ snapshots:
       '@stablelib/base64': 1.0.1
       fast-sha256: 1.3.0
 
-  stats-gl@2.4.2(three@0.182.0):
+  stats-gl@2.4.2(@types/three@0.184.1)(three@0.182.0):
     dependencies:
       '@types/three': 0.184.1
       three: 0.182.0
@@ -12014,20 +12001,6 @@ snapshots:
       d3-shape: 3.2.0
       d3-time: 3.1.0
       d3-timer: 3.0.1
-
-  vite@7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0):
-    dependencies:
-      esbuild: 0.28.1
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
-      postcss: 8.5.14
-      rollup: 4.60.3
-      tinyglobby: 0.2.16
-    optionalDependencies:
-      '@types/node': 25.6.2
-      fsevents: 2.3.3
-      jiti: 2.7.0
-      lightningcss: 1.32.0
 
   vite@7.3.5(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4):
     dependencies:
