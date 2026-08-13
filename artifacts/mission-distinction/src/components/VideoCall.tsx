@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Mic, MicOff, Video, VideoOff, Phone, Users, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+import { SOCKET_SERVER, SOCKET_PATH } from "@/lib/apiConfig";
 
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
@@ -166,8 +166,8 @@ export default function VideoCall({ roomKey, title, onClose }: Props) {
         };
       }
 
-      const socket = io(window.location.origin, {
-        path: `${BASE}/api/socket.io/`,
+      const socket = io(SOCKET_SERVER, {
+        path: SOCKET_PATH,
         auth: { token },
         transports: ["websocket", "polling"],
         reconnection: false,

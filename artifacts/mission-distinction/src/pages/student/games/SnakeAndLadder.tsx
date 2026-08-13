@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
+import { SOCKET_SERVER, SOCKET_PATH } from "@/lib/apiConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -575,7 +576,7 @@ export default function SnakeAndLadder({ onBack }: { onBack: () => void }) {
   const connect = useCallback(() => {
     const token = localStorage.getItem("mission_token");
     if (!token) { toast.error("Please log in."); return null; }
-    const s = io({ path: "/api/socket.io/", auth: { token }, transports: ["websocket", "polling"] });
+    const s = io(SOCKET_SERVER, { path: SOCKET_PATH, auth: { token }, transports: ["websocket", "polling"] });
     s.on("connect_error", err => { toast.error("Connection failed: " + err.message); setConnecting(false); });
     s.on("snl:error", ({ message }: { message: string }) => { toast.error(message); setConnecting(false); });
     s.on("snl:created", (state: GameState) => {

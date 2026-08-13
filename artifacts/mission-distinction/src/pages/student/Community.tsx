@@ -62,7 +62,7 @@ type Group = {
 type Deck = { id: number; subject: string; title: string; cardCount: number; isAdminShared: boolean };
 type Mnemonic = { id: number; subject: string; topic: string; mnemonic: string; description?: string; isAdminShared: boolean };
 
-const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+import { SOCKET_SERVER, SOCKET_PATH } from "@/lib/apiConfig";
 
 function extractYouTubeId(url: string): string | null {
   try {
@@ -482,8 +482,8 @@ export default function StudentCommunity() {
 
   useEffect(() => {
     if (!token) return;
-    const sock = io(window.location.origin, {
-      path: `${BASE}/api/socket.io/`,
+    const sock = io(SOCKET_SERVER, {
+      path: SOCKET_PATH,
       auth: { token },
       transports: ["websocket", "polling"],
       reconnection: true, reconnectionAttempts: 5, reconnectionDelay: 2000,

@@ -15,7 +15,7 @@ import { apiFetch } from "@/lib/apiFetch";
 import VideoCall from "@/components/VideoCall";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Pathology", "Pharmacology", "General", "NEET PG"];
-const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+import { SOCKET_SERVER, SOCKET_PATH } from "@/lib/apiConfig";
 
 interface Room {
   id: number; hostId: number; hostName: string; name: string; subject: string;
@@ -104,8 +104,8 @@ function RoomView({ roomId, onBack }: { roomId: number; onBack: () => void }) {
   // Approval socket — always active while in room
   useEffect(() => {
     if (!token) return;
-    const socket = io(window.location.origin, {
-      path: `${BASE}/api/socket.io/`,
+    const socket = io(SOCKET_SERVER, {
+      path: SOCKET_PATH,
       auth: { token },
       transports: ["websocket", "polling"],
       reconnection: true,

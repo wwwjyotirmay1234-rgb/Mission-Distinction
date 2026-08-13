@@ -1,4 +1,5 @@
 import { getTokenRefresher } from "@workspace/api-client-react";
+import { API_BASE } from "./apiConfig";
 
 /**
  * Lightweight fetch wrapper used across admin/student pages.
@@ -37,7 +38,11 @@ export async function apiFetch(
     headers.set("content-type", "application/json");
   }
 
-  const response = await fetch(input, { ...init, headers, credentials: init.credentials ?? "include" });
+  const resolved: RequestInfo | URL =
+    typeof input === "string" && input.startsWith("/") && API_BASE
+      ? `${API_BASE}${input}`
+      : input;
+  const response = await fetch(resolved, { ...init, headers, credentials: init.credentials ?? "include" });
   if (response.status !== 401) return response;
 
   // Use the shared refresher registered by AuthContext (includes the Promise
@@ -54,7 +59,7 @@ export async function apiFetch(
 
     const retryHeaders = new Headers(headers); // inherit auto-set content-type
     retryHeaders.set("authorization", `Bearer ${newToken}`);
-    return fetch(input, { ...init, headers: retryHeaders, credentials: init.credentials ?? "include" });
+    return fetch(resolved, { ...init, headers: retryHeaders, credentials: init.credentials ?? "include" });
   } catch {
     window.dispatchEvent(new Event("auth:logout"));
     return response;
