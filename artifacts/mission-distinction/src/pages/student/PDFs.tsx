@@ -207,7 +207,9 @@ function PdfViewerModal({ pdf, onClose }: { pdf: Pdf; onClose: () => void }) {
 // Throws if proxy fails so callers can fall back.
 async function downloadPdfViaProxy(pdf: Pdf) {
   const token = localStorage.getItem("mission_token") ?? "";
-  const res = await fetch(`/api/pdfs/${pdf.id}/proxy`, {
+  const { API_BASE } = await import("@/lib/apiConfig");
+  const proxyUrl = API_BASE ? `${API_BASE}/api/pdfs/${pdf.id}/proxy` : `/api/pdfs/${pdf.id}/proxy`;
+  const res = await fetch(proxyUrl, {
     credentials: "include",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });

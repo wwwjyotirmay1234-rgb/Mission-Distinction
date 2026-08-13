@@ -2,6 +2,10 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User, setTokenRefresher, setAuthTokenGetter } from "@workspace/api-client-react";
 import { signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { API_BASE } from "@/lib/apiConfig";
+
+/** Resolve a relative /api/... path to the correct backend origin. */
+const apiUrl = (path: string) => (API_BASE ? `${API_BASE}${path}` : path);
 
 interface LoginResponse {
   token: string;
@@ -47,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    fetch("/api/auth/logout", {
+    fetch(apiUrl("/api/auth/logout"), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -82,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Fallback: localStorage copy for iOS PWA, in-app browsers, and
           // Android OEMs where the cookie jar is isolated or not sent.
           const storedRefresh = localStorage.getItem("mission_refresh");
-          const res = await fetch("/api/auth/refresh", {
+          const res = await fetch(apiUrl("/api/auth/refresh"), {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },

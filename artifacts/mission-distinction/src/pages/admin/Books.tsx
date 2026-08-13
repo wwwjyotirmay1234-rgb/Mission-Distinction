@@ -45,14 +45,10 @@ async function uploadBookCover(file: File): Promise<string> {
 }
 
 async function uploadBookPdf(file: File, onProgress: (p: number) => void): Promise<string> {
-  const token = localStorage.getItem("mission_token");
-  const presignResp = await fetch("/api/upload/pdf/request-upload-url", {
+  const { apiFetch } = await import("@/lib/apiFetch");
+  const presignResp = await apiFetch("/api/upload/pdf/request-upload-url", {
     method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ fileName: file.name }),
   });
   if (!presignResp.ok) {
@@ -110,11 +106,10 @@ export default function AdminBooks() {
     setGenerateResult(null);
     setGenerateStatus("Starting…");
     setGenerating(true);
-    const token = localStorage.getItem("mission_token");
     try {
-      const res = await fetch(`/api/revision-items/generate/${book.id}`, {
+      const { apiFetch } = await import("@/lib/apiFetch");
+      const res = await apiFetch(`/api/revision-items/generate/${book.id}`, {
         method: "POST",
-        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
       if (!res.body) throw new Error("No response stream");
       const reader = res.body.getReader();

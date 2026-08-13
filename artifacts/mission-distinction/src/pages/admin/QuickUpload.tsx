@@ -55,11 +55,10 @@ function isAllowedFile(file: File): boolean {
 }
 
 async function uploadPdfDirect(file: File, onProgress: (p: number) => void): Promise<string> {
-  const token = localStorage.getItem("mission_token");
-  const presignResp = await fetch("/api/upload/pdf/request-upload-url", {
+  const { apiFetch } = await import("@/lib/apiFetch");
+  const presignResp = await apiFetch("/api/upload/pdf/request-upload-url", {
     method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ fileName: file.name }),
   });
   if (!presignResp.ok) {

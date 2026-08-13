@@ -333,7 +333,9 @@ function useMaintenance() {
 
     async function check() {
       try {
-        const res = await fetch("/api/health", { cache: "no-store" });
+        const { API_BASE } = await import("@/lib/apiConfig");
+        const healthUrl = API_BASE ? `${API_BASE}/api/health` : "/api/health";
+        const res = await fetch(healthUrl, { cache: "no-store" });
         const data = await res.json().catch(() => ({}));
         setMaintenance(!!data.maintenance);
         // If still in maintenance, poll every 15s; otherwise every 60s
