@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+import { apiFetch } from "@/lib/apiFetch";
 import { trackEvent } from "@/lib/analytics";
 import { ODISHA_GOVT_COLLEGES, ODISHA_PRIVATE_COLLEGES, ODISHA_DEEMED_COLLEGES, MBBS_YEARS, SESSION_YEARS, ACTIVE_SESSION_YEAR, ACTIVE_SESSION_YEARS, ACTIVE_MBBS_YEAR } from "@/lib/colleges";
 
@@ -114,9 +115,8 @@ export default function LandingPage() {
   // finishGoogleAuth is a plain async function — not a hook.
   // It must be defined before useEffect so the effect closure captures it.
   const finishGoogleAuth = async (idToken: string) => {
-    const res = await fetch(`/api/auth/google`, {
+    const res = await apiFetch(`/api/auth/google`, {
       method: "POST",
-      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ idToken }),
     });
