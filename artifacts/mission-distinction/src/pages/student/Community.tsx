@@ -27,6 +27,7 @@ import { io, Socket } from "socket.io-client";
 import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
 import { trackEvent } from "@/lib/analytics";
 import VideoCall from "@/components/VideoCall";
+import { SOCKET_SERVER, SOCKET_PATH } from "@/lib/apiConfig";
 
 type RichFlashcard = { deckId: number; title: string; subject: string; cardCount: number; isAdminShared?: boolean };
 type RichMnemonic = { id: number; topic: string; subject: string; mnemonic: string; description?: string; isAdminShared?: boolean };
@@ -62,8 +63,6 @@ type Group = {
 type Deck = { id: number; subject: string; title: string; cardCount: number; isAdminShared: boolean };
 type Mnemonic = { id: number; subject: string; topic: string; mnemonic: string; description?: string; isAdminShared: boolean };
 
-import { SOCKET_SERVER, SOCKET_PATH } from "@/lib/apiConfig";
-
 function extractYouTubeId(url: string): string | null {
   try {
     const u = new URL(url);
@@ -83,7 +82,7 @@ function extractYouTubeId(url: string): string | null {
 
 function FlashcardCard({ data, isMe }: { data: RichFlashcard; isMe: boolean }) {
   return (
-    <a href={`${BASE}/student/flashcards`} className="block no-underline">
+    <a href={`${import.meta.env.BASE_URL}student/flashcards`} className="block no-underline">
       <div className={`rounded-xl border p-3 mt-1 min-w-[220px] max-w-[260px] transition-colors ${isMe ? "bg-primary/30 border-primary-foreground/20 hover:bg-primary/40" : "bg-primary/5 border-primary/20 hover:bg-primary/10"}`}>
         <div className="flex items-center gap-1.5 mb-2">
           <BookOpen size={13} className={isMe ? "text-primary-foreground/70" : "text-primary/70"} />

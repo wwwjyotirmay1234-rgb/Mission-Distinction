@@ -2,5 +2,6 @@
   "installCommand": "cd ../.. && pnpm install --no-frozen-lockfile",
   "buildCommand": "cd ../.. && BASE_PATH=/ pnpm --filter @workspace/mission-distinction run build",
   "outputDirectory": "dist/public",
-  "framework": null
+  "framework": null,
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
