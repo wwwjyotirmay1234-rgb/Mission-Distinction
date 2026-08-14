@@ -13,6 +13,7 @@ import { useListQuizzes, useCreateQuiz, useDeleteQuiz, getListQuizzesQueryKey } 
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { Search, Plus, MoreVertical, Trash2, CheckCircle, Pencil, ClipboardCheck, Copy } from "lucide-react";
+import BatchMigrateButton from "@/components/admin/BatchMigrateButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -112,6 +113,11 @@ export default function AdminQuizzes() {
           <Button variant="outline" onClick={() => navigate("/admin/quiz-submissions")} className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10">
             <ClipboardCheck className="mr-2 h-4 w-4" /> Submissions
           </Button>
+          <BatchMigrateButton
+            endpoint="/api/quizzes/bulk-duplicate"
+            contentLabel="quizzes"
+            queryKeys={[getListQuizzesQueryKey()]}
+          />
           <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" /> Create Quiz</Button>
         </div>
       </div>

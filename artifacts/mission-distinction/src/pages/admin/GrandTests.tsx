@@ -20,6 +20,7 @@ import {
   Users, Trophy, Eye, EyeOff, AlarmClock, BookOpen,
   ChevronDown, ChevronRight, CheckCircle2, Loader2, Star, KeyRound, Lock, Copy,
 } from "lucide-react";
+import BatchMigrateButton from "@/components/admin/BatchMigrateButton";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Mixed", "University Exams"];
 
@@ -303,7 +304,14 @@ export default function AdminGrandTests() {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Full-length timed mock exams — AI-graded, CBME-aligned.</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}><Plus className="mr-2 h-4 w-4" /> Create Grand Test</Button>
+        <div className="flex gap-2">
+          <BatchMigrateButton
+            endpoint="/api/grand-tests/bulk-duplicate"
+            contentLabel="grand tests"
+            queryKeys={[["grand-tests-admin"]]}
+          />
+          <Button onClick={() => setCreateOpen(true)}><Plus className="mr-2 h-4 w-4" /> Create Grand Test</Button>
+        </div>
       </div>
 
       {/* Batch filter tabs */}

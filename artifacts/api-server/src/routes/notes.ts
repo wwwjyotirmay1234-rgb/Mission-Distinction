@@ -191,6 +191,42 @@ router.post("/:id/read", authMiddleware, noteReadLimiter, async (req: Request, r
   }
 });
 
+// ── Admin: bulk-duplicate all notes from one batch to another ────────────────
+router.post("/bulk-duplicate", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const admin = (req as any).user;
+    const { fromBatch, toBatch } = req.body;
+    if (!fromBatch || !toBatch) { res.status(400).json({ error: "fromBatch and toBatch are required" }); return; }
+    const fromYear = fromBatch === "shared" ? null : String(fromBatch);
+    const toYear   = toBatch   === "shared" ? null : String(toBatch);
+    if (fromYear === toYear) { res.status(400).json({ error: "Source and target batch must be different" }); return; }
+
+    const sources = await db.select().from(notesTable)
+      .where(fromYear ? eq(notesTable.sessionYear, fromYear) : isNull(notesTable.sessionYear));
+
+    const existingInTarget = await db
+      .select({ title: notesTable.title, subject: notesTable.subject })
+      .from(notesTable)
+      .where(toYear ? eq(notesTable.sessionYear, toYear) : isNull(notesTable.sessionYear));
+    const existingKeys = new Set(existingInTarget.map(e => `${e.subject}|||${e.title}`));
+
+    let copied = 0, skipped = 0;
+    for (const source of sources) {
+      if (existingKeys.has(`${source.subject}|||${source.title}`)) { skipped++; continue; }
+      await db.insert(notesTable).values({
+        title: source.title, subject: source.subject, content: source.content,
+        fileUrl: source.fileUrl, fileType: source.fileType,
+        createdBy: admin.id, sessionYear: toYear,
+      } as any);
+      copied++;
+    }
+    res.json({ copied, skipped, total: sources.length });
+  } catch (err) {
+    console.error("bulk duplicate notes error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── Admin: duplicate note ────────────────────────────────────────────────────
 router.post("/:id/duplicate", adminMiddleware, async (req: Request, res: Response) => {
   try {

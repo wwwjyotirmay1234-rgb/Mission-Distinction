@@ -422,6 +422,58 @@ router.put("/submissions/:submissionId/grade", adminMiddleware, async (req: Requ
   } finally { client.release(); }
 });
 
+// ── Admin: bulk-duplicate all grand tests from one batch to another ────────────
+router.post("/bulk-duplicate", adminMiddleware, async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try {
+    const { fromBatch, toBatch } = req.body;
+    if (!fromBatch || !toBatch) { res.status(400).json({ error: "fromBatch and toBatch are required" }); return; }
+    const fromYear = fromBatch === "shared" ? null : String(fromBatch);
+    const toYear   = toBatch   === "shared" ? null : String(toBatch);
+    if (fromYear === toYear) { res.status(400).json({ error: "Source and target batch must be different" }); return; }
+    const adminUser = (req as any).user;
+
+    const sourcesRes = fromYear
+      ? await client.query("SELECT * FROM grand_tests WHERE session_year=$1", [fromYear])
+      : await client.query("SELECT * FROM grand_tests WHERE session_year IS NULL");
+    const sources = sourcesRes.rows;
+
+    const existRes = toYear
+      ? await client.query("SELECT title, subject FROM grand_tests WHERE session_year=$1", [toYear])
+      : await client.query("SELECT title, subject FROM grand_tests WHERE session_year IS NULL");
+    const existingKeys = new Set(existRes.rows.map((r: any) => `${r.subject}|||${r.title}`));
+
+    let copied = 0, skipped = 0;
+    for (const source of sources) {
+      if (existingKeys.has(`${source.subject}|||${source.title}`)) { skipped++; continue; }
+      await client.query("BEGIN");
+      const newTestRes = await client.query(
+        `INSERT INTO grand_tests (title, subject, description, duration_minutes, session_year, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+        [source.title, source.subject, source.description, source.duration_minutes, toYear, adminUser?.id]
+      );
+      const newTest = newTestRes.rows[0];
+      const qRes = await client.query(
+        "SELECT * FROM grand_test_questions WHERE test_id=$1 ORDER BY order_index", [source.id]
+      );
+      for (const q of qRes.rows) {
+        await client.query(
+          `INSERT INTO grand_test_questions (test_id, question_text, question_type, max_marks, order_index, model_answer, subject)
+           VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+          [newTest.id, q.question_text, q.question_type, q.max_marks, q.order_index, q.model_answer, q.subject ?? null]
+        );
+      }
+      await client.query("COMMIT");
+      copied++;
+    }
+    res.json({ copied, skipped, total: sources.length });
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    console.error("bulk duplicate grand tests error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally { client.release(); }
+});
+
 // ── Admin: duplicate grand test (copies metadata + all questions) ─────────────
 router.post("/:id/duplicate", adminMiddleware, async (req: Request, res: Response) => {
   const client = await pool.connect();

@@ -612,6 +612,56 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
   }
 });
 
+// ── Admin: bulk-duplicate all quizzes from one batch to another ──────────────
+router.post("/bulk-duplicate", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { fromBatch, toBatch } = req.body;
+    if (!fromBatch || !toBatch) { res.status(400).json({ error: "fromBatch and toBatch are required" }); return; }
+    const fromYear = fromBatch === "shared" ? null : String(fromBatch);
+    const toYear   = toBatch   === "shared" ? null : String(toBatch);
+    if (fromYear === toYear) { res.status(400).json({ error: "Source and target batch must be different" }); return; }
+
+    const sources = await db.select().from(quizzesTable)
+      .where(fromYear ? eq(quizzesTable.sessionYear, fromYear) : isNull(quizzesTable.sessionYear));
+
+    const existingInTarget = await db
+      .select({ title: quizzesTable.title, subject: quizzesTable.subject })
+      .from(quizzesTable)
+      .where(toYear ? eq(quizzesTable.sessionYear, toYear) : isNull(quizzesTable.sessionYear));
+    const existingKeys = new Set(existingInTarget.map(e => `${e.subject}|||${e.title}`));
+
+    let copied = 0, skipped = 0;
+    for (const source of sources) {
+      if (existingKeys.has(`${source.subject}|||${source.title}`)) { skipped++; continue; }
+      // Wrap each quiz + its questions in a transaction so a child-insert failure
+      // cannot leave an orphaned parent that idempotent re-runs will skip.
+      await db.transaction(async (tx) => {
+        const questions = await tx.select().from(questionsTable).where(eq(questionsTable.quizId, source.id));
+        const [newQuiz] = await tx.insert(quizzesTable).values({
+          title: source.title, subject: source.subject, description: source.description,
+          difficulty: source.difficulty, durationMinutes: source.durationMinutes,
+          isFeatured: false, isProctored: source.isProctored, sessionYear: toYear,
+          questionCount: questions.length,
+        }).returning();
+        if (questions.length > 0) {
+          await tx.insert(questionsTable).values(
+            questions.map(q => ({
+              quizId: newQuiz.id, text: q.text, questionType: q.questionType,
+              options: q.options, correctOption: q.correctOption, correctAnswer: q.correctAnswer,
+              explanation: q.explanation, maxMarks: q.maxMarks, modelAnswer: q.modelAnswer, topicTags: q.topicTags,
+            }))
+          );
+        }
+      });
+      copied++;
+    }
+    res.json({ copied, skipped, total: sources.length });
+  } catch (err) {
+    console.error("bulk duplicate quizzes error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── Admin: duplicate quiz (copies metadata + all questions) ──────────────────
 router.post("/:id/duplicate", adminMiddleware, async (req: Request, res: Response) => {
   try {

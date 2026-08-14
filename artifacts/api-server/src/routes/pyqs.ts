@@ -174,6 +174,42 @@ router.patch("/:id/tags", authMiddleware, adminMiddleware, async (req: Request, 
   }
 });
 
+// ── Admin: bulk-duplicate all PYQs from one batch to another ─────────────────
+router.post("/bulk-duplicate", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const admin = (req as any).user;
+    const { fromBatch, toBatch } = req.body;
+    if (!fromBatch || !toBatch) { res.status(400).json({ error: "fromBatch and toBatch are required" }); return; }
+    const fromYear = fromBatch === "shared" ? null : String(fromBatch);
+    const toYear   = toBatch   === "shared" ? null : String(toBatch);
+    if (fromYear === toYear) { res.status(400).json({ error: "Source and target batch must be different" }); return; }
+
+    const sources = await db.select().from(pyqsTable)
+      .where(fromYear ? eq(pyqsTable.sessionYear, fromYear) : isNull(pyqsTable.sessionYear));
+
+    const existingInTarget = await db
+      .select({ title: pyqsTable.title, subject: pyqsTable.subject })
+      .from(pyqsTable)
+      .where(toYear ? eq(pyqsTable.sessionYear, toYear) : isNull(pyqsTable.sessionYear));
+    const existingKeys = new Set(existingInTarget.map(e => `${e.subject}|||${e.title}`));
+
+    let copied = 0, skipped = 0;
+    for (const source of sources) {
+      if (existingKeys.has(`${source.subject}|||${source.title}`)) { skipped++; continue; }
+      await db.insert(pyqsTable).values({
+        title: source.title, subject: source.subject, year: source.year,
+        url: source.url, college: source.college, createdBy: admin.id,
+        sessionYear: toYear, topicTags: source.topicTags,
+      } as any);
+      copied++;
+    }
+    res.json({ copied, skipped, total: sources.length });
+  } catch (err) {
+    console.error("bulk duplicate pyqs error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── Admin: duplicate PYQ ─────────────────────────────────────────────────────
 router.post("/:id/duplicate", adminMiddleware, async (req: Request, res: Response) => {
   try {

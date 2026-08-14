@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useListNotes, useDeleteNote, getListNotesQueryKey, customFetch } from "@workspace/api-client-react";
 import { Search, Plus, MoreVertical, Trash2, FileText, Pencil, Upload, Image, FileIcon, Link, X, Loader2, Zap, Copy } from "lucide-react";
+import BatchMigrateButton from "@/components/admin/BatchMigrateButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -370,6 +371,11 @@ export default function AdminNotes() {
           <Button variant="outline" asChild>
             <a href="/admin/content/quick-upload"><Zap className="mr-2 h-4 w-4" /> Quick Upload</a>
           </Button>
+          <BatchMigrateButton
+            endpoint="/api/notes/bulk-duplicate"
+            contentLabel="notes"
+            queryKeys={[getListNotesQueryKey()]}
+          />
           <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" /> Add Note</Button>
         </div>
       </div>

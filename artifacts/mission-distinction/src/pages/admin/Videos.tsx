@@ -9,6 +9,7 @@ import {
   Plus, Trash2, ChevronRight, ChevronDown, RefreshCw,
   Eye, EyeOff, PlayCircle, BookOpen, HelpCircle, X, Link2, Copy,
 } from "lucide-react";
+import BatchMigrateButton from "@/components/admin/BatchMigrateButton";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "University Exams"];
 
@@ -178,9 +179,16 @@ export default function AdminVideos() {
         <h1 className="text-lg font-bold flex items-center gap-2">
           <PlayCircle size={20} className="text-primary" /> Video Manager
         </h1>
-        <Button size="sm" onClick={() => setShowForm(true)} className="gap-1.5">
-          <Plus size={14} /> Add Video
-        </Button>
+        <div className="flex items-center gap-2">
+          <BatchMigrateButton
+            endpoint="/api/videos/admin/bulk-duplicate"
+            contentLabel="videos"
+            queryKeys={[["admin-videos"]]}
+          />
+          <Button size="sm" onClick={() => setShowForm(true)} className="gap-1.5">
+            <Plus size={14} /> Add Video
+          </Button>
+        </div>
       </div>
 
       <div className="px-4 pt-4 space-y-3">

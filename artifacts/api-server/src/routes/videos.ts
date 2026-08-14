@@ -379,6 +379,62 @@ router.get("/admin/:id/detail", adminMiddleware, async (req: Request, res: Respo
   }
 });
 
+// POST /api/videos/admin/bulk-duplicate — clone all videos from one batch to another
+router.post("/admin/bulk-duplicate", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { fromBatch, toBatch } = req.body;
+    if (!fromBatch || !toBatch) { res.status(400).json({ error: "fromBatch and toBatch are required" }); return; }
+    const fromYear = fromBatch === "shared" ? null : String(fromBatch);
+    const toYear   = toBatch   === "shared" ? null : String(toBatch);
+    if (fromYear === toYear) { res.status(400).json({ error: "Source and target batch must be different" }); return; }
+
+    const sources = await db.select().from(videosTable)
+      .where(fromYear ? eq(videosTable.sessionYear, fromYear) : isNull(videosTable.sessionYear));
+
+    const existingInTarget = await db
+      .select({ title: videosTable.title, subject: videosTable.subject })
+      .from(videosTable)
+      .where(toYear ? eq(videosTable.sessionYear, toYear) : isNull(videosTable.sessionYear));
+    const existingKeys = new Set(existingInTarget.map(e => `${e.subject}|||${e.title}`));
+
+    let copied = 0, skipped = 0;
+    for (const source of sources) {
+      if (existingKeys.has(`${source.subject}|||${source.title}`)) { skipped++; continue; }
+      // Transaction ensures no orphaned video if child inserts fail
+      await db.transaction(async (tx) => {
+        const [newVideo] = await tx.insert(videosTable).values({
+          title: source.title, subject: source.subject, description: source.description,
+          videoUrl: source.videoUrl, cloudinaryPublicId: source.cloudinaryPublicId,
+          thumbnailUrl: source.thumbnailUrl, durationSeconds: source.durationSeconds,
+          isPublished: false, sessionYear: toYear,
+        }).returning();
+        const concepts = await tx.select().from(videoConceptsTable)
+          .where(eq(videoConceptsTable.videoId, source.id)).orderBy(videoConceptsTable.sortOrder);
+        if (concepts.length > 0) {
+          await tx.insert(videoConceptsTable).values(
+            concepts.map(c => ({ videoId: newVideo.id, heading: c.heading, content: c.content, sortOrder: c.sortOrder }))
+          );
+        }
+        const questions = await tx.select().from(videoQuestionsTable)
+          .where(eq(videoQuestionsTable.videoId, source.id)).orderBy(videoQuestionsTable.sortOrder);
+        if (questions.length > 0) {
+          await tx.insert(videoQuestionsTable).values(
+            questions.map(q => ({
+              videoId: newVideo.id, text: q.text, options: q.options,
+              correctOption: q.correctOption, explanation: q.explanation, sortOrder: q.sortOrder,
+            }))
+          );
+        }
+      });
+      copied++;
+    }
+    res.json({ copied, skipped, total: sources.length });
+  } catch (err) {
+    console.error("bulk duplicate videos error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/videos/admin/:id/duplicate — clone video with concepts + questions
 router.post("/admin/:id/duplicate", adminMiddleware, async (req: Request, res: Response) => {
   try {
