@@ -12,8 +12,7 @@ import { Lightbulb, Plus, ThumbsUp, Trash2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
-
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "NEET PG", "General"];
+import { SUBJECTS_BY_YEAR, DEFAULT_SUBJECTS } from "@/lib/colleges";
 
 interface Mnemonic {
   id: number; userId: number; authorName: string; subject: string; topic: string;
@@ -32,10 +31,12 @@ function timeAgo(d: string) {
 }
 
 export default function StudentMnemonics({ hideHeader }: { hideHeader?: boolean } = {}) {
+  const { user } = useAuth();
+  const SUBJECTS = [...(SUBJECTS_BY_YEAR[user?.year ?? ""] ?? DEFAULT_SUBJECTS), "NEET PG", "General"];
+
   const [filterSubject, setFilterSubject] = useState("All");
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ subject: "Anatomy", topic: "", mnemonic: "", description: "" });
-  const { user } = useAuth();
+  const [form, setForm] = useState({ subject: SUBJECTS[0], topic: "", mnemonic: "", description: "" });
   const queryClient = useQueryClient();
 
   const { data: mnemonics = [], isLoading } = useQuery<Mnemonic[]>({

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { videosTable, videoConceptsTable, videoQuestionsTable, videoProgressTable } from "@workspace/db";
-import { eq, and, desc, or, isNull } from "drizzle-orm";
+import { eq, and, desc, or, isNull, inArray } from "drizzle-orm";
 import { v2 as cloudinary } from "cloudinary";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { awardXp } from "../lib/xp";
@@ -374,6 +374,21 @@ router.get("/admin/:id/detail", adminMiddleware, async (req: Request, res: Respo
     const concepts = await db.select().from(videoConceptsTable).where(eq(videoConceptsTable.videoId, id)).orderBy(videoConceptsTable.sortOrder);
     const questions = await db.select().from(videoQuestionsTable).where(eq(videoQuestionsTable.videoId, id)).orderBy(videoQuestionsTable.sortOrder);
     res.json({ ...video, concepts, questions });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PATCH /api/videos/admin/bulk-year — bulk set academic year
+router.patch("/admin/bulk-year", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { ids, sessionYear } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ error: "ids array required" }); return;
+    }
+    const year = sessionYear === "shared" ? null : String(sessionYear);
+    await db.update(videosTable).set({ sessionYear: year } as any).where(inArray(videosTable.id, ids.map(Number)));
+    res.json({ updated: ids.length });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }

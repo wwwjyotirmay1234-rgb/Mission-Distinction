@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "General"];
+import { SUBJECTS_BY_YEAR, DEFAULT_SUBJECTS } from "@/lib/colleges";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,6 +84,7 @@ function CommunityTab() {
   const [newQ, setNewQ] = useState({ subject: "Anatomy", title: "" });
   const [answerText, setAnswerText] = useState("");
   const { user } = useAuth();
+  const SUBJECTS = [...(SUBJECTS_BY_YEAR[user?.year ?? ""] ?? DEFAULT_SUBJECTS), "General"];
   const queryClient = useQueryClient();
 
   const { data: doubts = [], isLoading } = useQuery({

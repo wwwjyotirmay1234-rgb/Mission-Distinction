@@ -11,8 +11,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Plus, ChevronLeft, Trash2, CheckCircle2, X, Brain, Shield, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch, apiFetchJson } from "@/lib/apiFetch";
-
-const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "NEET PG", "General"];
+import { useAuth } from "@/contexts/AuthContext";
+import { SUBJECTS_BY_YEAR, DEFAULT_SUBJECTS } from "@/lib/colleges";
 
 interface Deck { id: number; userId: number; subject: string; title: string; cardCount: number; isAdminShared: boolean; createdAt: string; dueCount?: number; }
 interface Flashcard { id: number; deckId: number; front: string; back: string; nextReview: string; ease: number; interval: number; repetitions: number; }
@@ -274,9 +274,12 @@ function DeckView({ deckId, isAdminDeck, onBack }: { deckId: number; isAdminDeck
 }
 
 export default function StudentFlashcards({ hideHeader }: { hideHeader?: boolean } = {}) {
+  const { user } = useAuth();
+  const SUBJECTS = [...(SUBJECTS_BY_YEAR[user?.year ?? ""] ?? DEFAULT_SUBJECTS), "NEET PG", "General"];
+
   const [selectedDeck, setSelectedDeck] = useState<{ id: number; isAdminShared: boolean } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ subject: "Anatomy", title: "" });
+  const [form, setForm] = useState({ subject: SUBJECTS[0], title: "" });
   const queryClient = useQueryClient();
 
   const { data: decks = [], isLoading } = useQuery<Deck[]>({

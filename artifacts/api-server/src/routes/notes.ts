@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { notesTable, activityTable, xpTransactionsTable } from "@workspace/db";
-import { eq, and, gte, count, or, isNull } from "drizzle-orm";
+import { eq, and, gte, count, or, isNull, inArray } from "drizzle-orm";
 import { authMiddleware, adminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
@@ -186,6 +186,21 @@ router.post("/:id/read", authMiddleware, noteReadLimiter, async (req: Request, r
     }
 
     res.json({ ok: true, xpAwarded });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── Admin: bulk set academic year ────────────────────────────────────────────
+router.patch("/bulk-year", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { ids, sessionYear } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ error: "ids array required" }); return;
+    }
+    const year = sessionYear === "shared" ? null : String(sessionYear);
+    await db.update(notesTable).set({ sessionYear: year } as any).where(inArray(notesTable.id, ids.map(Number)));
+    res.json({ updated: ids.length });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }

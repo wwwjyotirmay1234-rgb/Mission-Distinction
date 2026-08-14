@@ -14,13 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Store, Upload, FileText, ImageIcon, Clock, CheckCircle, XCircle, Zap, Eye, Download } from "lucide-react";
 
-const SUBJECTS = [
-  "Anatomy", "Physiology", "Biochemistry",
-  "Pathology", "Pharmacology", "Microbiology",
-  "Forensic Medicine", "Community Medicine",
-  "General Medicine", "General Surgery",
-  "Obstetrics & Gynaecology", "Paediatrics",
-];
+import { useAuth } from "@/contexts/AuthContext";
+import { SUBJECTS_BY_YEAR, DEFAULT_SUBJECTS } from "@/lib/colleges";
 
 interface ApprovedNote {
   id: number;
@@ -44,6 +39,9 @@ interface MySubmission {
 }
 
 export default function NotesMarketplace() {
+  const { user } = useAuth();
+  const SUBJECTS = SUBJECTS_BY_YEAR[user?.year ?? ""] ?? DEFAULT_SUBJECTS;
+
   const [tab, setTab] = useState<"browse" | "my-submissions">("browse");
   const [filterSubject, setFilterSubject] = useState("All");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -236,7 +234,7 @@ export default function NotesMarketplace() {
           {/* Subject filter */}
           <div className="mb-4">
             <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-              {["All", ...SUBJECTS.slice(0, 8)].map(s => (
+              {["All", ...SUBJECTS].map(s => (
                 <button
                   key={s}
                   onClick={() => setFilterSubject(s)}

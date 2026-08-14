@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useListQuizzes, useCreateQuiz, useDeleteQuiz, getListQuizzesQueryKey } from "@workspace/api-client-react";
+import { useListQuizzes, useCreateQuiz, useDeleteQuiz, getListQuizzesQueryKey, customFetch } from "@workspace/api-client-react";
+import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { Search, Plus, MoreVertical, Trash2, CheckCircle, Pencil, ClipboardCheck, Copy, ChevronsRight } from "lucide-react";
@@ -35,7 +36,28 @@ export default function AdminQuizzes() {
   });
   const [batchFilter, setBatchFilter] = useState<"all" | "1st Year" | "2nd Year" | "3rd/4th Year" | "Final Year" | "shared">("all");
   const [dupYear, setDupYear] = useState("2nd Year");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkYear, setBulkYear] = useState("1st Year");
   const queryClient = useQueryClient();
+
+  const bulkYearMutation = useMutation({
+    mutationFn: (ids: number[]) => customFetch("/api/quizzes/bulk-year", {
+      method: "PATCH",
+      body: JSON.stringify({ ids, sessionYear: bulkYear }),
+    }),
+    onSuccess: () => {
+      toast.success(`Updated ${selectedIds.size} quiz${selectedIds.size !== 1 ? "zes" : ""} to ${bulkYear}`);
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: getListQuizzesQueryKey() });
+    },
+    onError: () => toast.error("Failed to update year"),
+  });
+
+  const toggleId = useCallback((id: number) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  }), []);
 
   const { data: quizzes, isLoading } = useListQuizzes(
     {},
@@ -144,11 +166,32 @@ export default function AdminQuizzes() {
         </div>
       </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-primary/10 border border-primary/30 rounded-xl text-sm">
+          <span className="text-primary font-medium">{selectedIds.size} selected</span>
+          <span className="text-muted-foreground">→ Set year to</span>
+          <Select value={bulkYear} onValueChange={setBulkYear}>
+            <SelectTrigger className="h-7 text-xs w-36 bg-background/50"><SelectValue /></SelectTrigger>
+            <SelectContent>{[...MBBS_YEARS, "shared"].map(y => <SelectItem key={y} value={y} className="text-xs">{y === "shared" ? "Shared (all years)" : y}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button size="sm" className="h-7 text-xs" onClick={() => bulkYearMutation.mutate([...selectedIds])} disabled={bulkYearMutation.isPending}>
+            {bulkYearMutation.isPending ? "Saving…" : "Apply"}
+          </Button>
+          <button className="ml-auto text-muted-foreground hover:text-foreground text-xs" onClick={() => setSelectedIds(new Set())}>Clear</button>
+        </div>
+      )}
+
       <Card className="bg-card/40 border-border/40">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow className="border-border/40">
+                <TableHead className="w-8 pr-0">
+                  <input type="checkbox" className="rounded border-border/60 cursor-pointer"
+                    checked={filtered.length > 0 && filtered.every(q => selectedIds.has(q.id))}
+                    onChange={e => setSelectedIds(e.target.checked ? new Set(filtered.map(q => q.id)) : new Set())} />
+                </TableHead>
                 <TableHead>Quiz Name</TableHead>
                 <TableHead>Subject</TableHead>
                 <TableHead>Questions / Time</TableHead>
@@ -162,7 +205,7 @@ export default function AdminQuizzes() {
               {isLoading ? (
                 Array(5).fill(0).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-48 mb-2" /></TableCell>
+                    <TableCell /><TableCell><Skeleton className="h-4 w-48 mb-2" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
@@ -172,7 +215,7 @@ export default function AdminQuizzes() {
                 ))
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <CheckCircle className="h-8 w-8 opacity-30" />
                       <span>No quizzes yet. Click "Create Quiz" to get started.</span>
@@ -181,7 +224,11 @@ export default function AdminQuizzes() {
                 </TableRow>
               ) : (
                 filtered.map((quiz) => (
-                  <TableRow key={quiz.id} className="border-border/40 hover:bg-muted/20">
+                  <TableRow key={quiz.id} className={`border-border/40 hover:bg-muted/20 ${selectedIds.has(quiz.id) ? "bg-primary/5" : ""}`}>
+                    <TableCell className="pr-0">
+                      <input type="checkbox" className="rounded border-border/60 cursor-pointer"
+                        checked={selectedIds.has(quiz.id)} onChange={() => toggleId(quiz.id)} />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded bg-green-500/20 text-green-500 flex items-center justify-center shrink-0">

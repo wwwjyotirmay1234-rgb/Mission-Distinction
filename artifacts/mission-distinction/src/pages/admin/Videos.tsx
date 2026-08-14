@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetchJson } from "@/lib/apiFetch";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Plus, Trash2, ChevronRight, ChevronDown, RefreshCw,
   Eye, EyeOff, PlayCircle, BookOpen, HelpCircle, X, Link2, Copy,
 } from "lucide-react";
 import BatchMigrateButton from "@/components/admin/BatchMigrateButton";
+
+const MBBS_YEARS = ["1st Year", "2nd Year", "3rd/4th Year", "Final Year"] as const;
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "University Exams"];
 
@@ -71,6 +74,8 @@ export default function AdminVideos() {
   const [formDesc, setFormDesc] = useState("");
   const [formSessionYear, setFormSessionYear] = useState("2025-26");
   const [batchFilter, setBatchFilter] = useState<"all" | "2025-26" | "2026-27" | "shared">("all");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkYear, setBulkYear] = useState("1st Year");
 
   // Concepts / questions state for expanded panel
   const [editConcepts, setEditConcepts] = useState<Concept[]>([]);
@@ -121,6 +126,25 @@ export default function AdminVideos() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-videos"] }); toast.success("Saved!"); },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const bulkYearMutation = useMutation({
+    mutationFn: (ids: number[]) => apiFetchJson("/api/videos/admin/bulk-year", {
+      method: "PATCH",
+      body: JSON.stringify({ ids, sessionYear: bulkYear }),
+    }),
+    onSuccess: () => {
+      toast.success(`Updated ${selectedIds.size} video${selectedIds.size !== 1 ? "s" : ""} to ${bulkYear}`);
+      setSelectedIds(new Set());
+      qc.invalidateQueries({ queryKey: ["admin-videos"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const toggleId = useCallback((id: number) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  }), []);
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => apiFetchJson(`/api/videos/admin/${id}`, { method: "DELETE" }),
@@ -245,6 +269,22 @@ export default function AdminVideos() {
           ))}
         </div>
 
+        {/* Bulk action bar */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2.5 bg-primary/10 border border-primary/30 rounded-xl text-sm">
+            <span className="text-primary font-medium">{selectedIds.size} selected</span>
+            <span className="text-muted-foreground">→ Set year to</span>
+            <Select value={bulkYear} onValueChange={setBulkYear}>
+              <SelectTrigger className="h-7 text-xs w-36 bg-background/50"><SelectValue /></SelectTrigger>
+              <SelectContent>{[...MBBS_YEARS, "shared"].map(y => <SelectItem key={y} value={y} className="text-xs">{y === "shared" ? "Shared (all years)" : y}</SelectItem>)}</SelectContent>
+            </Select>
+            <Button size="sm" className="h-7 text-xs" onClick={() => bulkYearMutation.mutate([...selectedIds])} disabled={bulkYearMutation.isPending}>
+              {bulkYearMutation.isPending ? "Saving…" : "Apply"}
+            </Button>
+            <button className="ml-auto text-muted-foreground hover:text-foreground text-xs" onClick={() => setSelectedIds(new Set())}>Clear</button>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="space-y-2">
             {[...Array(3)].map((_, i) => <div key={i} className="h-16 rounded-xl bg-card/40 border border-border/40 animate-pulse" />)}
@@ -262,10 +302,12 @@ export default function AdminVideos() {
           const embedUrl = v.videoUrl ? getEmbedUrl(v.videoUrl) : null;
 
           return (
-            <Card key={v.id} className="border-border/40 bg-card/40">
+            <Card key={v.id} className={`border-border/40 bg-card/40 ${selectedIds.has(v.id) ? "ring-1 ring-primary/40" : ""}`}>
               <CardContent className="p-0">
                 {/* Header row */}
                 <div className="flex items-center gap-3 p-4">
+                  <input type="checkbox" className="rounded border-border/60 cursor-pointer shrink-0"
+                    checked={selectedIds.has(v.id)} onChange={() => toggleId(v.id)} />
                   <div
                     className="w-12 h-12 rounded-lg bg-muted/30 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer"
                     onClick={() => handleExpand(v.id)}

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useListNotes, useDeleteNote, getListNotesQueryKey, customFetch } from "@workspace/api-client-react";
+import { useMutation } from "@tanstack/react-query";
 import { Search, Plus, MoreVertical, Trash2, FileText, Pencil, Upload, Image, FileIcon, Link, X, Loader2, Zap, Copy } from "lucide-react";
 import BatchMigrateButton from "@/components/admin/BatchMigrateButton";
 
@@ -239,8 +240,29 @@ export default function AdminNotes() {
   const editFileRef = useRef<HTMLInputElement>(null);
   const [batchFilter, setBatchFilter] = useState<"all" | "1st Year" | "2nd Year" | "3rd/4th Year" | "Final Year" | "shared">("all");
   const [dupYear, setDupYear] = useState("2nd Year");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkYear, setBulkYear] = useState("1st Year");
 
   const queryClient = useQueryClient();
+
+  const bulkYearMutation = useMutation({
+    mutationFn: (ids: number[]) => customFetch("/api/notes/bulk-year", {
+      method: "PATCH",
+      body: JSON.stringify({ ids, sessionYear: bulkYear }),
+    }),
+    onSuccess: () => {
+      toast.success(`Updated ${selectedIds.size} note${selectedIds.size !== 1 ? "s" : ""} to ${bulkYear}`);
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
+    },
+    onError: () => toast.error("Failed to update year"),
+  });
+
+  const toggleId = useCallback((id: number) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  }), []);
 
   const { data: notes, isLoading } = useListNotes(
     { search: search || undefined },
@@ -401,11 +423,32 @@ export default function AdminNotes() {
         </div>
       </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-primary/10 border border-primary/30 rounded-xl text-sm">
+          <span className="text-primary font-medium">{selectedIds.size} selected</span>
+          <span className="text-muted-foreground">→ Set year to</span>
+          <Select value={bulkYear} onValueChange={setBulkYear}>
+            <SelectTrigger className="h-7 text-xs w-36 bg-background/50"><SelectValue /></SelectTrigger>
+            <SelectContent>{[...MBBS_YEARS, "shared"].map(y => <SelectItem key={y} value={y} className="text-xs">{y === "shared" ? "Shared (all years)" : y}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button size="sm" className="h-7 text-xs" onClick={() => bulkYearMutation.mutate([...selectedIds])} disabled={bulkYearMutation.isPending}>
+            {bulkYearMutation.isPending ? "Saving…" : "Apply"}
+          </Button>
+          <button className="ml-auto text-muted-foreground hover:text-foreground text-xs" onClick={() => setSelectedIds(new Set())}>Clear</button>
+        </div>
+      )}
+
       <Card className="bg-card/40 border-border/40">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow className="border-border/40">
+                <TableHead className="w-8 pr-0">
+                  <input type="checkbox" className="rounded border-border/60 cursor-pointer"
+                    checked={notesList.length > 0 && notesList.every(n => selectedIds.has(n.id))}
+                    onChange={e => setSelectedIds(e.target.checked ? new Set(notesList.map(n => n.id)) : new Set())} />
+                </TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>Subject</TableHead>
                 <TableHead>Batch</TableHead>
@@ -419,7 +462,7 @@ export default function AdminNotes() {
               {isLoading ? (
                 Array(5).fill(0).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-48 mb-2" /><Skeleton className="h-3 w-24" /></TableCell>
+                    <TableCell /><TableCell><Skeleton className="h-4 w-48 mb-2" /><Skeleton className="h-3 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-14 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
@@ -429,7 +472,7 @@ export default function AdminNotes() {
                 ))
               ) : notesList.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <FileText className="h-8 w-8 opacity-30" />
                       <span>No notes yet. Click "Add Note" to get started.</span>
@@ -441,7 +484,11 @@ export default function AdminNotes() {
                   const n = note as NoteItem;
                   const ft = n.fileUrl ? n.fileType : "text";
                   return (
-                    <TableRow key={n.id} className="border-border/40 hover:bg-muted/20">
+                    <TableRow key={n.id} className={`border-border/40 hover:bg-muted/20 ${selectedIds.has(n.id) ? "bg-primary/5" : ""}`}>
+                      <TableCell className="pr-0">
+                        <input type="checkbox" className="rounded border-border/60 cursor-pointer"
+                          checked={selectedIds.has(n.id)} onChange={() => toggleId(n.id)} />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded bg-primary/20 text-primary flex items-center justify-center shrink-0">

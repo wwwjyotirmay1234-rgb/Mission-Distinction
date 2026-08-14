@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { db } from "@workspace/db";
 import { quizzesTable, questionsTable, quizAttemptsTable, activityTable, questionReportsTable, quizSubmissionsTable, quizAnswersTable } from "@workspace/db";
-import { eq, sql, desc, and, or, isNull } from "drizzle-orm";
+import { eq, sql, desc, and, or, isNull, inArray } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, superAdminMiddleware } from "../middlewares/auth";
 import { parseId } from "../lib/auth";
 import { updateStreak } from "../lib/streak";
@@ -607,6 +607,21 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
       newRankName: xpResult.newRankName,
       totalXp: xpResult.newXp,
     });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── Admin: bulk set academic year ────────────────────────────────────────────
+router.patch("/bulk-year", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { ids, sessionYear } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ error: "ids array required" }); return;
+    }
+    const year = sessionYear === "shared" ? null : String(sessionYear);
+    await db.update(quizzesTable).set({ sessionYear: year }).where(inArray(quizzesTable.id, ids.map(Number)));
+    res.json({ updated: ids.length });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }
