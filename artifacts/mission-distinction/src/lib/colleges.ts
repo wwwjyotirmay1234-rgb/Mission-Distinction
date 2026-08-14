@@ -32,9 +32,9 @@ export const MBBS_YEARS = ["1st Year", "2nd Year", "3rd/4th Year", "Final Year"]
 // Subjects by MBBS year — used across student pages for category filtering
 export const SUBJECTS_BY_YEAR: Record<string, string[]> = {
   "1st Year":     ["Anatomy", "Physiology", "Biochemistry"],
-  "2nd Year":     ["Pathology", "Pharmacology", "Microbiology"],
-  "3rd/4th Year": ["General Medicine", "General Surgery", "OBG", "ENT", "Ophthalmology", "Dermatology", "Psychiatry", "Forensic Medicine"],
-  "Final Year":   ["General Medicine", "General Surgery", "OBG", "Pediatrics", "Orthopedics", "Dermatology", "Psychiatry"],
+  "2nd Year":     ["Pathology", "Pharmacology", "Microbiology", "Community Medicine", "Forensic Medicine"],
+  "3rd/4th Year": ["General Medicine", "General Surgery", "OBG", "Pediatrics", "ENT", "Ophthalmology", "Community Medicine", "Forensic Medicine"],
+  "Final Year":   ["General Medicine", "General Surgery", "OBG", "Pediatrics", "Dermatology", "Psychiatry", "Orthopedics", "Radiodiagnosis", "Anesthesiology"],
 };
 export const DEFAULT_SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"];
 
