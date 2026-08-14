@@ -13,6 +13,7 @@ export const pdfsTable = pgTable("pdfs", {
   downloadCount: integer("download_count").default(0).notNull(),
   pages: integer("pages"),
   size: text("size"),
+  sessionYear: text("session_year"),
   createdBy: integer("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

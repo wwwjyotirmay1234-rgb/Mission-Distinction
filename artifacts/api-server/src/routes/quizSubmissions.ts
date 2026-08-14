@@ -66,7 +66,7 @@ router.get("/my", authMiddleware, async (req: Request, res: Response) => {
 
 router.get("/admin/all", adminMiddleware, async (req: Request, res: Response) => {
   try {
-    const { status, quizId } = req.query;
+    const { status, quizId, academicYear, studentBatch } = req.query;
     const client = await pool.connect();
     try {
       const conditions: string[] = [];
@@ -84,6 +84,16 @@ router.get("/admin/all", adminMiddleware, async (req: Request, res: Response) =>
           params.push(qid);
         }
       }
+      // Filter by the quiz's academic year (session_year on quizzes table)
+      if (academicYear && typeof academicYear === "string") {
+        conditions.push(`qz.session_year = $${idx++}`);
+        params.push(academicYear);
+      }
+      // Filter by the student's batch/session year (session_year on users table)
+      if (studentBatch && typeof studentBatch === "string") {
+        conditions.push(`u.session_year = $${idx++}`);
+        params.push(studentBatch);
+      }
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
@@ -95,8 +105,11 @@ router.get("/admin/all", adminMiddleware, async (req: Request, res: Response) =>
           q.model_answer,
           qz.title AS quiz_title,
           qz.subject AS quiz_subject,
+          qz.session_year AS quiz_academic_year,
           u.full_name AS student_name,
-          u.email AS student_email
+          u.email AS student_email,
+          u.year AS student_academic_year,
+          u.session_year AS student_session_year
         FROM quiz_submissions qs
         LEFT JOIN questions q ON q.id = qs.question_id
         LEFT JOIN quizzes qz ON qz.id = qs.quiz_id

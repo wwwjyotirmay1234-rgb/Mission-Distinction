@@ -38,13 +38,15 @@ function normalizeYear(y: string | null | undefined): string {
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { subject, professor, search } = req.query;
-    const userYear = normalizeYear((req as any).user?.year);
+    const user = (req as any).user;
+    const isAdmin = user?.role === "admin";
+    const userYear = user?.year as string | null | undefined;
 
     let pdfs = await db.select().from(pdfsTable).limit(500);
 
-    // Year filter: show PDFs with no year set (available to all) OR matching user's year
-    if (userYear) {
-      pdfs = pdfs.filter(p => !p.year || normalizeYear(p.year) === userYear);
+    // Academic year filter: null = shared with all years; skip for admins (see all)
+    if (!isAdmin && userYear) {
+      pdfs = pdfs.filter(p => !p.sessionYear || p.sessionYear === userYear);
     }
 
     if (subject) pdfs = pdfs.filter(p => p.subject.toLowerCase() === (subject as string).toLowerCase());
@@ -66,7 +68,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 router.post("/", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const admin = (req as any).user;
-    const { title, subject, professor, year, url, thumbnailUrl, pages, size } = req.body;
+    const { title, subject, professor, year, sessionYear, url, thumbnailUrl, pages, size } = req.body;
     if (!title || !subject || !url) { res.status(400).json({ error: "Missing fields" }); return; }
     if (!isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
     if (thumbnailUrl && !isValidHttpsUrl(thumbnailUrl)) {
@@ -76,11 +78,12 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
     const safeSubject = stripHtml(String(subject));
     const safeProfessor = professor ? stripHtml(String(professor)) : null;
     const safeYear = year ? stripHtml(String(year)) : null;
+    const safeSessionYear = sessionYear ? stripHtml(String(sessionYear)) : null;
     if (!safeTitle) { res.status(400).json({ error: "Invalid title" }); return; }
     if (!safeSubject) { res.status(400).json({ error: "Invalid subject" }); return; }
     const [pdf] = await db.insert(pdfsTable).values({
       title: safeTitle, subject: safeSubject, professor: safeProfessor, year: safeYear,
-      url, thumbnailUrl, pages, size,
+      sessionYear: safeSessionYear, url, thumbnailUrl, pages, size,
       createdBy: admin.id,
     }).returning();
     res.status(201).json(pdf);
@@ -111,7 +114,7 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     if (existing.createdBy !== null && existing.createdBy !== admin.id) {
       res.status(403).json({ error: "You can only edit PDFs you uploaded" }); return;
     }
-    const { title, subject, professor, year, url, thumbnailUrl, pages, size } = req.body;
+    const { title, subject, professor, year, sessionYear, url, thumbnailUrl, pages, size } = req.body;
     if (url && !isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
     if (thumbnailUrl && !isValidHttpsUrl(thumbnailUrl)) {
       res.status(400).json({ error: "thumbnailUrl must be a valid HTTPS URL" }); return;
@@ -120,11 +123,12 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     const safeSubject = subject !== undefined ? stripHtml(String(subject)) : undefined;
     const safeProfessor = professor !== undefined ? (professor ? stripHtml(String(professor)) : null) : undefined;
     const safeYear = year !== undefined ? (year ? stripHtml(String(year)) : null) : undefined;
+    const safeSessionYear = sessionYear !== undefined ? (sessionYear ? stripHtml(String(sessionYear)) : null) : undefined;
     if (safeTitle !== undefined && !safeTitle) { res.status(400).json({ error: "Invalid title" }); return; }
     if (safeSubject !== undefined && !safeSubject) { res.status(400).json({ error: "Invalid subject" }); return; }
     const thumbnailVal = thumbnailUrl !== undefined ? (thumbnailUrl || null) : undefined;
     const [pdf] = await db.update(pdfsTable)
-      .set({ title: safeTitle, subject: safeSubject, professor: safeProfessor, year: safeYear, url, thumbnailUrl: thumbnailVal, pages, size })
+      .set({ title: safeTitle, subject: safeSubject, professor: safeProfessor, year: safeYear, sessionYear: safeSessionYear, url, thumbnailUrl: thumbnailVal, pages, size })
       .where(eq(pdfsTable.id, id))
       .returning();
     res.json(pdf);

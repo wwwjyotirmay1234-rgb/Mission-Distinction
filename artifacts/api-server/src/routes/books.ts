@@ -20,7 +20,17 @@ function isValidHttpsUrl(url: string): boolean {
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { subject, search } = req.query;
+    const user = (req as any).user;
+    const isAdmin = user?.role === "admin";
+    const userYear = user?.year as string | null | undefined;
+
     let books = await db.select().from(booksTable).limit(500);
+
+    // Academic year filter: null = shared with all years; skip for admins (see all)
+    if (!isAdmin && userYear) {
+      books = books.filter(b => !b.sessionYear || b.sessionYear === userYear);
+    }
+
     if (subject) books = books.filter(b => b.subject.toLowerCase() === (subject as string).toLowerCase());
     if (search) books = books.filter(b => b.title.toLowerCase().includes((search as string).toLowerCase()));
     res.json(books);
@@ -64,7 +74,7 @@ router.post("/:id/read", authMiddleware, async (req: Request, res: Response) => 
 router.post("/", adminMiddleware, async (req: Request, res: Response) => {
   try {
     const admin = (req as any).user;
-    const { title, subject, author, url, coverUrl } = req.body;
+    const { title, subject, author, sessionYear, url, coverUrl } = req.body;
     if (!title || !subject || !url) { res.status(400).json({ error: "Missing fields" }); return; }
     if (!isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
     if (coverUrl && !isValidHttpsUrl(coverUrl)) {
@@ -73,10 +83,11 @@ router.post("/", adminMiddleware, async (req: Request, res: Response) => {
     const safeTitle = stripHtml(String(title));
     const safeSubject = stripHtml(String(subject));
     const safeAuthor = author ? stripHtml(String(author)) : null;
+    const safeSessionYear = sessionYear ? stripHtml(String(sessionYear)) : null;
     if (!safeTitle) { res.status(400).json({ error: "Invalid title" }); return; }
     if (!safeSubject) { res.status(400).json({ error: "Invalid subject" }); return; }
     const [book] = await db.insert(booksTable).values({
-      title: safeTitle, subject: safeSubject, author: safeAuthor, url, coverUrl,
+      title: safeTitle, subject: safeSubject, author: safeAuthor, sessionYear: safeSessionYear, url, coverUrl,
       createdBy: admin.id,
     }).returning();
     res.status(201).json(book);
@@ -95,7 +106,7 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     if (existing.createdBy !== null && existing.createdBy !== admin.id) {
       res.status(403).json({ error: "You can only edit books you added" }); return;
     }
-    const { title, subject, author, url, coverUrl } = req.body;
+    const { title, subject, author, sessionYear, url, coverUrl } = req.body;
     if (url && !isValidHttpsUrl(url)) { res.status(400).json({ error: "url must be a valid HTTPS URL" }); return; }
     if (coverUrl && !isValidHttpsUrl(coverUrl)) {
       res.status(400).json({ error: "coverUrl must be a valid HTTPS URL" }); return;
@@ -103,10 +114,11 @@ router.patch("/:id", adminMiddleware, async (req: Request, res: Response) => {
     const safeTitle = title !== undefined ? stripHtml(String(title)) : undefined;
     const safeSubject = subject !== undefined ? stripHtml(String(subject)) : undefined;
     const safeAuthor = author !== undefined ? (author ? stripHtml(String(author)) : null) : undefined;
+    const safeSessionYear = sessionYear !== undefined ? (sessionYear ? stripHtml(String(sessionYear)) : null) : undefined;
     if (safeTitle !== undefined && !safeTitle) { res.status(400).json({ error: "Invalid title" }); return; }
     if (safeSubject !== undefined && !safeSubject) { res.status(400).json({ error: "Invalid subject" }); return; }
     const [book] = await db.update(booksTable)
-      .set({ title: safeTitle, subject: safeSubject, author: safeAuthor, url, coverUrl })
+      .set({ title: safeTitle, subject: safeSubject, author: safeAuthor, sessionYear: safeSessionYear, url, coverUrl })
       .where(eq(booksTable.id, id))
       .returning();
     res.json(book);

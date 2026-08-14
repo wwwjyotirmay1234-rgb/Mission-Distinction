@@ -26,10 +26,9 @@ function getRoute(year: string | undefined, sessionYear: string | undefined) {
   // the dashboard so the "Complete Your Profile" modal can prompt them — never
   // send them to /coming-soon, or they'd be stuck with no way to finish setup.
   if (!year || !sessionYear) return "/student/dashboard";
-  return (
-    (year === ACTIVE_MBBS_YEAR || year === "1st Year MBBS") &&
-    ACTIVE_SESSION_YEARS.includes(sessionYear)
-  ) ? "/student/dashboard" : "/coming-soon";
+  // Gate is based on session year (batch enrollment) only — all MBBS years now
+  // have content filtered per year, so academic year is no longer a gate.
+  return ACTIVE_SESSION_YEARS.includes(sessionYear) ? "/student/dashboard" : "/coming-soon";
 }
 
 const studentLoginSchema = z.object({

@@ -20,6 +20,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+const MBBS_YEARS = ["1st Year", "2nd Year", "3rd/4th Year", "Final Year"] as const;
+const SESSION_YEARS = ["2025-26", "2026-27"] as const;
+
 type Submission = {
   id: number;
   user_id: number;
@@ -43,8 +46,11 @@ type Submission = {
   model_answer: string | null;
   quiz_title: string;
   quiz_subject: string;
+  quiz_academic_year: string | null;
   student_name: string;
   student_email: string;
+  student_academic_year: string | null;
+  student_session_year: string | null;
 };
 
 function statusBadge(status: string) {
@@ -406,11 +412,20 @@ function ProctoredAttemptsList() {
 export default function QuizSubmissions() {
   const [tab, setTab] = useState("scripts");
   const [status, setStatus] = useState("pending");
+  const [academicYear, setAcademicYear] = useState("all");
+  const [studentBatch, setStudentBatch] = useState("all");
   const queryClient = useQueryClient();
 
   const { data, isLoading, refetch } = useQuery<Submission[]>({
-    queryKey: ["admin-quiz-submissions", status],
-    queryFn: () => customFetch(`/api/quiz-submissions/admin/all${status !== "all" ? `?status=${status}` : ""}`),
+    queryKey: ["admin-quiz-submissions", status, academicYear, studentBatch],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (status !== "all") params.set("status", status);
+      if (academicYear !== "all") params.set("academicYear", academicYear);
+      if (studentBatch !== "all") params.set("studentBatch", studentBatch);
+      const qs = params.toString();
+      return customFetch(`/api/quiz-submissions/admin/all${qs ? `?${qs}` : ""}`);
+    },
     enabled: tab === "scripts",
   });
 
@@ -457,14 +472,36 @@ export default function QuizSubmissions() {
             </div>
           )}
 
-          <Tabs value={status} onValueChange={setStatus}>
-            <TabsList className="bg-card/50">
-              <TabsTrigger value="pending">Pending</TabsTrigger>
-              <TabsTrigger value="ai_graded">AI Graded</TabsTrigger>
-              <TabsTrigger value="graded">Graded</TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-wrap items-center gap-3">
+            <Tabs value={status} onValueChange={setStatus}>
+              <TabsList className="bg-card/50">
+                <TabsTrigger value="pending">Pending</TabsTrigger>
+                <TabsTrigger value="ai_graded">AI Graded</TabsTrigger>
+                <TabsTrigger value="graded">Graded</TabsTrigger>
+                <TabsTrigger value="all">All</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <div className="ml-auto flex items-center gap-2 flex-wrap">
+              <Select value={academicYear} onValueChange={setAcademicYear}>
+                <SelectTrigger className="h-8 text-xs w-36 bg-card/50 border-border/50">
+                  <SelectValue placeholder="Quiz Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Quiz Years</SelectItem>
+                  {MBBS_YEARS.map(y => <SelectItem key={y} value={y} className="text-xs">{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={studentBatch} onValueChange={setStudentBatch}>
+                <SelectTrigger className="h-8 text-xs w-36 bg-card/50 border-border/50">
+                  <SelectValue placeholder="Student Batch" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Batches</SelectItem>
+                  {SESSION_YEARS.map(y => <SelectItem key={y} value={y} className="text-xs">{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           {isLoading ? (
             <div className="space-y-4">

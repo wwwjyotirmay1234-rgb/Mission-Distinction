@@ -9,6 +9,7 @@ export const booksTable = pgTable("books", {
   author: text("author"),
   url: text("url").notNull(),
   coverUrl: text("cover_url"),
+  sessionYear: text("session_year"),
   downloadCount: integer("download_count").default(0),
   createdBy: integer("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

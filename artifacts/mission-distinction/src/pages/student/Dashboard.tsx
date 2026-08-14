@@ -69,9 +69,6 @@ const YEAR_OPTIONS = [
   "5th Year",
 ];
 
-function is1stYear(year: string | undefined | null) {
-  return !year || year.toLowerCase().startsWith("1st");
-}
 
 function QuestionOfDayWidget() {
   const [loading, setLoading] = useState(true);
@@ -421,10 +418,6 @@ export default function StudentDashboard() {
       // Invalidate all cached content so every page re-fetches for the new year
       await queryClient.invalidateQueries();
       toast.success(`Switched to ${newYear} MBBS! 🎓`);
-      // Redirect to Coming Soon for years that don't have content yet
-      if (!is1stYear(newYear)) {
-        setLocation("/coming-soon");
-      }
     } catch (err: any) {
       toast.error(err.message || "Failed to update year");
     } finally {
@@ -504,11 +497,7 @@ export default function StudentDashboard() {
               </div>
               <p className="text-sm text-muted-foreground">
                 You're switching to <span className="font-semibold text-foreground">{pendingYear} MBBS</span>.
-                {!is1stYear(pendingYear) && (
-                  <span className="block mt-1 text-amber-400/90">
-                    ⚠️ Content for {pendingYear} is coming soon — you'll be redirected to the waiting page.
-                  </span>
-                )}
+                Content and quizzes will update to match your year.
               </p>
               <div className="flex gap-2">
                 <button

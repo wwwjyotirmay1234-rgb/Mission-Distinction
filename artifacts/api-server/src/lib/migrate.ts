@@ -796,6 +796,12 @@ export async function runStartupMigrations() {
       );
     }
 
+    // ── Academic year column on PDFs and Books tables ────────────────────────────
+    await client.query(`
+      ALTER TABLE pdfs  ADD COLUMN IF NOT EXISTS session_year TEXT;
+      ALTER TABLE books ADD COLUMN IF NOT EXISTS session_year TEXT;
+    `);
+
     // ── One-time backfill: convert session_year from batch format to academic year format ──
     // '2025-26' → '1st Year' so that content is now filtered by academic year, not batch.
     // All existing content was 1st Year content (only one batch was ever active).

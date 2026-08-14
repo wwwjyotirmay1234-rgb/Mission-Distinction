@@ -16,8 +16,9 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"];
+const MBBS_YEARS = ["1st Year", "2nd Year", "3rd/4th Year", "Final Year"] as const;
 
-type BookItem = { id: number; title: string; subject: string; author?: string | null; url: string; coverUrl?: string | null; downloadCount?: number; createdAt: string | Date };
+type BookItem = { id: number; title: string; subject: string; author?: string | null; sessionYear?: string | null; url: string; coverUrl?: string | null; downloadCount?: number; createdAt: string | Date };
 
 async function uploadBookCover(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -70,10 +71,11 @@ async function uploadBookPdf(file: File, onProgress: (p: number) => void): Promi
   });
 }
 
-const EMPTY_FORM = { title: "", subject: "", author: "", url: "", coverUrl: "", uploadedFileName: "" };
+const EMPTY_FORM = { title: "", subject: "", author: "", sessionYear: "1st Year", url: "", coverUrl: "", uploadedFileName: "" };
 
 export default function AdminBooks() {
   const [search, setSearch] = useState("");
+  const [batchFilter, setBatchFilter] = useState<"all" | "1st Year" | "2nd Year" | "3rd/4th Year" | "Final Year" | "shared">("all");
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<BookItem | null>(null);
@@ -185,31 +187,34 @@ export default function AdminBooks() {
     { query: { queryKey: getListBooksQueryKey({ search: search || undefined }) } }
   );
 
-  const createBook = useCreateBook();
   const deleteBook = useDeleteBook();
+  const [creating, setCreating] = useState(false);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.title || !form.subject || !form.url) {
       toast.error("Title, subject and a PDF file (or URL) are required.");
       return;
     }
-    createBook.mutate({ data: { title: form.title, subject: form.subject, author: form.author || undefined, url: form.url, coverUrl: form.coverUrl || undefined } }, {
-      onSuccess: () => {
-        toast.success("Book added successfully!");
-        queryClient.invalidateQueries({ queryKey: getListBooksQueryKey() });
-        setOpen(false);
-        setForm({ ...EMPTY_FORM });
-        setUseUrl(false);
-      },
-      onError: () => toast.error("Failed to add book."),
-    });
+    setCreating(true);
+    try {
+      await customFetch("/api/books", {
+        method: "POST",
+        body: JSON.stringify({ title: form.title, subject: form.subject, author: form.author || null, sessionYear: form.sessionYear === "shared" ? null : (form.sessionYear || null), url: form.url, coverUrl: form.coverUrl || null }),
+      });
+      toast.success("Book added successfully!");
+      queryClient.invalidateQueries({ queryKey: getListBooksQueryKey() });
+      setOpen(false);
+      setForm({ ...EMPTY_FORM });
+      setUseUrl(false);
+    } catch { toast.error("Failed to add book."); }
+    finally { setCreating(false); }
   };
 
   const openEdit = (book: BookItem) => {
     setEditTarget(book);
     const isDrive = book.url.includes("drive.google.com");
     setEditUseUrl(isDrive);
-    setEditForm({ title: book.title, subject: book.subject, author: book.author || "", url: book.url, coverUrl: book.coverUrl || "", uploadedFileName: isDrive ? "" : "Current file" });
+    setEditForm({ title: book.title, subject: book.subject, author: book.author || "", sessionYear: book.sessionYear ?? "shared", url: book.url, coverUrl: book.coverUrl || "", uploadedFileName: isDrive ? "" : "Current file" });
     setEditOpen(true);
   };
 
@@ -222,7 +227,7 @@ export default function AdminBooks() {
     try {
       await customFetch(`/api/books/${editTarget.id}`, {
         method: "PATCH",
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({ ...editForm, sessionYear: editForm.sessionYear === "shared" ? null : (editForm.sessionYear || null) }),
       });
       toast.success("Book updated successfully!");
       queryClient.invalidateQueries({ queryKey: getListBooksQueryKey() });
@@ -245,7 +250,10 @@ export default function AdminBooks() {
     });
   };
 
-  const bookList = Array.isArray(books) ? books : [];
+  const allBooks = Array.isArray(books) ? books : [];
+  const bookList = batchFilter === "all" ? allBooks
+    : batchFilter === "shared" ? allBooks.filter((b: any) => !b.sessionYear)
+    : allBooks.filter((b: any) => b.sessionYear === batchFilter);
 
   return (
     <div className="space-y-6">
@@ -264,6 +272,15 @@ export default function AdminBooks() {
           </Button>
           <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" /> Add Book</Button>
         </div>
+      </div>
+
+      {/* Batch filter tabs */}
+      <div className="flex flex-wrap gap-1.5">
+        {(["all","1st Year","2nd Year","3rd/4th Year","Final Year","shared"] as const).map(f => (
+          <button key={f} onClick={() => setBatchFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${batchFilter === f ? "bg-primary/20 border-primary/40 text-primary font-medium" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
+            {f === "all" ? "All" : f === "shared" ? "Shared" : f}
+          </button>
+        ))}
       </div>
 
       <Card className="bg-card/40 border-border/40">
@@ -368,6 +385,16 @@ export default function AdminBooks() {
                 <Input placeholder="e.g. Henry Gray" className="bg-background/50" value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label>Academic Year</Label>
+              <Select value={form.sessionYear} onValueChange={(v) => setForm({ ...form, sessionYear: v })}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">All Years (shared)</SelectItem>
+                  {MBBS_YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             {/* PDF upload field */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -418,8 +445,8 @@ export default function AdminBooks() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={handleAdd} disabled={createBook.isPending || pdfUploading || coverUploading}>
-              {createBook.isPending ? "Adding..." : "Add Book"}
+            <Button onClick={handleAdd} disabled={creating || pdfUploading || coverUploading}>
+              {creating ? "Adding..." : "Add Book"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -449,6 +476,16 @@ export default function AdminBooks() {
                 <Label>Author</Label>
                 <Input className="bg-background/50" value={editForm.author} onChange={(e) => setEditForm({ ...editForm, author: e.target.value })} />
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Academic Year</Label>
+              <Select value={editForm.sessionYear} onValueChange={(v) => setEditForm({ ...editForm, sessionYear: v })}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">All Years (shared)</SelectItem>
+                  {MBBS_YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             {/* PDF upload field */}
             <div className="space-y-2">

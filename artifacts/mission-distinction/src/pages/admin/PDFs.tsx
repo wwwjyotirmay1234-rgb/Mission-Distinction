@@ -16,8 +16,9 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"];
+const MBBS_YEARS = ["1st Year", "2nd Year", "3rd/4th Year", "Final Year"] as const;
 
-type PdfItem = { id: number; title: string; subject: string; year?: string | null; url: string; thumbnailUrl?: string | null; pages?: number | null; downloadCount?: number; createdAt: string | Date };
+type PdfItem = { id: number; title: string; subject: string; year?: string | null; sessionYear?: string | null; url: string; thumbnailUrl?: string | null; pages?: number | null; downloadCount?: number; createdAt: string | Date };
 
 async function uploadPdfFile(file: File, onProgress: (p: number) => void): Promise<string> {
   // Step 1: ask the server for a presigned GCS PUT URL (small JSON request — not blocked by proxy)
@@ -74,10 +75,11 @@ async function uploadCoverImage(file: File): Promise<string> {
   });
 }
 
-const EMPTY_FORM = { title: "", subject: "", year: "", url: "", pages: "", thumbnailUrl: "", uploadedFileName: "" };
+const EMPTY_FORM = { title: "", subject: "", year: "", sessionYear: "1st Year", url: "", pages: "", thumbnailUrl: "", uploadedFileName: "" };
 
 export default function AdminPDFs() {
   const [search, setSearch] = useState("");
+  const [batchFilter, setBatchFilter] = useState<"all" | "1st Year" | "2nd Year" | "3rd/4th Year" | "Final Year" | "shared">("all");
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PdfItem | null>(null);
@@ -135,33 +137,34 @@ export default function AdminPDFs() {
     { query: { queryKey: getListPdfsQueryKey({ search: search || undefined }) } }
   );
 
-  const createPdf = useCreatePdf();
   const deletePdf = useDeletePdf();
+  const [creating, setCreating] = useState(false);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.title || !form.subject || !form.url) {
       toast.error("Title, subject and a PDF file (or URL) are required.");
       return;
     }
-    createPdf.mutate({
-      data: { title: form.title, subject: form.subject, year: form.year || undefined, url: form.url, thumbnailUrl: form.thumbnailUrl || undefined, pages: form.pages ? parseInt(form.pages) : undefined }
-    }, {
-      onSuccess: () => {
-        toast.success("PDF added successfully!");
-        queryClient.invalidateQueries({ queryKey: getListPdfsQueryKey() });
-        setOpen(false);
-        setForm({ ...EMPTY_FORM });
-        setUseUrl(false);
-      },
-      onError: () => toast.error("Failed to add PDF."),
-    });
+    setCreating(true);
+    try {
+      await customFetch("/api/pdfs", {
+        method: "POST",
+        body: JSON.stringify({ title: form.title, subject: form.subject, year: form.year || null, sessionYear: form.sessionYear === "shared" ? null : (form.sessionYear || null), url: form.url, thumbnailUrl: form.thumbnailUrl || null, pages: form.pages ? parseInt(form.pages) : null }),
+      });
+      toast.success("PDF added successfully!");
+      queryClient.invalidateQueries({ queryKey: getListPdfsQueryKey() });
+      setOpen(false);
+      setForm({ ...EMPTY_FORM });
+      setUseUrl(false);
+    } catch { toast.error("Failed to add PDF."); }
+    finally { setCreating(false); }
   };
 
   const openEdit = (pdf: PdfItem) => {
     setEditTarget(pdf);
     const isDrive = pdf.url.includes("drive.google.com");
     setEditUseUrl(isDrive);
-    setEditForm({ title: pdf.title, subject: pdf.subject, year: pdf.year || "", url: pdf.url, pages: pdf.pages?.toString() || "", thumbnailUrl: pdf.thumbnailUrl || "", uploadedFileName: isDrive ? "" : "Current file" });
+    setEditForm({ title: pdf.title, subject: pdf.subject, year: pdf.year || "", sessionYear: pdf.sessionYear ?? "shared", url: pdf.url, pages: pdf.pages?.toString() || "", thumbnailUrl: pdf.thumbnailUrl || "", uploadedFileName: isDrive ? "" : "Current file" });
     setEditOpen(true);
   };
 
@@ -174,7 +177,7 @@ export default function AdminPDFs() {
     try {
       await customFetch(`/api/pdfs/${editTarget.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ title: editForm.title, subject: editForm.subject, year: editForm.year || null, url: editForm.url, thumbnailUrl: editForm.thumbnailUrl || null, pages: editForm.pages ? parseInt(editForm.pages) : null }),
+        body: JSON.stringify({ title: editForm.title, subject: editForm.subject, year: editForm.year || null, sessionYear: editForm.sessionYear === "shared" ? null : (editForm.sessionYear || null), url: editForm.url, thumbnailUrl: editForm.thumbnailUrl || null, pages: editForm.pages ? parseInt(editForm.pages) : null }),
       });
       toast.success("PDF updated successfully!");
       queryClient.invalidateQueries({ queryKey: getListPdfsQueryKey() });
@@ -191,7 +194,10 @@ export default function AdminPDFs() {
     });
   };
 
-  const pdfList = Array.isArray(pdfs) ? pdfs : [];
+  const allPdfs = Array.isArray(pdfs) ? pdfs : [];
+  const pdfList = batchFilter === "all" ? allPdfs
+    : batchFilter === "shared" ? allPdfs.filter((p: any) => !p.sessionYear)
+    : allPdfs.filter((p: any) => p.sessionYear === batchFilter);
 
   const PdfUploadField = ({ mode }: { mode: "add" | "edit" }) => {
     const isEdit = mode === "edit";
@@ -270,6 +276,15 @@ export default function AdminPDFs() {
           </Button>
           <Button onClick={() => setOpen(true)}><Plus className="mr-2 h-4 w-4" /> Add PDF</Button>
         </div>
+      </div>
+
+      {/* Batch filter tabs */}
+      <div className="flex flex-wrap gap-1.5">
+        {(["all","1st Year","2nd Year","3rd/4th Year","Final Year","shared"] as const).map(f => (
+          <button key={f} onClick={() => setBatchFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${batchFilter === f ? "bg-primary/20 border-primary/40 text-primary font-medium" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
+            {f === "all" ? "All" : f === "shared" ? "Shared" : f}
+          </button>
+        ))}
       </div>
 
       <Card className="bg-card/40 border-border/40">
@@ -372,6 +387,16 @@ export default function AdminPDFs() {
                 <Input type="number" placeholder="e.g. 120" className="bg-background/50" value={form.pages} onChange={(e) => setForm({ ...form, pages: e.target.value })} />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label>Academic Year</Label>
+              <Select value={form.sessionYear} onValueChange={(v) => setForm({ ...form, sessionYear: v })}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">All Years (shared)</SelectItem>
+                  {MBBS_YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <PdfUploadField mode="add" />
             <div className="space-y-1.5">
               <Label>Cover Image <span className="text-muted-foreground text-xs">(optional)</span></Label>
@@ -393,8 +418,8 @@ export default function AdminPDFs() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={handleAdd} disabled={createPdf.isPending || pdfUploading || coverUploading}>
-              {createPdf.isPending ? "Saving..." : "Add PDF"}
+            <Button onClick={handleAdd} disabled={creating || pdfUploading || coverUploading}>
+              {creating ? "Saving..." : "Add PDF"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -425,6 +450,16 @@ export default function AdminPDFs() {
                 <Label>Pages</Label>
                 <Input type="number" className="bg-background/50" value={editForm.pages} onChange={(e) => setEditForm({ ...editForm, pages: e.target.value })} />
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Academic Year</Label>
+              <Select value={editForm.sessionYear} onValueChange={(v) => setEditForm({ ...editForm, sessionYear: v })}>
+                <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">All Years (shared)</SelectItem>
+                  {MBBS_YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <PdfUploadField mode="edit" />
             <div className="space-y-1.5">
