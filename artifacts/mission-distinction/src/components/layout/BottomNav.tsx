@@ -6,7 +6,7 @@ import {
   Home, CheckCircle, Users, User, GraduationCap,
   Stethoscope, FileText, File,
   Zap, BarChart2, TrendingUp, Trophy, Calendar as CalendarIcon,
-  Timer, Gamepad2, Music, Settings, MessageSquare, MessageCircleHeart,
+  Timer, Gamepad2, Music, Settings, MessageSquare,
   Wand2, Store,
 } from "lucide-react";
 import { getSectionColor } from "@/lib/sectionColors";
@@ -66,7 +66,6 @@ const LEARN_SECTIONS: DrawerSection[] = [
     links: [
       { icon: Store,         label: "Notes Market",   href: "/student/notes-marketplace" },
       { icon: MessageSquare, label: "Doubt Board",    href: "/student/doubts" },
-      { icon: MessageCircleHeart, label: "Confessions", href: "/student/confessions" },
     ],
   },
   {
