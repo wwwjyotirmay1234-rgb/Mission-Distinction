@@ -159,7 +159,7 @@ router.get("/:id/submissions", adminMiddleware, async (req: Request, res: Respon
 // ─── Leaderboard: top scores for a test ──────────────────────────────────────
 router.get("/:id/leaderboard", authMiddleware, async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const sessionYear = user?.sessionYear || null;
+  const sessionYear = user?.year || null;
   const client = await pool.connect();
   try {
     // Verify this test is accessible to the user's batch before exposing rankings
@@ -190,7 +190,7 @@ router.get("/:id/leaderboard", authMiddleware, async (req: Request, res: Respons
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
   const user = (req as any).user;
   const userId = user?.id;
-  const sessionYear = user?.sessionYear || null;
+  const sessionYear = user?.year || null;
   const client = await pool.connect();
   try {
     const { rows } = await client.query(`
@@ -216,7 +216,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 // ─── Student: get test detail + questions (no model answers) ──────────────────
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const sessionYear = user?.sessionYear || null;
+  const sessionYear = user?.year || null;
   const client = await pool.connect();
   try {
     const testRes = await client.query(
@@ -236,7 +236,7 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 router.post("/:id/start", authMiddleware, async (req: Request, res: Response) => {
   const user = (req as any).user;
   const userId = user?.id;
-  const sessionYear = user?.sessionYear || null;
+  const sessionYear = user?.year || null;
   const client = await pool.connect();
   try {
     // Enforce batch isolation — student can only start tests for their batch or shared tests
@@ -276,7 +276,7 @@ router.post("/:id/start", authMiddleware, async (req: Request, res: Response) =>
 router.post("/submissions/:submissionId/submit", authMiddleware, async (req: Request, res: Response) => {
   const user = (req as any).user;
   const userId = user?.id;
-  const sessionYear = user?.sessionYear || null;
+  const sessionYear = user?.year || null;
   const { answers } = req.body as {
     answers: { questionId: number; answerText: string; imageUrl?: string }[];
   };
@@ -343,7 +343,7 @@ router.post("/submissions/:submissionId/submit", authMiddleware, async (req: Req
 router.get("/submissions/:submissionId", authMiddleware, async (req: Request, res: Response) => {
   const user = (req as any).user;
   const userId = user?.id;
-  const sessionYear = user?.sessionYear || null;
+  const sessionYear = user?.year || null;
   const client = await pool.connect();
   try {
     // Verify ownership and batch access; fail closed for unknown sessionYear

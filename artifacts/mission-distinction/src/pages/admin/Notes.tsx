@@ -227,15 +227,15 @@ export default function AdminNotes() {
   const [editPending, setEditPending] = useState(false);
 
   const [addMode, setAddMode] = useState<NoteMode>("text");
-  const [addForm, setAddForm] = useState({ title: "", subject: "", content: "", fileUrl: "", fileType: "", sessionYear: "2025-26" });
+  const [addForm, setAddForm] = useState({ title: "", subject: "", content: "", fileUrl: "", fileType: "", sessionYear: "1st Year" });
   const [addUploading, setAddUploading] = useState(false);
   const addFileRef = useRef<HTMLInputElement>(null);
 
   const [editMode, setEditMode] = useState<NoteMode>("text");
-  const [editForm, setEditForm] = useState({ title: "", subject: "", content: "", fileUrl: "", fileType: "", sessionYear: "2025-26" });
+  const [editForm, setEditForm] = useState({ title: "", subject: "", content: "", fileUrl: "", fileType: "", sessionYear: "1st Year" });
   const [editUploading, setEditUploading] = useState(false);
   const editFileRef = useRef<HTMLInputElement>(null);
-  const [batchFilter, setBatchFilter] = useState<"all" | "2025-26" | "2026-27" | "shared">("all");
+  const [batchFilter, setBatchFilter] = useState<"all" | "1st Year" | "2nd Year" | "3rd/4th Year" | "Final Year" | "shared">("all");
 
   const queryClient = useQueryClient();
 
@@ -259,7 +259,7 @@ export default function AdminNotes() {
   };
 
   const resetAdd = () => {
-    setAddForm({ title: "", subject: "", content: "", fileUrl: "", fileType: "", sessionYear: "2025-26" });
+    setAddForm({ title: "", subject: "", content: "", fileUrl: "", fileType: "", sessionYear: "1st Year" });
     setAddMode("text");
     setOpen(false);
   };
@@ -382,9 +382,9 @@ export default function AdminNotes() {
 
       {/* Batch filter tabs */}
       <div className="flex gap-1.5 flex-wrap">
-        {(["all","2025-26","2026-27","shared"] as const).map(f => (
+        {(["all","1st Year","2nd Year","3rd/4th Year","Final Year","shared"] as const).map(f => (
           <button key={f} onClick={() => setBatchFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${batchFilter === f ? "bg-primary/20 border-primary/40 text-primary font-medium" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
-            {f === "all" ? "All Batches" : f === "shared" ? "Shared" : f}
+            {f === "all" ? "All" : f === "shared" ? "Shared" : f}
           </button>
         ))}
       </div>
@@ -497,9 +497,11 @@ export default function AdminNotes() {
               <Select value={addForm.sessionYear} onValueChange={v => setAddForm({ ...addForm, sessionYear: v })}>
                 <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="shared">All Batches (shared)</SelectItem>
-                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
-                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                  <SelectItem value="shared">All Years (shared)</SelectItem>
+                  <SelectItem value="1st Year">1st Year</SelectItem>
+                  <SelectItem value="2nd Year">2nd Year</SelectItem>
+                  <SelectItem value="3rd/4th Year">3rd/4th Year</SelectItem>
+                  <SelectItem value="Final Year">Final Year</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -534,9 +536,11 @@ export default function AdminNotes() {
               <Select value={editForm.sessionYear} onValueChange={v => setEditForm({ ...editForm, sessionYear: v })}>
                 <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="shared">All Batches (shared)</SelectItem>
-                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
-                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                  <SelectItem value="shared">All Years (shared)</SelectItem>
+                  <SelectItem value="1st Year">1st Year</SelectItem>
+                  <SelectItem value="2nd Year">2nd Year</SelectItem>
+                  <SelectItem value="3rd/4th Year">3rd/4th Year</SelectItem>
+                  <SelectItem value="Final Year">Final Year</SelectItem>
                 </SelectContent>
               </Select>
             </div>

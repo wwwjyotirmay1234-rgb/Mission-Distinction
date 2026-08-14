@@ -28,8 +28,8 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 
     const batchFilter = isAdmin
       ? undefined
-      : user?.sessionYear
-        ? or(isNull(pyqsTable.sessionYear), eq(pyqsTable.sessionYear, user.sessionYear))
+      : user?.year
+        ? or(isNull(pyqsTable.sessionYear), eq(pyqsTable.sessionYear, user.year))
         : isNull(pyqsTable.sessionYear);
 
     let pyqs = await db.select().from(pyqsTable).where(batchFilter).orderBy(pyqsTable.createdAt).limit(500);
@@ -51,8 +51,8 @@ router.post("/:id/read", authMiddleware, async (req: Request, res: Response) => 
     const isAdmin = user?.role === "admin";
     const batchCond = isAdmin
       ? eq(pyqsTable.id, id)
-      : user?.sessionYear
-        ? and(eq(pyqsTable.id, id), or(isNull(pyqsTable.sessionYear), eq(pyqsTable.sessionYear, user.sessionYear)))
+      : user?.year
+        ? and(eq(pyqsTable.id, id), or(isNull(pyqsTable.sessionYear), eq(pyqsTable.sessionYear, user.year)))
         : and(eq(pyqsTable.id, id), isNull(pyqsTable.sessionYear));
     const [pyq] = await db.select().from(pyqsTable).where(batchCond);
     if (!pyq) { res.status(404).json({ error: "PYQ not found" }); return; }

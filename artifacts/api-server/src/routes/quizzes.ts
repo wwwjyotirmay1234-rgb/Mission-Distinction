@@ -40,11 +40,11 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
     const user = (req as any).user;
     const isAdmin = user?.role === "admin";
 
-    // Students only see quizzes for their batch + shared (NULL) quizzes; fail closed if sessionYear unknown
+    // Students only see quizzes for their academic year + shared (NULL) quizzes; fail closed if year unknown
     const batchFilter = isAdmin
       ? undefined
-      : user?.sessionYear
-        ? or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear))
+      : user?.year
+        ? or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.year))
         : isNull(quizzesTable.sessionYear);
 
     let quizzes = await db.select().from(quizzesTable).where(batchFilter).limit(500);
@@ -143,8 +143,8 @@ router.post("/explain", authMiddleware, explainLimiter, async (req: Request, res
     const isAdmin = user?.role === "admin";
     const quizBatchCond = isAdmin
       ? undefined
-      : user?.sessionYear
-        ? or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear))
+      : user?.year
+        ? or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.year))
         : isNull(quizzesTable.sessionYear);
 
     const [question] = await db
@@ -220,11 +220,11 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
     if (!id) { res.status(400).json({ error: "Invalid quiz ID" }); return; }
     const requestingUser = (req as any).user;
     const isAdmin = requestingUser?.role === "admin";
-    // Students may only access quizzes for their batch or shared; fail closed when sessionYear unknown
+    // Students may only access quizzes for their academic year or shared; fail closed when year unknown
     const batchCond = isAdmin
       ? eq(quizzesTable.id, id)
-      : requestingUser?.sessionYear
-        ? and(eq(quizzesTable.id, id), or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, requestingUser.sessionYear)))
+      : requestingUser?.year
+        ? and(eq(quizzesTable.id, id), or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, requestingUser.year)))
         : and(eq(quizzesTable.id, id), isNull(quizzesTable.sessionYear));
     const [quiz] = await db.select().from(quizzesTable).where(batchCond);
     if (!quiz) { res.status(404).json({ error: "Not found" }); return; }
@@ -465,12 +465,12 @@ router.get("/attempts/:id/review", authMiddleware, async (req: Request, res: Res
     if (!attempt) { res.status(404).json({ error: "Attempt not found" }); return; }
     if (attempt.userId !== user.id) { res.status(403).json({ error: "Forbidden" }); return; }
 
-    // Also verify the quiz is accessible to the student's batch (fail closed)
+    // Also verify the quiz is accessible to the student's academic year (fail closed)
     const isAdmin = user?.role === "admin";
     const batchCond = isAdmin
       ? eq(quizzesTable.id, attempt.quizId)
-      : user?.sessionYear
-        ? and(eq(quizzesTable.id, attempt.quizId), or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear)))
+      : user?.year
+        ? and(eq(quizzesTable.id, attempt.quizId), or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.year)))
         : and(eq(quizzesTable.id, attempt.quizId), isNull(quizzesTable.sessionYear));
 
     const [quiz] = await db.select({
@@ -506,8 +506,8 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
 
     const batchCond = user?.role === "admin"
       ? eq(quizzesTable.id, quizId)
-      : user?.sessionYear
-        ? and(eq(quizzesTable.id, quizId), or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.sessionYear)))
+      : user?.year
+        ? and(eq(quizzesTable.id, quizId), or(isNull(quizzesTable.sessionYear), eq(quizzesTable.sessionYear, user.year)))
         : and(eq(quizzesTable.id, quizId), isNull(quizzesTable.sessionYear));
     const [quiz] = await db.select().from(quizzesTable).where(batchCond);
     if (!quiz) { res.status(404).json({ error: "Quiz not found" }); return; }

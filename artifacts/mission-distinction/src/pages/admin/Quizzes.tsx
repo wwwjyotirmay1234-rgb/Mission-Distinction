@@ -29,9 +29,9 @@ export default function AdminQuizzes() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     title: "", subject: "", description: "", difficulty: "medium",
-    durationMinutes: "", isFeatured: false, isProctored: false, sessionYear: "2025-26",
+    durationMinutes: "", isFeatured: false, isProctored: false, sessionYear: "1st Year",
   });
-  const [batchFilter, setBatchFilter] = useState<"all" | "2025-26" | "2026-27" | "shared">("all");
+  const [batchFilter, setBatchFilter] = useState<"all" | "1st Year" | "2nd Year" | "3rd/4th Year" | "Final Year" | "shared">("all");
   const queryClient = useQueryClient();
 
   const { data: quizzes, isLoading } = useListQuizzes(
@@ -63,7 +63,7 @@ export default function AdminQuizzes() {
         toast.success("Quiz created! You can now add questions from the quiz detail page.");
         queryClient.invalidateQueries({ queryKey: getListQuizzesQueryKey() });
         setOpen(false);
-        setForm({ title: "", subject: "", description: "", difficulty: "medium", durationMinutes: "", isFeatured: false, isProctored: false, sessionYear: "2025-26" });
+        setForm({ title: "", subject: "", description: "", difficulty: "medium", durationMinutes: "", isFeatured: false, isProctored: false, sessionYear: "1st Year" });
       },
       onError: () => toast.error("Failed to create quiz."),
     });
@@ -124,9 +124,9 @@ export default function AdminQuizzes() {
 
       {/* Batch filter tabs */}
       <div className="flex gap-1.5">
-        {(["all","2025-26","2026-27","shared"] as const).map(f => (
+        {(["all","1st Year","2nd Year","3rd/4th Year","Final Year","shared"] as const).map(f => (
           <button key={f} onClick={() => setBatchFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${batchFilter === f ? "bg-primary/20 border-primary/40 text-primary font-medium" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
-            {f === "all" ? "All Batches" : f === "shared" ? "Shared" : f}
+            {f === "all" ? "All" : f === "shared" ? "Shared" : f}
           </button>
         ))}
       </div>
@@ -262,13 +262,15 @@ export default function AdminQuizzes() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Batch</Label>
+              <Label>Academic Year</Label>
               <Select value={form.sessionYear} onValueChange={v => setForm({ ...form, sessionYear: v })}>
                 <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="shared">All Batches (shared)</SelectItem>
-                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
-                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                  <SelectItem value="shared">All Years (shared)</SelectItem>
+                  <SelectItem value="1st Year">1st Year</SelectItem>
+                  <SelectItem value="2nd Year">2nd Year</SelectItem>
+                  <SelectItem value="3rd/4th Year">3rd/4th Year</SelectItem>
+                  <SelectItem value="Final Year">Final Year</SelectItem>
                 </SelectContent>
               </Select>
             </div>

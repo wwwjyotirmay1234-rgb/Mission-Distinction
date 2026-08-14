@@ -795,6 +795,28 @@ export async function runStartupMigrations() {
         [BACKFILL_KEY]
       );
     }
+
+    // ── One-time backfill: convert session_year from batch format to academic year format ──
+    // '2025-26' → '1st Year' so that content is now filtered by academic year, not batch.
+    // All existing content was 1st Year content (only one batch was ever active).
+    const ACADEMIC_YEAR_KEY = 'academic_year_backfill_v1';
+    const { rows: academicApplied } = await client.query(
+      "SELECT 1 FROM schema_migrations WHERE key = $1",
+      [ACADEMIC_YEAR_KEY]
+    );
+    if (academicApplied.length === 0) {
+      await client.query(
+        `UPDATE quizzes     SET session_year = '1st Year' WHERE session_year = '2025-26';
+         UPDATE grand_tests SET session_year = '1st Year' WHERE session_year = '2025-26';
+         UPDATE videos      SET session_year = '1st Year' WHERE session_year = '2025-26';
+         UPDATE notes       SET session_year = '1st Year' WHERE session_year = '2025-26';
+         UPDATE pyqs        SET session_year = '1st Year' WHERE session_year = '2025-26';`
+      );
+      await client.query(
+        "INSERT INTO schema_migrations (key) VALUES ($1)",
+        [ACADEMIC_YEAR_KEY]
+      );
+    }
   } finally {
     client.release();
   }

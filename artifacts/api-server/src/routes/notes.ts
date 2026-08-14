@@ -30,8 +30,8 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
 
     const batchFilter = isAdmin
       ? undefined
-      : user?.sessionYear
-        ? or(isNull(notesTable.sessionYear), eq(notesTable.sessionYear, user.sessionYear))
+      : user?.year
+        ? or(isNull(notesTable.sessionYear), eq(notesTable.sessionYear, user.year))
         : isNull(notesTable.sessionYear);
 
     let notes = await db.select().from(notesTable).where(batchFilter).limit(500);
@@ -76,8 +76,8 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
     const isAdmin = user?.role === "admin";
     const batchCond = isAdmin
       ? eq(notesTable.id, id)
-      : user?.sessionYear
-        ? and(eq(notesTable.id, id), or(isNull(notesTable.sessionYear), eq(notesTable.sessionYear, user.sessionYear)))
+      : user?.year
+        ? and(eq(notesTable.id, id), or(isNull(notesTable.sessionYear), eq(notesTable.sessionYear, user.year)))
         : and(eq(notesTable.id, id), isNull(notesTable.sessionYear));
     const [note] = await db.select().from(notesTable).where(batchCond);
     if (!note) { res.status(404).json({ error: "Not found" }); return; }
@@ -145,8 +145,8 @@ router.post("/:id/read", authMiddleware, noteReadLimiter, async (req: Request, r
     const isAdmin = user?.role === "admin";
     const batchCond = isAdmin
       ? eq(notesTable.id, id)
-      : user?.sessionYear
-        ? and(eq(notesTable.id, id), or(isNull(notesTable.sessionYear), eq(notesTable.sessionYear, user.sessionYear)))
+      : user?.year
+        ? and(eq(notesTable.id, id), or(isNull(notesTable.sessionYear), eq(notesTable.sessionYear, user.year)))
         : and(eq(notesTable.id, id), isNull(notesTable.sessionYear));
     const [note] = await db.select().from(notesTable).where(batchCond);
     if (!note) { res.status(404).json({ error: "Not found" }); return; }

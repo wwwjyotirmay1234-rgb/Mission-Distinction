@@ -61,7 +61,7 @@ function useTestDetail(id: number | null) {
   });
 }
 
-const EMPTY_FORM = { title: "", subject: "", description: "", durationMinutes: "180", availableFrom: "", availableUntil: "", isPublished: false, sessionYear: "2025-26" };
+const EMPTY_FORM = { title: "", subject: "", description: "", durationMinutes: "180", availableFrom: "", availableUntil: "", isPublished: false, sessionYear: "1st Year" };
 const EMPTY_Q = { questionText: "", questionType: "long", maxMarks: "10", modelAnswer: "" };
 
 export default function AdminGrandTests() {
@@ -83,7 +83,7 @@ export default function AdminGrandTests() {
   const [qForm, setQForm] = useState({ ...EMPTY_Q });
   const [editQId, setEditQId] = useState<number | null>(null);
 
-  const [batchFilter, setBatchFilter] = useState<"all" | "2025-26" | "2026-27" | "shared">("all");
+  const [batchFilter, setBatchFilter] = useState<"all" | "1st Year" | "2nd Year" | "3rd/4th Year" | "Final Year" | "shared">("all");
   const [submissionsOpen, setSubmissionsOpen] = useState(false);
   const [subTestId, setSubTestId] = useState<number | null>(null);
   const { data: submissions, isLoading: subLoading, refetch: refetchSubs } = useQuery<any[]>({
@@ -316,9 +316,9 @@ export default function AdminGrandTests() {
 
       {/* Batch filter tabs */}
       <div className="flex gap-1.5">
-        {(["all","2025-26","2026-27","shared"] as const).map(f => (
+        {(["all","1st Year","2nd Year","3rd/4th Year","Final Year","shared"] as const).map(f => (
           <button key={f} onClick={() => setBatchFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${batchFilter === f ? "bg-primary/20 border-primary/40 text-primary font-medium" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
-            {f === "all" ? "All Batches" : f === "shared" ? "Shared" : f}
+            {f === "all" ? "All" : f === "shared" ? "Shared" : f}
           </button>
         ))}
       </div>
@@ -464,13 +464,15 @@ export default function AdminGrandTests() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Batch</Label>
+              <Label>Academic Year</Label>
               <Select value={form.sessionYear} onValueChange={v => setForm({ ...form, sessionYear: v })}>
                 <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="shared">All Batches (shared)</SelectItem>
-                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
-                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                  <SelectItem value="shared">All Years (shared)</SelectItem>
+                  <SelectItem value="1st Year">1st Year</SelectItem>
+                  <SelectItem value="2nd Year">2nd Year</SelectItem>
+                  <SelectItem value="3rd/4th Year">3rd/4th Year</SelectItem>
+                  <SelectItem value="Final Year">Final Year</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -525,13 +527,15 @@ export default function AdminGrandTests() {
               <Label className="cursor-pointer">Published (visible to students)</Label>
             </div>
             <div className="space-y-1.5">
-              <Label>Batch</Label>
+              <Label>Academic Year</Label>
               <Select value={editForm.sessionYear} onValueChange={v => setEditForm({ ...editForm, sessionYear: v })}>
                 <SelectTrigger className="bg-background/50"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="shared">All Batches (shared)</SelectItem>
-                  <SelectItem value="2025-26">2025-26 Batch</SelectItem>
-                  <SelectItem value="2026-27">2026-27 Batch</SelectItem>
+                  <SelectItem value="shared">All Years (shared)</SelectItem>
+                  <SelectItem value="1st Year">1st Year</SelectItem>
+                  <SelectItem value="2nd Year">2nd Year</SelectItem>
+                  <SelectItem value="3rd/4th Year">3rd/4th Year</SelectItem>
+                  <SelectItem value="Final Year">Final Year</SelectItem>
                 </SelectContent>
               </Select>
             </div>

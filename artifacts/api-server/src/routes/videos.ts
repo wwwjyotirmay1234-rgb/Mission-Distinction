@@ -28,8 +28,8 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
     const isAdmin = user?.role === "admin";
     const batchFilter = isAdmin
       ? eq(videosTable.isPublished, true)
-      : user?.sessionYear
-        ? and(eq(videosTable.isPublished, true), or(isNull(videosTable.sessionYear), eq(videosTable.sessionYear, user.sessionYear)))
+      : user?.year
+        ? and(eq(videosTable.isPublished, true), or(isNull(videosTable.sessionYear), eq(videosTable.sessionYear, user.year)))
         : and(eq(videosTable.isPublished, true), isNull(videosTable.sessionYear));
 
     const videos = await db
@@ -70,8 +70,8 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
     const isAdmin = user?.role === "admin";
     const batchCond = isAdmin
       ? and(eq(videosTable.id, id), eq(videosTable.isPublished, true))
-      : user?.sessionYear
-        ? and(eq(videosTable.id, id), eq(videosTable.isPublished, true), or(isNull(videosTable.sessionYear), eq(videosTable.sessionYear, user.sessionYear)))
+      : user?.year
+        ? and(eq(videosTable.id, id), eq(videosTable.isPublished, true), or(isNull(videosTable.sessionYear), eq(videosTable.sessionYear, user.year)))
         : and(eq(videosTable.id, id), eq(videosTable.isPublished, true), isNull(videosTable.sessionYear));
     const [video] = await db.select().from(videosTable).where(batchCond);
     if (!video) { res.status(404).json({ error: "Video not found" }); return; }
@@ -119,8 +119,8 @@ router.post("/:id/progress", authMiddleware, async (req: Request, res: Response)
 
     // Verify student can access this video (batch isolation)
     if (user?.role !== "admin") {
-      const accessCond = user?.sessionYear
-        ? and(eq(videosTable.id, id), eq(videosTable.isPublished, true), or(isNull(videosTable.sessionYear), eq(videosTable.sessionYear, user.sessionYear)))
+      const accessCond = user?.year
+        ? and(eq(videosTable.id, id), eq(videosTable.isPublished, true), or(isNull(videosTable.sessionYear), eq(videosTable.sessionYear, user.year)))
         : and(eq(videosTable.id, id), eq(videosTable.isPublished, true), isNull(videosTable.sessionYear));
       const [accessible] = await db.select({ id: videosTable.id }).from(videosTable).where(accessCond);
       if (!accessible) { res.status(404).json({ error: "Video not found" }); return; }
@@ -171,8 +171,8 @@ router.post("/:id/quiz", authMiddleware, async (req: Request, res: Response) => 
 
     // Verify student can access this video (batch isolation)
     if (user?.role !== "admin") {
-      const accessCond = user?.sessionYear
-        ? and(eq(videosTable.id, id), eq(videosTable.isPublished, true), or(isNull(videosTable.sessionYear), eq(videosTable.sessionYear, user.sessionYear)))
+      const accessCond = user?.year
+        ? and(eq(videosTable.id, id), eq(videosTable.isPublished, true), or(isNull(videosTable.sessionYear), eq(videosTable.sessionYear, user.year)))
         : and(eq(videosTable.id, id), eq(videosTable.isPublished, true), isNull(videosTable.sessionYear));
       const [accessible] = await db.select({ id: videosTable.id }).from(videosTable).where(accessCond);
       if (!accessible) { res.status(404).json({ error: "Video not found" }); return; }
