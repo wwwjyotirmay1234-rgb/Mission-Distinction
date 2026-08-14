@@ -79,7 +79,8 @@ interface QuizResult {
   totalXp?: number;
 }
 
-const SUBJECTS = ["all", "Anatomy", "Physiology", "Biochemistry", "University Exams"];
+import { useAuth } from "@/contexts/AuthContext";
+import { SUBJECTS_BY_YEAR, DEFAULT_SUBJECTS } from "@/lib/colleges";
 
 const REPORT_REASONS = [
   "Wrong answer",
@@ -426,6 +427,9 @@ function ReportDialog({
 }
 
 export default function StudentQuiz() {
+  const { user } = useAuth();
+  const subjects = ["all", ...(SUBJECTS_BY_YEAR[user?.year ?? ""] ?? DEFAULT_SUBJECTS), "University Exams"];
+
   const [mode, setMode] = useState<QuizMode>("browse");
   const [hubSection, setHubSection] = useState<"quizzes" | "analysis">("quizzes");
   const [activeTab, setActiveTab] = useState("all");
@@ -1072,7 +1076,7 @@ export default function StudentQuiz() {
             <h2 className="text-base font-semibold mb-3">Browse by Category</h2>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="bg-muted/50 border border-border/50 h-auto p-1 flex-wrap justify-start">
-                {SUBJECTS.map((s) => (
+                {subjects.map((s) => (
                   <TabsTrigger key={s} value={s}>{s === "all" ? "All Quizzes" : s}</TabsTrigger>
                 ))}
               </TabsList>

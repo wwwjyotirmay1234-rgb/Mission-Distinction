@@ -29,6 +29,15 @@ export const ODISHA_DEEMED_COLLEGES = [
 
 export const MBBS_YEARS = ["1st Year", "2nd Year", "3rd/4th Year", "Final Year"];
 
+// Subjects by MBBS year — used across student pages for category filtering
+export const SUBJECTS_BY_YEAR: Record<string, string[]> = {
+  "1st Year":     ["Anatomy", "Physiology", "Biochemistry"],
+  "2nd Year":     ["Pathology", "Pharmacology", "Microbiology", "Forensic Medicine"],
+  "3rd/4th Year": ["General Medicine", "General Surgery", "OBG", "ENT", "Ophthalmology", "Dermatology", "Psychiatry"],
+  "Final Year":   ["General Medicine", "General Surgery", "OBG", "Pediatrics", "Orthopedics", "Dermatology", "Psychiatry"],
+};
+export const DEFAULT_SUBJECTS = ["Anatomy", "Physiology", "Biochemistry"];
+
 export const SESSION_YEARS = [
   "2022-23", "2023-24", "2024-25", "2025-26", "2026-27", "2027-28",
 ];

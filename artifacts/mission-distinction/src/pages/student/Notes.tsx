@@ -191,7 +191,8 @@ function NoteViewerModal({ note, onClose }: { note: Note; onClose: () => void })
   );
 }
 
-const CATEGORIES = ["All Subjects", "Anatomy", "Physiology", "Biochemistry"];
+import { SUBJECTS_BY_YEAR, DEFAULT_SUBJECTS } from "@/lib/colleges";
+import { useAuth } from "@/contexts/AuthContext";
 
 function trackNoteRead(noteId: number) {
   customFetch(`/api/notes/${noteId}/read`, { method: "POST" }).catch(() => {});
@@ -756,6 +757,9 @@ function BookCard({ book }: { book: Book }) {
 }
 
 export default function StudentNotes() {
+  const { user } = useAuth();
+  const CATEGORIES = ["All Subjects", ...(SUBJECTS_BY_YEAR[user?.year ?? ""] ?? DEFAULT_SUBJECTS)];
+
   const [activeTab, setActiveTab] = useState<"notes" | "books" | "pyqs">("notes");
   const [search, setSearch] = useState("");
   const [activeSubject, setActiveSubject] = useState("All Subjects");

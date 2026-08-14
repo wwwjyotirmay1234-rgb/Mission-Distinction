@@ -8,7 +8,8 @@ import { trackEvent } from "@/lib/analytics";
 import { Search, Download, BookOpen, X, ExternalLink, FileText, Loader2, WifiOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const SUBJECTS = ["All", "Anatomy", "Physiology", "Biochemistry"];
+import { useAuth } from "@/contexts/AuthContext";
+import { SUBJECTS_BY_YEAR, DEFAULT_SUBJECTS } from "@/lib/colleges";
 
 const SUBJECT_COLORS: Record<string, string> = {
   Anatomy:      "border-blue-500/50 text-blue-400 bg-blue-500/10",
@@ -245,6 +246,8 @@ async function trackDownload(pdfId: number) {
 }
 
 export default function StudentPDFs() {
+  const { user } = useAuth();
+  const SUBJECTS = ["All", ...(SUBJECTS_BY_YEAR[user?.year ?? ""] ?? DEFAULT_SUBJECTS)];
   const [search, setSearch]       = useState("");
   const [subject, setSubject]     = useState("All");
   const [viewingPdf, setViewingPdf] = useState<Pdf | null>(null);

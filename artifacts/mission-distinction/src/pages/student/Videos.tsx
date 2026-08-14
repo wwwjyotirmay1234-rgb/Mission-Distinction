@@ -11,7 +11,8 @@ import {
   ExternalLink, CheckCircle2,
 } from "lucide-react";
 
-const SUBJECTS = ["all", "Anatomy", "Physiology", "Biochemistry", "University Exams"];
+import { useAuth } from "@/contexts/AuthContext";
+import { SUBJECTS_BY_YEAR, DEFAULT_SUBJECTS } from "@/lib/colleges";
 
 interface VideoSummary {
   id: number;
@@ -259,6 +260,8 @@ function VideoPlayer({ url, onProgress, onMarkWatched, isCompleted, isMarkingWat
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function Videos() {
+  const { user } = useAuth();
+  const subjects = ["all", ...(SUBJECTS_BY_YEAR[user?.year ?? ""] ?? DEFAULT_SUBJECTS), "University Exams"];
   const qc = useQueryClient();
   const [subject, setSubject] = useState("all");
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -504,7 +507,7 @@ export default function Videos() {
 
       {/* Subject filter */}
       <div className="px-4 pt-3 pb-1 flex gap-2 overflow-x-auto scrollbar-none">
-        {SUBJECTS.map(s => (
+        {subjects.map(s => (
           <button
             key={s}
             onClick={() => setSubject(s)}

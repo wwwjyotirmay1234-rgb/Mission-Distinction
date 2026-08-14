@@ -11,7 +11,8 @@ import StudentMnemonics from "./Mnemonics";
 import { apiFetch } from "@/lib/apiFetch";
 import { useQuery } from "@tanstack/react-query";
 
-const SUBJECTS = ["All", "Anatomy", "Physiology", "Biochemistry"];
+import { useAuth } from "@/contexts/AuthContext";
+import { SUBJECTS_BY_YEAR, DEFAULT_SUBJECTS } from "@/lib/colleges";
 
 type RevisionItem = {
   id: number;
@@ -65,6 +66,8 @@ function MarkdownTable({ content }: { content: string }) {
 }
 
 function OneLinersTab() {
+  const { user } = useAuth();
+  const SUBJECTS = ["All", ...(SUBJECTS_BY_YEAR[user?.year ?? ""] ?? DEFAULT_SUBJECTS)];
   const [subject, setSubject] = useState("All");
   const [search, setSearch] = useState("");
   const [openChapters, setOpenChapters] = useState<Set<string>>(new Set());
@@ -167,6 +170,8 @@ function OneLinersTab() {
 }
 
 function KeyTablesTab() {
+  const { user } = useAuth();
+  const SUBJECTS = ["All", ...(SUBJECTS_BY_YEAR[user?.year ?? ""] ?? DEFAULT_SUBJECTS)];
   const [subject, setSubject] = useState("All");
   const [search, setSearch] = useState("");
   const { data, isLoading, isError } = useRevisionItems("table");
