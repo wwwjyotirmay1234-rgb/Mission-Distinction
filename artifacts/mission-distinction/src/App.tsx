@@ -13,6 +13,17 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { Component, type ReactNode, type ErrorInfo } from "react";
 
+/** Returns true for Vite/browser dynamic-import failures (stale chunk after deploy). */
+function isChunkLoadError(error: Error): boolean {
+  return (
+    error.name === "ChunkLoadError" ||
+    /Failed to fetch dynamically imported module/i.test(error.message) ||
+    /Importing a module script failed/i.test(error.message) ||
+    /Loading chunk \d+ failed/i.test(error.message) ||
+    /error loading dynamically imported module/i.test(error.message)
+  );
+}
+
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
     super(props);
@@ -22,6 +33,12 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[ErrorBoundary]", error, info.componentStack);
     Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
+    // Chunk load failures mean the old cached entry-point references a JS chunk
+    // that no longer exists after a deploy. Auto-reload fetches the new bundle.
+    if (isChunkLoadError(error)) {
+      console.warn("[ErrorBoundary] Chunk load failure — reloading to fetch fresh bundle.");
+      window.location.reload();
+    }
   }
   render() {
     if (this.state.hasError) {

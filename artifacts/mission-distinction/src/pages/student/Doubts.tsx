@@ -95,9 +95,11 @@ function CommunityTab() {
     queryKey: ["doubt", selectedId],
     queryFn: () => fetchDoubt(selectedId!),
     enabled: !!selectedId,
-    refetchInterval: (data: any) => {
-      if (!data || data.answers.length > 0) return false;
-      const ageMs = Date.now() - new Date(data.createdAt).getTime();
+    refetchInterval: (query: any) => {
+      // RQ v5: callback receives the Query object; data lives at query.state.data
+      const d = query?.state?.data as DoubtDetail | undefined;
+      if (!d || (d.answers && d.answers.length > 0)) return false;
+      const ageMs = Date.now() - new Date(d.createdAt).getTime();
       return ageMs < 2 * 60 * 1000 ? 5000 : false;
     },
     refetchIntervalInBackground: false,
