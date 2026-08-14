@@ -5,7 +5,7 @@ import {
   feedbackTable, emailTokensTable, refreshTokensTable,
   communityGroupsTable, communityMessagesTable, groupMembersTable,
 } from "@workspace/db";
-import { eq, desc, sql, count, inArray } from "drizzle-orm";
+import { eq, desc, sql, count, inArray, and } from "drizzle-orm";
 import { superAdminMiddleware } from "../middlewares/auth";
 import { parseId, generateToken } from "../lib/auth";
 import { stripHtml } from "../lib/sanitize";
@@ -362,6 +362,59 @@ router.post("/link-student", superAdminMiddleware, async (req: Request, res: Res
       .where(eq(usersTable.id, adminId));
 
     res.json({ success: true, linkedStudent: { id: student.id, fullName: student.fullName, email: student.email } });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─── Promote Batch ────────────────────────────────────────────────────────────
+// GET /promote-batch/preview?fromYear=X&fromSessionYear=Y
+// Returns the count + up to 5 sample student names before committing.
+router.get("/promote-batch/preview", superAdminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { fromYear, fromSessionYear } = req.query as { fromYear?: string; fromSessionYear?: string };
+    if (!fromYear || !fromSessionYear) {
+      res.status(400).json({ error: "fromYear and fromSessionYear are required" });
+      return;
+    }
+    const rows = await db
+      .select({ id: usersTable.id, fullName: usersTable.fullName, email: usersTable.email })
+      .from(usersTable)
+      .where(and(
+        eq(usersTable.role, "student"),
+        eq(usersTable.year, fromYear),
+        eq(usersTable.sessionYear, fromSessionYear),
+      ));
+    res.json({ count: rows.length, sample: rows.slice(0, 5).map(r => ({ fullName: r.fullName, email: r.email })) });
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /promote-batch
+// Bulk updates year for all matching students.
+router.post("/promote-batch", superAdminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { fromYear, fromSessionYear, toYear } = req.body;
+    if (!fromYear || !fromSessionYear || !toYear) {
+      res.status(400).json({ error: "fromYear, fromSessionYear, and toYear are required" });
+      return;
+    }
+    if (fromYear === toYear) {
+      res.status(400).json({ error: "fromYear and toYear must be different" });
+      return;
+    }
+    const [{ promoted }] = await db
+      .select({ promoted: sql<number>`count(*)::int` })
+      .from(usersTable)
+      .where(and(eq(usersTable.role, "student"), eq(usersTable.year, fromYear), eq(usersTable.sessionYear, fromSessionYear)));
+
+    await db
+      .update(usersTable)
+      .set({ year: toYear })
+      .where(and(eq(usersTable.role, "student"), eq(usersTable.year, fromYear), eq(usersTable.sessionYear, fromSessionYear)));
+
+    res.json({ promoted, fromYear, fromSessionYear, toYear });
   } catch {
     res.status(500).json({ error: "Internal server error" });
   }

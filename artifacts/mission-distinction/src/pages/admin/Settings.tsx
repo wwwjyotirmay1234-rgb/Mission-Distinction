@@ -12,7 +12,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { customFetch, type User as ApiUser } from "@workspace/api-client-react";
 import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "sonner";
-import { Shield, Key, User, Info, Eye, EyeOff, CheckCircle2, Camera, Loader2, CalendarDays, Trash2, Plus } from "lucide-react";
+import { Shield, Key, User, Info, Eye, EyeOff, CheckCircle2, Camera, Loader2, CalendarDays, Trash2, Plus, ArrowRight, Users } from "lucide-react";
+import { MBBS_YEARS, SESSION_YEARS } from "@/lib/colleges";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function AdminSettings() {
   const { user, login, token, updateUser } = useAuth();
@@ -27,6 +29,45 @@ export default function AdminSettings() {
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Promote batch ──────────────────────────────────────────────────────────
+  const [promoteForm, setPromoteForm] = useState({ fromYear: "1st Year", fromSessionYear: "2025-26", toYear: "2nd Year" });
+  const [previewCount, setPreviewCount] = useState<number | null>(null);
+  const [sampleStudents, setSampleStudents] = useState<{ fullName: string; email: string }[]>([]);
+  const [previewing, setPreviewing] = useState(false);
+  const [promoting, setPromoting] = useState(false);
+
+  const handlePromotePreview = async () => {
+    setPreviewing(true);
+    setPreviewCount(null);
+    setSampleStudents([]);
+    try {
+      const params = new URLSearchParams({ fromYear: promoteForm.fromYear, fromSessionYear: promoteForm.fromSessionYear });
+      const r = await apiFetch(`/api/super-admin/promote-batch/preview?${params}`);
+      if (!r.ok) throw new Error();
+      const data = await r.json();
+      setPreviewCount(data.count);
+      setSampleStudents(data.sample ?? []);
+    } catch { toast.error("Failed to load preview."); }
+    finally { setPreviewing(false); }
+  };
+
+  const handlePromoteBatch = async () => {
+    setPromoting(true);
+    try {
+      const r = await apiFetch("/api/super-admin/promote-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(promoteForm),
+      });
+      if (!r.ok) { const d = await r.json(); throw new Error(d.error); }
+      const data = await r.json();
+      toast.success(`${data.promoted} student${data.promoted !== 1 ? "s" : ""} promoted to ${promoteForm.toYear}!`);
+      setPreviewCount(null);
+      setSampleStudents([]);
+    } catch (err: any) { toast.error(err.message || "Promotion failed."); }
+    finally { setPromoting(false); }
+  };
 
   // ── Exam schedule ──────────────────────────────────────────────────────────
   const [globalExams, setGlobalExams] = useState<any[]>([]);
@@ -419,6 +460,91 @@ export default function AdminSettings() {
           )}
         </CardContent>
       </Card>
+
+      {/* Promote Batch — super admin only */}
+      {user?.isSuperAdmin && (
+        <Card className="bg-card/40 border-border/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-amber-400" /> Promote Batch
+            </CardTitle>
+            <CardDescription>Move all students in a batch from one academic year to the next.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-3 gap-3 items-end">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">From Year</Label>
+                <Select value={promoteForm.fromYear} onValueChange={v => { setPromoteForm(f => ({ ...f, fromYear: v })); setPreviewCount(null); setSampleStudents([]); }}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>{MBBS_YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Session Year</Label>
+                <Select value={promoteForm.fromSessionYear} onValueChange={v => { setPromoteForm(f => ({ ...f, fromSessionYear: v })); setPreviewCount(null); setSampleStudents([]); }}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>{SESSION_YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Promote To</Label>
+                <Select value={promoteForm.toYear} onValueChange={v => { setPromoteForm(f => ({ ...f, toYear: v })); setPreviewCount(null); setSampleStudents([]); }}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>{MBBS_YEARS.filter(y => y !== promoteForm.fromYear).map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <Button variant="outline" size="sm" onClick={handlePromotePreview} disabled={previewing} className="w-full">
+              {previewing ? <Loader2 size={14} className="animate-spin mr-2" /> : <ArrowRight size={14} className="mr-2" />}
+              {previewing ? "Loading preview…" : "Preview affected students"}
+            </Button>
+
+            {previewCount !== null && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+                <p className="text-sm font-medium text-amber-400">
+                  {previewCount === 0
+                    ? "No students found matching this batch."
+                    : `${previewCount} student${previewCount !== 1 ? "s" : ""} will be promoted from ${promoteForm.fromYear} → ${promoteForm.toYear}`}
+                </p>
+                {sampleStudents.length > 0 && (
+                  <ul className="space-y-0.5">
+                    {sampleStudents.map((s, i) => (
+                      <li key={i} className="text-xs text-muted-foreground truncate">{s.fullName} — {s.email}</li>
+                    ))}
+                    {previewCount > 5 && <li className="text-xs text-muted-foreground">…and {previewCount - 5} more</li>}
+                  </ul>
+                )}
+                {previewCount > 0 && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold" disabled={promoting}>
+                        {promoting ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
+                        Confirm & Promote {previewCount} student{previewCount !== 1 ? "s" : ""}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Promote {previewCount} student{previewCount !== 1 ? "s" : ""}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will move all {promoteForm.fromSessionYear} students currently in <strong>{promoteForm.fromYear}</strong> to <strong>{promoteForm.toYear}</strong>. This cannot be undone automatically.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handlePromoteBatch} className="bg-amber-500 hover:bg-amber-600 text-black">
+                          Yes, promote them
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Security note */}
       <Card className="bg-card/40 border-border/40">
