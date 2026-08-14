@@ -48,6 +48,7 @@ import { customQuizRouter } from "./customQuiz";
 import { notesMarketplaceRouter } from "./notesMarketplace";
 import { grandRoundsRouter } from "./grandRounds";
 import { videosRouter } from "./videos";
+import { publicStatsRouter } from "./publicStats";
 
 const router: IRouter = Router();
 
@@ -109,5 +110,6 @@ router.use("/admin/marketplace/notes", notesMarketplaceRouter);
 router.use("/grand-rounds", grandRoundsRouter);
 router.use("/videos", videosRouter);
 router.use("/admin/grand-rounds", grandRoundsRouter);
+router.use(publicStatsRouter);
 
 export default router;

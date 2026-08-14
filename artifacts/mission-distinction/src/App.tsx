@@ -60,6 +60,7 @@ const VerifyEmail      = lazy(() => import("@/pages/auth/VerifyEmail"));
 const PrivacyPolicy    = lazy(() => import("@/pages/PrivacyPolicy"));
 const TermsOfService   = lazy(() => import("@/pages/TermsOfService"));
 const NotFound         = lazy(() => import("@/pages/not-found"));
+const SubjectLandingPage = lazy(() => import("@/pages/public/SubjectLandingPage"));
 
 // Layouts (small — keep eager so protected routes don't flash)
 import { StudentLayout } from "@/components/layout/StudentLayout";
@@ -179,6 +180,17 @@ function Router() {
         </Route>
         <Route path="/terms">
           <ForceDark><TermsOfService /></ForceDark>
+        </Route>
+
+        {/* Public subject landing pages — indexed by Google */}
+        <Route path="/anatomy">
+          <ForceDark><SubjectLandingPage subject="anatomy" /></ForceDark>
+        </Route>
+        <Route path="/physiology">
+          <ForceDark><SubjectLandingPage subject="physiology" /></ForceDark>
+        </Route>
+        <Route path="/biochemistry">
+          <ForceDark><SubjectLandingPage subject="biochemistry" /></ForceDark>
         </Route>
 
         {/* Student Routes */}
