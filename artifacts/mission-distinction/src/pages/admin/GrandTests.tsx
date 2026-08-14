@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import BatchMigrateButton from "@/components/admin/BatchMigrateButton";
 
+const MBBS_YEARS = ["1st Year", "2nd Year", "3rd/4th Year", "Final Year"] as const;
+
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Mixed", "University Exams"];
 
 type GrandTest = {
@@ -84,6 +86,7 @@ export default function AdminGrandTests() {
   const [editQId, setEditQId] = useState<number | null>(null);
 
   const [batchFilter, setBatchFilter] = useState<"all" | "1st Year" | "2nd Year" | "3rd/4th Year" | "Final Year" | "shared">("all");
+  const [dupYear, setDupYear] = useState("2nd Year");
   const [submissionsOpen, setSubmissionsOpen] = useState(false);
   const [subTestId, setSubTestId] = useState<number | null>(null);
   const { data: submissions, isLoading: subLoading, refetch: refetchSubs } = useQuery<any[]>({
@@ -212,12 +215,12 @@ export default function AdminGrandTests() {
       const r = await apiFetch(`/api/grand-tests/${id}/duplicate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionYear: "2026-27" }),
+        body: JSON.stringify({ sessionYear: dupYear }),
       });
       if (!r.ok) throw new Error("Failed");
       return r.json();
     },
-    onSuccess: () => { toast.success("Grand Test copied to 2026-27 batch!"); qc.invalidateQueries({ queryKey: QKEY }); },
+    onSuccess: () => { toast.success(`Grand Test copied to ${dupYear}!`); qc.invalidateQueries({ queryKey: QKEY }); },
     onError: () => toast.error("Failed to duplicate grand test."),
   });
 
@@ -314,13 +317,22 @@ export default function AdminGrandTests() {
         </div>
       </div>
 
-      {/* Batch filter tabs */}
-      <div className="flex gap-1.5">
-        {(["all","1st Year","2nd Year","3rd/4th Year","Final Year","shared"] as const).map(f => (
-          <button key={f} onClick={() => setBatchFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${batchFilter === f ? "bg-primary/20 border-primary/40 text-primary font-medium" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
-            {f === "all" ? "All" : f === "shared" ? "Shared" : f}
-          </button>
-        ))}
+      {/* Batch filter tabs + duplicate target */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex gap-1.5 flex-wrap">
+          {(["all","1st Year","2nd Year","3rd/4th Year","Final Year","shared"] as const).map(f => (
+            <button key={f} onClick={() => setBatchFilter(f)} className={`text-xs px-3 py-1 rounded-full border transition-colors ${batchFilter === f ? "bg-primary/20 border-primary/40 text-primary font-medium" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
+              {f === "all" ? "All" : f === "shared" ? "Shared" : f}
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span>Copy to</span>
+          <Select value={dupYear} onValueChange={setDupYear}>
+            <SelectTrigger className="h-7 text-xs w-36 bg-background/50 border-border/50"><SelectValue /></SelectTrigger>
+            <SelectContent>{MBBS_YEARS.map(y => <SelectItem key={y} value={y} className="text-xs">{y}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Card className="bg-card/40 border-border/40">
