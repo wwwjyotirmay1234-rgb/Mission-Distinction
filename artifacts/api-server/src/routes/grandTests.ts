@@ -422,4 +422,42 @@ router.put("/submissions/:submissionId/grade", adminMiddleware, async (req: Requ
   } finally { client.release(); }
 });
 
+// ── Admin: duplicate grand test (copies metadata + all questions) ─────────────
+router.post("/:id/duplicate", adminMiddleware, async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params;
+    const { sessionYear } = req.body;
+    const safeSessionYear = sessionYear === "shared" ? null : (sessionYear || null);
+    const adminUser = (req as any).user;
+
+    const testRes = await client.query("SELECT * FROM grand_tests WHERE id=$1", [id]);
+    if (!testRes.rows[0]) { res.status(404).json({ error: "Not found" }); return; }
+    const source = testRes.rows[0];
+
+    const newTestRes = await client.query(
+      `INSERT INTO grand_tests (title, subject, description, duration_minutes, session_year, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [`${source.title} (Copy)`, source.subject, source.description, source.duration_minutes, safeSessionYear, adminUser?.id]
+    );
+    const newTest = newTestRes.rows[0];
+
+    const qRes = await client.query(
+      "SELECT * FROM grand_test_questions WHERE test_id=$1 ORDER BY order_index", [id]
+    );
+    for (const q of qRes.rows) {
+      await client.query(
+        `INSERT INTO grand_test_questions (test_id, question_text, question_type, max_marks, order_index, model_answer, subject)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [newTest.id, q.question_text, q.question_type, q.max_marks, q.order_index, q.model_answer, q.subject ?? null]
+      );
+    }
+
+    res.status(201).json({ ...newTest, questionCount: qRes.rows.length });
+  } catch (err) {
+    console.error("duplicate grand test error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally { client.release(); }
+});
+
 export { router as grandTestsRouter };

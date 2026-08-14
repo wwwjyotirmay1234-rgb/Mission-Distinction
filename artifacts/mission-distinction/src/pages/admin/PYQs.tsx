@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { customFetch } from "@workspace/api-client-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Plus, Trash2, ClipboardList, Pencil, X, Upload, CheckCircle2, ExternalLink, Tag } from "lucide-react";
+import { Search, Plus, Trash2, ClipboardList, Pencil, X, Upload, CheckCircle2, ExternalLink, Tag, Copy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreVertical } from "lucide-react";
@@ -119,6 +119,15 @@ export default function AdminPYQs() {
       qc.invalidateQueries({ queryKey: PYQS_KEY });
     },
     onError: () => toast.error("Failed to delete PYQ."),
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: (id: number) => customFetch(`/api/pyqs/${id}/duplicate`, {
+      method: "POST",
+      body: JSON.stringify({ sessionYear: "2026-27" }),
+    }),
+    onSuccess: () => { toast.success("PYQ copied to 2026-27 batch!"); qc.invalidateQueries({ queryKey: PYQS_KEY }); },
+    onError: () => toast.error("Failed to duplicate PYQ."),
   });
 
   const handlePdfFile = async (file: File, mode: "add" | "edit") => {
@@ -282,6 +291,9 @@ export default function AdminPYQs() {
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => { setTagTarget(p); setTagInput((p.topicTags ?? []).join(", ")); }}>
                             <Tag className="mr-2 h-4 w-4" /> Tag Topics
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => duplicateMutation.mutate(p.id)}>
+                            <Copy className="mr-2 h-4 w-4" /> Copy to 2026-27
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => deleteMutation.mutate(p.id)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Delete

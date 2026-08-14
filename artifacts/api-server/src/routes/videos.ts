@@ -379,4 +379,53 @@ router.get("/admin/:id/detail", adminMiddleware, async (req: Request, res: Respo
   }
 });
 
+// POST /api/videos/admin/:id/duplicate — clone video with concepts + questions
+router.post("/admin/:id/duplicate", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(String(req.params.id));
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+    const { sessionYear } = req.body;
+    const safeSessionYear = sessionYear === "shared" ? null : (sessionYear || null);
+
+    const [source] = await db.select().from(videosTable).where(eq(videosTable.id, id));
+    if (!source) { res.status(404).json({ error: "Not found" }); return; }
+
+    const [newVideo] = await db.insert(videosTable).values({
+      title: `${source.title} (Copy)`,
+      subject: source.subject,
+      description: source.description,
+      videoUrl: source.videoUrl,
+      cloudinaryPublicId: source.cloudinaryPublicId,
+      thumbnailUrl: source.thumbnailUrl,
+      durationSeconds: source.durationSeconds,
+      isPublished: false,
+      sessionYear: safeSessionYear,
+    }).returning();
+
+    const concepts = await db.select().from(videoConceptsTable)
+      .where(eq(videoConceptsTable.videoId, id)).orderBy(videoConceptsTable.sortOrder);
+    if (concepts.length > 0) {
+      await db.insert(videoConceptsTable).values(
+        concepts.map(c => ({ videoId: newVideo.id, heading: c.heading, content: c.content, sortOrder: c.sortOrder }))
+      );
+    }
+
+    const questions = await db.select().from(videoQuestionsTable)
+      .where(eq(videoQuestionsTable.videoId, id)).orderBy(videoQuestionsTable.sortOrder);
+    if (questions.length > 0) {
+      await db.insert(videoQuestionsTable).values(
+        questions.map(q => ({
+          videoId: newVideo.id, text: q.text, options: q.options,
+          correctOption: q.correctOption, explanation: q.explanation, sortOrder: q.sortOrder,
+        }))
+      );
+    }
+
+    res.status(201).json({ ...newVideo, conceptCount: concepts.length, questionCount: questions.length });
+  } catch (err) {
+    console.error("duplicate video error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export { router as videosRouter };

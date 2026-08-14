@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useListNotes, useDeleteNote, getListNotesQueryKey, customFetch } from "@workspace/api-client-react";
-import { Search, Plus, MoreVertical, Trash2, FileText, Pencil, Upload, Image, FileIcon, Link, X, Loader2, Zap } from "lucide-react";
+import { Search, Plus, MoreVertical, Trash2, FileText, Pencil, Upload, Image, FileIcon, Link, X, Loader2, Zap, Copy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -244,6 +244,19 @@ export default function AdminNotes() {
   );
   const deleteNote = useDeleteNote();
 
+  const handleDuplicateNote = async (id: number) => {
+    try {
+      await customFetch(`/api/notes/${id}/duplicate`, {
+        method: "POST",
+        body: JSON.stringify({ sessionYear: "2026-27" }),
+      });
+      toast.success("Note copied to 2026-27 batch!");
+      queryClient.invalidateQueries({ queryKey: getListNotesQueryKey() });
+    } catch {
+      toast.error("Failed to duplicate note.");
+    }
+  };
+
   const resetAdd = () => {
     setAddForm({ title: "", subject: "", content: "", fileUrl: "", fileType: "", sessionYear: "2025-26" });
     setAddMode("text");
@@ -438,6 +451,9 @@ export default function AdminNotes() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => openEdit(n)}>
                               <Pencil className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDuplicateNote(n.id)}>
+                              <Copy className="mr-2 h-4 w-4" /> Copy to 2026-27
                             </DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => handleDelete(n.id)}>
                               <Trash2 className="mr-2 h-4 w-4" /> Delete

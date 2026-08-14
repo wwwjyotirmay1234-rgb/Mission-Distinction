@@ -13,6 +13,17 @@ TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN:-${GITHUB_TOKEN}}"
 REF_FILE=".git/refs/heads/main"
 LAST_SHA=""
 FAIL_COUNT=0
+AUTH_FAIL_COUNT=0  # consecutive auth/permission failures — triggers exit after threshold
+
+# Returns 0 if the push output looks like an auth/permission error.
+is_auth_failure() {
+  echo "$1" | grep -qiE \
+    "403|401|Authentication failed|remote: Invalid username|remote: Invalid token" \
+    || echo "$1" | grep -qiE \
+    "Permission denied|repository not found|access denied|could not read Username" \
+    || echo "$1" | grep -qiE \
+    "remote: error.*permission|fatal:.*authentication"
+}
 
 if [ -z "$REPO_URL" ] || [ -z "$TOKEN" ]; then
   echo "[github-sync] GITHUB_REPO_URL and a GitHub token (GITHUB_PERSONAL_ACCESS_TOKEN or GITHUB_TOKEN) must be set — sync disabled."
@@ -76,7 +87,17 @@ reconcile_and_push() {
     return 0
   fi
 
-  echo "[github-sync] Push rejected: $(echo "$PUSH_OUT" | sanitize)"
+  local SANITIZED_OUT
+  SANITIZED_OUT=$(echo "$PUSH_OUT" | sanitize)
+  echo "[github-sync] Push rejected: ${SANITIZED_OUT}"
+
+  # Detect auth/permission failures early — no point retrying with the same bad token.
+  if is_auth_failure "$PUSH_OUT"; then
+    echo "[github-sync] ✗ AUTH FAILURE detected — token is missing, expired, or lacks push permission."
+    echo "[github-sync]   Fix: set GITHUB_PERSONAL_ACCESS_TOKEN to a classic PAT with 'repo' + 'workflow' scopes."
+    rm -f "$CRED_FILE"
+    return 2  # distinct exit code so callers can differentiate auth vs. network failures
+  fi
 
   # ── Step 2: If rejected due to diverged history, fetch and reconcile ──────
   if echo "$PUSH_OUT" | grep -qE "rejected.*(non-fast-forward|fetch first)"; then
@@ -134,10 +155,18 @@ reconcile_and_push() {
 
 # Perform initial push on startup to ensure remote is in sync
 echo "[github-sync] Performing initial push to GitHub (target: ${CLEAN_URL})..."
-if reconcile_and_push; then
+reconcile_and_push
+INIT_CODE=$?
+if [ $INIT_CODE -eq 0 ]; then
   echo "[github-sync] ✓ Initial push successful"
   verify_sha_parity
   FAIL_COUNT=0
+  AUTH_FAIL_COUNT=0
+elif [ $INIT_CODE -eq 2 ]; then
+  AUTH_FAIL_COUNT=$((AUTH_FAIL_COUNT + 1))
+  echo "[github-sync] ACTION REQUIRED: Auth failure on startup. Fix the token, then restart this workflow."
+  echo "[github-sync] Exiting — cannot sync without valid credentials."
+  exit 1
 else
   echo "[github-sync] Initial push failed — will retry on next commit."
   FAIL_COUNT=$((FAIL_COUNT + 1))
@@ -151,12 +180,25 @@ while true; do
     if [ -n "$CURRENT_SHA" ] && [ "$CURRENT_SHA" != "$LAST_SHA" ]; then
       if [ -n "$LAST_SHA" ]; then
         echo "[github-sync] New commit detected: ${CURRENT_SHA:0:8} — pushing to GitHub..."
-        if reconcile_and_push; then
+        reconcile_and_push
+        PUSH_RESULT=$?
+        if [ $PUSH_RESULT -eq 0 ]; then
           echo "[github-sync] ✓ Pushed ${CURRENT_SHA:0:8} to GitHub."
           verify_sha_parity
           FAIL_COUNT=0
+          AUTH_FAIL_COUNT=0
+        elif [ $PUSH_RESULT -eq 2 ]; then
+          AUTH_FAIL_COUNT=$((AUTH_FAIL_COUNT + 1))
+          FAIL_COUNT=$((FAIL_COUNT + 1))
+          echo "[github-sync] Auth failure #${AUTH_FAIL_COUNT} — token is invalid or lacks permissions."
+          echo "[github-sync]   Fix: replace GITHUB_PERSONAL_ACCESS_TOKEN with a classic PAT (repo + workflow scopes), then restart."
+          if [ $AUTH_FAIL_COUNT -ge 2 ]; then
+            echo "[github-sync] Exiting after repeated auth failures — fix the token and restart the workflow."
+            exit 1
+          fi
         else
           FAIL_COUNT=$((FAIL_COUNT + 1))
+          AUTH_FAIL_COUNT=0
           echo "[github-sync] Push failed (attempt $FAIL_COUNT) — will retry next cycle."
           if [ $FAIL_COUNT -ge 3 ]; then
             echo "[github-sync] ACTION REQUIRED: Push has failed $FAIL_COUNT times. Check token permissions and repository access."

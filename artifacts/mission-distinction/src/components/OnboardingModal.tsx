@@ -29,7 +29,7 @@ type Step = BotStep | LockedStep;
 const STEPS: Step[] = [
   {
     kind: "bot",
-    botMessage: "👋 Hey! Welcome to Mission Distinction — built just for 1st Year MBBS students in Odisha. Let me give you a quick tour!",
+    botMessage: "👋 Hey! Welcome to Mission Distinction — built for MBBS students in Odisha. Let me give you a quick tour!",
     features: [
       { icon: <GraduationCap size={16} className="text-purple-400" />, label: "100% Free", desc: "No paywalls, no subscriptions — ever." },
       { icon: <Zap size={16} className="text-amber-400" />, label: "XP & Ranks", desc: "Earn XP and rise from Intern to Consultant." },
@@ -47,11 +47,11 @@ const STEPS: Step[] = [
   },
   {
     kind: "bot",
-    botMessage: "📚 We've got curated notes, PDFs, reference books, flashcards, and mnemonics — all in one place. And if you're stuck on something, just ask me! I'm powered by AI and always here. 🤖",
+    botMessage: "📚 We've curated notes, PDFs, reference books, flashcards, and mnemonics — all in one place. Tackle Previous Year Questions and Grand Tests to sharpen your exam skills! 📝",
     features: [
       { icon: <BookOpen size={16} className="text-blue-400" />, label: "Notes & PDFs", desc: "Curated study material, ready to read." },
       { icon: <Brain size={16} className="text-pink-400" />, label: "Cheat Codes", desc: "Flashcards & mnemonics for fast revision." },
-      { icon: <FlaskConical size={16} className="text-teal-400" />, label: "AI Doubt Solver", desc: "Ask me anything, anytime." },
+      { icon: <FlaskConical size={16} className="text-teal-400" />, label: "PYQs & Grand Tests", desc: "Previous year papers + timed mock tests." },
     ],
   },
   {

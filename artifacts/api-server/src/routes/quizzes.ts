@@ -612,4 +612,51 @@ router.post("/:id/attempt", authMiddleware, attemptLimiter, async (req: Request,
   }
 });
 
+// ── Admin: duplicate quiz (copies metadata + all questions) ──────────────────
+router.post("/:id/duplicate", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+    const { sessionYear } = req.body;
+    const safeSessionYear = sessionYear === "shared" ? null : (sessionYear || null);
+
+    const [source] = await db.select().from(quizzesTable).where(eq(quizzesTable.id, id));
+    if (!source) { res.status(404).json({ error: "Quiz not found" }); return; }
+
+    const [newQuiz] = await db.insert(quizzesTable).values({
+      title: `${source.title} (Copy)`,
+      subject: source.subject,
+      description: source.description,
+      difficulty: source.difficulty,
+      durationMinutes: source.durationMinutes,
+      isFeatured: false,
+      isProctored: source.isProctored,
+      sessionYear: safeSessionYear,
+    }).returning();
+
+    const questions = await db.select().from(questionsTable).where(eq(questionsTable.quizId, id));
+    if (questions.length > 0) {
+      await db.insert(questionsTable).values(
+        questions.map(q => ({
+          quizId: newQuiz.id,
+          text: q.text,
+          questionType: q.questionType,
+          options: q.options,
+          correctOption: q.correctOption,
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation,
+          maxMarks: q.maxMarks,
+          modelAnswer: q.modelAnswer,
+          topicTags: q.topicTags,
+        }))
+      );
+    }
+
+    res.status(201).json({ ...newQuiz, questionCount: questions.length });
+  } catch (err) {
+    console.error("duplicate quiz error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

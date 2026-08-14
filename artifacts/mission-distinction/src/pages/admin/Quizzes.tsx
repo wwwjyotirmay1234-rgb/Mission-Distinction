@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { useListQuizzes, useCreateQuiz, useDeleteQuiz, getListQuizzesQueryKey } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { Search, Plus, MoreVertical, Trash2, CheckCircle, Pencil, ClipboardCheck } from "lucide-react";
+import { Search, Plus, MoreVertical, Trash2, CheckCircle, Pencil, ClipboardCheck, Copy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -76,6 +76,19 @@ export default function AdminQuizzes() {
       },
       onError: () => toast.error("Failed to delete quiz."),
     });
+  };
+
+  const handleDuplicate = async (id: number) => {
+    try {
+      await (await import("@workspace/api-client-react")).customFetch(`/api/quizzes/${id}/duplicate`, {
+        method: "POST",
+        body: JSON.stringify({ sessionYear: "2026-27" }),
+      });
+      toast.success("Quiz copied to 2026-27 batch!");
+      queryClient.invalidateQueries({ queryKey: getListQuizzesQueryKey() });
+    } catch {
+      toast.error("Failed to duplicate quiz.");
+    }
   };
 
   const quizList = Array.isArray(quizzes) ? quizzes : [];
@@ -192,6 +205,9 @@ export default function AdminQuizzes() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => navigate(`/admin/quizzes/${quiz.id}/edit`)}>
                             <Pencil className="mr-2 h-4 w-4" /> Edit Questions
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDuplicate(quiz.id)}>
+                            <Copy className="mr-2 h-4 w-4" /> Copy to 2026-27
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => handleDelete(quiz.id)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Delete

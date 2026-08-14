@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import {
   Plus, MoreVertical, Trash2, Pencil, ClipboardList,
   Users, Trophy, Eye, EyeOff, AlarmClock, BookOpen,
-  ChevronDown, ChevronRight, CheckCircle2, Loader2, Star, KeyRound, Lock,
+  ChevronDown, ChevronRight, CheckCircle2, Loader2, Star, KeyRound, Lock, Copy,
 } from "lucide-react";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "Mixed", "University Exams"];
@@ -206,6 +206,20 @@ export default function AdminGrandTests() {
     onError: () => toast.error("Failed to delete."),
   });
 
+  const duplicate = useMutation({
+    mutationFn: async (id: number) => {
+      const r = await apiFetch(`/api/grand-tests/${id}/duplicate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionYear: "2026-27" }),
+      });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => { toast.success("Grand Test copied to 2026-27 batch!"); qc.invalidateQueries({ queryKey: QKEY }); },
+    onError: () => toast.error("Failed to duplicate grand test."),
+  });
+
   const addQuestion = useMutation({
     mutationFn: async (data: typeof qForm) => {
       const r = await apiFetch(`/api/grand-tests/${selectedTestId}/questions`, {
@@ -388,6 +402,9 @@ export default function AdminGrandTests() {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openEdit(t)}>
                           <Pencil className="mr-2 h-4 w-4" /> Edit Settings
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => duplicate.mutate(t.id)}>
+                          <Copy className="mr-2 h-4 w-4" /> Copy to 2026-27
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive focus:bg-destructive/10" onClick={() => remove.mutate(t.id)}>
                           <Trash2 className="mr-2 h-4 w-4" /> Delete

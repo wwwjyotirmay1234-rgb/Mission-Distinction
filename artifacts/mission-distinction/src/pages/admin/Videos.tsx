@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Trash2, ChevronRight, ChevronDown, RefreshCw,
-  Eye, EyeOff, PlayCircle, BookOpen, HelpCircle, X, Link2,
+  Eye, EyeOff, PlayCircle, BookOpen, HelpCircle, X, Link2, Copy,
 } from "lucide-react";
 
 const SUBJECTS = ["Anatomy", "Physiology", "Biochemistry", "University Exams"];
@@ -124,6 +124,15 @@ export default function AdminVideos() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => apiFetchJson(`/api/videos/admin/${id}`, { method: "DELETE" }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-videos"] }); setExpandedId(null); toast.success("Deleted."); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: (id: number) => apiFetchJson(`/api/videos/admin/${id}/duplicate`, {
+      method: "POST",
+      body: JSON.stringify({ sessionYear: "2026-27" }),
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-videos"] }); toast.success("Video copied to 2026-27 batch!"); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -281,6 +290,13 @@ export default function AdminVideos() {
                       title={v.isPublished ? "Unpublish" : "Publish"}
                     >
                       {v.isPublished ? <Eye size={15} /> : <EyeOff size={15} />}
+                    </button>
+                    <button
+                      onClick={() => duplicateMutation.mutate(v.id)}
+                      className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary"
+                      title="Copy to 2026-27 batch"
+                    >
+                      <Copy size={15} />
                     </button>
                     <button
                       onClick={() => { if (confirm("Delete this video?")) deleteMutation.mutate(v.id); }}

@@ -191,4 +191,31 @@ router.post("/:id/read", authMiddleware, noteReadLimiter, async (req: Request, r
   }
 });
 
+// ── Admin: duplicate note ────────────────────────────────────────────────────
+router.post("/:id/duplicate", adminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const admin = (req as any).user;
+    const id = parseId(req.params.id);
+    if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+    const { sessionYear } = req.body;
+    const safeSessionYear = sessionYear === "shared" ? null : (sessionYear || null);
+
+    const [source] = await db.select().from(notesTable).where(eq(notesTable.id, id));
+    if (!source) { res.status(404).json({ error: "Not found" }); return; }
+
+    const [note] = await db.insert(notesTable).values({
+      title: `${source.title} (Copy)`,
+      subject: source.subject,
+      content: source.content,
+      fileUrl: source.fileUrl,
+      fileType: source.fileType,
+      createdBy: admin.id,
+      sessionYear: safeSessionYear,
+    } as any).returning();
+    res.status(201).json(note);
+  } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
