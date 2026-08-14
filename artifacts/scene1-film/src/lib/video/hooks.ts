@@ -37,9 +37,14 @@ export function useVideoPlayer(options: UseVideoPlayerOptions): UseVideoPlayerRe
   const [currentScene, setCurrentScene] = useState(0);
   const [hasEnded, setHasEnded] = useState(false);
 
-  // Start recording on mount
+  // Start recording on mount, stop on unmount (scene jump/restart increments
+  // mountKey which unmounts+remounts VideoTemplate — without this cleanup a new
+  // recording starts while the previous one is still running, doubling audio).
   useEffect(() => {
     window.startRecording?.();
+    return () => {
+      window.stopRecording?.();
+    };
   }, []);
 
   // Scene advancement -- loops independently of recording

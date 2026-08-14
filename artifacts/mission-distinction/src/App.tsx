@@ -192,6 +192,15 @@ function Router() {
         <Route path="/biochemistry">
           <ForceDark><SubjectLandingPage subject="biochemistry" /></ForceDark>
         </Route>
+        <Route path="/pathology">
+          <ForceDark><SubjectLandingPage subject="pathology" /></ForceDark>
+        </Route>
+        <Route path="/microbiology">
+          <ForceDark><SubjectLandingPage subject="microbiology" /></ForceDark>
+        </Route>
+        <Route path="/pharmacology">
+          <ForceDark><SubjectLandingPage subject="pharmacology" /></ForceDark>
+        </Route>
 
         {/* Student Routes */}
         <Route path="/student/*">

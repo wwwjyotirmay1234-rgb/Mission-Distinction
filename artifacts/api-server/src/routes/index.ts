@@ -49,6 +49,7 @@ import { notesMarketplaceRouter } from "./notesMarketplace";
 import { grandRoundsRouter } from "./grandRounds";
 import { videosRouter } from "./videos";
 import { publicStatsRouter } from "./publicStats";
+import { syncAlertRouter } from "./syncAlert";
 
 const router: IRouter = Router();
 
@@ -111,5 +112,6 @@ router.use("/grand-rounds", grandRoundsRouter);
 router.use("/videos", videosRouter);
 router.use("/admin/grand-rounds", grandRoundsRouter);
 router.use(publicStatsRouter);
+router.use(syncAlertRouter);
 
 export default router;

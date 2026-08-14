@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { db } from "@workspace/db";
+import { db, pool } from "@workspace/db";
 import { quizAttemptsTable, activityTable } from "@workspace/db";
 import { eq, desc, gte, and } from "drizzle-orm";
 import { authMiddleware } from "../middlewares/auth";
@@ -85,6 +85,55 @@ router.get("/heatmap", authMiddleware, async (req: Request, res: Response) => {
     }
     res.json(dayMap);
   } catch {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * GET /api/progress/viva-history
+ * Returns last 60 scored viva + teach-back sessions for the authenticated student,
+ * merged and sorted by date — used to render the score trend chart in My Progress.
+ */
+router.get("/viva-history", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const client = await pool.connect();
+    try {
+      const [vivaRes, tbRes] = await Promise.all([
+        client.query(
+          `SELECT created_at AS date, score, subject, 'viva' AS type
+           FROM viva_history
+           WHERE user_id = $1 AND score IS NOT NULL
+           ORDER BY created_at DESC LIMIT 60`,
+          [user.id]
+        ),
+        client.query(
+          `SELECT created_at AS date, score, subject, 'teachback' AS type
+           FROM teach_back_sessions
+           WHERE user_id = $1 AND score IS NOT NULL
+           ORDER BY created_at DESC LIMIT 60`,
+          [user.id]
+        ),
+      ]);
+
+      type Row = { date: Date; score: number; subject: string; type: string };
+      const merged: Row[] = [...vivaRes.rows, ...tbRes.rows]
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      const sessions = merged.map(r => ({
+        date: new Date(r.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+        isoDate: new Date(r.date).toISOString(),
+        score: typeof r.score === "number" ? r.score : Number(r.score),
+        subject: r.subject,
+        type: r.type,
+      }));
+
+      res.json({ sessions });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("[progress/viva-history] error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });

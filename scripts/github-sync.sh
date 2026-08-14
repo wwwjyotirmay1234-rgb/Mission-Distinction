@@ -15,6 +15,41 @@ LAST_SHA=""
 FAIL_COUNT=0
 AUTH_FAIL_COUNT=0  # consecutive auth/permission failures — triggers exit after threshold
 
+# Derive the API base for sync-alert notifications.
+# Uses REPLIT_DEV_DOMAIN (set by the Replit platform) when running in Replit;
+# falls back to localhost for local dev.
+ALERT_API_BASE="${APP_URL:-https://${REPLIT_DEV_DOMAIN:-localhost:8080}}"
+
+# Escape a string for safe embedding in a JSON double-quoted value.
+# Handles backslashes, double-quotes, and the common control chars.
+json_escape() {
+  printf '%s' "$1" \
+    | sed 's/\\/\\\\/g; s/"/\\"/g; s/\r//g' \
+    | tr '\n' ' '
+}
+
+# Send a failure alert email via the API server.
+# Usage: send_sync_alert "reason text" "sha-or-dash" "optional extra detail"
+send_sync_alert() {
+  local reason="$1" sha="${2:-—}" detail="${3:-}"
+  if [ -z "$SESSION_SECRET" ]; then
+    echo "[github-sync] ALERT: ${reason} (SESSION_SECRET not set — cannot send email alert)"
+    return
+  fi
+  local r s d
+  r=$(json_escape "$reason")
+  s=$(json_escape "$sha")
+  d=$(json_escape "$detail")
+  curl -s -X POST \
+    -H "Authorization: Bearer ${SESSION_SECRET}" \
+    -H "Content-Type: application/json" \
+    -d "{\"reason\":\"${r}\",\"sha\":\"${s}\",\"detail\":\"${d}\"}" \
+    "${ALERT_API_BASE}/api/system/sync-alert" \
+    -o /dev/null --max-time 10 \
+    && echo "[github-sync] ✉ Alert email sent." \
+    || echo "[github-sync] ⚠ Alert email request failed (API unreachable?)."
+}
+
 # Returns 0 if the push output looks like an auth/permission error.
 is_auth_failure() {
   echo "$1" | grep -qiE \
@@ -166,6 +201,7 @@ elif [ $INIT_CODE -eq 2 ]; then
   AUTH_FAIL_COUNT=$((AUTH_FAIL_COUNT + 1))
   echo "[github-sync] ACTION REQUIRED: Auth failure on startup. Fix the token, then restart this workflow."
   echo "[github-sync] Exiting — cannot sync without valid credentials."
+  send_sync_alert "Auth failure on startup — token is missing, expired, or lacks repo+workflow scopes." "${LAST_SHA:-—}"
   exit 1
 else
   echo "[github-sync] Initial push failed — will retry on next commit."
@@ -194,6 +230,7 @@ while true; do
           echo "[github-sync]   Fix: replace GITHUB_PERSONAL_ACCESS_TOKEN with a classic PAT (repo + workflow scopes), then restart."
           if [ $AUTH_FAIL_COUNT -ge 2 ]; then
             echo "[github-sync] Exiting after repeated auth failures — fix the token and restart the workflow."
+            send_sync_alert "Repeated auth failures (${AUTH_FAIL_COUNT}x) — token is invalid or lacks permissions. Sync has stopped." "${CURRENT_SHA:0:8}"
             exit 1
           fi
         else
@@ -202,6 +239,7 @@ while true; do
           echo "[github-sync] Push failed (attempt $FAIL_COUNT) — will retry next cycle."
           if [ $FAIL_COUNT -ge 3 ]; then
             echo "[github-sync] ACTION REQUIRED: Push has failed $FAIL_COUNT times. Check token permissions and repository access."
+            send_sync_alert "Push failed ${FAIL_COUNT} times in a row — check token and repository access." "${CURRENT_SHA:0:8}"
           fi
         fi
       fi

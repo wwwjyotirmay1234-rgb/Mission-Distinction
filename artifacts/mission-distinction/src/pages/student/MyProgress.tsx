@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +38,14 @@ import {
   Stethoscope,
   ListOrdered,
 } from "lucide-react";
+
+interface VivaTrendPoint {
+  date: string;
+  isoDate: string;
+  score: number;
+  subject: string;
+  type: "viva" | "teachback";
+}
 
 interface WeakTopic {
   subject: string;
@@ -242,17 +253,19 @@ export default function MyProgress() {
   const [loading, setLoading] = useState(true);
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [reQuizMistakes, setReQuizMistakes] = useState<Mistake[] | null>(null);
+  const [vivaHistory, setVivaHistory] = useState<VivaTrendPoint[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [wtRes, mRes, erRes, spRes, pqRes, actRes] = await Promise.all([
+      const [wtRes, mRes, erRes, spRes, pqRes, actRes, vivaRes] = await Promise.all([
         apiFetch("/api/analytics/weak-topics"),
         apiFetch("/api/analytics/mistakes"),
         apiFetch("/api/analytics/exam-readiness"),
         apiFetch("/api/analytics/study-plan/latest"),
         apiFetch("/api/analytics/per-quiz-breakdown"),
         apiFetch("/api/progress/activity"),
+        apiFetch("/api/progress/viva-history"),
       ]);
 
       if (wtRes.ok) {
@@ -278,6 +291,10 @@ export default function MyProgress() {
       if (actRes.ok) {
         const data = await actRes.json();
         setActivityLog(Array.isArray(data) ? data.slice(0, 200) : []);
+      }
+      if (vivaRes.ok) {
+        const data = await vivaRes.json();
+        setVivaHistory(data.sessions || []);
       }
     } catch (error) {
       console.error("Error fetching progress data:", error);
@@ -317,6 +334,18 @@ export default function MyProgress() {
       setGeneratingPlan(false);
     }
   };
+
+  // Prepare viva trend chart data — group by date label, split by type
+  const vivaTrendData = useMemo(() => {
+    const map = new Map<string, { date: string; vivaScore?: number; teachBackScore?: number }>();
+    for (const s of vivaHistory) {
+      const existing = map.get(s.date) ?? { date: s.date };
+      if (s.type === "viva") existing.vivaScore = s.score;
+      else existing.teachBackScore = s.score;
+      map.set(s.date, existing);
+    }
+    return Array.from(map.values());
+  }, [vivaHistory]);
 
   if (reQuizMistakes !== null) {
     return (
@@ -491,6 +520,47 @@ export default function MyProgress() {
               </Card>
             </div>
           </div>
+
+          {/* ── Viva & Teach-Back Score Trend ── */}
+          {!loading && vivaTrendData.length >= 2 && (
+            <Card className="bg-card/40 border-border/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <TrendingUp size={15} className="text-primary" />
+                  Viva &amp; Teach-Back Score Trend
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={vivaTrendData} margin={{ top: 4, right: 16, bottom: 0, left: -24 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10, fill: "#9ca3af" }}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#9ca3af" }} />
+                    <Tooltip
+                      contentStyle={{ background: "#1c1f2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontSize: 11 }}
+                      formatter={(v: number) => [`${v}%`]}
+                    />
+                    <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+                    <Line
+                      type="monotone" dataKey="vivaScore" name="Viva"
+                      stroke="#7c3aed" strokeWidth={2} dot={{ r: 3 }} connectNulls
+                    />
+                    <Line
+                      type="monotone" dataKey="teachBackScore" name="Teach-Back"
+                      stroke="#22d3ee" strokeWidth={2} dot={{ r: 3 }} connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <p className="text-[10px] text-muted-foreground text-center mt-1">
+                  {vivaHistory.length} session{vivaHistory.length !== 1 ? "s" : ""} recorded
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="weak-topics" className="space-y-4 outline-none">

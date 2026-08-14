@@ -75,6 +75,57 @@ const SUBJECT_MAP: Record<string, SubjectConfig> = {
     jsonLdDescription:
       "Free Biochemistry MCQ bank, PYQ papers, grand tests, and notes for MBBS students in Odisha — VIMSAR, SCB, MKCG aligned.",
   },
+  pathology: {
+    slug: "pathology",
+    name: "Pathology",
+    emoji: "🔬",
+    tagline: "Understand Disease at the Cellular Level",
+    description:
+      "Pathology is the language of disease. Mission Distinction's Pathology bank covers General Pathology, Systemic Pathology, and Haematology with MCQs mapped to Odisha university PYQs and high-yield clinical correlations that bridge the basic sciences to bedside medicine.",
+    color: "rose",
+    highlights: [
+      "General & Systemic Pathology MCQ banks",
+      "Haematology and tumour markers PYQs",
+      "Histopathology slide-recognition questions",
+      "PYQ frequency analysis for VIMSAR, SCB & MKCG",
+    ],
+    jsonLdDescription:
+      "Free Pathology MCQ bank, PYQ papers, grand tests, and notes for MBBS students in Odisha — VIMSAR, SCB, MKCG aligned.",
+  },
+  microbiology: {
+    slug: "microbiology",
+    name: "Microbiology",
+    emoji: "🦠",
+    tagline: "Know Your Enemy — Bacteria, Viruses & Fungi",
+    description:
+      "Microbiology demands rapid recall of organisms, culture media, and virulence factors. Mission Distinction's MCQ bank is structured around the Odisha university exam pattern, with special focus on high-yield bacteriology, virology, and clinical microbiology questions that repeat every year.",
+    color: "teal",
+    highlights: [
+      "Bacteriology, Virology & Mycology MCQ banks",
+      "Culture media and sensitivity pattern PYQs",
+      "Clinical microbiology scenario questions",
+      "Immunity and vaccine recall high-yield notes",
+    ],
+    jsonLdDescription:
+      "Free Microbiology MCQ bank, PYQ papers, grand tests, and notes for MBBS students in Odisha — VIMSAR, SCB, MKCG aligned.",
+  },
+  pharmacology: {
+    slug: "pharmacology",
+    name: "Pharmacology",
+    emoji: "💊",
+    tagline: "Master Drugs, Doses & Mechanisms",
+    description:
+      "Pharmacology is high-yield for both university and NEET PG exams. Mission Distinction delivers targeted MCQ practice covering drug mechanisms, adverse effects, contraindications, and the pharmacokinetic principles that examiners love to test, all organised by the Odisha university syllabus.",
+    color: "sky",
+    highlights: [
+      "Drug class–based MCQ banks",
+      "Autonomic, CNS & CVS pharmacology focus",
+      "Adverse effects & contraindications PYQs",
+      "Prescription writing and clinical pharmacy notes",
+    ],
+    jsonLdDescription:
+      "Free Pharmacology MCQ bank, PYQ papers, grand tests, and notes for MBBS students in Odisha — VIMSAR, SCB, MKCG aligned.",
+  },
 };
 
 interface Props {
