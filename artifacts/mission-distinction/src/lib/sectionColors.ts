@@ -70,7 +70,6 @@ export const ROUTE_SECTION: Record<string, SectionKey> = {
   "/student/quiz": "exams",
   "/student/quiz-analysis": "progress",
   "/student/notes": "learning",
-  "/student/scholar-hub": "learning",
   "/student/pdfs": "learning",
   "/student/community": "community",
   "/student/announcements": "community",

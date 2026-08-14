@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   Home, CheckCircle, Users, User, GraduationCap,
-  Stethoscope, FileText, File, GraduationCap as ScholarIcon,
+  Stethoscope, FileText, File,
   Zap, BarChart2, TrendingUp, Trophy, Calendar as CalendarIcon,
   Timer, Gamepad2, Music, Settings, MessageSquare, MessageCircleHeart,
   Wand2, Store,
@@ -48,7 +48,6 @@ const LEARN_SECTIONS: DrawerSection[] = [
     links: [
       { icon: FileText,      label: "Notes & Books",  href: "/student/notes" },
       { icon: File,          label: "PDF Library",    href: "/student/pdfs" },
-      { icon: ScholarIcon,   label: "Scholar Hub",    href: "/student/scholar-hub" },
       { icon: Zap,           label: "Cheat Codes",    href: "/student/cheat-codes" },
     ],
   },
