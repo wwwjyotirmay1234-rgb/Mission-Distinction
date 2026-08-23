@@ -1,7 +1,6 @@
 # Railway / Nixpacks build config for the Mission Distinction monorepo.
-# Only the API server is built and run here.
-# Frontend (mission-distinction) and video (scene1-film) are static sites
-# deployed separately on Vercel.
+# This configuration is for the Railway API service.
+# The frontend uses railway.frontend.toml as a separate Railway service.
 
 [phases.setup]
 nixPkgs = ["nodejs_22"]

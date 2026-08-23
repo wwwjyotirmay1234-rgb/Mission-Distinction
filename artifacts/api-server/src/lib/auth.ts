@@ -4,7 +4,7 @@ import { createHash } from "crypto";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET environment variable is not set. Add it to Replit Secrets before starting the server.");
+  throw new Error("JWT_SECRET environment variable is not set. Add it to the hosting provider's environment variables.");
 }
 const JWT_EXPIRES_IN = "30d";
 const BCRYPT_ROUNDS = 12;

@@ -28,7 +28,7 @@ async function getOrCreateVapidKeys(): Promise<{ publicKey: string; privateKey: 
     const [priv] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, "vapid_private_key"));
     if (priv) {
       console.warn(
-        "[Push] VAPID keys loaded from database. For better security, move them to Replit Secrets " +
+        "[Push] VAPID keys loaded from database. For better security, move them to environment variables " +
         "as VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY."
       );
       return { publicKey: pub.value, privateKey: priv.value };
@@ -42,7 +42,7 @@ async function getOrCreateVapidKeys(): Promise<{ publicKey: string; privateKey: 
   ]);
   console.warn(
     "[Push] Generated new VAPID keys and stored in database. For better security, add them to " +
-    "Replit Secrets as VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY, then remove the DB entries."
+    "environment variables as VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY, then remove the DB entries."
   );
   return keys;
 }

@@ -1,20 +1,14 @@
 import { Storage } from "@google-cloud/storage";
 
-const REPLIT_SIDECAR = "http://127.0.0.1:1106";
+// Railway-compatible Google Cloud Storage authentication.
+// Prefer a service-account JSON string in GCS_SERVICE_ACCOUNT_JSON. The
+// standard GOOGLE_APPLICATION_CREDENTIALS file path also works locally.
+const serviceAccountJson = process.env.GCS_SERVICE_ACCOUNT_JSON;
+const credentials = serviceAccountJson ? JSON.parse(serviceAccountJson) : undefined;
 
 export const gcsClient = new Storage({
-  credentials: {
-    audience: "replit",
-    subject_token_type: "access_token",
-    token_url: `${REPLIT_SIDECAR}/token`,
-    type: "external_account",
-    credential_source: {
-      url: `${REPLIT_SIDECAR}/credential`,
-      format: { type: "json", subject_token_field_name: "access_token" },
-    },
-    universe_domain: "googleapis.com",
-  },
-  projectId: "",
+  projectId: process.env.GCS_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT,
+  ...(credentials ? { credentials } : {}),
 });
 
 export function getGcsBucket() {

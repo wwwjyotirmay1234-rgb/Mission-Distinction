@@ -4,6 +4,8 @@
 # commits that only touched shared libraries (lib/**).
 watchPatterns = [
   "artifacts/api-server/**",
+  "artifacts/mission-distinction/**",
+  "railway.frontend.toml",
   "lib/**",
   "nixpacks.toml",
   "railway.toml",

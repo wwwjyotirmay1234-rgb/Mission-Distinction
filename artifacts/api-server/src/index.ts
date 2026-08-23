@@ -70,9 +70,9 @@ runStartupMigrations()
 // ─── Startup config validation ────────────────────────────────────────────────
 if (!process.env.SENDGRID_API_KEY || !(process.env.SENDGRID_FROM_EMAIL || process.env.SMTP_EMAIL)) {
   logger.warn(
-    `[Email] Transactional email DISABLED — missing Replit Secret: SENDGRID_API_KEY and/or SENDGRID_FROM_EMAIL. ` +
+    `[Email] Transactional email DISABLED — missing environment variable: SENDGRID_API_KEY and/or SENDGRID_FROM_EMAIL. ` +
     `Affected: registration verification, password reset. ` +
-    `Fix: add SENDGRID_API_KEY and SENDGRID_FROM_EMAIL at Tools → Secrets, then restart the server.`
+    `Fix: add SENDGRID_API_KEY and SENDGRID_FROM_EMAIL to the hosting provider, then restart the server.`
   );
 } else {
   logger.info("[Email] SendGrid configured ✓ — transactional email enabled.");

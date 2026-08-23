@@ -224,7 +224,7 @@ export default function LandingPage() {
       return;
     }
 
-    // Cannot run inside an iframe (Replit canvas preview).
+    // Cannot run inside an embedded preview iframe.
     if (window.self !== window.top) {
       window.open(window.location.href, "_blank");
       toast.info("Opening in a new tab — sign in with Google there.");

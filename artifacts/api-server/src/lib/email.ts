@@ -14,14 +14,6 @@ export function getAppUrl(): string {
   // Example: APP_URL=https://www.missiondistinction.com
   const appUrl = process.env.APP_URL;
   if (appUrl) return appUrl.replace(/\/$/, "");
-  // Fallback for Replit-hosted deployments
-  const domains = process.env.REPLIT_DOMAINS;
-  if (domains) {
-    const first = domains.split(",")[0].trim();
-    return `https://${first}`;
-  }
-  const devDomain = process.env.REPLIT_DEV_DOMAIN;
-  if (devDomain) return `https://${devDomain}`;
   return "http://localhost:5173";
 }
 

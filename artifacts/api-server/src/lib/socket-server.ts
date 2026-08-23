@@ -12,12 +12,11 @@ let io: Server;
 
 function getAllowedOrigins(): string | string[] | boolean {
   if (process.env.NODE_ENV !== "production") return true;
-  const domains = (process.env.REPLIT_DOMAINS || "")
+  const origins = (process.env.ALLOWED_ORIGINS || "")
     .split(",")
-    .map((d) => d.trim())
-    .filter(Boolean)
-    .map((d) => `https://${d}`);
-  return domains.length > 0 ? domains : false;
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  return origins.length > 0 ? origins : false;
 }
 
 // ── WebRTC call rooms ──────────────────────────────────────────────────────────

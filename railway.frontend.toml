@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "pnpm --filter @workspace/mission-distinction run build"
+
+[deploy]
+startCommand = "pnpm --filter @workspace/mission-distinction run serve"
+healthcheckPath = "/"
+restartPolicyType = "ON_FAILURE"

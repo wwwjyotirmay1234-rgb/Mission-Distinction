@@ -115,7 +115,7 @@ export default function PrivacyPolicy() {
                 ["SendGrid (Twilio)", "Transactional email delivery", "USA", "Email addresses only"],
                 ["Firebase (Google)", "Google OAuth sign-in", "USA", "OAuth token only; governed by Google's Privacy Policy"],
                 ["PostHog", "Product analytics (anonymised, no PII)", "EU/USA", "Anonymised event data only"],
-                ["Replit Inc.", "Cloud hosting infrastructure", "USA", "Infrastructure provider"],
+                ["Cloud hosting provider", "Application hosting infrastructure", "Region selected by provider", "Infrastructure provider"],
               ].map(([provider, purpose, country, note]) => (
                 <div key={provider} className="bg-card/30 border border-border/30 rounded-lg p-3 text-sm">
                   <p className="text-foreground font-medium">{provider}</p>
@@ -217,7 +217,7 @@ export default function PrivacyPolicy() {
             <p>
               Mission Distinction is operated from <strong className="text-foreground">Odisha, India</strong>. Your
               personal data is processed and stored on servers provided by our infrastructure partner,{" "}
-              <strong className="text-foreground">Replit, Inc.</strong> (United States). By using this platform, you
+              <strong className="text-foreground">our cloud hosting provider</strong>. By using this platform, you
               acknowledge that your data may be transferred to and processed in the United States or other countries
               outside India.
             </p>
@@ -230,7 +230,7 @@ export default function PrivacyPolicy() {
             <div className="bg-card/40 border border-border/40 rounded-lg p-3 text-sm mt-3 space-y-1">
               <p className="font-medium text-foreground">Data processors and their hosting locations:</p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li><strong className="text-foreground">Replit, Inc.</strong> — application hosting &amp; database (USA)</li>
+                <li><strong className="text-foreground">Cloud hosting provider</strong> — application hosting and database infrastructure</li>
                 <li><strong className="text-foreground">Cloudinary, Inc.</strong> — media/file storage &amp; CDN (USA/global CDN)</li>
                 <li><strong className="text-foreground">Twilio SendGrid</strong> — transactional email delivery (USA)</li>
                 <li><strong className="text-foreground">Google Firebase</strong> — OAuth authentication (USA/global)</li>

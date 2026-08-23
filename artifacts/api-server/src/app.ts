@@ -32,8 +32,7 @@ function isTransientDbError(err: unknown): boolean {
 
 const app: Express = express();
 
-// Trust the first proxy hop (Replit's reverse proxy) so that express-rate-limit
-// can correctly identify client IPs from the X-Forwarded-For header.
+// Trust the first proxy hop so rate limiting identifies the real client IP.
 app.set("trust proxy", 1);
 
 app.use(
@@ -85,9 +84,8 @@ app.use(
   }),
 );
 
-// ALLOWED_ORIGINS takes priority (set this on Railway/Vercel/any host).
+// ALLOWED_ORIGINS is required in production (set this on Railway or any host).
 // Example: ALLOWED_ORIGINS=https://missiondistinction.com,https://www.missiondistinction.com
-// Falls back to REPLIT_DOMAINS for Replit-hosted deployments.
 // In development, all origins are allowed.
 function buildAllowedOrigins(): string[] | boolean {
   if (process.env.NODE_ENV !== "production") return true;
@@ -95,11 +93,10 @@ function buildAllowedOrigins(): string[] | boolean {
   if (explicit) {
     return explicit.split(",").map((o) => o.trim()).filter(Boolean);
   }
-  const replitDomains = process.env.REPLIT_DOMAINS;
-  if (replitDomains) {
-    return replitDomains.split(",").map((d) => `https://${d.trim()}`).filter(Boolean);
+  if (!explicit) {
+    throw new Error("ALLOWED_ORIGINS must be set in production.");
   }
-  return true; // fallback: allow all (should not happen in a real production deploy)
+  return explicit.split(",").map((o) => o.trim()).filter(Boolean);
 }
 
 const allowedOrigins = buildAllowedOrigins();

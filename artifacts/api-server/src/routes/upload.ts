@@ -6,8 +6,6 @@ import { v2 as cloudinary } from "cloudinary";
 import { Readable } from "stream";
 import { gcsClient } from "../lib/gcs";
 
-const REPLIT_SIDECAR = "http://127.0.0.1:1106";
-
 const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
 const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
 const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
@@ -98,27 +96,15 @@ function uploadToCloudinary(buffer: Buffer, options: Record<string, any>): Promi
 }
 
 // ─── PDF: request a presigned PUT URL so the browser uploads directly to GCS ──
-// This bypasses the Replit proxy body-size limit — files go browser → GCS directly.
+// Files go directly from the browser to GCS, avoiding API memory limits.
 async function signPdfUploadURL(bucketId: string, fileName: string): Promise<string> {
-  const body = {
-    bucket_name: bucketId,
-    object_name: `pdfs/${fileName}`,
-    method: "PUT",
-    // 15 minutes was too tight for large textbook PDFs (200MB+) on anything but a
-    // fast connection — the signed URL expired mid-upload and GCS rejected the PUT,
-    // which surfaced to admins as "can't upload files bigger than ~200MB". Matched
-    // to (and slightly above) the 30-minute window vivaSources.ts uses for book uploads.
-    expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-  };
-  const resp = await fetch(`${REPLIT_SIDECAR}/object-storage/signed-object-url`, { // nosemgrep: react-insecure-request
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(10_000),
+  const [url] = await gcsClient.bucket(bucketId).file(`pdfs/${fileName}`).getSignedUrl({
+    version: "v4",
+    action: "write",
+    expires: Date.now() + 60 * 60 * 1000,
+    contentType: "application/pdf",
   });
-  if (!resp.ok) throw new Error(`Sidecar returned ${resp.status}`);
-  const { signed_url } = await resp.json() as { signed_url: string };
-  return signed_url;
+  return url;
 }
 
 router.post("/submission/request-upload-url", authMiddleware, async (req: Request, res: Response) => {
@@ -189,7 +175,7 @@ router.get("/pdf/serve/:fileName", pdfAuthMiddleware, async (req: Request, res: 
   }
 });
 
-// ─── PDF upload (Replit Object Storage / GCS — up to 50 MB) ───────────────────
+// ─── PDF upload (GCS — up to 50 MB) ───────────────────────────────────────────
 router.post("/pdf", adminMiddleware, upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }
@@ -268,7 +254,7 @@ router.get("/avatar/:fileName", async (req: Request, res: Response) => {
   }
 });
 
-// ─── Avatar upload (Replit Object Storage — GCS sidecar auth) ─────────────────
+// ─── Avatar upload (GCS) ──────────────────────────────────────────────────────
 router.post("/avatar", authMiddleware, avatarLimiter, upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) { res.status(400).json({ error: "No file provided" }); return; }

@@ -34,7 +34,7 @@ async function uploadPdfFile(file: File, onProgress: (p: number) => void): Promi
   }
   const { signedUrl, serveUrl } = await presignResp.json();
 
-  // Step 2: PUT the file DIRECTLY to GCS — bypasses the Replit proxy entirely (supports up to 5 GB)
+  // Step 2: PUT the file directly to GCS (supports large files)
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", signedUrl);
