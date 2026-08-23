@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Timer, AlarmClock, Play, Pause, RotateCcw, Flag, Bell, BellOff, Plus, Trash2, Music, Upload, Volume2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
+import { SmartStudyMonitor } from "@/components/SmartStudyMonitor";
 
 const MIN_STOPWATCH_XP_MS = 5 * 60 * 1000;
 
@@ -1126,6 +1127,7 @@ export default function StudentTools() {
         <p className="text-muted-foreground">Stopwatch, Pomodoro timer, and alarm clock for focused study sessions.</p>
       </div>
       <Stopwatch />
+      <SmartStudyMonitor />
       <PomodoroTimer />
       <AlarmClock_ />
     </div>
